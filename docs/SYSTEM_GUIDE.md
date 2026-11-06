@@ -41,9 +41,9 @@
 | Module | What it covers | Status |
 |---|---|---|
 | **M1** Foundations | Exception hierarchy, one global error handler, request IDs, CORS, security headers, OpenAPI | ✅ Done, verified over HTTP |
-| **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, admin user / role / skill management | ✅ Done and smoke-tested · ⏳ audit of failed logins comes with M8 |
+| **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, admin user / role / skill management | ✅ Done and smoke-tested (failed logins and refusals audited since M8) |
 | **M3** Catalog and configuration | Services (with dependency graph), category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` | ✅ Done and smoke-tested (42/42) |
-| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54) · ⏳ history (M8), escalate (M11), duplicates (M12) |
+| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ escalate (M11), duplicates (M12) |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested · ⏳ business-hours calendar (decision pending), audit and notifications of these events (M8, M9) |
@@ -1203,7 +1203,7 @@ The rules live in the domain: `SlaTracker.check` decides which alert a clock has
 | Priority changed, deadline moved | That clock's warnings reset (violations stay) |
 | Interval | `sla.monitor.interval.seconds` in `app_config` (60 s, 30 s in the demo seed), re-read after every run |
 
-The events are published now; the audit trail (M8) and notifications (M9) are the listeners that will turn them into audit rows, messages to the technician and alerts to admins.
+The audit trail (M8, section 12) records both events; notifications (M9) will turn them into messages to the technician and alerts to admins.
 
 ### 11.3 Endpoint
 

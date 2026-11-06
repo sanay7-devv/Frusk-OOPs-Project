@@ -466,8 +466,8 @@ Some endpoints listed under M2 and M4 in the contract are not built yet. Two kin
 
 | Feature | Needs | Why it must wait |
 |---|---|---|
-| Audit of `LOGIN_FAILED`, `ACCESS_DENIED` (M2) | M8 audit trail | The audit table and listeners do not exist yet |
-| `GET /incidents/{id}/history` (M4) | M8 | History *is* the audit trail |
+| Audit of `LOGIN_FAILED`, `ACCESS_DENIED` (M2) | M8 audit trail | ✅ Done 2026-11-07 (DEC-38) |
+| `GET /incidents/{id}/history` (M4) | M8 | ✅ Done 2026-11-07 (DEC-38) |
 | `POST /incidents/{id}/escalate` (M4) | M11 escalation chain | Escalation levels and notifications are the Chain of Responsibility |
 | `POST /incidents/{id}/mark-duplicate` and the duplicate check on create (M4) | M12 similarity | Needs similarity scoring and problem records |
 | Automatic assignment on create (M4, so T01 ends in ASSIGNED) | M6 strategies | ✅ Done 2026-11-06 (DEC-33) |
