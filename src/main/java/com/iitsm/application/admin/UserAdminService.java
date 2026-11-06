@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,8 @@ import com.iitsm.application.admin.UserAdminViews.AdminUserView;
 import com.iitsm.application.admin.UserAdminViews.TechnicianView;
 import com.iitsm.application.assignment.WorkloadService;
 import com.iitsm.application.assignment.WorkloadService.Workload;
+import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.event.SecurityAuditEvent;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.UserNotFoundException;
 import com.iitsm.domain.incident.IncidentStatus;
@@ -58,12 +61,13 @@ public class UserAdminService {
     private final WorkloadService workloadService;
     private final UserFactory userFactory;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public UserAdminService(UserRepository users, SkillRepository skills, IncidentRepository incidents,
                             RefreshTokenRepository refreshTokens, WorkloadService workloadService,
-                            UserFactory userFactory,
-                            PasswordEncoder passwordEncoder, Clock clock) {
+                            UserFactory userFactory, PasswordEncoder passwordEncoder,
+                            ApplicationEventPublisher events, Clock clock) {
         this.users = users;
         this.skills = skills;
         this.incidents = incidents;
@@ -71,6 +75,7 @@ public class UserAdminService {
         this.workloadService = workloadService;
         this.userFactory = userFactory;
         this.passwordEncoder = passwordEncoder;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -156,7 +161,8 @@ public class UserAdminService {
     // ------------------------------------------------------------------ roles
 
     @Transactional
-    public AdminUserView addRole(Long id, RoleType role, TechnicianSpec technician, AdminScope adminScope) {
+    public AdminUserView addRole(Long callerId, Long id, RoleType role, TechnicianSpec technician,
+                                 AdminScope adminScope) {
         User user = load(id);
         Instant now = clock.instant();
         switch (role) {
@@ -164,11 +170,18 @@ public class UserAdminService {
             case TECHNICIAN -> grantTechnician(user, technician, now);
             case ADMINISTRATOR -> grantAdministrator(user, adminScope, now);
         }
+        roleChanged(callerId, "granted to", role, user);
         return AdminUserView.of(user, workloadService.all());
     }
 
+    private void roleChanged(Long callerId, String verb, RoleType role, User user) {
+        events.publishEvent(new SecurityAuditEvent(AuditAction.USER_ROLE_CHANGED, callerId,
+                "Role " + role + " " + verb + " " + user.getName() + " (user " + user.getId() + ")",
+                clock.instant()));
+    }
+
     @Transactional
-    public AdminUserView removeRole(Long id, RoleType role) {
+    public AdminUserView removeRole(Long callerId, Long id, RoleType role) {
         User user = load(id);
         if (role == RoleType.TECHNICIAN) {
             int active = incidents.findByAssignee_IdAndStatusIn(id, IncidentStatus.ACTIVE_WORK).size();
@@ -178,6 +191,7 @@ public class UserAdminService {
             }
         }
         user.revokeRole(role);
+        roleChanged(callerId, "removed from", role, user);
         return AdminUserView.of(user, workloadService.all());
     }
 

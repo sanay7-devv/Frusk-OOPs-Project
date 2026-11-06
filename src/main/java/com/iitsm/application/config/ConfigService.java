@@ -1,18 +1,23 @@
 package com.iitsm.application.config;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.config.AppConfigEntry;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
+import com.iitsm.domain.event.SecurityAuditEvent;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.InputValidationException.FieldIssue;
 import com.iitsm.domain.repository.AppConfigRepository;
@@ -29,10 +34,14 @@ import com.iitsm.domain.repository.AppConfigRepository;
 public class ConfigService {
 
     private final AppConfigRepository repository;
+    private final ApplicationEventPublisher events;
+    private final Clock clock;
     private volatile AppSettings current;
 
-    public ConfigService(AppConfigRepository repository) {
+    public ConfigService(AppConfigRepository repository, ApplicationEventPublisher events, Clock clock) {
         this.repository = repository;
+        this.events = events;
+        this.clock = clock;
         this.current = AppSettings.from(storedValues());
     }
 
@@ -51,10 +60,11 @@ public class ConfigService {
 
     /**
      * Applies several changes at once (PUT /admin/config). Unknown keys and broken rules are reported together as
-     * fieldErrors keyed by the config key; nothing is saved unless the whole new set is valid.
+     * fieldErrors keyed by the config key; nothing is saved unless the whole new set is valid. Audited as
+     * CONFIG_CHANGED with every old and new value.
      */
     @Transactional
-    public List<ConfigItemView> update(Map<String, String> changes) {
+    public List<ConfigItemView> update(Long actorId, Map<String, String> changes) {
         List<FieldIssue> unknown = changes.keySet().stream()
                 .filter(key -> ConfigKey.fromKey(key).isEmpty())
                 .map(key -> new FieldIssue(key, "unknown setting"))
@@ -67,6 +77,7 @@ public class ConfigService {
         current.asMap().forEach((key, value) -> merged.put(key.key(), value));
         changes.forEach((key, value) -> merged.put(key, value == null ? null : value.strip()));
         AppSettings next = AppSettings.from(merged);
+        AppSettings previous = current;
 
         changes.keySet().forEach(keyName -> {
             ConfigKey key = ConfigKey.fromKey(keyName).orElseThrow();
@@ -82,6 +93,14 @@ public class ConfigService {
                 current = next;
             }
         });
+        String summary = changes.keySet().stream()
+                .map(keyName -> {
+                    ConfigKey key = ConfigKey.fromKey(keyName).orElseThrow();
+                    return keyName + " " + previous.raw(key) + " → " + next.raw(key);
+                })
+                .collect(Collectors.joining(", "));
+        events.publishEvent(new SecurityAuditEvent(AuditAction.CONFIG_CHANGED, actorId,
+                "Settings changed: " + summary, clock.instant()));
         return snapshotView(next);
     }
 

@@ -5,12 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.config.ConfigService;
 import com.iitsm.application.config.ConfigService.ConfigItemView;
 import com.iitsm.web.dto.catalog.ConfigValueRequest;
@@ -44,9 +46,10 @@ public class AdminConfigController {
 
     @PutMapping
     @Operation(summary = "Change one or more settings at once; all are validated together")
-    public List<ConfigItemView> update(@RequestBody @NotEmpty List<@Valid ConfigValueRequest> changes) {
+    public List<ConfigItemView> update(@AuthenticationPrincipal AuthenticatedUser caller,
+                                       @RequestBody @NotEmpty List<@Valid ConfigValueRequest> changes) {
         Map<String, String> byKey = new LinkedHashMap<>();
         changes.forEach(change -> byKey.put(change.key().strip(), change.value()));
-        return config.update(byKey);
+        return config.update(caller.id(), byKey);
     }
 }

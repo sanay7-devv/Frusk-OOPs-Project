@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.iitsm.application.assignment.AssignmentService.RecommendationView;
+import com.iitsm.application.audit.AuditService.AuditEntryView;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.incident.IncidentService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
@@ -219,7 +220,7 @@ public class IncidentController {
     public IncidentDetail resolve(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                   @Valid @RequestBody ResolveRequest request) {
         return incidents.resolve(caller, id, request.rootCause(), request.notes(), request.steps(),
-                request.timeSpentMinutes(), request.reusableSolution());
+                request.timeSpentMinutes(), Boolean.TRUE.equals(request.reusableSolution()));
     }
 
     @PostMapping("/{id}/verify")
@@ -268,6 +269,13 @@ public class IncidentController {
     public IncidentDetail overridePriority(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                            @Valid @RequestBody OverridePriorityRequest request) {
         return incidents.overridePriority(caller, id, request.priority(), request.reason());
+    }
+
+    @GetMapping("/{id}/history")
+    @Operation(summary = "Audit trail of the incident, oldest first (internal notes are hidden from the reporter)")
+    @ApiErrors({ErrorCode.INCIDENT_NOT_FOUND})
+    public List<AuditEntryView> history(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
+        return incidents.history(caller, id);
     }
 
     @GetMapping("/{id}/comments")

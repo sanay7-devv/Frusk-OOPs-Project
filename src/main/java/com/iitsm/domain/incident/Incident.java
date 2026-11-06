@@ -2,6 +2,7 @@ package com.iitsm.domain.incident;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 import org.hibernate.annotations.JdbcTypeCode;
@@ -287,6 +288,17 @@ public class Incident {
             sla.retarget(createdAt, responseTarget, resolutionTarget, acknowledgedAt != null);
         }
         touch(now);
+    }
+
+    /**
+     * Lets the SLA monitor check both clocks (handbook 2.5 M7). The response clock runs until the incident is
+     * acknowledged, the resolution clock until it is resolved; the tracker decides which alerts fire.
+     */
+    public List<SlaAlert> checkSla(Instant now, Duration responseTarget, Duration resolutionTarget,
+                                   int firstWarningPercent, int secondWarningPercent) {
+        boolean done = status.isResolvedOrLater();
+        return sla.check(now, !done && acknowledgedAt == null, !done, responseTarget, resolutionTarget,
+                firstWarningPercent, secondWarningPercent);
     }
 
     public boolean isReportedBy(Long userId) {

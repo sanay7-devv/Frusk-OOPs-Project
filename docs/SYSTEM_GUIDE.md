@@ -26,11 +26,13 @@
 8. [M4 Incidents and their lifecycle](#8-m4-incidents-and-their-lifecycle)
 9. [M5 Priority engine](#9-m5-priority-engine)
 10. [M6 Technician assignment](#10-m6-technician-assignment)
-11. [Data model built so far](#11-data-model-built-so-far)
-12. [OOP and design patterns: where to find them](#12-oop-and-design-patterns-where-to-find-them)
-13. [Configuration and running the backend](#13-configuration-and-running-the-backend)
-14. [Key decisions](#14-key-decisions)
-15. [Changelog](#15-changelog)
+11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
+12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
+13. [Data model built so far](#13-data-model-built-so-far)
+14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
+15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
+16. [Key decisions](#16-key-decisions)
+17. [Changelog](#17-changelog)
 
 ---
 
@@ -44,7 +46,9 @@
 | **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54) · ⏳ history (M8), escalate (M11), duplicates (M12) |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
-| M7 to M14 | SLA monitor, audit, notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
+| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested · ⏳ business-hours calendar (decision pending), audit and notifications of these events (M8, M9) |
+| **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
+| M9 to M14 | Notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -114,7 +118,7 @@ com.iitsm
 ├── web
 │   ├── controller                   AuthController, CatalogController, IncidentController, TechnicianController,
 │   │                                AdminUserController, AdminCatalogController, AdminSlaController,
-│   │                                AdminConfigController
+│   │                                AdminConfigController, SlaController, AuditController
 │   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/admin, dto/catalog, dto/incident)
 │   ├── filter                       RequestIdFilter
 │   ├── handler                      GlobalExceptionHandler
@@ -125,24 +129,30 @@ com.iitsm
 │   ├── auth                         AuthService, AuthenticatedUser, UserView, AccessTokenIssuer (port)
 │   ├── catalog                      CatalogService, SlaAdminService, CatalogViews
 │   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews
+│   ├── sla                          SlaMonitor (the monitor run), SlaViolationService
+│   ├── audit                        AuditListener (Observer), AuditService
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
 │   ├── assignment                   AssignmentStrategy + 5 strategies, FactorStrategy, AssignmentEngine,
 │   │                                AssignmentFactors, EligibilityFilter, WorkloadTracker, TechnicianCandidate
 │   ├── category                     Category (tree, required skills)
 │   ├── config                       ConfigKey, AppSettings, AppConfigEntry
+│   ├── audit                        AuditRecord (immutable), AuditAction, AuditQuery
+│   ├── event                        IncidentEvent, IncidentChanged, TriageNeeded, SlaWarning, SlaViolated,
+│   │                                SecurityAuditEvent (Observer pattern events)
 │   ├── exception                    ItsmException + 18 business exceptions
 │   ├── incident                     Incident, IncidentState + 10 states, StateFactory, IncidentFactory,
-│   │                                SlaTracker, Resolution, IncidentComment, enums
+│   │                                SlaTracker, SlaAlert, Resolution, IncidentComment, enums
 │   ├── priority                     Priority, PriorityStrategy, WeightedPriorityStrategy,
 │   │                                PriorityOverrideRule, PriorityEngine, PriorityBreakdown
 │   ├── repository                   one repository interface per aggregate
 │   ├── service                      ItService (IT services and their dependency graph)
-│   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver
+│   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver, SlaViolation
 │   └── user                         User, Role hierarchy, profiles, SkillSet, RefreshToken, UserFactory, enums
 └── infrastructure
     ├── config                       ClockConfig, CorsConfig, DomainConfig
     ├── persistence                  Spring Data implementations of the domain repositories
+    ├── scheduler                    SchedulingConfig, SlaMonitorJob (interval from app_config)
     └── security                     SecurityConfig, JwtService, JwtAuthenticationFilter, ApiErrorWriter, ApiErrorCorsProcessor
 ```
 
@@ -1152,7 +1162,122 @@ Without the familiarity factor (handbook weights), Ravi would rank second (70) a
 
 ---
 
-## 11. Data model built so far
+## 11. M7 SLA engine and monitor
+
+Every incident carries two SLA clocks (section 8.5): the **response** clock runs until a technician acknowledges, the **resolution** clock until the incident is resolved, paused while waiting for the reporter. M7 adds the **monitor** that watches those clocks and raises alerts: a first warning at 75 % of a deadline, a second at 90 %, and a violation at 100 %, **each exactly once**.
+
+### 11.1 One monitor run
+
+```mermaid
+sequenceDiagram
+    participant J as SlaMonitorJob (scheduler)
+    participant M as SlaMonitor
+    participant R as IncidentRepository
+    participant I as Incident / SlaTracker
+    participant V as sla_violations
+    participant E as Event publisher
+    J->>M: runOnce() every sla.monitor.interval.seconds
+    M->>R: ids of open incidents with a clock not yet violated
+    loop each incident, in its own transaction
+        M->>I: checkSla(now, targets, 75 %, 90 %)
+        I-->>M: alerts that fired now (flags flipped)
+        alt violation
+            M->>V: insert row (clock, overdue seconds, assignee)
+            M->>E: SlaViolated
+        else warning
+            M->>E: SlaWarning (1 or 2)
+        end
+    end
+```
+
+The rules live in the domain: `SlaTracker.check` decides which alert a clock has reached and flips its stored flag (`resp_warn75_sent`, `res_violated`, ...), so a second run, or a run after a restart, finds the flag set and raises nothing. Each incident is checked in its own transaction: one bad incident (no SLA policy, a concurrent edit) is logged and retried on the next run without stopping the rest.
+
+### 11.2 Rules
+
+| Situation | What happens |
+|---|---|
+| Clock at 75 % / 90 % of its target | First / second warning (`SlaWarning`) |
+| Deadline passed | Violation: row in `sla_violations`, `SlaViolated` event, `slaState` = VIOLATED |
+| A run finds a clock past several thresholds at once (late run) | Only the highest alert fires; the lower ones are marked sent |
+| Resolution clock paused (PENDING_USER_INFO) | Nothing; the deadline moves later on resume (section 8.1) |
+| Priority changed, deadline moved | That clock's warnings reset (violations stay) |
+| Interval | `sla.monitor.interval.seconds` in `app_config` (60 s, 30 s in the demo seed), re-read after every run |
+
+The events are published now; the audit trail (M8) and notifications (M9) are the listeners that will turn them into audit rows, messages to the technician and alerts to admins.
+
+### 11.3 Endpoint
+
+| Endpoint | Who | What |
+|---|---|---|
+| `GET /api/v1/sla/violations?from&to&page&size` | `SLA_VIOLATION_VIEW` (admin, team lead) | Violations recorded in [from, to), newest first: `{id, incidentId, incidentCode, type, overdueSeconds, technician, createdAt}` in the paged wrapper |
+
+### 11.4 Verified behavior (2026-11-07)
+
+**35 of 35 checks passed** (`m7_smoke.py` against the running app: deadlines are moved in the database and the monitor runs every 5 s).
+
+| Area | Checked |
+|---|---|
+| Response clock | Warning 1 at 83 %, `slaState` WARNING; warning 2 at 92 %; violation 30 s after the deadline with overdue seconds and the technician recorded; `slaState` VIOLATED |
+| **T23** | Resolution clock at 75, 90 and 100 %, the monitor running at least twice at each point: each alert fired exactly once, one RESOLUTION violation row |
+| Fire once | More runs after the violation: still one row, one log line per warning |
+| Pause | No resolution alert while PENDING_USER_INFO even with the deadline passed; after the reply, the violation is recorded |
+| Late run | Clock at 97 % in one step: only warning 2 fires, warning 1 is marked sent |
+| Priority change | Override P4 → P3 resets that clock's warnings |
+| `GET /sla/violations` | Admin and team lead 200 with code and technician; technician and employee 403; `from` after `to` 400 on `to`; range filter |
+
+---
+
+## 12. M8 Events and the audit trail
+
+Every action publishes an **event**; independent **listeners** react to it (Observer pattern). The first listener is the **audit trail**: a permanent, append-only log of who did what, when, and how the status changed. Notifications (M9) and the live dashboard (M13) will listen to the same events.
+
+### 12.1 From action to audit record
+
+```mermaid
+flowchart LR
+    S[IncidentService / SlaMonitor] -- IncidentChanged, SlaWarning, SlaViolated --> P((Event publisher))
+    X[AuthService, error handler, UserAdminService, ConfigService] -- SecurityAuditEvent --> P
+    P --> AL[AuditListener]
+    P -. M9 .-> NL[NotificationListener]
+    P -. M13 .-> DL[DashboardListener]
+    AL --> AR[(audit_records)]
+```
+
+| Event | When | Written |
+|---|---|---|
+| `IncidentChanged` | every lifecycle move, edit, assignment, reassignment, priority change, comment | in the **same** transaction as the action: no action without its record, a refused action leaves none |
+| `SlaWarning`, `SlaViolated` | SLA monitor (section 11) | in the monitor's transaction for that incident |
+| `SecurityAuditEvent` | failed login, any 403, role change, settings change | in its **own** transaction, so it survives the failed request |
+| `TriageNeeded` | a new incident could not be assigned | not audited (for M9 notifications) |
+
+Creating an incident leaves four entries: INCIDENT_CREATED (by the reporter), CLASSIFIED, PRIORITY_CALCULATED (score, rule and deadlines) and ASSIGNED (by the system, naming the strategy).
+
+### 12.2 Who sees what
+
+| Endpoint | Who | What |
+|---|---|---|
+| `GET /api/v1/incidents/{id}/history` | participants (404 for others) | the incident's trail, oldest first; a reporter without staff rights does not see internal-note entries |
+| `GET /api/v1/audit?incidentId&actorId&action&from&to&page&size` | `AUDIT_VIEW` (admin) | the whole log, newest first, paged |
+
+Each entry: `{id, timestamp, actor {id, name} or null for the system, action, incidentCode, previousState, newState, description}`. There is no endpoint that writes, changes or deletes an entry; the entity is immutable and the repository only inserts and reads (DEC-38).
+
+### 12.3 Verified behavior (2026-11-07)
+
+Smoke test `m8_smoke.py` against the running app.
+
+| Area | Checked |
+|---|---|
+| **M8 done-when** | One transition (acknowledge) adds exactly one row with ASSIGNED → ACKNOWLEDGED and the technician as actor; a refused transition (409) adds none |
+| Creation | Four entries in order with the right states and actors |
+| Lifecycle | Start, comments, request and provide info, resolve, verify, close, reopen: one entry each, in order |
+| Visibility | Staff see the internal-note entry, the reporter does not; strangers get 404; the override reason never reaches the reporter |
+| Security | A 403 on an incident action and a 403 from a permission check are both audited as ACCESS_DENIED; wrong password and unknown email give LOGIN_FAILED; role and settings changes are audited with old and new values |
+| SLA | A warning from the monitor appears in the history with the system as actor |
+| `GET /audit` | Filter by incident matches the row count, newest first; `from` after `to` 400; unknown action 400 |
+
+---
+
+## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
 
@@ -1284,6 +1409,10 @@ erDiagram
     incidents |o--o{ incidents : "duplicate of"
     incidents ||--o{ incident_comments : "has"
     users ||--o{ incident_comments : "writes"
+    incidents ||--o{ sla_violations : "missed"
+    users |o--o{ sla_violations : "was assigned"
+    incidents |o--o{ audit_records : "history"
+    users |o--o{ audit_records : "acted"
 
     incidents {
         bigint id PK
@@ -1328,17 +1457,35 @@ erDiagram
         text body
         timestamptz created_at
     }
+    sla_violations {
+        bigint id PK
+        bigint incident_id FK
+        varchar type "RESPONSE | RESOLUTION"
+        bigint overdue_seconds
+        bigint technician_id FK "assignee at that moment"
+        timestamptz created_at
+    }
+    audit_records {
+        bigint id PK
+        bigint incident_id FK "null for login, config, roles"
+        bigint actor_id FK "null = system"
+        varchar action "23 values (A.4)"
+        varchar previous_state
+        varchar new_state
+        text description
+        timestamptz created_at
+    }
 ```
 
-Plus the four warning flags (`resp_warn75_sent`, `resp_warn90_sent`, `res_warn75_sent`, `res_warn90_sent`, for M7), `problem_id` (M12), `updated_at`, `resolution_steps`, `time_spent_minutes`, nine indexes and the sequence `incident_code_seq`.
+Plus the four warning flags (`resp_warn75_sent`, `resp_warn90_sent`, `res_warn75_sent`, `res_warn90_sent`, set by the M7 monitor), `problem_id` (M12), `updated_at`, `resolution_steps`, `time_spent_minutes`, nine indexes and the sequence `incident_code_seq`.
 
 The database also enforces the rules with constraints: unique `(user_id, role_type)`, unique email and `google_sub`, unique service name, unique `(service_id, priority)` and `(priority, level)`, and `CHECK` constraints on every range and enum column.
 
 ---
 
-## 12. OOP and design patterns: where to find them
+## 14. OOP and design patterns: where to find them
 
-### 8.1 OOP concepts (course brief requirements)
+### 14.1 OOP concepts (course brief requirements)
 
 | Concept | Where it is visible in the code |
 |---|---|
@@ -1353,7 +1500,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Exception handling** | 17 custom exceptions, one global handler, one error shape. |
 | **Collections** | `EnumSet` for permissions and roles (fast set union), `Map<Skill, Short>` for skill proficiency, `EnumMap` for settings, `ArrayDeque` (stack) plus `HashSet` (visited) for the depth-first cycle check in the service graph. |
 
-### 8.2 The seven design patterns
+### 14.2 The seven design patterns
 
 | Pattern | Status | Where |
 |---|---|---|
@@ -1362,12 +1509,12 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. Notification channels and the LLM client follow in M9 / M12. |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
 | **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. |
-| **Observer** | ⬜ M8 | Domain events with audit, notification, SLA and dashboard listeners. |
+| **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them. Notification (M9) and dashboard (M13) listeners subscribe to the same events. |
 | **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
 
 ---
 
-## 13. Configuration and running the backend
+## 15. Configuration and running the backend
 
 | Setting | Environment variable | Default |
 |---|---|---|
@@ -1387,9 +1534,25 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 **Run locally:** start PostgreSQL (`docker start iitsm-db`, host port 5433), then run `IitsmBackendApplication` from IntelliJ with `SPRING_PROFILES_ACTIVE=dev,schema-auto`. Swagger UI: `http://localhost:8080/swagger-ui.html`. On this machine, MiniTool ShadowMaker's agent takes port 8080 at boot: `net stop MTAgentService` (Administrator) frees it, or use `SERVER_PORT=8081`.
 
+### 15.1 The API contract
+
+The OpenAPI contract is generated from the running code (D-013): controllers and DTOs describe the implemented endpoints, each with the error codes it can return (`@ApiErrors`, `ErrorCode`), and `PlannedEndpointsCustomizer` adds the agreed endpoints of modules not built yet under the tag **Planned** (`x-module` names the module). Exported copies, how to view them and the list of additions to Appendices B/C: `docs/openapi/` and its `README.md`.
+
+```mermaid
+flowchart LR
+    C[Controllers + DTOs] --> S[springdoc]
+    A["@ApiErrors + ErrorCode"] --> E[ApiErrorsCustomizer]
+    P[planned-endpoints.json] --> PC[PlannedEndpointsCustomizer]
+    S --> O[OpenAPI document]
+    E --> O
+    PC --> O
+    O --> U["/swagger-ui.html, /v3/api-docs(.yaml)"]
+    O --> X[docs/openapi export]
+```
+
 ---
 
-## 14. Key decisions
+## 16. Key decisions
 
 Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.md`**. Short index: `docs/ROADMAP.md`, section 6.
 
@@ -1399,16 +1562,20 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | D-003 | Package `com.iitsm`, four layers | Web / Application / Domain / Infrastructure |
 | D-004 | Spring Boot 4.1.1 instead of 3.x | Boot 3.5 is out of free support with unpatched CVEs |
 | D-005 | One error handler, request ID in a header, generic codes for framework errors | Every failure has the same shape |
-| D-006 | Temporary `schema-auto` profile | Backend work does not wait for the late migrations |
+| D-006 | Temporary `schema-auto` profile | Backend work does not wait for the pending migrations |
 | D-007 | Role mapping: single-table hierarchy + one profile table per role | Real OOP while keeping the agreed schema |
 | D-008 | Auth design | Permission-based authorities, stateless access tokens, rotating hashed refresh tokens with theft detection |
 | D-009 | Catalog and configuration design | Soft delete for services and categories, cycle-free service graph, global SLA uniqueness checked in code, settings as a validated immutable snapshot swapped after commit |
 | D-010 | Incident design | State pattern with stateless state singletons; 403 for "who", 409 for "status"; team lead sees all incidents; strangers get 404; messages and reasons stored as comments; automatic assignment added in M6 |
 | D-011 | Assignment and admin users | Service familiarity as a fifth factor, skill = best + coverage, explainable recommendations with excluded list (team decisions); round-robin tie-break; auto-assign only with a category; admin user rules |
+| D-012 | Full scope, no timeline | Every handbook feature is built, including the "Tier 3" extras, in module-dependency order |
+| D-013 | Contract generated from code plus a planned resource | Built endpoints document themselves; planned ones are tagged with their module |
+| D-014 | SLA monitor design | One transaction per incident, fire-once flags in the domain, only the highest alert on a late run, a moved deadline gets fresh warnings |
+| D-015 | Audit through events | One `IncidentChanged` event per action written in the action's transaction; refusals and failed logins written in their own; append-only |
 
 ---
 
-## 15. Changelog
+## 17. Changelog
 
 | Date | Change |
 |---|---|
@@ -1418,3 +1585,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-06 | M3 Catalog and configuration built and smoke-tested (42/42): services with dependency graph, category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` with validation. Lockout limits moved from properties to `app_config`. |
 | 2026-11-06 | M4 incidents (State pattern, factory, creation pipeline, manual assignment, SLA clocks, comments, lists) and M5 priority engine built and smoke-tested (54/54, covering T01, T03, T05, T06, T08, T09, T11, T12, T14, T15, T18, T21, T24, T25). Fixed during testing: empty resolution wrote NULL into `reusable_solution`; status-based refusals now always return 409, not 403. |
 | 2026-11-06 | M6 assignment built and smoke-tested (33/33): five strategies, Composite with service familiarity, skill = best + coverage, explainable recommendations with excluded list (team decisions DEC-28 to DEC-30), auto-assign on creation, triage, technician workload and queue. Admin user, role and skill management completes M2. M2, M3, M4 suites re-run green (156 checks). |
+| 2026-11-07 | Scope rule D-012: every handbook feature is built, including business-hours calendars (M7), notification preferences (M9), PDF export and saved views (M10), thread summarizer (M12) and the dependency graph (M13); no timeline or scope tiers. |
+| 2026-11-07 | API contract published (D-013): 98 operations (62 implemented, 36 planned), error codes on every implemented operation, export and README in `docs/openapi`. |
+| 2026-11-07 | M7 SLA monitor built and smoke-tested (section 11, D-014): fire-once warnings and violations, `sla_violations`, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`; sections 11 to 15 renumbered to 12 to 16. |
+| 2026-11-07 | M8 events and audit trail built and smoke-tested (section 12, D-015): `IncidentChanged`, `TriageNeeded`, `SecurityAuditEvent`, `AuditListener`, `audit_records`, `GET /incidents/{id}/history`, `GET /audit`; LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED audited. Fixed E-021 (optional booleans rejected by Jackson 3). Sections renumbered again (M8 is 12). |

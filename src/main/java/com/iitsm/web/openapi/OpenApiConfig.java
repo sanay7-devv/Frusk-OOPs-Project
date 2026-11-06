@@ -25,7 +25,7 @@ import io.swagger.v3.oas.models.tags.Tag;
 public class OpenApiConfig {
 
     public static final String BEARER_SCHEME = "bearerAuth";
-    public static final String CONTRACT_VERSION = "1.0.0-m6";
+    public static final String CONTRACT_VERSION = "1.0.0-m8";
 
     private static final String DESCRIPTION = """
             Intelligent IT Service Management and Incident Resolution System: REST API contract.
@@ -45,8 +45,7 @@ public class OpenApiConfig {
             **Status of each endpoint**
             - Endpoints under the tag **Planned** are part of the agreed contract but not built yet; each says in which
               module it arrives (`x-module`). Everything else is implemented and tested.
-            - Additions to the original contract (Appendices B and C) are marked `x-contract-addition: true` and
-              listed in docs/openapi/README.md.
+            - Additions to the original contract (Appendices B and C) are listed in docs/openapi/README.md.
 
             **Real-time** (module M13, planned): STOMP over WebSocket at `/ws` with the access token; topics
             `/user/queue/notifications` (Notification) and `/topic/dashboard` (DashboardEvent and counters).
@@ -74,7 +73,9 @@ public class OpenApiConfig {
                         tag("Incidents", "Report, track and work on incidents; lifecycle actions, comments, "
                                 + "recommendations (M4, M5, M6)"),
                         tag("Technicians", "Technician list, my workload, my queue, my availability (M6)"),
-                        tag("Catalog", "Active services and categories for every logged-in user (M3)"),
+                        tag("SLA", "Recorded SLA violations (M7)"),
+                        tag("Audit", "The append-only audit log (M8)"),
+                        tag("Catalog","Active services and categories for every logged-in user (M3)"),
                         tag("Admin: users and technicians", "Users, roles, technician profiles and skills (M2, M6)"),
                         tag("Admin: catalog", "Services, dependencies, categories, skills (M3)"),
                         tag("Admin: SLA and escalation", "SLA and escalation policies (M3)"),

@@ -63,8 +63,8 @@ public class AdminCatalogController {
     @PostMapping("/services")
     @ResponseStatus(HttpStatus.CREATED)
     public ServiceView createService(@Valid @RequestBody ServiceRequest request) {
-        return catalog.createService(request.name(), request.owner(), request.criticality(), request.alwaysP1(),
-                request.description(), request.dependencyIds());
+        return catalog.createService(request.name(), request.owner(), request.criticality(),
+                Boolean.TRUE.equals(request.alwaysP1()), request.description(), request.dependencyIds());
     }
 
     @PutMapping("/services/{id}")
@@ -72,7 +72,7 @@ public class AdminCatalogController {
     @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public ServiceView updateService(@PathVariable Long id, @Valid @RequestBody ServiceRequest request) {
         return catalog.updateService(id, request.name(), request.owner(), request.criticality(),
-                request.alwaysP1(), request.description(), request.active() == null || request.active(),
+                Boolean.TRUE.equals(request.alwaysP1()), request.description(), request.active() == null || request.active(),
                 request.dependencyIds());
     }
 

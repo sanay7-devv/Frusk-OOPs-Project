@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,12 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.iitsm.application.auth.AccessTokenIssuer.IssuedAccessToken;
 import com.iitsm.application.config.ConfigService;
+import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.AccountLockedException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.InvalidCredentialsException;
 import com.iitsm.domain.exception.TokenInvalidException;
+import com.iitsm.domain.event.SecurityAuditEvent;
 import com.iitsm.domain.exception.UserNotFoundException;
 import com.iitsm.domain.repository.RefreshTokenRepository;
 import com.iitsm.domain.repository.UserRepository;
@@ -51,6 +54,7 @@ public class AuthService {
     private final AccessTokenIssuer accessTokenIssuer;
     private final Clock clock;
     private final ConfigService config;
+    private final ApplicationEventPublisher events;
     private final Duration refreshTokenLifetime;
     private final SecureRandom random = new SecureRandom();
     /** Compared against when the email is unknown, so both failure paths take the same BCrypt time. */
@@ -58,7 +62,7 @@ public class AuthService {
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens, UserFactory userFactory,
                        PasswordEncoder passwordEncoder, AccessTokenIssuer accessTokenIssuer, Clock clock,
-                       ConfigService config,
+                       ConfigService config, ApplicationEventPublisher events,
                        @Value("${app.jwt.refresh-token-days}") int refreshTokenDays) {
         this.users = users;
         this.refreshTokens = refreshTokens;
@@ -67,6 +71,7 @@ public class AuthService {
         this.accessTokenIssuer = accessTokenIssuer;
         this.clock = clock;
         this.config = config;
+        this.events = events;
         this.refreshTokenLifetime = Duration.ofDays(refreshTokenDays);
         this.dummyHash = passwordEncoder.encode("timing-equalizer-not-a-password");
     }
@@ -95,13 +100,16 @@ public class AuthService {
     @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResult login(String email, String rawPassword) {
         Instant now = clock.instant();
-        User user = users.findByEmail(UserFactory.normalizeEmail(email)).orElse(null);
+        String normalized = UserFactory.normalizeEmail(email);
+        User user = users.findByEmail(normalized).orElse(null);
         if (user == null) {
             passwordEncoder.matches(rawPassword, dummyHash);
+            loginFailed(null, "unknown email " + abbreviate(normalized), now);
             throw new InvalidCredentialsException();
         }
         AppSettings settings = config.current(); // live app_config values: a change applies to the next login
         if (user.isLockedAt(now)) {
+            loginFailed(user.getId(), "account locked", now);
             throw new AccountLockedException(settings.intValue(ConfigKey.SECURITY_LOCKOUT_MINUTES));
         }
         boolean passwordMatches = user.getPasswordHash()
@@ -109,10 +117,21 @@ public class AuthService {
                 .orElse(false); // Google-only users have no password (D-001)
         if (!passwordMatches || !user.isActive()) {
             user.recordFailedLogin(now, settings.lockoutAttempts(), settings.lockoutDuration());
+            loginFailed(user.getId(), !user.isActive() ? "account deactivated"
+                    : user.isLockedAt(now) ? "wrong password, account now locked" : "wrong password", now);
             throw new InvalidCredentialsException();
         }
         user.recordSuccessfulLogin();
         return issueTokens(user, now);
+    }
+
+    /** Audited in its own transaction (AuditListener), so the record survives the failed request. */
+    private void loginFailed(Long userId, String reason, Instant now) {
+        events.publishEvent(new SecurityAuditEvent(AuditAction.LOGIN_FAILED, userId, "Failed login: " + reason, now));
+    }
+
+    private static String abbreviate(String text) {
+        return text.length() <= 150 ? text : text.substring(0, 150) + "...";
     }
 
     /** Revoking every session on token re-use must survive the exception, hence noRollbackFor. */

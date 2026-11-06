@@ -13,7 +13,7 @@ public record ServiceRequest(
         @NotBlank @Size(min = 2, max = 80) String name,
         @Size(max = 80) String owner,
         @NotNull @Min(1) @Max(5) Integer criticality,
-        boolean alwaysP1,
+        Boolean alwaysP1,
         @Size(max = 1000) String description,
         Boolean active,
         List<Long> dependencyIds) {

@@ -192,6 +192,24 @@ Entry template:
 - Prevention: after every restart, check that the "Started" line shows a new PID before testing.
 - Status: fixed
 
+### E-020: Duplicate bean `openApiConfig` after moving the class
+- Date: 2026-11-06
+- Area: build
+- Symptom: startup failed with a duplicate bean definition `openApiConfig` after `OpenApiConfig` moved from `infrastructure/config` to `web/openapi`.
+- Cause: the old compiled class stayed in `target/classes`, so component scanning found both the old and the new class. `mvnw clean` failed because the IntelliJ run held a lock on `target`.
+- Fix: deleted the stale `target/classes/com/iitsm/infrastructure/config/OpenApiConfig.class` and rebuilt.
+- Prevention: after moving or renaming a class, stop the running app and do a clean rebuild.
+- Status: fixed
+
+### E-021: Omitting an optional boolean gave 400 with no field errors
+- Date: 2026-11-07
+- Area: api
+- Symptom: `POST /incidents/{id}/resolve` without `reusableSolution` returned 400 VALIDATION_FAILED "The request could not be understood" with empty `fieldErrors`. Found by the M8 smoke test.
+- Cause: Jackson 3 (Boot 4) turns `FAIL_ON_NULL_FOR_PRIMITIVES` on by default. A record component of type `boolean` cannot take a missing JSON field, so the whole body is rejected as unreadable. Two DTOs had one: `ResolveRequest.reusableSolution` and `ServiceRequest.alwaysP1`.
+- Fix: both are `Boolean` now and a missing value means false (`Boolean.TRUE.equals(...)` in the controllers).
+- Prevention: request DTOs use wrapper types (`Boolean`, `Integer`) for every optional field; required ones get `@NotNull`, which also gives a proper field error.
+- Status: fixed
+
 ---
 
 ## Known things to watch (not errors yet)

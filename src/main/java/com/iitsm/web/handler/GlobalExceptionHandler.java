@@ -1,5 +1,6 @@
 package com.iitsm.web.handler;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +26,9 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.iitsm.application.auth.AuthenticatedUser;
+import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.event.SecurityAuditEvent;
 import com.iitsm.domain.exception.DuplicateIncidentException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.ItsmException;
@@ -48,6 +54,32 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String VALIDATION_MESSAGE = "Please correct the highlighted fields.";
 
+    private final ApplicationEventPublisher events;
+    private final Clock clock;
+
+    public GlobalExceptionHandler(ApplicationEventPublisher events, Clock clock) {
+        this.events = events;
+        this.clock = clock;
+    }
+
+    /**
+     * Every refused request (403) is audited as ACCESS_DENIED (handbook 2.5 M2, 2.10). The audit listener writes it
+     * in its own transaction, so it survives the rollback of the refused action; a failure here never changes the
+     * error the client gets.
+     */
+    private void auditDenied(HttpServletRequest request, String code, String message) {
+        try {
+            Long actorId = SecurityContextHolder.getContext().getAuthentication() != null
+                    && SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                    instanceof AuthenticatedUser caller ? caller.id() : null;
+            events.publishEvent(new SecurityAuditEvent(AuditAction.ACCESS_DENIED, actorId,
+                    code + " on " + request.getMethod() + " " + request.getRequestURI() + ": " + message,
+                    clock.instant()));
+        } catch (RuntimeException ex) {
+            log.warn("Could not audit a refused request: {}", ex.toString());
+        }
+    }
+
     // ------------------------------------------------------------------ business exceptions
 
     @ExceptionHandler(InputValidationException.class)
@@ -68,6 +100,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ItsmException.class)
     public ResponseEntity<Object> handleItsm(ItsmException ex, HttpServletRequest request) {
         log.debug("Business exception {}: {}", ex.getCode(), ex.getMessage());
+        if (ex.getStatus() == 403) {
+            auditDenied(request, ex.getCode(), ex.getMessage());
+        }
         return respond(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), request.getRequestURI()));
     }
 
@@ -75,6 +110,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        auditDenied(request, "UNAUTHORIZED_OPERATION", "missing permission");
         return respond(ErrorResponse.of(403, "UNAUTHORIZED_OPERATION",
                 "Your role or permissions do not allow this action.", request.getRequestURI()));
     }

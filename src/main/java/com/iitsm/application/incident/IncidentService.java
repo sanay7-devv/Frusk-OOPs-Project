@@ -5,10 +5,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.iitsm.application.assignment.AssignmentService;
+import com.iitsm.application.audit.AuditService.AuditEntryView;
 import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.config.ConfigService;
@@ -16,6 +18,11 @@ import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
 import com.iitsm.application.incident.IncidentViews.IncidentSummary;
 import com.iitsm.domain.assignment.EligibilityFilter;
+import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.audit.AuditRecord;
+import com.iitsm.domain.event.IncidentChanged;
+import com.iitsm.domain.event.TriageNeeded;
+import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.assignment.WorkloadTracker;
 import com.iitsm.domain.category.Category;
 import com.iitsm.domain.config.AppSettings;
@@ -57,8 +64,9 @@ import com.iitsm.domain.user.User;
  * current status (409 INVALID_STATE_TRANSITION), save, return the detail view. One transaction per call, so a
  * failed step changes nothing.
  * <p>
- * Still to come from later modules: duplicate detection and AI category suggestion (M12), domain events and audit
- * (M8). Automatic assignment on creation uses the active M6 strategy.
+ * Every successful action publishes an {@link IncidentChanged} event (Observer, module M8); the audit listener
+ * writes it in the same transaction, so an action never commits without its audit record and a refused one leaves
+ * none. Still to come: duplicate detection and AI category suggestion (M12).
  */
 @Service
 public class IncidentService {
@@ -76,13 +84,16 @@ public class IncidentService {
     private final IncidentAccessPolicy access;
     private final IncidentViewMapper views;
     private final AssignmentService assignment;
+    private final AuditRepository audit;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
                            ItServiceRepository services, CategoryRepository categories, UserRepository users,
                            IncidentFactory factory, PriorityEngine priorityEngine, SlaPolicyResolver slaPolicies,
                            ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
-                           AssignmentService assignment, Clock clock) {
+                           AssignmentService assignment, AuditRepository audit, ApplicationEventPublisher events,
+                           Clock clock) {
         this.incidents = incidents;
         this.search = search;
         this.comments = comments;
@@ -96,6 +107,8 @@ public class IncidentService {
         this.access = access;
         this.views = views;
         this.assignment = assignment;
+        this.audit = audit;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -119,7 +132,38 @@ public class IncidentService {
         recalculatePriority(incident);
         assignment.autoAssign(incident); // stays CLASSIFIED (triage) without a category or an eligible technician
         incident = incidents.save(incident);
+        publishCreation(incident, reporter);
         return views.detail(incident, caller);
+    }
+
+    /** The creation pipeline as audit steps: reported, classified, prioritized, then assigned or sent to triage. */
+    private void publishCreation(Incident incident, User reporter) {
+        IncidentStatus classified = IncidentStatus.CLASSIFIED;
+        publish(incident, AuditAction.INCIDENT_CREATED, reporter, null, IncidentStatus.NEW,
+                "Reported by " + reporter.getName() + " on " + incident.getService().getName());
+        Category category = incident.getCategory();
+        publish(incident, AuditAction.CLASSIFIED, null, IncidentStatus.NEW, classified,
+                category == null ? "No category given: waiting in triage" : "Classified as " + category.getName());
+        publish(incident, AuditAction.PRIORITY_CALCULATED, null, classified, classified, priorityText(incident));
+        if (incident.getStatus() == IncidentStatus.ASSIGNED) {
+            publish(incident, AuditAction.ASSIGNED, null, classified, IncidentStatus.ASSIGNED,
+                    "Assigned to " + incident.getAssignee().getName() + " by the "
+                            + config.current().assignmentStrategy() + " strategy");
+        } else {
+            events.publishEvent(new TriageNeeded(incident.getId(), incident.getCode(), incident.getPriority(),
+                    category == null ? "no category" : "no eligible technician", clock.instant()));
+        }
+    }
+
+    /** GET /incidents/{id}/history: the audit trail; a reporter without staff rights does not see internal notes. */
+    @Transactional(readOnly = true)
+    public List<AuditEntryView> history(AuthenticatedUser caller, Long id) {
+        Incident incident = loadVisible(caller, id);
+        boolean seesInternal = !incident.isReportedBy(caller.id()) || access.seesAll(caller);
+        return audit.findByIncident(incident.getId()).stream()
+                .filter(entry -> seesInternal || !entry.isInternal())
+                .map(AuditEntryView::of)
+                .toList();
     }
 
     /** GET /incidents/{id}/recommendations: top 3 with reasons and factor scores, plus who was excluded and why. */
@@ -171,8 +215,16 @@ public class IncidentService {
         if (expectedVersion != null && expectedVersion != incident.getVersion()) {
             throw new OptimisticLockConflictException();
         }
+        Priority before = incident.getPriority();
         incident.updateDetails(description, impact, urgency, affectedUsers, clock.instant());
         recalculatePriority(incident);
+        boolean changed = before != incident.getPriority();
+        User actor = loadUser(caller.id());
+        publish(incident, changed ? AuditAction.PRIORITY_CHANGED : AuditAction.PRIORITY_CALCULATED,
+                actor, incident.getStatus(), incident.getStatus(),
+                "Details updated by " + actor.getName() + "; "
+                        + (changed ? "priority " + before + " → " + incident.getPriority() + ". " : "")
+                        + priorityText(incident));
         return views.detail(incident, caller);
     }
 
@@ -187,8 +239,12 @@ public class IncidentService {
                 .withBand(priority, "Manually set to " + priority + " by " + actor.getName() + ": " + reason.strip());
         SlaPolicy policy = slaPolicies.resolve(incident.getService(), priority);
         Instant now = clock.instant();
+        Priority before = incident.getPriority();
         incident.applyPriority(manual, policy.responseTarget(), policy.resolutionTarget(), now);
         addNote(incident, actor, CommentVisibility.INTERNAL, "Priority set to " + priority + ": " + reason, now);
+        // the reason is in the internal note, not here: reporters see this entry
+        publish(incident, AuditAction.PRIORITY_CHANGED, actor, incident.getStatus(), incident.getStatus(),
+                "Priority set by hand from " + before + " to " + priority + " by " + actor.getName());
         return views.detail(incident, caller);
     }
 
@@ -207,7 +263,13 @@ public class IncidentService {
                 : assignment.recommend(incident).best()
                         .map(choice -> choice.candidate().technician())
                         .orElseThrow(TechnicianUnavailableException::noneEligible);
+        IncidentStatus before = incident.getStatus();
         assignment.assign(incident, technician);
+        User actor = loadUser(caller.id());
+        publish(incident, AuditAction.ASSIGNED, actor, before, incident.getStatus(),
+                "Assigned to " + technician.getName() + " by " + actor.getName()
+                        + (technicianId == null ? " using the " + config.current().assignmentStrategy() + " strategy"
+                        : ""));
         return views.detail(incident, caller);
     }
 
@@ -218,11 +280,15 @@ public class IncidentService {
         requireReason(reason);
         User technician = loadEligibleTechnician(technicianId, incident);
         Instant now = clock.instant();
+        String previous = incident.getAssignee() == null ? "nobody" : incident.getAssignee().getName();
         incident.reassign(technician, now);
         technician.technicianRole().ifPresent(role -> role.getProfile().markAssigned(now));
         // reassign keeps the status, so it does not go through AssignmentService.assign (which assigns from CLASSIFIED)
-        addNote(incident, loadUser(caller.id()), CommentVisibility.INTERNAL,
-                "Reassigned to " + technician.getName() + ": " + reason, now);
+        User actor = loadUser(caller.id());
+        addNote(incident, actor, CommentVisibility.INTERNAL, "Reassigned to " + technician.getName() + ": " + reason,
+                now);
+        publish(incident, AuditAction.REASSIGNED, actor, incident.getStatus(), incident.getStatus(),
+                "Reassigned from " + previous + " to " + technician.getName() + " by " + actor.getName());
         return views.detail(incident, caller);
     }
 
@@ -232,7 +298,9 @@ public class IncidentService {
     public IncidentDetail acknowledge(AuthenticatedUser caller, Long id) {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.ACKNOWLEDGE);
+        IncidentStatus before = incident.getStatus();
         incident.acknowledge(clock.instant());
+        published(caller, incident, AuditAction.ACKNOWLEDGED, before, "Acknowledged by %s");
         return views.detail(incident, caller);
     }
 
@@ -240,7 +308,9 @@ public class IncidentService {
     public IncidentDetail startWork(AuthenticatedUser caller, Long id) {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.START_WORK);
+        IncidentStatus before = incident.getStatus();
         incident.startWork(clock.instant());
+        published(caller, incident, AuditAction.WORK_STARTED, before, "Work started by %s");
         return views.detail(incident, caller);
     }
 
@@ -250,8 +320,11 @@ public class IncidentService {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.REQUEST_INFO);
         Instant now = clock.instant();
+        IncidentStatus before = incident.getStatus();
         incident.requestInfo(message, now);
         addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
+        published(caller, incident, AuditAction.INFO_REQUESTED, before,
+                "Information requested by %s; resolution clock paused");
         return views.detail(incident, caller);
     }
 
@@ -260,8 +333,11 @@ public class IncidentService {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.PROVIDE_INFO);
         Instant now = clock.instant();
+        IncidentStatus before = incident.getStatus();
         incident.provideInfo(message, now);
         addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
+        published(caller, incident, AuditAction.INFO_PROVIDED, before,
+                "Information provided by %s; resolution clock resumed, due " + incident.getSla().getResolutionDue());
         return views.detail(incident, caller);
     }
 
@@ -272,7 +348,9 @@ public class IncidentService {
         access.require(caller, incident, IncidentAction.RESOLVE);
         Resolution resolution = new Resolution(rootCause, notes, steps,
                 timeSpentMinutes == null ? 0 : timeSpentMinutes, reusableSolution);
+        IncidentStatus before = incident.getStatus();
         incident.resolve(resolution, clock.instant());
+        published(caller, incident, AuditAction.RESOLVED, before, "Resolved by %s");
         return views.detail(incident, caller);
     }
 
@@ -280,7 +358,9 @@ public class IncidentService {
     public IncidentDetail verify(AuthenticatedUser caller, Long id) {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.VERIFY);
+        IncidentStatus before = incident.getStatus();
         incident.verify(clock.instant());
+        published(caller, incident, AuditAction.VERIFIED, before, "Fix confirmed by %s");
         return views.detail(incident, caller);
     }
 
@@ -288,7 +368,9 @@ public class IncidentService {
     public IncidentDetail close(AuthenticatedUser caller, Long id) {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.CLOSE);
+        IncidentStatus before = incident.getStatus();
         incident.close(ClosureReason.VERIFIED, clock.instant());
+        published(caller, incident, AuditAction.CLOSED, before, "Closed by %s (reason VERIFIED)");
         return views.detail(incident, caller);
     }
 
@@ -300,8 +382,11 @@ public class IncidentService {
         AppSettings settings = config.current();
         SlaPolicy policy = slaPolicies.resolve(incident.getService(), incident.getPriority());
         Instant now = clock.instant();
+        IncidentStatus before = incident.getStatus();
         incident.reopen(reason, now, settings.reopenWindow(), policy.resolutionTarget());
         addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, "Reopened: " + reason, now);
+        published(caller, incident, AuditAction.REOPENED, before,
+                "Reopened by %s; resolution clock restarted, due " + incident.getSla().getResolutionDue());
         return views.detail(incident, caller);
     }
 
@@ -319,10 +404,34 @@ public class IncidentService {
         }
         IncidentComment saved = comments.save(
                 new IncidentComment(incident, loadUser(caller.id()), chosen, body, clock.instant()));
+        published(caller, incident, AuditAction.COMMENT_ADDED, incident.getStatus(),
+                chosen == CommentVisibility.INTERNAL ? AuditRecord.INTERNAL_PREFIX + " added by %s"
+                        : "Comment added by %s");
         return views.comment(saved);
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /** Publishes the event of an action the caller just performed; {@code template} has one %s for the name. */
+    private void published(AuthenticatedUser caller, Incident incident, AuditAction action, IncidentStatus before,
+                           String template) {
+        User actor = loadUser(caller.id());
+        publish(incident, action, actor, before, incident.getStatus(), template.formatted(actor.getName()));
+    }
+
+    private void publish(Incident incident, AuditAction action, User actor, IncidentStatus before,
+                         IncidentStatus after, String description) {
+        events.publishEvent(new IncidentChanged(incident.getId(), incident.getCode(), action,
+                actor == null ? null : actor.getId(), before, after, description, clock.instant()));
+    }
+
+    private static String priorityText(Incident incident) {
+        PriorityBreakdown b = incident.getPriorityBreakdown();
+        return "Priority " + b.band() + " (score " + b.score() + ")"
+                + (b.overrideRule() == null ? "" : ", rule: " + b.overrideRule())
+                + "; response due " + incident.getSla().getResponseDue()
+                + ", resolution due " + incident.getSla().getResolutionDue();
+    }
 
     /**
      * Runs the priority engine with the live settings and applies the result together with the SLA targets of the

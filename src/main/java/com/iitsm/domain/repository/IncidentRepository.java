@@ -24,5 +24,8 @@ public interface IncidentRepository {
 
     long countByAssignee_IdAndResolvedAtAfter(Long assigneeId, Instant since);
 
+    /** SLA monitor: ids of incidents in the given states with deadlines set and at least one clock not violated. */
+    List<Long> findSlaMonitorCandidates(Collection<IncidentStatus> statuses);
+
     Incident save(Incident incident);
 }

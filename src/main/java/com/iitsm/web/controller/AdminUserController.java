@@ -90,15 +90,18 @@ public class AdminUserController {
     @PostMapping("/users/{id}/roles")
     @Operation(summary = "Add TECHNICIAN (with profile) or ADMINISTRATOR (with scope)")
     @ApiErrors({ErrorCode.USER_NOT_FOUND})
-    public AdminUserView addRole(@PathVariable Long id, @Valid @RequestBody AddRoleRequest request) {
-        return admin.addRole(id, request.roleType(), spec(request.technician()), scope(request.administrator()));
+    public AdminUserView addRole(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                 @Valid @RequestBody AddRoleRequest request) {
+        return admin.addRole(caller.id(), id, request.roleType(), spec(request.technician()),
+                scope(request.administrator()));
     }
 
     @DeleteMapping("/users/{id}/roles/{roleType}")
     @Operation(summary = "Remove a role (EMPLOYEE stays; TECHNICIAN only without active incidents)")
     @ApiErrors({ErrorCode.USER_NOT_FOUND})
-    public AdminUserView removeRole(@PathVariable Long id, @PathVariable RoleType roleType) {
-        return admin.removeRole(id, roleType);
+    public AdminUserView removeRole(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                    @PathVariable RoleType roleType) {
+        return admin.removeRole(caller.id(), id, roleType);
     }
 
     @PutMapping("/technicians/{id}/skills")

@@ -2,6 +2,8 @@ package com.iitsm.domain.incident;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -86,9 +88,20 @@ public class SlaTracker {
      */
     void retarget(Instant createdAt, Duration responseTarget, Duration resolutionTarget, boolean responseStopped) {
         if (!responseStopped) {
-            responseDue = createdAt.plus(responseTarget);
+            Instant newDue = createdAt.plus(responseTarget);
+            if (!newDue.equals(responseDue) && !responseViolated) {
+                // a new deadline gets its own warnings (decision DEC-37)
+                responseFirstWarningSent = false;
+                responseSecondWarningSent = false;
+            }
+            responseDue = newDue;
         }
-        resolutionDue = createdAt.plus(resolutionTarget).plusSeconds(pausedSeconds);
+        Instant newDue = createdAt.plus(resolutionTarget).plusSeconds(pausedSeconds);
+        if (!newDue.equals(resolutionDue) && !resolutionViolated) {
+            resolutionFirstWarningSent = false;
+            resolutionSecondWarningSent = false;
+        }
+        resolutionDue = newDue;
     }
 
     void pause(Instant now) {
@@ -114,6 +127,57 @@ public class SlaTracker {
         resolutionViolated = false;
         resolutionFirstWarningSent = false;
         resolutionSecondWarningSent = false;
+    }
+
+    /**
+     * One run of the SLA monitor over this incident (handbook 1.7, 2.5 M7). For each open clock: the first warning
+     * at {@code firstPercent} of the deadline, the second at {@code secondPercent}, a violation once the deadline has
+     * passed. Every flag is set when its alert fires, so an alert fires exactly once however often the monitor runs
+     * or restarts. If a run finds a clock past several thresholds at once, only the highest alert fires and the
+     * lower ones are marked as sent (no burst of stale warnings). A paused resolution clock raises nothing.
+     *
+     * @return the alerts that fired now, possibly none
+     */
+    List<SlaAlert> check(Instant now, boolean responseOpen, boolean resolutionOpen, Duration responseTarget,
+                         Duration resolutionTarget, int firstPercent, int secondPercent) {
+        List<SlaAlert> alerts = new ArrayList<>(2);
+        if (responseOpen && responseDue != null && !responseViolated) {
+            SlaAlert.Level level = levelReached(now, responseDue, responseTarget, firstPercent, secondPercent,
+                    responseFirstWarningSent, responseSecondWarningSent);
+            if (level != null) {
+                responseFirstWarningSent = true;
+                responseSecondWarningSent |= level != SlaAlert.Level.FIRST_WARNING;
+                responseViolated = level == SlaAlert.Level.VIOLATION;
+                alerts.add(SlaAlert.of(SlaClockType.RESPONSE, level, now, responseDue, responseTarget));
+            }
+        }
+        if (resolutionOpen && resolutionDue != null && !resolutionViolated && !isPaused()) {
+            SlaAlert.Level level = levelReached(now, resolutionDue, resolutionTarget, firstPercent, secondPercent,
+                    resolutionFirstWarningSent, resolutionSecondWarningSent);
+            if (level != null) {
+                resolutionFirstWarningSent = true;
+                resolutionSecondWarningSent |= level != SlaAlert.Level.FIRST_WARNING;
+                resolutionViolated = level == SlaAlert.Level.VIOLATION;
+                alerts.add(SlaAlert.of(SlaClockType.RESOLUTION, level, now, resolutionDue, resolutionTarget));
+            }
+        }
+        return alerts;
+    }
+
+    /** The highest alert this clock has reached and not yet raised, or null. */
+    private static SlaAlert.Level levelReached(Instant now, Instant due, Duration target, int firstPercent,
+                                               int secondPercent, boolean firstSent, boolean secondSent) {
+        if (!now.isBefore(due)) {
+            return SlaAlert.Level.VIOLATION;
+        }
+        double elapsed = elapsedPercent(now, due, target);
+        if (elapsed >= secondPercent && !secondSent) {
+            return SlaAlert.Level.SECOND_WARNING;
+        }
+        if (elapsed >= firstPercent && !firstSent && !secondSent) {
+            return SlaAlert.Level.FIRST_WARNING;
+        }
+        return null;
     }
 
     /**
@@ -143,7 +207,7 @@ public class SlaTracker {
     }
 
     /** How much of a clock has run, in percent: 100 - remaining / target. */
-    private static double elapsedPercent(Instant now, Instant due, Duration target) {
+    static double elapsedPercent(Instant now, Instant due, Duration target) {
         if (target == null || target.isZero()) {
             return 0;
         }

@@ -48,6 +48,10 @@
 | [DEC-32](#dec-32-round-robin-as-the-universal-tie-breaker) | Round-robin as the universal tie-breaker | 2026-11-06 | M6 | ✅ |
 | [DEC-33](#dec-33-auto-assign-on-creation-only-when-the-incident-has-a-category) | Auto-assign on creation only with a category | 2026-11-06 | M6 | ✅ |
 | [DEC-34](#dec-34-admin-user-management-rules) | Admin user management rules | 2026-11-06 | M2 | ✅ |
+| [DEC-35](#dec-35-full-scope-no-timeline) | Full scope, no timeline | 2026-11-07 | All | ✅ |
+| [DEC-36](#dec-36-api-contract-generated-from-code-plus-a-planned-resource) | API contract generated from code plus a planned resource | 2026-11-07 | Contract | ✅ |
+| [DEC-37](#dec-37-sla-monitor-one-transaction-per-incident-fire-once-alerts) | SLA monitor: one transaction per incident, fire-once alerts | 2026-11-07 | M7 | ✅ |
+| [DEC-38](#dec-38-audit-trail-through-events-same-transaction-for-actions-own-transaction-for-refusals) | Audit trail through events: same transaction for actions, own transaction for refusals | 2026-11-07 | M8 | ✅ |
 
 ---
 
@@ -66,7 +70,7 @@
 | Option | For | Against |
 |---|---|---|
 | **Layered monolith** ✔ | Simple to run (one process), easy to debug, clear separation for OOP | One database is a scaling point |
-| Microservices | Independent scaling and deployment | Network calls, distributed transactions, much more ops work for a 4-person, 6-week project |
+| Microservices | Independent scaling and deployment | Network calls, distributed transactions, much more ops work for a 4-person course project |
 | Plain MVC without a domain layer | Fastest to write | Business rules end up in controllers; hard to show OOP and to test |
 
 **Why.** The course grades OOP design, and a pure domain layer is where State, Strategy and Factory are visible and testable without Spring. The scale (hundreds of users, a few thousand incidents) does not need distribution.
@@ -163,7 +167,7 @@
 |---|---|---|---|
 | 2026-11-06, start of M2 | M2 | ⏳ until the V1 to V6 migrations arrive | ROADMAP D-006 |
 
-**Decision.** A separate profile lets Hibernate create the tables from the entities while the migration files (owned by the Testing teammate) are late. Entities are written strictly to Appendix A, so the switch back is: delete the profile, drop the local database once, start with Flyway and `validate`.
+**Decision.** A separate profile lets Hibernate create the tables from the entities while the migration files (owned by the Testing teammate) have not arrived. Entities are written strictly to Appendix A, so the switch back is: delete the profile, drop the local database once, start with Flyway and `validate`.
 
 **Options considered.** Wait for the migrations · write the SQL ourselves (outside our ownership) · **temporary Hibernate profile** ✔.
 
@@ -477,6 +481,137 @@ Some endpoints listed under M2 and M4 in the contract are not built yet. Two kin
 | Attachments (upload, list, download) | Can be done now; the safety checks (type, 5 MB, safe names) are M14 rules but can be built together |
 
 **Cross-questions.** *"Why is M4 not complete?"* Its core (the full lifecycle, creation pipeline, assignment rules, SLA clocks, concurrency) is done and tested; the remaining endpoints belong to features whose logic lives in later modules (audit, escalation, similarity), so they are built there instead of as throw-away stubs.
+
+### DEC-35: Full scope, no timeline
+
+| When | Module | Status | Also in |
+|---|---|---|---|
+| 2026-11-07 | All | ✅ | ROADMAP D-012, CLAUDE.md |
+
+**Decision.** Every feature in the handbook is built in full. The handbook's week-by-week plan, feature and code freeze dates, scope tiers (Tier 1/2/3) and cut order are not used. Work is ordered only by module dependencies (ROADMAP section 5). The extras the handbook labels "Tier 3" are built inside their modules:
+
+| Extra | Built with |
+|---|---|
+| Business-hours calendar (`BusinessHoursCalendar`, `CalendarType.BUSINESS_HOURS`) | M7 SLA engine |
+| Notification preferences | M9 notifications |
+| PDF export, saved views (`saved_filters`) | M10 search and reports |
+| Thread summarizer | M12 intelligence and AI |
+| Dependency graph and impact | M13 real-time and graph |
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **Full scope, dependency order** ✔ | Every module and extra is demonstrable; nothing is half-promised in the report | More to build and test |
+| Handbook tiers with cut order | Protects the core if time runs short | Extras risk being dropped; less to show for innovation and UX |
+
+**Why.** User decision: the aim is a complete system, and the extras add to the innovation and user-experience marks.
+
+**Trade-off.** No fixed dates to integrate against, so each module is handed to the team as soon as it is verified (contract first, then each module's endpoints).
+
+**Cross-questions.** *"Did you build the optional parts?"* Yes, nothing in the handbook was treated as optional; each extra lives in the module it belongs to (table above). *"Why is the handbook PDF unchanged?"* It is the team's shared reference; this record and the roadmap state the scope rule.
+
+### DEC-36: API contract generated from code plus a planned resource
+
+| When | Module | Status | Also in |
+|---|---|---|---|
+| 2026-11-07 | Contract | ✅ | ROADMAP D-013, `docs/openapi/README.md` |
+
+**Decision.** springdoc generates the OpenAPI contract from the controllers and DTOs. Each controller method declares the error codes it can return with `@ApiErrors`; `ApiErrorsCustomizer` turns them into responses with the standard error body and an example. Endpoints of modules not built yet are written once as `openapi/planned-endpoints.json` (from Appendices B and C) and merged in by `PlannedEndpointsCustomizer` under the tag "Planned", each with `x-module` naming the module that delivers it. A planned operation never replaces an implemented one. The exported files in `docs/openapi` are what the team imports.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| Hand-written YAML first, code generated from it | Classic contract-first | Two sources of truth; drifts as soon as code changes; generators fight our DTO style |
+| **Generated from code + planned resource** ✔ | Implemented part is always exact; the team still sees the whole API now | Planned part is hand-written until its module lands |
+| Generated from code only | Simplest | Frontend and Testing cannot mock modules that do not exist yet |
+
+**Why.** The handbook says the generated file is the final truth. Generating it removes drift for everything built, and the planned resource keeps the contract complete for the other roles.
+
+**Trade-off.** The planned file must be pruned as modules land (a planned path that is now implemented is simply ignored, so a stale entry cannot break the contract, but it should be deleted).
+
+**Cross-questions.** *"Is this really contract-first?"* The agreed shapes (Appendices B and C) came first and every endpoint exists in the published contract before it is built; the code then becomes the source for the built part. *"How do you know every error is documented?"* `check_contract.py` fails if an implemented operation lists no 4xx/5xx response, and the endpoint sweep compares the live spec with what the app actually returns.
+
+---
+
+## M7 SLA engine
+
+### DEC-37: SLA monitor: one transaction per incident, fire-once alerts
+
+| When | Module | Status | Also in |
+|---|---|---|---|
+| 2026-11-07 | M7 | ✅ | ROADMAP D-014, SYSTEM_GUIDE section 11 |
+
+**Decision.** A scheduled job (`SlaMonitorJob`) runs `SlaMonitor` on the interval in `sla.monitor.interval.seconds`, re-read after every run. The monitor loads the ids of open incidents with a clock not yet violated, then checks each one in its own short transaction. The rules live in the domain: `Incident.checkSla` hands both clocks to `SlaTracker.check`, which flips the fire-once flags and returns the alerts (`SlaAlert`). A violation becomes an `sla_violations` row; every alert is published as a `SlaWarning` or `SlaViolated` event for the audit and notification listeners (M8, M9).
+
+Smaller rules the handbook left open:
+
+| Topic | Our rule | Reason |
+|---|---|---|
+| A run finds a clock past several thresholds (app was down, monitor late) | Only the highest alert fires; the lower flags are marked sent | Two warnings and a violation in the same second is noise, not information |
+| Priority change moves a deadline | Warnings for that clock reset (violations stay) | A new deadline deserves its own warnings; a missed one stays missed |
+| Pause and resume move the resolution deadline | Warnings are not reset | Same deadline, only shifted; the handbook says each warning fires once |
+| Paused clock | Raises nothing | The deadline is not running |
+| `overdue_seconds` | How late the deadline was when the monitor noticed | Up to one interval after the deadline; the exact due time is on the incident |
+| `technician_id` on a violation | The assignee at that moment (null if none) | For per-technician SLA reports (M10) |
+
+**Options considered (transactions).**
+
+| Option | For | Against |
+|---|---|---|
+| One transaction for the whole run | Simple | One bad incident (missing policy, concurrent edit) rolls back every alert of the run |
+| **One transaction per incident** ✔ | A failure is logged and retried next run; the others go through | A few more round trips (fine for hundreds of open incidents) |
+
+**Trade-off.** Setting a flag changes the incident, so its `version` goes up: a user who saves the same incident in that instant gets 409 `OPTIMISTIC_LOCK_CONFLICT` and reloads. That is rare (only when an alert fires) and keeps every write safe. The alternative, excluding the flags from optimistic locking, would let a user's save overwrite a flag the monitor just set, and the warning would fire twice.
+
+**Cross-questions.**
+- *"What if the app restarts in the middle?"* Flags are stored with the incident, so the next run skips what already fired and picks up the rest.
+- *"Why not compute violations on read only?"* `slaState` is computed on read (DEC-23), but a violation must be recorded once, with a row, an audit entry and notifications; that needs a job.
+- *"How do you test 75 % of a 5-minute clock without waiting?"* The `Clock` is injected (DEC-13); the smoke test moves the deadlines in the database and lets the monitor run every 5 s.
+
+---
+
+## M8 Events and audit trail
+
+### DEC-38: Audit trail through events: same transaction for actions, own transaction for refusals
+
+| When | Module | Status | Also in |
+|---|---|---|---|
+| 2026-11-07 | M8 | ✅ | ROADMAP D-015, SYSTEM_GUIDE section 12 |
+
+**Decision.** Application services publish small immutable events after each successful action; `AuditListener` (Observer) writes the audit record. Three event types:
+
+| Event | Published by | Audit transaction |
+|---|---|---|
+| `IncidentChanged` (action, actor, previous and new status, description) | `IncidentService` for every lifecycle move, edit, assignment, comment | **Same** as the action: no commit without its record, a refused action leaves none |
+| `SlaWarning`, `SlaViolated` | `SlaMonitor` | Same as the monitor's per-incident transaction |
+| `SecurityAuditEvent` (LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED) | `AuthService`, the global error handler (every 403), `UserAdminService`, `ConfigService` | **New** (`REQUIRES_NEW`): the request that caused a refusal rolls back, the record must not |
+
+`TriageNeeded` is published too (for M9 notifications) but not audited: the creation entries already say "waiting in triage".
+
+**Options considered (event types).**
+
+| Option | For | Against |
+|---|---|---|
+| One record per handbook event (IncidentCreated, IncidentAcknowledged, ... 15 types) | Names match the catalog one to one | 15 near-identical records; the audit listener needs 15 methods doing the same thing |
+| **One `IncidentChanged` carrying the action** ✔, plus separate records where the data differs (SLA, triage, security) | One listener method for every lifecycle step; adding a step adds no class | Listeners that care about one step filter on `action` |
+
+**Smaller rules.**
+
+| Topic | Our rule | Reason |
+|---|---|---|
+| Creation | Four entries: INCIDENT_CREATED (reporter), CLASSIFIED, PRIORITY_CALCULATED, ASSIGNED (system) | The pipeline is visible step by step, as the handbook describes it |
+| Actions that keep the status (comment, reassign, priority) | `previousState` = `newState` = current status | The entry still shows where the incident was |
+| "Employees see non-internal entries" | The schema has no visibility column, so an entry is internal when its description starts with "Internal note" (internal comments). Reporters without staff rights do not see those; override and reassign reasons stay in internal comments, never in the audit description | Same rule as comments (INTERNAL hidden from the reporter) |
+| Every 403 | Audited as ACCESS_DENIED with method, path and code | Handbook 2.10: failures worth auditing |
+| Failed login | LOGIN_FAILED with the account as actor (null for an unknown email, which is named in the description) | Lets an admin see guessing attempts |
+| Append-only | Entity is `@Immutable`; the repository is hand-written with only insert and read | The DB trigger that rejects UPDATE/DELETE belongs to the Testing teammate's migrations |
+
+**Cross-questions.**
+- *"How do you guarantee an action is never saved without its audit record?"* The listener is synchronous and runs inside the action's transaction; if the insert fails, the action rolls back.
+- *"Then how is a refused request audited, since it rolls back?"* Refusals use a separate event type whose listener opens its own transaction.
+- *"Can an admin edit the log?"* No endpoint writes it, the entity is immutable and the repository has no update or delete; at the database level a trigger (V5 migration) will refuse both.
 
 ---
 
