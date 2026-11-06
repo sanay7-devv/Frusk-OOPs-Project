@@ -82,6 +82,8 @@ Cut order if behind: Google sign-in (M2b), thread summarizer, PDF export, saved 
 
 ## 6. Decisions log
 
+Short index. The full, interview-ready reasoning for every decision (when, options, why, trade-offs, likely cross-questions) is in `docs/DECISIONS.md`.
+
 | ID | Date | Decision | Reason |
 |---|---|---|---|
 | D-001 | 2026-10-15 | APPROVED, will be implemented as module M2b. Google sign-in is an extra on top of email/password JWT login. Frontend uses the Google Sign-In button, backend exposes `POST /auth/google { idToken }`, verifies the ID token (audience = our client id, issuer, expiry, email_verified), and returns the normal `AuthResponse` (same JWT access/refresh tokens). No `oauth2-client` starter. Schema: `users.password_hash` nullable, new `users.google_sub` (unique, nullable). Rules: first Google login creates an EMPLOYEE-only user (same as register); an existing account with the same email is linked by storing `google_sub`; Google-only users have no password, so password login for them returns INVALID_CREDENTIALS; lockout and rate limiting apply as for normal login. New env var `GOOGLE_CLIENT_ID` (add to `.env.example`). Built only after M2 works. | Easier sign-up/sign-in, but must not replace password login (tests T19/T20 and the seed users depend on it). Contract and schema changes go through the normal pull-request process. |

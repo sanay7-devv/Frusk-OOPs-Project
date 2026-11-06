@@ -1230,7 +1230,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 ## 13. Key decisions
 
-Full details in `docs/ROADMAP.md`, section 6.
+Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.md`**. Short index: `docs/ROADMAP.md`, section 6.
 
 | ID | Decision | In one line |
 |---|---|---|
