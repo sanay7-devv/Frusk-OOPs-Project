@@ -680,7 +680,7 @@ Smoke run against the running app and PostgreSQL: **42 of 42 checks passed**. Hi
 | Categories and skills | Tree Network → VPN; moving a category under its own child refused; deleting a skill still required by a category refused; unused skill deleted |
 | SLA policies | Second global default for P1 refused; Payment-specific P1 3 / 20 created; duplicate service + priority refused; resolution ≤ response refused; changing priority on update refused; targets updated |
 | Escalation | Level 2 before level 1 refused; levels 1 to 3 created; deleting level 1 while level 2 exists refused; P3 refused |
-| Configuration | 27 settings listed with defaults; weights not summing to 1.0, unknown key and first warning after second → 400 keyed by config key; **done-when: setting `security.lockout.attempts` to 2 made the next account lock after two failures, with no restart** |
+| Configuration | 27 settings listed with defaults (30 since M6); weights not summing to 1.0, unknown key and first warning after second → 400 keyed by config key; **done-when: setting `security.lockout.attempts` to 2 made the next account lock after two failures, with no restart** |
 | Schema | All M3 tables match Appendix A.2, including `CHAR(2)` priorities and every `CHECK` and unique constraint |
 
 ---
@@ -816,11 +816,12 @@ sequenceDiagram
     S->>R: resolve(service, P1)
     R-->>S: Payment P1 policy (3 / 20 minutes)
     S->>S: applyPriority → response due +3 min, resolution due +20 min
+    S->>S: auto-assign with the active strategy (M6, section 10)
     S->>DB: save
     C-->>E: 201 IncidentDetail
 ```
 
-Not yet in the pipeline (they come with their modules): the duplicate check and AI category suggestion (M12), automatic technician assignment (M6; until then a new incident waits in CLASSIFIED and an admin or team lead assigns it), events and audit records (M8).
+Since M6 the pipeline ends by assigning the best eligible technician with the active strategy (section 10); without a category, or with nobody eligible, the incident waits in CLASSIFIED (triage) for an admin or team lead. Not yet in the pipeline (they come with their modules): the duplicate check and AI category suggestion (M12), events and audit records (M8).
 
 ### 8.4 Who may do what
 
@@ -873,7 +874,7 @@ Every incident has a `version` column (optimistic locking). If two people save t
 | `GET /api/v1/incidents` | any (filtered by role) | Filters: `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`; paging `page`, `size` (max 100); `sort=createdAt,desc` (also `priority`, `status`, `code`, `resolutionDue`) |
 | `GET /api/v1/incidents/{id}` | participant | IncidentDetail with `allowedActions` |
 | `PUT /api/v1/incidents/{id}` | reporter, admin | priority and deadlines recalculated |
-| `POST /api/v1/incidents/{id}/assign` · `/reassign` | admin, team lead | eligibility checked |
+| `POST /api/v1/incidents/{id}/assign` · `/reassign` | admin, team lead | eligibility checked; assign without `technicianId` uses the active strategy (M6) |
 | `POST /api/v1/incidents/{id}/acknowledge` · `/start` · `/request-info` · `/resolve` | assignee | |
 | `POST /api/v1/incidents/{id}/provide-info` · `/verify` | reporter | |
 | `POST /api/v1/incidents/{id}/close` | admin | |
@@ -1401,7 +1402,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | D-007 | Role mapping: single-table hierarchy + one profile table per role | Real OOP while keeping the agreed schema |
 | D-008 | Auth design | Permission-based authorities, stateless access tokens, rotating hashed refresh tokens with theft detection |
 | D-009 | Catalog and configuration design | Soft delete for services and categories, cycle-free service graph, global SLA uniqueness checked in code, settings as a validated immutable snapshot swapped after commit |
-| D-010 | Incident design | State pattern with stateless state singletons; 403 for "who", 409 for "status"; team lead sees all incidents; strangers get 404; manual assignment only until M6; messages and reasons stored as comments |
+| D-010 | Incident design | State pattern with stateless state singletons; 403 for "who", 409 for "status"; team lead sees all incidents; strangers get 404; messages and reasons stored as comments; automatic assignment added in M6 |
 | D-011 | Assignment and admin users | Service familiarity as a fifth factor, skill = best + coverage, explainable recommendations with excluded list (team decisions); round-robin tie-break; auto-assign only with a category; admin user rules |
 
 ---

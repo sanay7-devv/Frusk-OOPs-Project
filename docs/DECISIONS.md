@@ -315,7 +315,7 @@
 |---|---|---|---|
 | 2026-11-06 | M3 | ✅ | ROADMAP D-009 |
 
-**Decision.** All 27 settings are defined in the `ConfigKey` enum (default, meaning, allowed range). `AppSettings` is an immutable snapshot validated as a whole, including cross-key rules (weights sum to 1.0, bands descend). `ConfigService` keeps the snapshot in memory and swaps in a new one **after** the database commit.
+**Decision.** All settings (27 from the handbook, 30 since DEC-28) are defined in the `ConfigKey` enum (default, meaning, allowed range). `AppSettings` is an immutable snapshot validated as a whole, including cross-key rules (weights sum to 1.0, bands descend). `ConfigService` keeps the snapshot in memory and swaps in a new one **after** the database commit.
 
 **Options considered.** Constants in code · `application.properties` · read the table on every use · **cached immutable snapshot** ✔.
 
