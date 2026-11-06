@@ -144,17 +144,34 @@ Entry template:
 - Cause: the mail catcher (Mailpit, SMTP on 1025) is not running yet, and Actuator's mail health indicator tries to connect to it. The call came through JMX (the IntelliJ run configuration exposes all endpoints over JMX), not through HTTP.
 - Fix: `management.health.mail.enabled=false` in `application.properties`, so a mail outage can never turn `/actuator/health` DOWN. Notifications will degrade gracefully instead. Mailpit is started when M9 (notifications) is built: `docker run --name iitsm-mail -p 1025:1025 -p 8025:8025 -d axllent/mailpit`.
 - Prevention: when a starter adds a health indicator for an external service, decide whether that service is critical to the app being "up" before leaving it on.
-- Status: fixed (pending restart to confirm the warning is gone)
+- Status: fixed (confirmed 2026-11-06: no mail warning on restart)
+
+### E-015: Port 8080 already in use, but netstat shows nothing
+- Date: 2026-11-06
+- Area: config
+- Symptom: `Web server failed to start. Port 8080 was already in use.` `netstat -ano | findstr :8080` printed nothing.
+- Cause: a Windows service named `AgentService` (not ours) listens on the IPv6 wildcard `[::]:8080`; the Git Bash/`findstr` netstat check missed it. Found with PowerShell `Get-NetTCPConnection | Where-Object LocalPort -eq 8080`, which showed the owning PID.
+- Fix: run locally on another port with the environment variable `SERVER_PORT=8081`. Code and Docker defaults stay on 8080.
+- Prevention: check ports with `Get-NetTCPConnection` (it shows IPv6 listeners and the owning process), not only netstat.
+- Status: fixed (workaround on this machine)
+
+### E-016: Hibernate `@Check` on an element collection generated the constraint twice
+- Date: 2026-11-06
+- Area: db
+- Symptom: with the `schema-auto` profile, `create table technician_skills` failed: `ERROR: check constraint "ck_technician_skills_proficiency" already exists`. The app still started (ddl-auto only logs DDL errors), but the table was missing.
+- Cause: `org.hibernate.annotations.@Check` placed on the `@ElementCollection` field of `SkillSet` was emitted both as a column constraint and as a table constraint with the same name in one CREATE TABLE.
+- Fix: replaced it with the JPA 3.2 column-level form `@Column(check = @CheckConstraint(name = ..., constraint = ...))`. The table now has `proficiency smallint` with one `CHECK (1..5)`, as in Appendix A.1. Also changed the map value from Integer to Short because the column is SMALLINT (the first run had produced `integer`).
+- Prevention: after a schema-auto start, read the startup log for `CommandAcceptanceException` and compare `\d <table>` with Appendix A; ddl-auto does not fail the start on DDL errors, and `update` never changes an existing column type (drop the table first).
+- Status: fixed (confirmed 2026-11-06)
 
 ---
 
 ## Known things to watch (not errors yet)
 
-- M1 compiles and the app starts (confirmed 2026-10-16: Postgres on 5433, Flyway, RequestIdFilter registered). Still not exercised over HTTP: the standard-format 401, the `ObjectMapper` bean in `ApiErrorWriter` and the Security 7 header DSL only run on a real request. Paste the exact error into a new entry if one appears.
+- M1 verified over HTTP (2026-11-06): an unauthenticated request returns 401 `TOKEN_INVALID` in the standard body (so `ApiErrorWriter` and its `ObjectMapper` work), unknown paths return 404 `NOT_FOUND` in the standard body, and `X-Request-Id` and `X-Frame-Options: DENY` headers are present.
 - IDE inspection warnings in `GlobalExceptionHandler` are accepted, not errors: "Not annotated parameter overrides @NullMarked parameter" (Spring 7 uses JSpecify null annotations; only matters with a strict null checker such as NullAway, which we do not use), "Parameter 'ex' is never used" (the exception parameter is required so Spring can route to the handler method), and the spell checker flagging `Itsm` (add it to the IDE dictionary).
 - Startup log shows `Using generated security password` (Boot's default in-memory user) and Flyway `No migrations found`: both expected and harmless until M2 (real `UserDetailsService`) and V1 (first migration).
 - `SecurityConfig` currently has no JWT filter, so every non-public endpoint returns 401 in the standard format until M2. Health, Swagger UI and `/api/v1/auth/{register,login,refresh}` are public.
 - Boot 4 specifics: Jackson 3 (`tools.jackson.*` packages), Spring Security 7, Hibernate 7. If a library pulls in Jackson 2, it needs the compatibility module or a different serializer (that is why jjwt uses Gson here). springdoc 3.0.3 was built against Boot 4.0.5, check Maven Central for a newer 3.x if Swagger UI misbehaves on 4.1.1. Check Maven Central for a newer 4.1.x patch of the parent before the first commit.
-- Spring Security locks every endpoint (including `/actuator/health` and Swagger UI) by default until we write the security config in M2.
 - `IitsmBackendApplicationTests.contextLoads` will fail without a running database (or Testcontainers). Expected until the test setup is done by the Testing teammate.
 - Flyway will warn about a missing/empty `db/migration` location until V1 is added.
