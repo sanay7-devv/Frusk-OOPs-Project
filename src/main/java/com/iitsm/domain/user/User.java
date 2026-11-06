@@ -253,7 +253,7 @@ public class User {
 
     @Override
     public boolean equals(Object o) {
-        return this == o || (o instanceof User other && id != null && id.equals(other.id));
+        return this == o || (o instanceof User other && id != null && id.equals(other.getId()));
     }
 
     @Override

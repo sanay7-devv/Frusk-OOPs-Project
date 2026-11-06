@@ -40,7 +40,7 @@ public class Skill {
 
     @Override
     public boolean equals(Object o) {
-        return this == o || (o instanceof Skill other && id != null && id.equals(other.id));
+        return this == o || (o instanceof Skill other && id != null && id.equals(other.getId()));
     }
 
     @Override

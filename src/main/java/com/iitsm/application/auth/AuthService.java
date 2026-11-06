@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.iitsm.application.auth.AccessTokenIssuer.IssuedAccessToken;
+import com.iitsm.application.config.ConfigService;
+import com.iitsm.domain.config.AppSettings;
+import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.AccountLockedException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.InvalidCredentialsException;
@@ -47,8 +50,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AccessTokenIssuer accessTokenIssuer;
     private final Clock clock;
-    private final int lockoutAttempts;
-    private final Duration lockoutDuration;
+    private final ConfigService config;
     private final Duration refreshTokenLifetime;
     private final SecureRandom random = new SecureRandom();
     /** Compared against when the email is unknown, so both failure paths take the same BCrypt time. */
@@ -56,8 +58,7 @@ public class AuthService {
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens, UserFactory userFactory,
                        PasswordEncoder passwordEncoder, AccessTokenIssuer accessTokenIssuer, Clock clock,
-                       @Value("${app.security.lockout-attempts}") int lockoutAttempts,
-                       @Value("${app.security.lockout-minutes}") int lockoutMinutes,
+                       ConfigService config,
                        @Value("${app.jwt.refresh-token-days}") int refreshTokenDays) {
         this.users = users;
         this.refreshTokens = refreshTokens;
@@ -65,8 +66,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.accessTokenIssuer = accessTokenIssuer;
         this.clock = clock;
-        this.lockoutAttempts = lockoutAttempts;
-        this.lockoutDuration = Duration.ofMinutes(lockoutMinutes);
+        this.config = config;
         this.refreshTokenLifetime = Duration.ofDays(refreshTokenDays);
         this.dummyHash = passwordEncoder.encode("timing-equalizer-not-a-password");
     }
@@ -100,14 +100,15 @@ public class AuthService {
             passwordEncoder.matches(rawPassword, dummyHash);
             throw new InvalidCredentialsException();
         }
+        AppSettings settings = config.current(); // live app_config values: a change applies to the next login
         if (user.isLockedAt(now)) {
-            throw new AccountLockedException();
+            throw new AccountLockedException(settings.intValue(ConfigKey.SECURITY_LOCKOUT_MINUTES));
         }
         boolean passwordMatches = user.getPasswordHash()
                 .map(hash -> passwordEncoder.matches(rawPassword, hash))
                 .orElse(false); // Google-only users have no password (D-001)
         if (!passwordMatches || !user.isActive()) {
-            user.recordFailedLogin(now, lockoutAttempts, lockoutDuration);
+            user.recordFailedLogin(now, settings.lockoutAttempts(), settings.lockoutDuration());
             throw new InvalidCredentialsException();
         }
         user.recordSuccessfulLogin();

@@ -19,4 +19,7 @@ public interface SkillRepository {
     Skill save(Skill skill);
 
     void delete(Skill skill);
+
+    /** Pushes pending changes now, so a delete blocked by a foreign key fails inside the caller's try block. */
+    void flush();
 }
