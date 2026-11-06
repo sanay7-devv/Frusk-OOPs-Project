@@ -150,10 +150,10 @@ Entry template:
 - Date: 2026-11-06
 - Area: config
 - Symptom: `Web server failed to start. Port 8080 was already in use.` `netstat -ano | findstr :8080` printed nothing.
-- Cause: a Windows service named `AgentService` (not ours) listens on the IPv6 wildcard `[::]:8080`; the Git Bash/`findstr` netstat check missed it. Found with PowerShell `Get-NetTCPConnection | Where-Object LocalPort -eq 8080`, which showed the owning PID.
-- Fix: run locally on another port with the environment variable `SERVER_PORT=8081`. Code and Docker defaults stay on 8080.
-- Prevention: check ports with `Get-NetTCPConnection` (it shows IPv6 listeners and the owning process), not only netstat.
-- Status: fixed (workaround on this machine)
+- Cause: the Windows service `MTAgentService` (`C:\Program Files\MiniTool ShadowMaker\AgentService.exe`, the backup tool's agent, auto-start) holds `[::]:8080` in a state netstat does not list, so `netstat -ano | findstr :8080` (and a taskkill loop over it) finds nothing. PowerShell `Get-NetTCPConnection | Where-Object LocalPort -eq 8080` shows the owning PID.
+- Fix: either stop the agent for the session in an Administrator prompt (`net stop MTAgentService`, or `taskkill /IM AgentService.exe /F`; it starts again at reboot, and ShadowMaker scheduled backups do not run while it is stopped), or run the app on another port with `SERVER_PORT=8081`. Code and Docker defaults stay on 8080.
+- Prevention: check ports with `Get-NetTCPConnection` (it shows IPv6 sockets and the owning process), not only netstat.
+- Status: fixed (2026-11-06: agent stopped, app started on 8080 from IntelliJ)
 
 ### E-016: Hibernate `@Check` on an element collection generated the constraint twice
 - Date: 2026-11-06
@@ -170,8 +170,9 @@ Entry template:
 
 - M1 verified over HTTP (2026-11-06): an unauthenticated request returns 401 `TOKEN_INVALID` in the standard body (so `ApiErrorWriter` and its `ObjectMapper` work), unknown paths return 404 `NOT_FOUND` in the standard body, and `X-Request-Id` and `X-Frame-Options: DENY` headers are present.
 - IDE inspection warnings in `GlobalExceptionHandler` are accepted, not errors: "Not annotated parameter overrides @NullMarked parameter" (Spring 7 uses JSpecify null annotations; only matters with a strict null checker such as NullAway, which we do not use), "Parameter 'ex' is never used" (the exception parameter is required so Spring can route to the handler method), and the spell checker flagging `Itsm` (add it to the IDE dictionary).
-- Startup log shows `Using generated security password` (Boot's default in-memory user) and Flyway `No migrations found`: both expected and harmless until M2 (real `UserDetailsService`) and V1 (first migration).
-- `SecurityConfig` currently has no JWT filter, so every non-public endpoint returns 401 in the standard format until M2. Health, Swagger UI and `/api/v1/auth/{register,login,refresh}` are public.
+- Flyway `No migrations found` in the default profile is expected until V1 arrives (with `schema-auto` Flyway is off). The `Using generated security password` line is gone since M2: `UserDetailsServiceAutoConfiguration` is excluded in `application.properties`.
+- Since M2 the JWT filter is active: requests with a valid Bearer token are authenticated; a bad token gives 401 TOKEN_INVALID, an expired one 401 TOKEN_EXPIRED, only on endpoints that need a login. Health, Swagger UI and `/api/v1/auth/{register,login,refresh}` are public.
+- Testing note for the expired-token case (T19): with the dev profile, a token can be signed with the dev-only default secret from `application-dev.properties`; in tests, use a fixed `Clock` instead.
 - Boot 4 specifics: Jackson 3 (`tools.jackson.*` packages), Spring Security 7, Hibernate 7. If a library pulls in Jackson 2, it needs the compatibility module or a different serializer (that is why jjwt uses Gson here). springdoc 3.0.3 was built against Boot 4.0.5, check Maven Central for a newer 3.x if Swagger UI misbehaves on 4.1.1. Check Maven Central for a newer 4.1.x patch of the parent before the first commit.
 - `IitsmBackendApplicationTests.contextLoads` will fail without a running database (or Testcontainers). Expected until the test setup is done by the Testing teammate.
 - Flyway will warn about a missing/empty `db/migration` location until V1 is added.
