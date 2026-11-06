@@ -16,6 +16,8 @@ import com.iitsm.web.dto.auth.CurrentUserResponse;
 import com.iitsm.web.dto.auth.LoginRequest;
 import com.iitsm.web.dto.auth.RefreshTokenRequest;
 import com.iitsm.web.dto.auth.RegisterRequest;
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -46,6 +48,7 @@ public class AuthController {
     @PostMapping("/login")
     @SecurityRequirements
     @Operation(summary = "Log in with email and password")
+    @ApiErrors({ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return AuthResponse.from(authService.login(request.email(), request.password()));
     }
@@ -53,6 +56,7 @@ public class AuthController {
     @PostMapping("/refresh")
     @SecurityRequirements
     @Operation(summary = "Exchange a refresh token for new tokens (the old refresh token stops working)")
+    @ApiErrors({ErrorCode.TOKEN_INVALID})
     public AuthResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return AuthResponse.from(authService.refresh(request.refreshToken()));
     }
@@ -67,6 +71,7 @@ public class AuthController {
 
     @GetMapping("/me")
     @Operation(summary = "The logged-in user with roles and permissions")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public CurrentUserResponse me(@AuthenticationPrincipal AuthenticatedUser caller) {
         return CurrentUserResponse.from(authService.currentUser(caller));
     }

@@ -38,6 +38,8 @@ import com.iitsm.web.dto.incident.ReassignRequest;
 import com.iitsm.web.dto.incident.RequestInfoRequest;
 import com.iitsm.web.dto.incident.ResolveRequest;
 import com.iitsm.web.dto.incident.UpdateIncidentRequest;
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -66,6 +68,7 @@ public class IncidentController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Report an incident: classified, prioritized and given SLA deadlines on creation")
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND, ErrorCode.SLA_NOT_CONFIGURED})
     public IncidentDetail create(@AuthenticationPrincipal AuthenticatedUser caller,
                                  @Valid @RequestBody CreateIncidentRequest request) {
         return incidents.create(caller, request.title(), request.description(), request.serviceId(),
@@ -104,12 +107,19 @@ public class IncidentController {
     }
 
     @GetMapping("/{id}")
+    @ApiErrors({ErrorCode.INCIDENT_NOT_FOUND})
     public IncidentDetail detail(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         return incidents.detail(caller, id);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Edit description, impact, urgency or affected users (until resolved); priority is recalculated")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT,
+            ErrorCode.SLA_NOT_CONFIGURED})
     public IncidentDetail update(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                  @Valid @RequestBody UpdateIncidentRequest request) {
         return incidents.update(caller, id, request.description(), request.impact(), request.urgency(),
@@ -118,6 +128,7 @@ public class IncidentController {
 
     @GetMapping("/{id}/recommendations")
     @Operation(summary = "Top 3 technicians with reasons and factor scores, plus who is excluded and why")
+    @ApiErrors({ErrorCode.INCIDENT_NOT_FOUND, ErrorCode.UNAUTHORIZED_OPERATION})
     public RecommendationView recommendations(@AuthenticationPrincipal AuthenticatedUser caller,
                                               @PathVariable Long id) {
         return incidents.recommendations(caller, id);
@@ -125,12 +136,30 @@ public class IncidentController {
 
     @PostMapping("/{id}/assign")
     @Operation(summary = "Assign to a technician, or omit technicianId to use the active strategy (admin, team lead)")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.CONFLICT_OF_INTEREST,
+            ErrorCode.USER_NOT_FOUND,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.TECHNICIAN_UNAVAILABLE,
+            ErrorCode.WORKLOAD_EXCEEDED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail assign(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                  @RequestBody AssignRequest request) {
         return incidents.assign(caller, id, request.technicianId());
     }
 
     @PostMapping("/{id}/reassign")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.CONFLICT_OF_INTEREST,
+            ErrorCode.USER_NOT_FOUND,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.TECHNICIAN_UNAVAILABLE,
+            ErrorCode.WORKLOAD_EXCEEDED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail reassign(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                    @Valid @RequestBody ReassignRequest request) {
         return incidents.reassign(caller, id, request.technicianId(), request.reason());
@@ -138,17 +167,32 @@ public class IncidentController {
 
     @PostMapping("/{id}/acknowledge")
     @Operation(summary = "Acknowledge (assigned technician); stops the response clock")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail acknowledge(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         return incidents.acknowledge(caller, id);
     }
 
     @PostMapping("/{id}/start")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail start(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         return incidents.startWork(caller, id);
     }
 
     @PostMapping("/{id}/request-info")
     @Operation(summary = "Ask the reporter for information; pauses the SLA clock")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail requestInfo(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                       @Valid @RequestBody RequestInfoRequest request) {
         return incidents.requestInfo(caller, id, request.message());
@@ -156,12 +200,22 @@ public class IncidentController {
 
     @PostMapping("/{id}/provide-info")
     @Operation(summary = "Answer the technician (reporter); resumes the SLA clock")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail provideInfo(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                       @Valid @RequestBody ProvideInfoRequest request) {
         return incidents.provideInfo(caller, id, request.message());
     }
 
     @PostMapping("/{id}/resolve")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail resolve(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                   @Valid @RequestBody ResolveRequest request) {
         return incidents.resolve(caller, id, request.rootCause(), request.notes(), request.steps(),
@@ -170,18 +224,34 @@ public class IncidentController {
 
     @PostMapping("/{id}/verify")
     @Operation(summary = "Confirm the fix (reporter)")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail verify(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         return incidents.verify(caller, id);
     }
 
     @PostMapping("/{id}/close")
     @Operation(summary = "Close a verified incident (admin)")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
     public IncidentDetail close(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         return incidents.close(caller, id);
     }
 
     @PostMapping("/{id}/reopen")
     @Operation(summary = "Reopen (reporter or admin; from CLOSED only within the reopen window)")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT,
+            ErrorCode.SLA_NOT_CONFIGURED})
     public IncidentDetail reopen(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                  @Valid @RequestBody ReasonRequest request) {
         return incidents.reopen(caller, id, request.reason());
@@ -189,6 +259,12 @@ public class IncidentController {
 
     @PostMapping("/{id}/override-priority")
     @Operation(summary = "Set the priority by hand with a reason (admin or team lead)")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT,
+            ErrorCode.SLA_NOT_CONFIGURED})
     public IncidentDetail overridePriority(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                            @Valid @RequestBody OverridePriorityRequest request) {
         return incidents.overridePriority(caller, id, request.priority(), request.reason());
@@ -196,12 +272,14 @@ public class IncidentController {
 
     @GetMapping("/{id}/comments")
     @Operation(summary = "Comments (internal notes are hidden from the reporter)")
+    @ApiErrors({ErrorCode.INCIDENT_NOT_FOUND})
     public List<CommentView> comments(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         return incidents.comments(caller, id);
     }
 
     @PostMapping("/{id}/comments")
     @ResponseStatus(HttpStatus.CREATED)
+    @ApiErrors({ErrorCode.INCIDENT_NOT_FOUND, ErrorCode.UNAUTHORIZED_OPERATION})
     public CommentView addComment(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                   @Valid @RequestBody CommentRequest request) {
         return incidents.addComment(caller, id, request.body(), request.visibility());

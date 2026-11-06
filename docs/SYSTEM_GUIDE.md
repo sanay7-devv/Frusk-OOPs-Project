@@ -117,7 +117,8 @@ com.iitsm
 │   │                                AdminConfigController
 │   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/admin, dto/catalog, dto/incident)
 │   ├── filter                       RequestIdFilter
-│   └── handler                      GlobalExceptionHandler
+│   ├── handler                      GlobalExceptionHandler
+│   └── openapi                      OpenApiConfig, ApiErrors, ErrorCode, contract customizers
 ├── application
 │   ├── admin                        UserAdminService, UserAdminViews
 │   ├── assignment                   AssignmentService, WorkloadService, TechnicianWorkService
@@ -140,7 +141,7 @@ com.iitsm
 │   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver
 │   └── user                         User, Role hierarchy, profiles, SkillSet, RefreshToken, UserFactory, enums
 └── infrastructure
-    ├── config                       ClockConfig, CorsConfig, OpenApiConfig, DomainConfig
+    ├── config                       ClockConfig, CorsConfig, DomainConfig
     ├── persistence                  Spring Data implementations of the domain repositories
     └── security                     SecurityConfig, JwtService, JwtAuthenticationFilter, ApiErrorWriter, ApiErrorCorsProcessor
 ```

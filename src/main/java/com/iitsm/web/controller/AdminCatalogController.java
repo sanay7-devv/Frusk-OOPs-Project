@@ -22,6 +22,8 @@ import com.iitsm.web.dto.catalog.CategoryRequest;
 import com.iitsm.web.dto.catalog.DependenciesRequest;
 import com.iitsm.web.dto.catalog.ServiceRequest;
 import com.iitsm.web.dto.catalog.SkillRequest;
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,6 +55,7 @@ public class AdminCatalogController {
     }
 
     @GetMapping("/services/{id}")
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public ServiceView service(@PathVariable Long id) {
         return catalog.service(id);
     }
@@ -66,6 +69,7 @@ public class AdminCatalogController {
 
     @PutMapping("/services/{id}")
     @Operation(summary = "Update a service (dependencyIds omitted = dependencies unchanged)")
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public ServiceView updateService(@PathVariable Long id, @Valid @RequestBody ServiceRequest request) {
         return catalog.updateService(id, request.name(), request.owner(), request.criticality(),
                 request.alwaysP1(), request.description(), request.active() == null || request.active(),
@@ -74,6 +78,7 @@ public class AdminCatalogController {
 
     @PutMapping("/services/{id}/dependencies")
     @Operation(summary = "Replace the services this one depends on (no self-reference, no cycles)")
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public ServiceView replaceDependencies(@PathVariable Long id, @Valid @RequestBody DependenciesRequest request) {
         return catalog.replaceDependencies(id, request.dependencyIds());
     }
@@ -81,6 +86,7 @@ public class AdminCatalogController {
     @DeleteMapping("/services/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Switch a service off")
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public void deactivateService(@PathVariable Long id) {
         catalog.deactivateService(id);
     }
@@ -95,11 +101,13 @@ public class AdminCatalogController {
 
     @PostMapping("/categories")
     @ResponseStatus(HttpStatus.CREATED)
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public CategoryView createCategory(@Valid @RequestBody CategoryRequest request) {
         return catalog.createCategory(request.name(), request.parentId(), request.requiredSkillIds());
     }
 
     @PutMapping("/categories/{id}")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public CategoryView updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
         return catalog.updateCategory(id, request.name(), request.parentId(),
                 request.active() == null || request.active(), request.requiredSkillIds());
@@ -108,6 +116,7 @@ public class AdminCatalogController {
     @DeleteMapping("/categories/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Switch a category off")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public void deactivateCategory(@PathVariable Long id) {
         catalog.deactivateCategory(id);
     }
@@ -126,6 +135,7 @@ public class AdminCatalogController {
     }
 
     @PutMapping("/skills/{id}")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public SkillView renameSkill(@PathVariable Long id, @Valid @RequestBody SkillRequest request) {
         return catalog.renameSkill(id, request.name());
     }
@@ -133,6 +143,7 @@ public class AdminCatalogController {
     @DeleteMapping("/skills/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a skill that no category or technician uses")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public void deleteSkill(@PathVariable Long id) {
         catalog.deleteSkill(id);
     }

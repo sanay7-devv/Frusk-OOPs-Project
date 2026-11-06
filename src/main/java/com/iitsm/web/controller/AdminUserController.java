@@ -31,6 +31,8 @@ import com.iitsm.web.dto.admin.SkillLevelRequest;
 import com.iitsm.web.dto.admin.TechnicianRequest;
 import com.iitsm.web.dto.admin.UpdateTechnicianRequest;
 import com.iitsm.web.dto.admin.UpdateUserRequest;
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,6 +58,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/users/{id}")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public AdminUserView user(@PathVariable Long id) {
         return admin.user(id);
     }
@@ -69,6 +72,7 @@ public class AdminUserController {
     }
 
     @PutMapping("/users/{id}")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public AdminUserView updateUser(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                     @Valid @RequestBody UpdateUserRequest request) {
         return admin.updateUser(caller.id(), id, request.name(), request.active(), request.department(),
@@ -78,24 +82,28 @@ public class AdminUserController {
     @DeleteMapping("/users/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Deactivate a user (never deleted) and end their sessions")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public void deactivateUser(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id) {
         admin.deactivateUser(caller.id(), id);
     }
 
     @PostMapping("/users/{id}/roles")
     @Operation(summary = "Add TECHNICIAN (with profile) or ADMINISTRATOR (with scope)")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public AdminUserView addRole(@PathVariable Long id, @Valid @RequestBody AddRoleRequest request) {
         return admin.addRole(id, request.roleType(), spec(request.technician()), scope(request.administrator()));
     }
 
     @DeleteMapping("/users/{id}/roles/{roleType}")
     @Operation(summary = "Remove a role (EMPLOYEE stays; TECHNICIAN only without active incidents)")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public AdminUserView removeRole(@PathVariable Long id, @PathVariable RoleType roleType) {
         return admin.removeRole(id, roleType);
     }
 
     @PutMapping("/technicians/{id}/skills")
     @Operation(summary = "Replace a technician's skills")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public TechnicianView replaceSkills(@PathVariable Long id,
                                        @RequestBody List<@Valid SkillLevelRequest> skills) {
         return admin.replaceSkills(id, skills.stream()
@@ -105,6 +113,7 @@ public class AdminUserController {
 
     @PutMapping("/technicians/{id}")
     @Operation(summary = "Change experience, escalation level (1 = team lead), max load or availability")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public TechnicianView updateTechnician(@PathVariable Long id,
                                            @Valid @RequestBody UpdateTechnicianRequest request) {
         return admin.updateTechnician(id, request.experienceLevel(), request.escalationLevel(), request.maxLoad(),

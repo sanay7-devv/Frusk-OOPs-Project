@@ -19,6 +19,8 @@ import com.iitsm.application.catalog.CatalogViews.SlaPolicyView;
 import com.iitsm.application.catalog.SlaAdminService;
 import com.iitsm.web.dto.catalog.EscalationPolicyRequest;
 import com.iitsm.web.dto.catalog.SlaPolicyRequest;
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,6 +48,7 @@ public class AdminSlaController {
     @PostMapping("/sla-policies")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Add an SLA policy (serviceId null = global default; one per service and priority)")
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public SlaPolicyView createSlaPolicy(@Valid @RequestBody SlaPolicyRequest request) {
         return sla.createSlaPolicy(request.serviceId(), request.priority(), request.responseMinutes(),
                 request.resolutionMinutes(), request.calendarType());
@@ -53,6 +56,7 @@ public class AdminSlaController {
 
     @PutMapping("/sla-policies/{id}")
     @Operation(summary = "Change the response and resolution targets")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public SlaPolicyView updateSlaPolicy(@PathVariable Long id, @Valid @RequestBody SlaPolicyRequest request) {
         return sla.updateSlaPolicy(id, request.serviceId(), request.priority(), request.responseMinutes(),
                 request.resolutionMinutes(), request.calendarType());
@@ -60,6 +64,7 @@ public class AdminSlaController {
 
     @DeleteMapping("/sla-policies/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public void deleteSlaPolicy(@PathVariable Long id) {
         sla.deleteSlaPolicy(id);
     }
@@ -78,6 +83,7 @@ public class AdminSlaController {
 
     @PutMapping("/escalation-policies/{id}")
     @Operation(summary = "Change the timeout of an escalation level")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public EscalationPolicyView updateEscalationPolicy(@PathVariable Long id,
                                                        @Valid @RequestBody EscalationPolicyRequest request) {
         return sla.updateEscalationPolicy(id, request.priority(), request.level(), request.timeoutMinutes());
@@ -86,6 +92,7 @@ public class AdminSlaController {
     @DeleteMapping("/escalation-policies/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Remove the highest escalation level of a priority")
+    @ApiErrors({ErrorCode.NOT_FOUND})
     public void deleteEscalationPolicy(@PathVariable Long id) {
         sla.deleteEscalationPolicy(id);
     }

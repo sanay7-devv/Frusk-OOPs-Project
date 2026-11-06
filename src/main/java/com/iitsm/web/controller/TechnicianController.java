@@ -23,6 +23,8 @@ import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.user.Availability;
 import com.iitsm.web.dto.PageResponse;
 import com.iitsm.web.dto.admin.AvailabilityRequest;
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,6 +59,7 @@ public class TechnicianController {
     @GetMapping("/me/workload")
     @PreAuthorize("hasAuthority('WORKLOAD_VIEW')")
     @Operation(summary = "My load, capacity, resolved this week and next SLA deadlines")
+    @ApiErrors({ErrorCode.USER_NOT_FOUND})
     public WorkloadView myWorkload(@AuthenticationPrincipal AuthenticatedUser caller) {
         return work.workload(caller.id());
     }
