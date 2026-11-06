@@ -23,11 +23,13 @@
 5. [M1 Foundations: errors, request IDs, CORS, security baseline](#5-m1-foundations)
 6. [M2 Users, roles and authentication](#6-m2-users-roles-and-authentication)
 7. [M3 Catalog and configuration](#7-m3-catalog-and-configuration)
-8. [Data model built so far](#8-data-model-built-so-far)
-9. [OOP and design patterns: where to find them](#9-oop-and-design-patterns-where-to-find-them)
-10. [Configuration and running the backend](#10-configuration-and-running-the-backend)
-11. [Key decisions](#11-key-decisions)
-12. [Changelog](#12-changelog)
+8. [M4 Incidents and their lifecycle](#8-m4-incidents-and-their-lifecycle)
+9. [M5 Priority engine](#9-m5-priority-engine)
+10. [Data model built so far](#10-data-model-built-so-far)
+11. [OOP and design patterns: where to find them](#11-oop-and-design-patterns-where-to-find-them)
+12. [Configuration and running the backend](#12-configuration-and-running-the-backend)
+13. [Key decisions](#13-key-decisions)
+14. [Changelog](#14-changelog)
 
 ---
 
@@ -38,7 +40,9 @@
 | **M1** Foundations | Exception hierarchy, one global error handler, request IDs, CORS, security headers, OpenAPI | ✅ Done, verified over HTTP |
 | **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, 403 on admin endpoints | ✅ Done and smoke-tested · ⏳ admin user and role management and auth audit come with later modules |
 | **M3** Catalog and configuration | Services (with dependency graph), category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` | ✅ Done and smoke-tested (42/42) |
-| M4 to M14 | Incidents and State machine, priority, assignment, SLA engine, audit, notifications, search, escalation, AI, real-time, hardening | ⬜ Not started |
+| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54) · ⏳ automatic assignment (M6), events and audit (M8), duplicates (M12) |
+| **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
+| M6 to M14 | Assignment strategies, SLA monitor, audit, notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -106,20 +110,25 @@ flowchart TB
 com.iitsm
 ├── IitsmBackendApplication          entry point (forces the JVM time zone to UTC)
 ├── web
-│   ├── controller                   AuthController, CatalogController, AdminCatalogController,
-│   │                                AdminSlaController, AdminConfigController
-│   ├── dto                          ErrorResponse and request/response records (dto/auth, dto/catalog)
+│   ├── controller                   AuthController, CatalogController, IncidentController,
+│   │                                AdminCatalogController, AdminSlaController, AdminConfigController
+│   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/catalog, dto/incident)
 │   ├── filter                       RequestIdFilter
 │   └── handler                      GlobalExceptionHandler
 ├── application
 │   ├── auth                         AuthService, AuthenticatedUser, UserView, AccessTokenIssuer (port)
 │   ├── catalog                      CatalogService, SlaAdminService, CatalogViews
+│   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
+│   ├── assignment                   EligibilityFilter, WorkloadTracker
 │   ├── category                     Category (tree, required skills)
 │   ├── config                       ConfigKey, AppSettings, AppConfigEntry
 │   ├── exception                    ItsmException + 18 business exceptions
-│   ├── priority                     Priority (P1 to P4)
+│   ├── incident                     Incident, IncidentState + 10 states, StateFactory, IncidentFactory,
+│   │                                SlaTracker, Resolution, IncidentComment, enums
+│   ├── priority                     Priority, PriorityStrategy, WeightedPriorityStrategy,
+│   │                                PriorityOverrideRule, PriorityEngine, PriorityBreakdown
 │   ├── repository                   one repository interface per aggregate
 │   ├── service                      ItService (IT services and their dependency graph)
 │   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver
@@ -670,7 +679,319 @@ Smoke run against the running app and PostgreSQL: **42 of 42 checks passed**. Hi
 
 ---
 
-## 8. Data model built so far
+## 8. M4 Incidents and their lifecycle
+
+**What it does.** An incident is one reported IT problem, tracked from the moment an employee reports it until it is closed. On creation the system classifies it, calculates its priority and sets its SLA deadlines in one step. After that it moves through a fixed lifecycle (assign, acknowledge, work, resolve, verify, close, reopen), and the system refuses every move that does not make sense, such as closing a brand-new incident.
+
+### 8.1 The lifecycle
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> NEW : employee reports
+    NEW --> CLASSIFIED : classify (system, on creation)
+    CLASSIFIED --> ASSIGNED : assign (admin / team lead)
+    ASSIGNED --> ACKNOWLEDGED : acknowledge (assignee)
+    ACKNOWLEDGED --> IN_PROGRESS : start work (assignee)
+    IN_PROGRESS --> PENDING_USER_INFO : request info (assignee)
+    PENDING_USER_INFO --> IN_PROGRESS : provide info (reporter)
+    IN_PROGRESS --> RESOLVED : resolve (assignee)
+    RESOLVED --> VERIFIED : verify (reporter)
+    RESOLVED --> REOPENED : reopen (reporter)
+    VERIFIED --> CLOSED : close (admin)
+    CLOSED --> REOPENED : reopen within 7 days
+    REOPENED --> IN_PROGRESS : start work (assignee)
+    CLOSED --> [*]
+```
+
+Reassign is allowed in ASSIGNED, ACKNOWLEDGED and IN_PROGRESS and does not change the status. **Every other combination is refused with `409 INVALID_STATE_TRANSITION`**, for example `NEW → CLOSED` or closing a CLASSIFIED incident.
+
+| Clock | Starts | Stops | Special |
+|---|---|---|---|
+| Response | creation | ACKNOWLEDGED | |
+| Resolution | creation | RESOLVED | pauses in PENDING_USER_INFO (the deadline moves later by exactly the paused time); restarts on REOPEN with the full target |
+
+### 8.2 The State pattern
+
+Each status is an object that knows which actions are legal in it. `IncidentState` declares every action with a default that refuses it; each concrete state overrides only what it allows. `Incident` keeps the status in the database and hands every lifecycle call to the matching state object, which `StateFactory` looks up.
+
+```mermaid
+classDiagram
+    direction TB
+    class Incident {
+        -IncidentStatus status
+        -SlaTracker sla
+        -Resolution resolution
+        -long version
+        +assign(technician, now)
+        +acknowledge(now)
+        +startWork(now)
+        +requestInfo(message, now)
+        +provideInfo(message, now)
+        +resolve(resolution, now)
+        +verify(now)
+        +close(reason, now)
+        +reopen(reason, now, window, target)
+        +applyPriority(breakdown, targets, now)
+    }
+    class IncidentState {
+        <<abstract>>
+        +status()* IncidentStatus
+        +legalActions(incident, now, window) Set
+        ~assign(incident, technician, now)
+        ~acknowledge(incident, now)
+        ~resolve(incident, resolution, now)
+    }
+    class StateFactory {
+        -EnumMap~IncidentStatus, IncidentState~ STATES
+        +of(IncidentStatus) IncidentState
+    }
+    class SlaTracker {
+        <<value object>>
+        -Instant responseDue
+        -Instant resolutionDue
+        -Instant pausedAt
+        -long pausedSeconds
+        +stateAt(now, ...) SlaState
+    }
+    class Resolution {
+        <<value object>>
+        -String rootCause
+        -String notes
+        -String steps
+        -int timeSpentMinutes
+        -boolean reusable
+    }
+    class IncidentFactory {
+        <<factory>>
+        +create(reporter, service, category, ...) Incident
+    }
+    Incident ..> StateFactory : looks up
+    StateFactory --> IncidentState
+    Incident *-- SlaTracker
+    Incident *-- Resolution
+    IncidentFactory ..> Incident : creates
+    IncidentState <|-- NewState
+    IncidentState <|-- ClassifiedState
+    IncidentState <|-- AssignedState
+    IncidentState <|-- AcknowledgedState
+    IncidentState <|-- InProgressState
+    IncidentState <|-- PendingUserInfoState
+    IncidentState <|-- ResolvedState
+    IncidentState <|-- VerifiedState
+    IncidentState <|-- ClosedState
+    IncidentState <|-- ReopenedState
+```
+
+Preconditions live in the states too: assigning needs a known priority and never the reporter; requesting information needs a message of 10 to 2000 characters; resolving needs a valid `Resolution` (root cause and notes of at least 10 characters); reopening needs a reason and, from CLOSED, must happen within the reopen window (`reopen.window.days`, default 7).
+
+### 8.3 Creating an incident
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor E as Employee
+    participant C as IncidentController
+    participant S as IncidentService
+    participant F as IncidentFactory
+    participant P as PriorityEngine
+    participant R as SlaPolicyResolver
+    participant DB as Database
+
+    E->>C: POST /incidents {title, description, serviceId, impact, urgency, affectedUsers}
+    C->>S: create(...)
+    S->>DB: load reporter, service, category
+    S->>F: create(...)
+    F->>F: validate every field
+    F->>DB: next code from incident_code_seq (INC-2026-00042)
+    F->>F: new Incident in NEW, then classify → CLASSIFIED
+    S->>P: calculate(impact, urgency, criticality, users, rules)
+    P-->>S: breakdown (score 187, P1, "Payment service is always P1")
+    S->>R: resolve(service, P1)
+    R-->>S: Payment P1 policy (3 / 20 minutes)
+    S->>S: applyPriority → response due +3 min, resolution due +20 min
+    S->>DB: save
+    C-->>E: 201 IncidentDetail
+```
+
+Not yet in the pipeline (they come with their modules): the duplicate check and AI category suggestion (M12), automatic technician assignment (M6; until then a new incident waits in CLASSIFIED and an admin or team lead assigns it), events and audit records (M8).
+
+### 8.4 Who may do what
+
+The State pattern answers "is this move legal now?" (409 if not). `IncidentAccessPolicy` answers "may this person make it?" (403 if not). Together they produce **`allowedActions`**, the list of buttons the frontend shows.
+
+| Action | Who | Status rule (State pattern) |
+|---|---|---|
+| View | reporter, assignee, team lead, admin (others get 404) | any |
+| Edit details | reporter, admin | until RESOLVED |
+| Comment | anyone who can view; INTERNAL notes only technicians and admins | any |
+| Assign / reassign | admin, team lead (`INCIDENT_ASSIGN`) | CLASSIFIED / ASSIGNED, ACKNOWLEDGED, IN_PROGRESS |
+| Acknowledge, start, request info, resolve | the assignee (`INCIDENT_HANDLE`) | see lifecycle |
+| Provide info, verify | the reporter | PENDING_USER_INFO / RESOLVED |
+| Close | admin | VERIFIED |
+| Reopen | reporter, admin | RESOLVED, or CLOSED within 7 days |
+| Override priority | admin, team lead (`INCIDENT_OVERRIDE_PRIORITY`) | before RESOLVED |
+
+**Conflict of interest:** nobody can be assigned an incident they reported (`403 CONFLICT_OF_INTEREST`), but they keep their reporter rights (reply, verify, reopen). **Eligibility for manual assignment** (`EligibilityFilter`): holds the TECHNICIAN role, is AVAILABLE or BUSY (`409 TECHNICIAN_UNAVAILABLE` otherwise), weighted load below `max_load` (`409 WORKLOAD_EXCEEDED`; P1 counts 4 points, P2 3, P3 2, P4 1, computed by `WorkloadTracker`), and holds at least one skill the category requires.
+
+Example: the same incident seen by different people.
+
+| Viewer | Status ASSIGNED | Status PENDING_USER_INFO | Status CLOSED (3 days ago) |
+|---|---|---|---|
+| Reporter | `EDIT, COMMENT` | `EDIT, COMMENT, PROVIDE_INFO` | `COMMENT, REOPEN` |
+| Assignee | `ACKNOWLEDGE, COMMENT` | `COMMENT` | `COMMENT` |
+| Team lead | `REASSIGN, COMMENT, OVERRIDE_PRIORITY` | `COMMENT, OVERRIDE_PRIORITY` | `COMMENT` |
+
+### 8.5 SLA state
+
+Computed in one place (`SlaTracker.stateAt`) and used by lists and the detail page:
+
+| SlaState | When |
+|---|---|
+| `OK` | clocks running, below the first warning |
+| `WARNING` | 75 % (`sla.warn.first.percent`) of an open clock has passed |
+| `PAUSED` | waiting for the reporter |
+| `VIOLATED` | a deadline passed or a violation was recorded |
+| `MET` | resolved before the resolution deadline |
+| `AT_RISK` | predicted to miss the SLA (risk score, module M12) |
+
+### 8.6 Concurrent updates
+
+Every incident has a `version` column (optimistic locking). If two people save the same incident at the same moment, the database accepts only the first; the second gets **`409 OPTIMISTIC_LOCK_CONFLICT`** ("Someone else changed this incident. Reload and try again.") instead of silently overwriting. Clients can also send the `version` they last saw on `PUT` to detect stale edits early.
+
+### 8.7 Endpoints
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `POST /api/v1/incidents` | any logged-in user | 201 IncidentDetail, already classified, prioritized, with SLA deadlines |
+| `GET /api/v1/incidents` | any (filtered by role) | Filters: `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`; paging `page`, `size` (max 100); `sort=createdAt,desc` (also `priority`, `status`, `code`, `resolutionDue`) |
+| `GET /api/v1/incidents/{id}` | participant | IncidentDetail with `allowedActions` |
+| `PUT /api/v1/incidents/{id}` | reporter, admin | priority and deadlines recalculated |
+| `POST /api/v1/incidents/{id}/assign` · `/reassign` | admin, team lead | eligibility checked |
+| `POST /api/v1/incidents/{id}/acknowledge` · `/start` · `/request-info` · `/resolve` | assignee | |
+| `POST /api/v1/incidents/{id}/provide-info` · `/verify` | reporter | |
+| `POST /api/v1/incidents/{id}/close` | admin | |
+| `POST /api/v1/incidents/{id}/reopen` | reporter, admin | |
+| `POST /api/v1/incidents/{id}/override-priority` | admin, team lead | reason recorded |
+| `GET, POST /api/v1/incidents/{id}/comments` | participants | internal notes hidden from the reporter |
+
+### 8.8 Verified behavior (2026-11-06)
+
+End-to-end run against the running app and PostgreSQL: **54 of 54 checks passed**, mapped to the documented test cases:
+
+| Test case | Checked |
+|---|---|
+| **T01** | Payment incident, impact 5, urgency 5, 150 users → 201, score 187, P1, major, rule "Payment service is always P1", deadlines exactly 3 and 20 minutes after creation (Payment policy) |
+| **T03** | Full path create → acknowledge → start → resolve → verify → close, final CLOSED with reason VERIFIED |
+| **T05 / T06** | Band edges 60/56/30/27/10/9 → P1 P2 P2 P3 P3 P4; users 9/10/100/101 → 48 P2, 60 P1, 60 P1, 72 P1 |
+| **T08** | Reopen 7 days 1 minute after closing → 409; 6 days 23 hours 59 minutes → REOPENED |
+| **T09** | Empty description, impact 6, 0 users → 400 with a fieldError for each |
+| **T11** | Close a CLASSIFIED incident → 409 INVALID_STATE_TRANSITION |
+| **T12** | Resolve without notes → 400, status unchanged |
+| **T14 / T15** | Unknown service → 404 SERVICE_NOT_FOUND; missing P4 policy → 422 SLA_NOT_CONFIGURED naming service and priority |
+| **T18** | Another technician acknowledges → 403, status unchanged |
+| **T21** | Request info, wait, reply → resolution deadline moved later by exactly the paused seconds |
+| **T24** | Two simultaneous PUTs → one 200, one 409 OPTIMISTIC_LOCK_CONFLICT |
+| **T25** | Admin assigns an incident to its reporter → 403 CONFLICT_OF_INTEREST; reporter rights kept |
+| Also | AWAY technician, missing skill, max load → 409 with the right code; security override rule; role-based visibility (404 for strangers, own-only lists); filters, text search, paging, sorting; stale version → 409; manual priority override with reason; internal notes hidden from the reporter; reassign keeps the status; edit or override after resolution → 409 |
+
+---
+
+## 9. M5 Priority engine
+
+**What it does.** Decides how urgent an incident is (P1 Critical to P4 Low) from how badly the business is hit, how fast it must be fixed and how important the service is, and explains the result in plain words.
+
+### 9.1 The formula
+
+```mermaid
+flowchart LR
+    A["impact (1-5)"] --> M(("×"))
+    B["urgency (1-5)"] --> M
+    C["service criticality (1-5)"] --> M
+    M --> D["base score"]
+    D --> X(("× users multiplier"))
+    X --> F["score (rounded down)"]
+    F --> G{"band"}
+    G -->|"≥ 60"| P1["P1 Critical"]
+    G -->|"30 - 59"| P2["P2 High"]
+    G -->|"10 - 29"| P3["P3 Medium"]
+    G -->|"< 10"| P4["P4 Low"]
+    P1 & P2 & P3 & P4 --> O["override rules<br/>(can only raise)"]
+```
+
+| Affected users | Multiplier |
+|---|---|
+| 1 to 9 | × 1.0 |
+| 10 to 100 | × 1.25 |
+| 101 or more | × 1.5 |
+
+Every threshold, band and multiplier is read from `app_config` at the moment of calculation, so an administrator can tune them without a restart.
+
+**Override rules** (applied after the score, can only raise the priority, and are named in the explanation):
+
+1. A **Security** incident (category Security or one of its children, such as Phishing) on a service with criticality 4 or more is **at least P2**.
+2. A service flagged **always P1 on outage** (Payment) is **P1** when impact is 4 or more.
+
+### 9.2 Worked examples
+
+| Case | Calculation | Result |
+|---|---|---|
+| Payment unavailable, impact 5, urgency 5, 150 users | 5 × 5 × 5 = 125 × 1.5 = 187.5 → 187 | **P1**, rule 2 named |
+| Impact 4, urgency 4, criticality 3, 10 users | 48 × 1.25 = 60 | **P1** (exactly on the edge) |
+| Impact 4, urgency 4, criticality 3, 9 users | 48 × 1.0 = 48 | **P2** |
+| Phishing on Network (criticality 4), impact 1, urgency 1, 1 user | 4 | score says P4, **rule 1 raises it to P2** |
+
+The explanation is stored with the incident and returned as `priorityBreakdown`:
+
+```json
+{
+  "impact": 5, "urgency": 5, "criticality": 5,
+  "usersMultiplier": 1.5, "baseScore": 125, "score": 187,
+  "band": "P1", "overrideRule": "Payment service is always P1"
+}
+```
+
+### 9.3 Design (Strategy pattern)
+
+```mermaid
+classDiagram
+    direction LR
+    class PriorityStrategy {
+        <<interface>>
+        +name() String
+        +calculate(PriorityInput, AppSettings) PriorityBreakdown
+    }
+    class WeightedPriorityStrategy {
+        +calculate(...) PriorityBreakdown
+    }
+    class PriorityOverrideRule {
+        <<interface>>
+        +minimumBand(PriorityInput) Optional~Priority~
+        +explanation(PriorityInput) String
+    }
+    class PriorityEngine {
+        -Map~String, PriorityStrategy~ strategies
+        -List~PriorityOverrideRule~ overrideRules
+        +calculate(PriorityInput, AppSettings) PriorityBreakdown
+    }
+    class PriorityBreakdown {
+        <<record>>
+        +int baseScore
+        +int score
+        +Priority band
+        +String overrideRule
+    }
+    PriorityStrategy <|.. WeightedPriorityStrategy
+    PriorityEngine o-- PriorityStrategy
+    PriorityEngine o-- PriorityOverrideRule
+    PriorityEngine ..> PriorityBreakdown : returns
+```
+
+`PriorityEngine` picks the strategy named by the setting `priority.strategy`, then applies each override rule in order. A new algorithm (for example one based on history) is one new class implementing `PriorityStrategy`; nothing else changes. The priority is recalculated when impact, urgency or affected users change; the SLA deadlines are then recalculated from the original creation time. An admin or team lead can also **set the priority by hand with a reason**, which is recorded in the breakdown ("Manually set to P4 by Priya Lead: ...") and as an internal note.
+
+---
+
+## 10. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
 
@@ -791,11 +1112,70 @@ erDiagram
     }
 ```
 
+**Incidents (M4)**
+
+```mermaid
+erDiagram
+    users ||--o{ incidents : "reports"
+    users |o--o{ incidents : "is assigned"
+    services ||--o{ incidents : "affected by"
+    categories |o--o{ incidents : "classifies"
+    incidents |o--o{ incidents : "duplicate of"
+    incidents ||--o{ incident_comments : "has"
+    users ||--o{ incident_comments : "writes"
+
+    incidents {
+        bigint id PK
+        varchar code UK "INC-2026-00001 (sequence)"
+        varchar title
+        text description
+        bigint reporter_id FK
+        bigint category_id FK "null = triage"
+        bigint service_id FK
+        bigint assignee_id FK "nullable"
+        smallint impact "1..5"
+        smallint urgency "1..5"
+        int affected_users "1 or more"
+        int priority_score
+        char priority "P1..P4"
+        jsonb priority_breakdown
+        varchar status "10 states"
+        varchar closure_reason
+        boolean major
+        smallint escalation_level "0..3"
+        timestamptz created_at
+        timestamptz acknowledged_at
+        timestamptz resolved_at
+        timestamptz closed_at
+        timestamptz response_due
+        timestamptz resolution_due
+        timestamptz paused_at
+        bigint paused_seconds
+        boolean resp_violated
+        boolean res_violated
+        int reopen_count
+        text root_cause
+        text resolution_notes
+        boolean reusable_solution
+        bigint version "optimistic lock"
+    }
+    incident_comments {
+        bigint id PK
+        bigint incident_id FK
+        bigint author_id FK
+        varchar visibility "PUBLIC | INTERNAL"
+        text body
+        timestamptz created_at
+    }
+```
+
+Plus the four warning flags (`resp_warn75_sent`, `resp_warn90_sent`, `res_warn75_sent`, `res_warn90_sent`, for M7), `problem_id` (M12), `updated_at`, `resolution_steps`, `time_spent_minutes`, nine indexes and the sequence `incident_code_seq`.
+
 The database also enforces the rules with constraints: unique `(user_id, role_type)`, unique email and `google_sub`, unique service name, unique `(service_id, priority)` and `(priority, level)`, and `CHECK` constraints on every range and enum column.
 
 ---
 
-## 9. OOP and design patterns: where to find them
+## 11. OOP and design patterns: where to find them
 
 ### 8.1 OOP concepts (course brief requirements)
 
@@ -804,9 +1184,9 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Encapsulation** | `User` has no public setters; state changes only through behavior methods (`recordFailedLogin`, `grantTechnicianRole`). The password hash never leaves the class except for the password check. `SkillSet` never hands out its internal map. `AppSettings` is immutable: a config change creates a new snapshot. |
 | **Abstraction** | Abstract `Role` (each role defines `getPermissions()`); abstract `ItsmException`; repository interfaces hide SQL; `SlaPolicyResolver` hides how the right SLA is found. |
 | **Inheritance (real is-a)** | `TechnicianRole` **is a** `Role`; `AccountLockedException` **is an** `ItsmException`. |
-| **Polymorphism** | `user.getPermissions()` calls `getPermissions()` on each role without knowing its type. |
+| **Polymorphism** | `user.getPermissions()` calls `getPermissions()` on each role without knowing its type; `Incident` calls `acknowledge()` on whatever `IncidentState` the status maps to; `PriorityEngine` calls whichever `PriorityStrategy` is configured. |
 | **Interfaces** | One repository interface per aggregate (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...), `AccessTokenIssuer`. |
-| **Composition** | `User` has `Role`s; `TechnicianRole` has a `TechnicianProfile`, which has a `SkillSet`; `ConfigService` has an `AppSettings` snapshot. |
+| **Composition** | `User` has `Role`s; `TechnicianRole` has a `TechnicianProfile`, which has a `SkillSet`; `ConfigService` has an `AppSettings` snapshot; `Incident` has a `SlaTracker` and a `Resolution` (value objects that validate themselves). |
 | **Enums with behavior** | `ConfigKey` knows each setting's default and validates its own values; `Availability.acceptsNewWork()`; `AdminScope` knows its escalation level. |
 | **Association / aggregation** | `SkillSet` refers to shared `Skill` objects; `RefreshToken` belongs to a `User`. |
 | **Exception handling** | 17 custom exceptions, one global handler, one error shape. |
@@ -816,17 +1196,17 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 | Pattern | Status | Where |
 |---|---|---|
-| **Factory** | ✅ in use | `UserFactory`: the only way to create a valid new user (always starts with EMPLOYEE). `IncidentFactory`, `NotificationFactory` follow in M4 / M9. |
+| **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` follows in M9. |
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
 | **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. Notification channels and the LLM client follow in M9 / M12. |
-| **State** | ⬜ M4 | Incident lifecycle: one class per status. |
-| **Strategy** | ⬜ M5 / M6 | Priority calculation and technician assignment. The active strategy is already a live setting (`assignment.strategy`, `priority.strategy` in `app_config`), so switching it will need no restart. |
+| **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
+| **Strategy** | ✅ in use (priority) · ⬜ M6 (assignment) | `PriorityStrategy` / `WeightedPriorityStrategy`, chosen by `priority.strategy`; override rules as small `PriorityOverrideRule` objects. Assignment strategies follow in M6, selected by `assignment.strategy`. |
 | **Observer** | ⬜ M8 | Domain events with audit, notification, SLA and dashboard listeners. |
 | **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
 
 ---
 
-## 10. Configuration and running the backend
+## 12. Configuration and running the backend
 
 | Setting | Environment variable | Default |
 |---|---|---|
@@ -848,7 +1228,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 ---
 
-## 11. Key decisions
+## 13. Key decisions
 
 Full details in `docs/ROADMAP.md`, section 6.
 
@@ -862,10 +1242,11 @@ Full details in `docs/ROADMAP.md`, section 6.
 | D-007 | Role mapping: single-table hierarchy + one profile table per role | Real OOP while keeping the agreed schema |
 | D-008 | Auth design | Permission-based authorities, stateless access tokens, rotating hashed refresh tokens with theft detection |
 | D-009 | Catalog and configuration design | Soft delete for services and categories, cycle-free service graph, global SLA uniqueness checked in code, settings as a validated immutable snapshot swapped after commit |
+| D-010 | Incident design | State pattern with stateless state singletons; 403 for "who", 409 for "status"; team lead sees all incidents; strangers get 404; manual assignment only until M6; messages and reasons stored as comments |
 
 ---
 
-## 12. Changelog
+## 14. Changelog
 
 | Date | Change |
 |---|---|
@@ -873,3 +1254,4 @@ Full details in `docs/ROADMAP.md`, section 6.
 | 2026-10-16 | M1 Foundations written: exception hierarchy, global handler, request ID filter, CORS, security baseline, OpenAPI |
 | 2026-11-06 | M1 verified over HTTP. M2 domain model (users, roles, profiles, skills) and auth layer (register, login, refresh, logout, me, JWT, lockout) built and smoke-tested (27/27). CORS rejections now use the standard error body. This guide started. |
 | 2026-11-06 | M3 Catalog and configuration built and smoke-tested (42/42): services with dependency graph, category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` with validation. Lockout limits moved from properties to `app_config`. |
+| 2026-11-06 | M4 incidents (State pattern, factory, creation pipeline, manual assignment, SLA clocks, comments, lists) and M5 priority engine built and smoke-tested (54/54, covering T01, T03, T05, T06, T08, T09, T11, T12, T14, T15, T18, T21, T24, T25). Fixed during testing: empty resolution wrote NULL into `reusable_solution`; status-based refusals now always return 409, not 403. |

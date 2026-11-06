@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -25,10 +26,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import com.iitsm.domain.exception.DuplicateIncidentException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.ItsmException;
+import com.iitsm.domain.exception.OptimisticLockConflictException;
 import com.iitsm.web.dto.ErrorResponse;
 import com.iitsm.web.filter.RequestIdFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolationException;
 
 /**
@@ -79,6 +82,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Object> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
         return respond(ErrorResponse.of(401, "TOKEN_INVALID", "Authentication required. Log in again.",
+                request.getRequestURI()));
+    }
+
+    // ------------------------------------------------------------------ concurrent updates
+
+    /** Two updates of the same incident at once: the version column lets exactly one win (handbook 2.5 M4). */
+    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ResponseEntity<Object> handleOptimisticLock(Exception ex, HttpServletRequest request) {
+        OptimisticLockConflictException conflict = new OptimisticLockConflictException();
+        return respond(ErrorResponse.of(conflict.getStatus(), conflict.getCode(), conflict.getMessage(),
                 request.getRequestURI()));
     }
 

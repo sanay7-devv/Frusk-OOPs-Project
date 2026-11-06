@@ -164,6 +164,34 @@ Entry template:
 - Prevention: after a schema-auto start, read the startup log for `CommandAcceptanceException` and compare `\d <table>` with Appendix A; ddl-auto does not fail the start on DDL errors, and `update` never changes an existing column type (drop the table first).
 - Status: fixed (confirmed 2026-11-06)
 
+
+### E-017: Creating an incident failed: NULL in `reusable_solution`
+- Date: 2026-11-06
+- Area: domain
+- Symptom: every POST /incidents returned 500; log: `null value in column "reusable_solution" of relation "incidents" violates not-null constraint`.
+- Cause: the `Resolution` embeddable was null until an incident is resolved; Hibernate then writes NULL into every embedded column, but `reusable_solution` is `BOOLEAN NOT NULL DEFAULT false` (Appendix A.3).
+- Fix: every incident starts with an empty `Resolution.none()` (all text null, reusable false); `Incident.getResolution()` still returns null until a technician resolves.
+- Prevention: an embedded value object with a NOT NULL primitive column must never be null; initialise it in the field declaration.
+- Status: fixed (smoke run 54/54)
+
+### E-018: Editing a resolved incident returned 403 instead of 409
+- Date: 2026-11-06
+- Area: api
+- Symptom: PUT on a RESOLVED/CLOSED incident by its reporter returned 403 UNAUTHORIZED_OPERATION.
+- Cause: the access policy mixed a status rule ("editable until resolved") into the permission check, so the refusal came from the "who" check.
+- Fix: `IncidentAccessPolicy.permits` decides only who may act; the status rule stays in the domain (`Incident.updateDetails`, `applyPriority`), which answers 409 INVALID_STATE_TRANSITION. `allowedActions` still hides EDIT and OVERRIDE_PRIORITY when the status forbids them. Decision D-010 (2).
+- Prevention: 403 = wrong person, 409 = wrong moment. Keep the two checks in separate places.
+- Status: fixed
+
+### E-019: A restarted backend kept answering with old code
+- Date: 2026-11-06
+- Area: other
+- Symptom: after a fix, tests still failed exactly as before; the log showed the old process id answering requests while the new start failed with "Port 8081 was already in use".
+- Cause: the old Java process was not stopped: on this machine `Get-NetTCPConnection -State Listen` does not report the listener (the state column is empty), so the stop command matched nothing.
+- Fix: stop the process by the PID printed in the startup log line ("Started IitsmBackendApplication ... with PID n"), then start again and confirm the new PID in the log.
+- Prevention: after every restart, check that the "Started" line shows a new PID before testing.
+- Status: fixed
+
 ---
 
 ## Known things to watch (not errors yet)
