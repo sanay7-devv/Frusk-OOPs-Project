@@ -25,11 +25,12 @@
 7. [M3 Catalog and configuration](#7-m3-catalog-and-configuration)
 8. [M4 Incidents and their lifecycle](#8-m4-incidents-and-their-lifecycle)
 9. [M5 Priority engine](#9-m5-priority-engine)
-10. [Data model built so far](#10-data-model-built-so-far)
-11. [OOP and design patterns: where to find them](#11-oop-and-design-patterns-where-to-find-them)
-12. [Configuration and running the backend](#12-configuration-and-running-the-backend)
-13. [Key decisions](#13-key-decisions)
-14. [Changelog](#14-changelog)
+10. [M6 Technician assignment](#10-m6-technician-assignment)
+11. [Data model built so far](#11-data-model-built-so-far)
+12. [OOP and design patterns: where to find them](#12-oop-and-design-patterns-where-to-find-them)
+13. [Configuration and running the backend](#13-configuration-and-running-the-backend)
+14. [Key decisions](#14-key-decisions)
+15. [Changelog](#15-changelog)
 
 ---
 
@@ -38,11 +39,12 @@
 | Module | What it covers | Status |
 |---|---|---|
 | **M1** Foundations | Exception hierarchy, one global error handler, request IDs, CORS, security headers, OpenAPI | ✅ Done, verified over HTTP |
-| **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, 403 on admin endpoints | ✅ Done and smoke-tested · ⏳ admin user and role management and auth audit come with later modules |
+| **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, admin user / role / skill management | ✅ Done and smoke-tested · ⏳ audit of failed logins comes with M8 |
 | **M3** Catalog and configuration | Services (with dependency graph), category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` | ✅ Done and smoke-tested (42/42) |
-| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54) · ⏳ automatic assignment (M6), events and audit (M8), duplicates (M12) |
+| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54) · ⏳ history (M8), escalate (M11), duplicates (M12) |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
-| M6 to M14 | Assignment strategies, SLA monitor, audit, notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
+| **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
+| M7 to M14 | SLA monitor, audit, notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -110,18 +112,22 @@ flowchart TB
 com.iitsm
 ├── IitsmBackendApplication          entry point (forces the JVM time zone to UTC)
 ├── web
-│   ├── controller                   AuthController, CatalogController, IncidentController,
-│   │                                AdminCatalogController, AdminSlaController, AdminConfigController
-│   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/catalog, dto/incident)
+│   ├── controller                   AuthController, CatalogController, IncidentController, TechnicianController,
+│   │                                AdminUserController, AdminCatalogController, AdminSlaController,
+│   │                                AdminConfigController
+│   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/admin, dto/catalog, dto/incident)
 │   ├── filter                       RequestIdFilter
 │   └── handler                      GlobalExceptionHandler
 ├── application
+│   ├── admin                        UserAdminService, UserAdminViews
+│   ├── assignment                   AssignmentService, WorkloadService, TechnicianWorkService
 │   ├── auth                         AuthService, AuthenticatedUser, UserView, AccessTokenIssuer (port)
 │   ├── catalog                      CatalogService, SlaAdminService, CatalogViews
 │   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
-│   ├── assignment                   EligibilityFilter, WorkloadTracker
+│   ├── assignment                   AssignmentStrategy + 5 strategies, FactorStrategy, AssignmentEngine,
+│   │                                AssignmentFactors, EligibilityFilter, WorkloadTracker, TechnicianCandidate
 │   ├── category                     Category (tree, required skills)
 │   ├── config                       ConfigKey, AppSettings, AppConfigEntry
 │   ├── exception                    ItsmException + 18 business exceptions
@@ -615,7 +621,7 @@ For P1 and P2 only: how long an incident may stay unacknowledged before it moves
 
 ### 7.6 Live configuration (`app_config`)
 
-Every tunable number lives in the `app_config` table, never in Java constants: priority bands and multipliers, assignment strategy and weights, SLA warning percentages, duplicate thresholds, AI engine, lockout rules (27 keys, handbook Appendix A.5).
+Every tunable number lives in the `app_config` table, never in Java constants: priority bands and multipliers, assignment strategy and weights, SLA warning percentages, duplicate thresholds, AI engine, lockout rules (30 keys: the 27 of handbook Appendix A.5 plus 3 for service familiarity, DEC-28).
 
 | Class | Role |
 |---|---|
@@ -991,7 +997,160 @@ classDiagram
 
 ---
 
-## 10. Data model built so far
+## 10. M6 Technician assignment
+
+**What it does.** Picks the best technician for each new incident automatically, explains the choice in plain words, and lets an administrator switch the algorithm at runtime. Team leads see the top three candidates with a score breakdown, plus everyone who was left out and why.
+
+### 10.1 From incident to technician
+
+```mermaid
+flowchart LR
+    A["New incident<br/>with a category"] --> B["All technicians"]
+    B --> C{"EligibilityFilter"}
+    C -->|"reporter"| X1["excluded: reported this incident"]
+    C -->|"AWAY / OFF_DUTY"| X2["excluded: is AWAY"]
+    C -->|"load ≥ max"| X3["excluded: at max load (10/10)"]
+    C -->|"no required skill"| X4["excluded: has none of the skills"]
+    C -->|"eligible"| D["AssignmentFactors<br/>skill · load · experience ·<br/>priority fit · familiarity"]
+    D --> E{"active strategy<br/>(app_config)"}
+    E --> F["ranked list<br/>(ties: round-robin)"]
+    F --> G["best → ASSIGNED"]
+    A2["No category, or<br/>nobody eligible"] --> T["stays CLASSIFIED<br/>(triage queue)"]
+```
+
+### 10.2 The five factors (each 0 to 1)
+
+| Factor | How it is computed | Source |
+|---|---|---|
+| **Skill** | 70% best proficiency among the required skills + 30% share of required skills held | Handbook, refined by DEC-29 |
+| **Load** | 1 − current weighted load / max load (P1 = 4 points, P2 = 3, P3 = 2, P4 = 1) | Handbook |
+| **Experience** | level / 5 | Handbook |
+| **Priority fit** | P1/P2: seniors (level 4-5) score 1. P3/P4: levels 1-3 score 1, keeping seniors free | Handbook, refined by DEC-31 |
+| **Service familiarity** | incidents on the same service resolved in the last 90 days / 5, capped at 1 | **Our addition** from the course brief (DEC-28) |
+
+### 10.3 Five interchangeable strategies (Strategy pattern)
+
+| `assignment.strategy` | Picks | Score |
+|---|---|---|
+| **`COMPOSITE`** (default) | the best overall | 0.35 skill + 0.25 load + 0.15 experience + 0.10 priority fit + 0.15 familiarity (weights are live settings, must sum to 1.0) |
+| `SKILL` | the best skill match | skill |
+| `LOAD` | the least busy | load |
+| `ROUND_ROBIN` | the one assigned longest ago | place in the rotation |
+| `EXPERIENCE_PRIORITY` | seniors for P1/P2, juniors for P3/P4 | 0.8 priority fit + 0.2 experience |
+
+Ties (scores equal to six decimals) always go to whoever was assigned longest ago, then by id, so the result is deterministic and fair.
+
+```mermaid
+classDiagram
+    direction LR
+    class AssignmentStrategy {
+        <<interface>>
+        +name() String
+        +rank(eligible, settings) List~ScoredCandidate~
+    }
+    class FactorStrategy {
+        <<abstract>>
+        #score(factors, settings)* double
+        +rank(eligible, settings) List~ScoredCandidate~
+    }
+    class AssignmentEngine {
+        -Map~String, AssignmentStrategy~ strategies
+        +recommend(incident, candidates, settings) Recommendation
+    }
+    class EligibilityFilter {
+        +check(technician, incident, load) Optional~Ineligibility~
+        +requireEligible(technician, incident, load)
+    }
+    class AssignmentFactors {
+        <<record>>
+        +double skill
+        +double load
+        +double experience
+        +double priorityFit
+        +double familiarity
+        +List~String~ reasons
+    }
+    AssignmentStrategy <|.. FactorStrategy
+    AssignmentStrategy <|.. RoundRobinStrategy
+    FactorStrategy <|-- CompositeStrategy
+    FactorStrategy <|-- SkillBasedStrategy
+    FactorStrategy <|-- LoadBasedStrategy
+    FactorStrategy <|-- ExperiencePriorityStrategy
+    AssignmentEngine o-- AssignmentStrategy
+    AssignmentEngine ..> EligibilityFilter : filters first
+    AssignmentEngine ..> AssignmentFactors : computes
+```
+
+`FactorStrategy` is a small *template method*: subclasses only say how to score one candidate; sorting and tie-breaking are shared.
+
+### 10.4 Worked example (the one the team decided on)
+
+P1 "VPN gateway down" on Network (criticality 4), category requiring **Networking** and **Linux**, reported by Karthik:
+
+| | Networking | Linux | Load | Level | Fixes on Network (90 days) | Skill | Load | Exp. | Prio. fit | Familiarity | **Composite** |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **Asha** | 5 | — | 6/10 | 5 | 6 | 0.85 | 0.40 | 1.0 | 1.0 | 1.0 | **80** ← assigned |
+| Meera | 4 | 4 | 7/10 | 4 | 2 | 0.86 | 0.30 | 0.8 | 1.0 | 0.4 | 66 |
+| Ravi | 3 | 4 | 2/10 | 2 | 0 (3 were 200 days ago) | 0.86 | 0.80 | 0.4 | 0.4 | 0.0 | 60 |
+| Tom | 5 | 5 | | | | | | | | | excluded: is AWAY |
+| Karthik | | | | | | | | | | | excluded: reported this incident |
+
+Without the familiarity factor (handbook weights), Ravi would rank second (70) ahead of Meera (69): familiarity rewards Meera's recent work on this service. All numbers above were reproduced exactly by the running system.
+
+### 10.5 Recommendations (explainable)
+
+`GET /api/v1/incidents/{id}/recommendations` (admin, team lead):
+
+```json
+{
+  "strategy": "COMPOSITE",
+  "recommendations": [
+    { "technicianId": 9, "name": "Meera", "score": 66, "currentLoad": 7, "maxLoad": 10,
+      "reasons": ["Linux 4/5, Networking 4/5", "Load 7/10", "Experience level 4 (senior)",
+                  "Resolved 2 Network incidents in the last 90 days"],
+      "factors": { "skill": 0.86, "load": 0.3, "experience": 0.8, "priorityFit": 1.0, "familiarity": 0.4 } }
+  ],
+  "excluded": [
+    { "technicianId": 11, "name": "Tom", "reason": "is AWAY" },
+    { "technicianId": 7, "name": "Asha", "reason": "at max load (10/10)" },
+    { "technicianId": 12, "name": "Karthik", "reason": "reported this incident" }
+  ]
+}
+```
+
+### 10.6 Managing users and technicians (completes M2)
+
+| Method and path | Permission | What it does |
+|---|---|---|
+| `GET, POST /api/v1/admin/users` · `GET, PUT, DELETE /admin/users/{id}` | `USER_MANAGE` | List, create (with roles and profiles), edit, deactivate (never delete; sessions revoked) |
+| `POST /api/v1/admin/users/{id}/roles` · `DELETE /admin/users/{id}/roles/{role}` | `USER_MANAGE` | Make someone a technician, team lead (escalation level 1) or admin; EMPLOYEE always stays; TECHNICIAN only removable without active incidents |
+| `PUT /api/v1/admin/technicians/{id}/skills` · `PUT /admin/technicians/{id}` | `USER_MANAGE` | Replace skills; change experience, escalation level, max load, availability |
+| `GET /api/v1/technicians?skillId=&availability=` | `TEAM_VIEW` | Active technicians with load, availability and skills |
+| `GET /api/v1/technicians/me/workload` | `WORKLOAD_VIEW` | My load, capacity, resolved this week, next 10 SLA deadlines |
+| `GET /api/v1/technicians/me/queue` | `WORKLOAD_VIEW` | My active incidents, most urgent deadline first |
+| `PUT /api/v1/technicians/me/availability` | `INCIDENT_HANDLE` | Mark myself AVAILABLE, BUSY, AWAY or OFF_DUTY |
+| `GET /api/v1/incidents/{id}/recommendations` | `INCIDENT_ASSIGN` | See 10.5 |
+| `POST /api/v1/incidents/{id}/assign` (no `technicianId`) | `INCIDENT_ASSIGN` | Assign with the active strategy |
+
+### 10.7 Verified behavior (2026-11-06)
+
+**33 of 33 M6 checks passed**, and the M2 (27), M3 (42) and M4 (54) suites were re-run green: **156 checks in total**.
+
+| Area | Checked |
+|---|---|
+| Auto-assignment | New incident with a category → ASSIGNED on creation to the expected technician (Asha, 80) |
+| Explainability | Recommendations reproduce the hand calculation exactly (Meera 66, Ravi 60, factor values and reasons); excluded list gives AWAY, OFF_DUTY, at max load, reporter |
+| Familiarity | Fixes older than the 90-day window count 0; with familiarity weight 0 the order flips (Ravi 70 > Meera 69) |
+| **T04** | Switching `assignment.strategy` to LOAD sends the next two incidents to the least busy technician, no restart; ROUND_ROBIN rotates Ravi then Meera |
+| **T13** | Every skilled technician unavailable → incident created (201), stays CLASSIFIED, no error |
+| **T26** | Multi-role user: queue 200, report 201, admin endpoint 403 |
+| Assignment without a technician | Uses the active strategy; nobody eligible → 409 TECHNICIAN_UNAVAILABLE |
+| Admin users | Create with roles and skills; roles without EMPLOYEE, technician without profile, duplicate email → 400; add and remove ADMINISTRATOR; EMPLOYEE not removable; self-deactivation refused; deactivated user cannot log in; skills replaced; lead lists technicians by skill; technician sets own availability |
+| Config | Five weights must sum to 1.0 (1.15 refused) |
+
+---
+
+## 11. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
 
@@ -1175,7 +1334,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 ---
 
-## 11. OOP and design patterns: where to find them
+## 12. OOP and design patterns: where to find them
 
 ### 8.1 OOP concepts (course brief requirements)
 
@@ -1200,13 +1359,13 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
 | **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. Notification channels and the LLM client follow in M9 / M12. |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
-| **Strategy** | ✅ in use (priority) · ⬜ M6 (assignment) | `PriorityStrategy` / `WeightedPriorityStrategy`, chosen by `priority.strategy`; override rules as small `PriorityOverrideRule` objects. Assignment strategies follow in M6, selected by `assignment.strategy`. |
+| **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. |
 | **Observer** | ⬜ M8 | Domain events with audit, notification, SLA and dashboard listeners. |
 | **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
 
 ---
 
-## 12. Configuration and running the backend
+## 13. Configuration and running the backend
 
 | Setting | Environment variable | Default |
 |---|---|---|
@@ -1228,7 +1387,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 ---
 
-## 13. Key decisions
+## 14. Key decisions
 
 Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.md`**. Short index: `docs/ROADMAP.md`, section 6.
 
@@ -1243,10 +1402,11 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | D-008 | Auth design | Permission-based authorities, stateless access tokens, rotating hashed refresh tokens with theft detection |
 | D-009 | Catalog and configuration design | Soft delete for services and categories, cycle-free service graph, global SLA uniqueness checked in code, settings as a validated immutable snapshot swapped after commit |
 | D-010 | Incident design | State pattern with stateless state singletons; 403 for "who", 409 for "status"; team lead sees all incidents; strangers get 404; manual assignment only until M6; messages and reasons stored as comments |
+| D-011 | Assignment and admin users | Service familiarity as a fifth factor, skill = best + coverage, explainable recommendations with excluded list (team decisions); round-robin tie-break; auto-assign only with a category; admin user rules |
 
 ---
 
-## 14. Changelog
+## 15. Changelog
 
 | Date | Change |
 |---|---|
@@ -1255,3 +1415,4 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-06 | M1 verified over HTTP. M2 domain model (users, roles, profiles, skills) and auth layer (register, login, refresh, logout, me, JWT, lockout) built and smoke-tested (27/27). CORS rejections now use the standard error body. This guide started. |
 | 2026-11-06 | M3 Catalog and configuration built and smoke-tested (42/42): services with dependency graph, category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` with validation. Lockout limits moved from properties to `app_config`. |
 | 2026-11-06 | M4 incidents (State pattern, factory, creation pipeline, manual assignment, SLA clocks, comments, lists) and M5 priority engine built and smoke-tested (54/54, covering T01, T03, T05, T06, T08, T09, T11, T12, T14, T15, T18, T21, T24, T25). Fixed during testing: empty resolution wrote NULL into `reusable_solution`; status-based refusals now always return 409, not 403. |
+| 2026-11-06 | M6 assignment built and smoke-tested (33/33): five strategies, Composite with service familiarity, skill = best + coverage, explainable recommendations with excluded list (team decisions DEC-28 to DEC-30), auto-assign on creation, triage, technician workload and queue. Admin user, role and skill management completes M2. M2, M3, M4 suites re-run green (156 checks). |

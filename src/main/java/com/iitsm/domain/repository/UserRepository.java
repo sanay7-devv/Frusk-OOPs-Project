@@ -1,5 +1,6 @@
 package com.iitsm.domain.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.iitsm.domain.user.User;
@@ -18,6 +19,11 @@ public interface UserRepository {
     Optional<User> findByGoogleSub(String googleSub);
 
     boolean existsByEmail(String email);
+
+    List<User> findAllByOrderByNameAsc();
+
+    /** Every user holding the TECHNICIAN role (team leads included), active or not. */
+    List<User> findAllTechnicians();
 
     User save(User user);
 }

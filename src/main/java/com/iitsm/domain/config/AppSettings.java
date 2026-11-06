@@ -76,10 +76,11 @@ public final class AppSettings {
         BigDecimal weightSum = new BigDecimal(v.get(ConfigKey.ASSIGNMENT_WEIGHT_SKILL))
                 .add(new BigDecimal(v.get(ConfigKey.ASSIGNMENT_WEIGHT_LOAD)))
                 .add(new BigDecimal(v.get(ConfigKey.ASSIGNMENT_WEIGHT_EXPERIENCE)))
-                .add(new BigDecimal(v.get(ConfigKey.ASSIGNMENT_WEIGHT_PRIORITY)));
+                .add(new BigDecimal(v.get(ConfigKey.ASSIGNMENT_WEIGHT_PRIORITY)))
+                .add(new BigDecimal(v.get(ConfigKey.ASSIGNMENT_WEIGHT_FAMILIARITY)));
         if (weightSum.subtract(ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             issues.add(new FieldIssue(ConfigKey.ASSIGNMENT_WEIGHT_SKILL.key(),
-                    "the four assignment weights must add up to 1.0 (now " + weightSum.stripTrailingZeros() + ")"));
+                    "the five assignment weights must add up to 1.0 (now " + weightSum.stripTrailingZeros() + ")"));
         }
         int firstWarn = Integer.parseInt(v.get(ConfigKey.SLA_WARN_FIRST_PERCENT));
         int secondWarn = Integer.parseInt(v.get(ConfigKey.SLA_WARN_SECOND_PERCENT));

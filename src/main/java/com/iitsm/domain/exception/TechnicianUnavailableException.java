@@ -10,4 +10,14 @@ public class TechnicianUnavailableException extends ItsmException {
     public TechnicianUnavailableException(String technicianName, String reason) {
         super("TECHNICIAN_UNAVAILABLE", 409, technicianName + " cannot take this incident: " + reason + ".");
     }
+
+    private TechnicianUnavailableException(String message, boolean fullMessage) {
+        super("TECHNICIAN_UNAVAILABLE", 409, message);
+    }
+
+    /** Automatic assignment was asked for but every technician is excluded. */
+    public static TechnicianUnavailableException noneEligible() {
+        return new TechnicianUnavailableException(
+                "No technician is eligible for this incident right now (see the recommendations for why).", true);
+    }
 }

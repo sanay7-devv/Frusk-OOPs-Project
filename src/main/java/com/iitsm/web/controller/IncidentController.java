@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.incident.IncidentService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
@@ -115,8 +116,15 @@ public class IncidentController {
                 request.affectedUsers(), request.version());
     }
 
+    @GetMapping("/{id}/recommendations")
+    @Operation(summary = "Top 3 technicians with reasons and factor scores, plus who is excluded and why")
+    public RecommendationView recommendations(@AuthenticationPrincipal AuthenticatedUser caller,
+                                              @PathVariable Long id) {
+        return incidents.recommendations(caller, id);
+    }
+
     @PostMapping("/{id}/assign")
-    @Operation(summary = "Assign to a technician (admin or team lead)")
+    @Operation(summary = "Assign to a technician, or omit technicianId to use the active strategy (admin, team lead)")
     public IncidentDetail assign(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                  @RequestBody AssignRequest request) {
         return incidents.assign(caller, id, request.technicianId());

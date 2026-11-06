@@ -5,6 +5,7 @@ import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.iitsm.domain.assignment.AssignmentEngine;
 import com.iitsm.domain.incident.IncidentCodeGenerator;
 import com.iitsm.domain.incident.IncidentFactory;
 import com.iitsm.domain.priority.PriorityEngine;
@@ -29,5 +30,11 @@ public class DomainConfig {
     @Bean
     PriorityEngine priorityEngine() {
         return PriorityEngine.standard();
+    }
+
+    /** Composite, Skill, Load, RoundRobin and ExperiencePriority; the active one is a live setting. */
+    @Bean
+    AssignmentEngine assignmentEngine() {
+        return AssignmentEngine.standard();
     }
 }

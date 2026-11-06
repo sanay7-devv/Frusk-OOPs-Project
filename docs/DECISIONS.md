@@ -41,6 +41,13 @@
 | [DEC-25](#dec-25-priority-as-a-strategy-plus-separate-override-rules) | Priority as a strategy plus separate override rules | 2026-11-06 | M5 | ✅ |
 | [DEC-26](#dec-26-smaller-interpretations-of-the-handbook) | Smaller interpretations of the handbook | 2026-11-06 | M3, M4 | ✅ |
 | [DEC-27](#dec-27-which-features-were-deferred-and-why) | Which features were deferred, and why | 2026-11-06 | M2, M4 | 📌 |
+| [DEC-28](#dec-28-service-familiarity-as-a-fifth-assignment-factor) | Service familiarity as a fifth assignment factor | 2026-11-06 | M6 | ✅ team decision |
+| [DEC-29](#dec-29-skill-score--70-best-proficiency--30-coverage) | Skill score = 70% best proficiency + 30% coverage | 2026-11-06 | M6 | ✅ team decision |
+| [DEC-30](#dec-30-explainable-recommendations-top-3-factor-scores-excluded-list) | Explainable recommendations | 2026-11-06 | M6 | ✅ team decision |
+| [DEC-31](#dec-31-priority-fit-prefers-juniors-for-p3-and-p4) | Priority fit prefers juniors for P3 and P4 | 2026-11-06 | M6 | ✅ |
+| [DEC-32](#dec-32-round-robin-as-the-universal-tie-breaker) | Round-robin as the universal tie-breaker | 2026-11-06 | M6 | ✅ |
+| [DEC-33](#dec-33-auto-assign-on-creation-only-when-the-incident-has-a-category) | Auto-assign on creation only with a category | 2026-11-06 | M6 | ✅ |
+| [DEC-34](#dec-34-admin-user-management-rules) | Admin user management rules | 2026-11-06 | M2 | ✅ |
 
 ---
 
@@ -459,14 +466,116 @@ Some endpoints listed under M2 and M4 in the contract are not built yet. Two kin
 | `GET /incidents/{id}/history` (M4) | M8 | History *is* the audit trail |
 | `POST /incidents/{id}/escalate` (M4) | M11 escalation chain | Escalation levels and notifications are the Chain of Responsibility |
 | `POST /incidents/{id}/mark-duplicate` and the duplicate check on create (M4) | M12 similarity | Needs similarity scoring and problem records |
-| Automatic assignment on create (M4, so T01 ends in ASSIGNED) | M6 strategies | The strategies are M6 |
+| Automatic assignment on create (M4, so T01 ends in ASSIGNED) | M6 strategies | ✅ Done 2026-11-06 (DEC-33) |
 
 **2. No technical dependency; deferred to keep each module small and testable.**
 
 | Feature | Plan |
 |---|---|
-| Admin user and role management (`/admin/users`, roles, technician skills) | Next small step, before or with M6 (M6 needs technicians with skills anyway) |
+| Admin user and role management (`/admin/users`, roles, technician skills) | ✅ Done 2026-11-06 with M6 (DEC-34) |
 | Feedback on resolved incidents (`POST /incidents/{id}/feedback`) | Small; can be done now |
 | Attachments (upload, list, download) | Can be done now; the safety checks (type, 5 MB, safe names) are M14 rules but can be built together |
 
 **Cross-questions.** *"Why is M4 not complete?"* Its core (the full lifecycle, creation pipeline, assignment rules, SLA clocks, concurrency) is done and tested; the remaining endpoints belong to features whose logic lives in later modules (audit, escalation, similarity), so they are built there instead of as throw-away stubs.
+
+---
+
+## M6 Assignment and admin user management
+
+> DEC-28 to DEC-30 were **team decisions on innovative parts**: options were compared with a worked example (Asha, Ravi, Meera) and chosen by the team on 2026-11-06.
+
+### DEC-28: Service familiarity as a fifth assignment factor
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-06, start of M6 | M6 | ✅ | Team (option A of three) |
+
+**Decision.** The Composite strategy scores five factors instead of the handbook's four. The new one, **service familiarity**, is how many incidents on the same service the technician resolved in the last 90 days, against a target of 5 (`min(fixes / 5, 1)`). Default weights: skill 0.35, load 0.25, experience 0.15, priority fit 0.10, familiarity 0.15. The window, the target and all weights are live settings and must add up to 1.0.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **A. Fifth weighted factor** ✔ | Comes straight from the course brief ("previous experience with the affected service"); visible in the ranking and in the reasons; tunable | Departs from the handbook's weights |
+| B. Tie-breaker only | Handbook weights untouched | Almost never visible |
+| C. Handbook only | Simplest | Ignores a factor the brief names |
+
+**Why.** It is what a real support desk does: whoever fixed the payment gateway last week is the best person for it today. Verified on the worked example: with familiarity, Meera (2 recent fixes) ranks above Ravi (none recent): 66 vs 60; with the handbook weights Ravi wins 70 vs 69.
+
+**Trade-off.** It could keep sending one service to the same person; the load factor (25%) and the max-load rule counter that.
+
+**Cross-questions.**
+- *"Why 90 days and 5 fixes?"* Recent enough to reflect current knowledge, long enough to have data; both are settings, so they can be tuned without code.
+- *"Do fixes from long ago count?"* No: Ravi's three fixes from 200 days ago scored 0 in the test.
+
+### DEC-29: Skill score = 70% best proficiency + 30% coverage
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-06 | M6 | ✅ | Team (option A of three) |
+
+**Decision.** When a category requires several skills: `skill = 0.7 × (best proficiency among the required skills / 5) + 0.3 × (required skills held / required skills)`. A category with no required skill scores 1 for everyone.
+
+| Formula | Asha (Networking 5, no Linux) | Ravi (3, 4) | Meera (4, 4) |
+|---|---|---|---|
+| **Best + coverage** ✔ | 0.85 | 0.86 | 0.86 |
+| Best single skill | 1.00 | 0.80 | 0.80 |
+| Average over required | 0.50 | 0.70 | 0.80 |
+
+**Why.** For a problem needing Networking *and* Linux, a pure specialist missing Linux should not automatically beat someone who has both; but a strong specialist should not be punished as hard as a plain average does.
+
+**Cross-questions.** *"Why 70/30?"* Proficiency matters most (it decides how fast the fix is), coverage is the safety net; the split keeps a 5/5 specialist competitive while letting complete coverage win close calls.
+
+### DEC-30: Explainable recommendations (top 3, factor scores, excluded list)
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-06 | M6 | ✅ | Team (option A of three) |
+
+**Decision.** `GET /incidents/{id}/recommendations` returns the active strategy, the top 3 with a 0 to 100 score, current and max load, human-readable reasons ("Networking 4/5, Linux 4/5", "Load 7/10", "Resolved 2 Network incidents in the last 90 days") and the five factor scores, plus every **excluded** technician with the reason ("is AWAY", "at max load (10/10)", "reported this incident"). Two fields (`factors`, `excluded`) are additions to the contract.
+
+**Why.** The frontend can draw the factors as bars: a clear "explainable AI" moment for the demo, and it answers the obvious question "why wasn't Tom picked?".
+
+**Cross-questions.** *"Is the AI a black box?"* No: every score is a weighted sum of five named factors, each shown with its value and a reason.
+
+### DEC-31: Priority fit prefers juniors for P3 and P4
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-06 | M6 | ✅ (proposed default, not objected to) |
+
+**Decision.** P1 and P2: levels 4 and 5 score 1, others level / 5 (handbook: "P1 and P2 to senior technicians"). P3 and P4: levels 1 to 3 score 1, level 4 scores 0.4, level 5 scores 0.2.
+
+**Why.** The handbook only says what happens to critical incidents; keeping seniors free of routine work means they are available when a P1 arrives.
+
+### DEC-32: Round-robin as the universal tie-breaker
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-06 | M6 | ✅ |
+
+**Decision.** Every strategy orders equal scores by "assigned longest ago first (never assigned before anyone)", then by id, so results are deterministic. Scores equal to six decimals count as a tie, so floating-point noise never overrides rotation. Every assignment records `last_assigned_at`.
+
+**Why.** Handbook: "round-robin as the tiebreaker"; fairness between equally good technicians.
+
+### DEC-33: Auto-assign on creation only when the incident has a category
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-06 | M6 | ✅ |
+
+**Decision.** Creation runs the active strategy and assigns the best eligible technician. An incident without a category, or with nobody eligible, stays CLASSIFIED (the triage queue) without any error to the reporter; a team lead or admin assigns it later (`POST /assign` with or without a technician). The TRIAGE_NEEDED notification follows with M9.
+
+**Why.** Without a category there are no required skills to match, so any choice would be a guess (handbook pipeline: "else leave for triage"). Test case T13 expects "no error to the reporter".
+
+### DEC-34: Admin user management rules
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-06 | M2 (completed with M6) | ✅ |
+
+**Decision.** Users are never deleted; `DELETE /admin/users/{id}` deactivates and revokes all their sessions. An admin cannot deactivate themselves. EMPLOYEE can never be removed. TECHNICIAN cannot be removed while the person has active incidents. Admin lists are plain arrays. Two endpoints were added beyond the contract: `PUT /admin/technicians/{id}` (experience, escalation level, max load, availability) and `PUT /technicians/me/availability` (a technician marks themselves AWAY).
+
+**Why.** History and audit keep pointing at users; an admin locking themselves out is unrecoverable; removing a technician with open work would orphan incidents. Changing availability is needed to demo eligibility ("set Tom AWAY") and was missing from the contract.
+
+**Cross-questions.** *"What happens to a deactivated user's open token?"* Refresh is revoked at once; the 15-minute access token expires on its own (DEC-10).

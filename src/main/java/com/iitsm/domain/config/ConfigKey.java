@@ -27,12 +27,19 @@ public enum ConfigKey {
 
     ASSIGNMENT_STRATEGY("assignment.strategy", "COMPOSITE", "Active technician assignment strategy", Type.CHOICE,
             "COMPOSITE", "SKILL", "LOAD", "ROUND_ROBIN", "EXPERIENCE_PRIORITY"),
-    ASSIGNMENT_WEIGHT_SKILL("assignment.weight.skill", "0.40", "Composite weight: skill match", Type.DECIMAL, "0", "1"),
-    ASSIGNMENT_WEIGHT_LOAD("assignment.weight.load", "0.30", "Composite weight: current load", Type.DECIMAL, "0", "1"),
-    ASSIGNMENT_WEIGHT_EXPERIENCE("assignment.weight.experience", "0.20", "Composite weight: experience",
+    // Composite weights (decision DEC-28 added service familiarity to the handbook's four factors)
+    ASSIGNMENT_WEIGHT_SKILL("assignment.weight.skill", "0.35", "Composite weight: skill match", Type.DECIMAL, "0", "1"),
+    ASSIGNMENT_WEIGHT_LOAD("assignment.weight.load", "0.25", "Composite weight: current load", Type.DECIMAL, "0", "1"),
+    ASSIGNMENT_WEIGHT_EXPERIENCE("assignment.weight.experience", "0.15", "Composite weight: experience",
             Type.DECIMAL, "0", "1"),
     ASSIGNMENT_WEIGHT_PRIORITY("assignment.weight.priority", "0.10", "Composite weight: priority fit",
             Type.DECIMAL, "0", "1"),
+    ASSIGNMENT_WEIGHT_FAMILIARITY("assignment.weight.familiarity", "0.15",
+            "Composite weight: past fixes on the same service", Type.DECIMAL, "0", "1"),
+    ASSIGNMENT_FAMILIARITY_WINDOW_DAYS("assignment.familiarity.window.days", "90",
+            "How far back resolved incidents count toward service familiarity", Type.INTEGER, "1", "365"),
+    ASSIGNMENT_FAMILIARITY_TARGET("assignment.familiarity.target", "5",
+            "Resolved incidents on a service that count as full familiarity", Type.INTEGER, "1", "100"),
 
     SLA_WARN_FIRST_PERCENT("sla.warn.first.percent", "75", "First SLA warning at this percent of the deadline",
             Type.INTEGER, "1", "99"),

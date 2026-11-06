@@ -19,20 +19,25 @@ public class UserFactory {
 
     /** Self-registration and admin creation with a password. */
     public User newEmployee(String name, String email, String passwordHash, String department) {
-        return create(name, email, passwordHash, department);
+        return create(name, email, passwordHash, department, null);
+    }
+
+    /** Admin creation, which also knows the location. */
+    public User newEmployee(String name, String email, String passwordHash, String department, String location) {
+        return create(name, email, passwordHash, department, location);
     }
 
     /** First Google sign-in for an unknown email: no password (decision D-001). */
     public User newGoogleEmployee(String name, String email, String googleSub) {
-        User user = create(name, email, null, null);
+        User user = create(name, email, null, null, null);
         user.linkGoogleAccount(googleSub);
         return user;
     }
 
-    private User create(String name, String email, String passwordHash, String department) {
+    private User create(String name, String email, String passwordHash, String department, String location) {
         Instant now = clock.instant();
         User user = new User(name.strip(), normalizeEmail(email), passwordHash, now);
-        user.grantEmployeeRole(now, department, null);
+        user.grantEmployeeRole(now, department, location);
         return user;
     }
 

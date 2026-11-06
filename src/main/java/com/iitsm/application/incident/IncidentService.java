@@ -8,6 +8,8 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.iitsm.application.assignment.AssignmentService;
+import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.config.ConfigService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
@@ -21,6 +23,7 @@ import com.iitsm.domain.exception.IncidentNotFoundException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.OptimisticLockConflictException;
 import com.iitsm.domain.exception.ServiceNotFoundException;
+import com.iitsm.domain.exception.TechnicianUnavailableException;
 import com.iitsm.domain.exception.UserNotFoundException;
 import com.iitsm.domain.incident.ClosureReason;
 import com.iitsm.domain.incident.CommentVisibility;
@@ -54,8 +57,8 @@ import com.iitsm.domain.user.User;
  * current status (409 INVALID_STATE_TRANSITION), save, return the detail view. One transaction per call, so a
  * failed step changes nothing.
  * <p>
- * Still to come from later modules: duplicate detection and AI category suggestion (M12), automatic assignment
- * (M6; until then new incidents wait in CLASSIFIED for manual assignment), domain events and audit (M8).
+ * Still to come from later modules: duplicate detection and AI category suggestion (M12), domain events and audit
+ * (M8). Automatic assignment on creation uses the active M6 strategy.
  */
 @Service
 public class IncidentService {
@@ -72,12 +75,14 @@ public class IncidentService {
     private final ConfigService config;
     private final IncidentAccessPolicy access;
     private final IncidentViewMapper views;
+    private final AssignmentService assignment;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
                            ItServiceRepository services, CategoryRepository categories, UserRepository users,
                            IncidentFactory factory, PriorityEngine priorityEngine, SlaPolicyResolver slaPolicies,
-                           ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views, Clock clock) {
+                           ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
+                           AssignmentService assignment, Clock clock) {
         this.incidents = incidents;
         this.search = search;
         this.comments = comments;
@@ -90,6 +95,7 @@ public class IncidentService {
         this.config = config;
         this.access = access;
         this.views = views;
+        this.assignment = assignment;
         this.clock = clock;
     }
 
@@ -111,8 +117,17 @@ public class IncidentService {
         Incident incident = factory.create(reporter, service, category, title, description, impact, urgency,
                 affectedUsers);
         recalculatePriority(incident);
+        assignment.autoAssign(incident); // stays CLASSIFIED (triage) without a category or an eligible technician
         incident = incidents.save(incident);
         return views.detail(incident, caller);
+    }
+
+    /** GET /incidents/{id}/recommendations: top 3 with reasons and factor scores, plus who was excluded and why. */
+    @Transactional(readOnly = true)
+    public RecommendationView recommendations(AuthenticatedUser caller, Long id) {
+        Incident incident = load(id);
+        access.require(caller, incident, IncidentAction.ASSIGN);
+        return assignment.recommendationView(incident);
     }
 
     // ------------------------------------------------------------------ read
@@ -179,19 +194,20 @@ public class IncidentService {
 
     // ------------------------------------------------------------------ assignment
 
-    /** Manual assignment by an admin or team lead. Automatic assignment by strategy arrives with M6. */
+    /**
+     * Assignment by an admin or team lead: to the chosen technician (eligibility checked, with the specific error),
+     * or, without technicianId, to the best one picked by the active strategy.
+     */
     @Transactional
     public IncidentDetail assign(AuthenticatedUser caller, Long id, Long technicianId) {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.ASSIGN);
-        if (technicianId == null) {
-            throw new InputValidationException("technicianId",
-                    "is required until automatic assignment (module M6) is available");
-        }
-        User technician = loadEligibleTechnician(technicianId, incident);
-        Instant now = clock.instant();
-        incident.assign(technician, now);
-        technician.technicianRole().ifPresent(role -> role.getProfile().markAssigned(now));
+        User technician = technicianId != null
+                ? loadEligibleTechnician(technicianId, incident)
+                : assignment.recommend(incident).best()
+                        .map(choice -> choice.candidate().technician())
+                        .orElseThrow(TechnicianUnavailableException::noneEligible);
+        assignment.assign(incident, technician);
         return views.detail(incident, caller);
     }
 
@@ -204,6 +220,7 @@ public class IncidentService {
         Instant now = clock.instant();
         incident.reassign(technician, now);
         technician.technicianRole().ifPresent(role -> role.getProfile().markAssigned(now));
+        // reassign keeps the status, so it does not go through AssignmentService.assign (which assigns from CLASSIFIED)
         addNote(incident, loadUser(caller.id()), CommentVisibility.INTERNAL,
                 "Reassigned to " + technician.getName() + ": " + reason, now);
         return views.detail(incident, caller);
