@@ -1,5 +1,5 @@
 # ========================================================
-# Whitelist only frontend/, icons/, .gitignore, and README.md
+# Whitelist only frontend/, icons/, .gitignore, README.md, .npmrc, and vercel.json
 # ========================================================
 
 # Ignore everything in root by default
@@ -10,6 +10,8 @@
 !README.md
 !README.MD
 !readme.md
+!.npmrc
+!vercel.json
 
 # Whitelist allowed directories
 !/frontend/
