@@ -46,7 +46,7 @@
 | **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ escalate (M11), duplicates (M12) |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
-| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested · ⏳ business-hours calendar (decision pending), audit and notifications of these events (M8, M9) |
+| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
 | M9 to M14 | Notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
 
@@ -1205,13 +1205,41 @@ The rules live in the domain: `SlaTracker.check` decides which alert a clock has
 
 The audit trail (M8, section 12) records both events; notifications (M9) will turn them into messages to the technician and alerts to admins.
 
-### 11.3 Endpoint
+### 11.3 Business-hours calendar
+
+Each SLA policy counts time either around the clock (`ALWAYS`) or only in business hours (`BUSINESS_HOURS`). The business calendar is one company calendar in `app_config` (DEC-39), editable live:
+
+| Key | Default |
+|---|---|
+| `sla.business.zone` | Asia/Kolkata |
+| `sla.business.open` / `close` | 09:00 / 18:00 |
+| `sla.business.days` | MON,TUE,WED,THU,FRI |
+| `sla.business.holidays` | empty (comma-separated dates) |
+
+Every deadline, the shift after a pause and the monitor's percentages go through a `WorkCalendar` (Strategy pattern: `AlwaysCalendar`, `BusinessHoursCalendar`). Example: an 8-hour P3 reported on Friday at 16:00 is due on Monday at 15:00; a holiday on Monday moves it to Tuesday at 15:00.
+
+```mermaid
+classDiagram
+    class WorkCalendar {
+        <<interface>>
+        +addWorkingTime(start, work) Instant
+        +workingTimeBetween(from, to) Duration
+    }
+    WorkCalendar <|.. AlwaysCalendar
+    WorkCalendar <|.. BusinessHoursCalendar
+    SlaPolicy --> CalendarType
+    SlaPolicy ..> SlaTargets : targets(settings)
+    SlaTargets --> WorkCalendar
+    SlaTracker ..> SlaTargets : start, retarget, check
+```
+
+### 11.4 Endpoint
 
 | Endpoint | Who | What |
 |---|---|---|
 | `GET /api/v1/sla/violations?from&to&page&size` | `SLA_VIOLATION_VIEW` (admin, team lead) | Violations recorded in [from, to), newest first: `{id, incidentId, incidentCode, type, overdueSeconds, technician, createdAt}` in the paged wrapper |
 
-### 11.4 Verified behavior (2026-11-07)
+### 11.5 Verified behavior (2026-11-07)
 
 **35 of 35 checks passed** (`m7_smoke.py` against the running app: deadlines are moved in the database and the monitor runs every 5 s).
 
@@ -1224,6 +1252,7 @@ The audit trail (M8, section 12) records both events; notifications (M9) will tu
 | Late run | Clock at 97 % in one step: only warning 2 fires, warning 1 is marked sent |
 | Priority change | Override P4 → P3 resets that clock's warnings |
 | `GET /sla/violations` | Admin and team lead 200 with code and technician; technician and employee 403; `from` after `to` 400 on `to`; range filter |
+| Business hours (`calendar_smoke.py`, 11/11) | Bad zone, days, dates and close-before-open refused with field errors; BUSINESS_HOURS policy accepted; response and resolution deadlines match an independent working-time calculation; holidays skipped |
 
 ---
 
@@ -1572,6 +1601,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | D-013 | Contract generated from code plus a planned resource | Built endpoints document themselves; planned ones are tagged with their module |
 | D-014 | SLA monitor design | One transaction per incident, fire-once flags in the domain, only the highest alert on a late run, a moved deadline gets fresh warnings |
 | D-015 | Audit through events | One `IncidentChanged` event per action written in the action's transaction; refusals and failed logins written in their own; append-only |
+| D-016 | Business-hours calendar | One company calendar in `app_config`; policies choose ALWAYS or BUSINESS_HOURS |
 
 ---
 
@@ -1589,3 +1619,4 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-07 | API contract published (D-013): 98 operations (62 implemented, 36 planned), error codes on every implemented operation, export and README in `docs/openapi`. |
 | 2026-11-07 | M7 SLA monitor built and smoke-tested (section 11, D-014): fire-once warnings and violations, `sla_violations`, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`; sections 11 to 15 renumbered to 12 to 16. |
 | 2026-11-07 | M8 events and audit trail built and smoke-tested (section 12, D-015): `IncidentChanged`, `TriageNeeded`, `SecurityAuditEvent`, `AuditListener`, `audit_records`, `GET /incidents/{id}/history`, `GET /audit`; LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED audited. Fixed E-021 (optional booleans rejected by Jackson 3). Sections renumbered again (M8 is 12). |
+| 2026-11-07 | Business-hours SLA calendar (section 11.3, D-016): `WorkCalendar`, `BusinessHoursCalendar`, `sla.business.*` settings, BUSINESS_HOURS policies; fixed E-022 (calendar_type too short for BUSINESS_HOURS). |

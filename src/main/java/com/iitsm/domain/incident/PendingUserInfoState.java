@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
+import com.iitsm.domain.sla.WorkCalendar;
+
 /** Status PENDING_USER_INFO. */
 final class PendingUserInfoState extends IncidentState {
 
@@ -19,9 +21,9 @@ final class PendingUserInfoState extends IncidentState {
 
     /** The reporter replied: the clock resumes and the deadline moves later by the paused time. */
     @Override
-    void provideInfo(Incident incident, String message, Instant now) {
+    void provideInfo(Incident incident, String message, Instant now, WorkCalendar calendar) {
         requireText("message", message, 1, 2000);
-        incident.resumeSla(now);
+        incident.resumeSla(now, calendar);
         incident.moveTo(IncidentStatus.IN_PROGRESS, now);
     }
 }

@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
+import com.iitsm.domain.sla.WorkCalendar;
+import com.iitsm.domain.sla.SlaTargets;
 import com.iitsm.domain.category.Category;
 import com.iitsm.domain.exception.ConflictOfInterestException;
 import com.iitsm.domain.exception.InputValidationException;
@@ -47,7 +49,7 @@ public abstract class IncidentState {
         throw refused(IncidentAction.REQUEST_INFO);
     }
 
-    void provideInfo(Incident incident, String message, Instant now) {
+    void provideInfo(Incident incident, String message, Instant now, WorkCalendar calendar) {
         throw refused(IncidentAction.PROVIDE_INFO);
     }
 
@@ -63,7 +65,7 @@ public abstract class IncidentState {
         throw refused(IncidentAction.CLOSE);
     }
 
-    void reopen(Incident incident, String reason, Instant now, Duration reopenWindow, Duration resolutionTarget) {
+    void reopen(Incident incident, String reason, Instant now, Duration reopenWindow, SlaTargets targets) {
         throw refused(IncidentAction.REOPEN);
     }
 

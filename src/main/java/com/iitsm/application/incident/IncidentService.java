@@ -240,7 +240,7 @@ public class IncidentService {
         SlaPolicy policy = slaPolicies.resolve(incident.getService(), priority);
         Instant now = clock.instant();
         Priority before = incident.getPriority();
-        incident.applyPriority(manual, policy.responseTarget(), policy.resolutionTarget(), now);
+        incident.applyPriority(manual, policy.targets(config.current()), now);
         addNote(incident, actor, CommentVisibility.INTERNAL, "Priority set to " + priority + ": " + reason, now);
         // the reason is in the internal note, not here: reporters see this entry
         publish(incident, AuditAction.PRIORITY_CHANGED, actor, incident.getStatus(), incident.getStatus(),
@@ -334,7 +334,8 @@ public class IncidentService {
         access.require(caller, incident, IncidentAction.PROVIDE_INFO);
         Instant now = clock.instant();
         IncidentStatus before = incident.getStatus();
-        incident.provideInfo(message, now);
+        incident.provideInfo(message, now, slaPolicies.resolve(incident.getService(), incident.getPriority())
+                .targets(config.current()).calendar());
         addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
         published(caller, incident, AuditAction.INFO_PROVIDED, before,
                 "Information provided by %s; resolution clock resumed, due " + incident.getSla().getResolutionDue());
@@ -383,7 +384,7 @@ public class IncidentService {
         SlaPolicy policy = slaPolicies.resolve(incident.getService(), incident.getPriority());
         Instant now = clock.instant();
         IncidentStatus before = incident.getStatus();
-        incident.reopen(reason, now, settings.reopenWindow(), policy.resolutionTarget());
+        incident.reopen(reason, now, settings.reopenWindow(), policy.targets(settings));
         addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, "Reopened: " + reason, now);
         published(caller, incident, AuditAction.REOPENED, before,
                 "Reopened by %s; resolution clock restarted, due " + incident.getSla().getResolutionDue());
@@ -444,7 +445,7 @@ public class IncidentService {
                 isSecurity(incident.getCategory()));
         PriorityBreakdown breakdown = priorityEngine.calculate(input, config.current());
         SlaPolicy policy = slaPolicies.resolve(service, breakdown.band());
-        incident.applyPriority(breakdown, policy.responseTarget(), policy.resolutionTarget(), clock.instant());
+        incident.applyPriority(breakdown, policy.targets(config.current()), clock.instant());
     }
 
     /** The category is Security or sits under it (for example Phishing). Categories are admin data, not code. */

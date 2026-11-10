@@ -210,6 +210,16 @@ Entry template:
 - Prevention: request DTOs use wrapper types (`Boolean`, `Integer`) for every optional field; required ones get `@NotNull`, which also gives a proper field error.
 - Status: fixed
 
+### E-022: BUSINESS_HOURS does not fit sla_policies.calendar_type
+- Date: 2026-11-07
+- Area: db
+- Symptom: creating an SLA policy with `calendarType: BUSINESS_HOURS` returned 500; log: `value too long for type character varying(12)`.
+- Cause: a mismatch inside the locked handbook. Appendix A.2 sizes `calendar_type` VARCHAR(12), but the contract value (C.2 CalendarType) `BUSINESS_HOURS` has 14 characters. It never showed while only ALWAYS was accepted.
+- Fix: `CalendarTypeConverter` stores BUSINESS_HOURS as `BUSINESS_HRS` (12 characters); the API still uses BUSINESS_HOURS. Schema and contract stay as agreed.
+- Prevention: when an enum is stored as text, compare its longest value with the column length. Testing teammate: in seed rows use `BUSINESS_HRS` (or widen the column to 20 in V1 if nobody has run it yet, then the converter can go).
+- Second symptom on the local `schema-auto` database: after the converter, inserts still failed on `sla_policies_calendar_type_check`. Hibernate had generated that CHECK from the old `@Enumerated` mapping, and `ddl-auto=update` never drops constraints. Fixed locally with `alter table sla_policies drop constraint sla_policies_calendar_type_check`; Flyway databases are not affected.
+- Status: fixed (team to confirm the seed value)
+
 ---
 
 ## Known things to watch (not errors yet)

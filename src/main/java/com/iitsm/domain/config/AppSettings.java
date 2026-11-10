@@ -1,13 +1,22 @@
 package com.iitsm.domain.config;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.iitsm.domain.exception.InputValidationException;
+import com.iitsm.domain.sla.AlwaysCalendar;
+import com.iitsm.domain.sla.BusinessHoursCalendar;
+import com.iitsm.domain.sla.CalendarType;
+import com.iitsm.domain.sla.WorkCalendar;
 import com.iitsm.domain.exception.InputValidationException.FieldIssue;
 
 /**
@@ -21,9 +30,23 @@ public final class AppSettings {
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.001");
 
     private final Map<ConfigKey, String> values;
+    private final BusinessHoursCalendar businessHours;
 
     private AppSettings(Map<ConfigKey, String> values) {
         this.values = Map.copyOf(values);
+        this.businessHours = new BusinessHoursCalendar(
+                ZoneId.of(values.get(ConfigKey.SLA_BUSINESS_ZONE)),
+                LocalTime.parse(values.get(ConfigKey.SLA_BUSINESS_OPEN)),
+                LocalTime.parse(values.get(ConfigKey.SLA_BUSINESS_CLOSE)),
+                ConfigKey.items(values.get(ConfigKey.SLA_BUSINESS_DAYS)).stream()
+                        .map(DayOfWeek::valueOf).collect(Collectors.toSet()),
+                ConfigKey.items(values.get(ConfigKey.SLA_BUSINESS_HOLIDAYS)).stream()
+                        .map(LocalDate::parse).collect(Collectors.toSet()));
+    }
+
+    /** The calendar an SLA policy's clocks are counted in (decision DEC-39). */
+    public WorkCalendar workCalendar(CalendarType type) {
+        return type == CalendarType.BUSINESS_HOURS ? businessHours : AlwaysCalendar.INSTANCE;
     }
 
     /**
@@ -87,6 +110,10 @@ public final class AppSettings {
         if (firstWarn >= secondWarn) {
             issues.add(new FieldIssue(ConfigKey.SLA_WARN_SECOND_PERCENT.key(),
                     "must be greater than sla.warn.first.percent"));
+        }
+        if (!LocalTime.parse(v.get(ConfigKey.SLA_BUSINESS_OPEN))
+                .isBefore(LocalTime.parse(v.get(ConfigKey.SLA_BUSINESS_CLOSE)))) {
+            issues.add(new FieldIssue(ConfigKey.SLA_BUSINESS_CLOSE.key(), "must be after sla.business.open"));
         }
         BigDecimal duplicate = new BigDecimal(v.get(ConfigKey.DUP_THRESHOLD_DUPLICATE));
         BigDecimal related = new BigDecimal(v.get(ConfigKey.DUP_THRESHOLD_RELATED));

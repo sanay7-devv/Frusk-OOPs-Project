@@ -52,6 +52,8 @@
 | [DEC-36](#dec-36-api-contract-generated-from-code-plus-a-planned-resource) | API contract generated from code plus a planned resource | 2026-11-07 | Contract | ✅ |
 | [DEC-37](#dec-37-sla-monitor-one-transaction-per-incident-fire-once-alerts) | SLA monitor: one transaction per incident, fire-once alerts | 2026-11-07 | M7 | ✅ |
 | [DEC-38](#dec-38-audit-trail-through-events-same-transaction-for-actions-own-transaction-for-refusals) | Audit trail through events: same transaction for actions, own transaction for refusals | 2026-11-07 | M8 | ✅ |
+| [DEC-39](#dec-39-one-company-business-hours-calendar-in-app_config) | One company business-hours calendar in app_config | 2026-11-07 | M7 | ✅ user decision |
+| [DEC-40](#dec-40-notification-preferences-and-templates) | Notification preferences and templates | 2026-11-07 | M9 | ✅ user decision, to build |
 
 ---
 
@@ -714,3 +716,37 @@ Smaller rules the handbook left open:
 **Why.** History and audit keep pointing at users; an admin locking themselves out is unrecoverable; removing a technician with open work would orphan incidents. Changing availability is needed to demo eligibility ("set Tom AWAY") and was missing from the contract.
 
 **Cross-questions.** *"What happens to a deactivated user's open token?"* Refresh is revoked at once; the 15-minute access token expires on its own (DEC-10).
+
+---
+
+## User decisions for the extras (2026-11-07)
+
+### DEC-39: One company business-hours calendar in app_config
+
+| When | Module | Status | Also in |
+|---|---|---|---|
+| 2026-11-07 | M7 | ✅ user decision | ROADMAP D-016, ERROR_LOG E-022 |
+
+**Decision.** One calendar for the whole company, kept in `app_config` and editable live: `sla.business.zone` (Asia/Kolkata), `sla.business.open` / `close` (09:00 / 18:00), `sla.business.days` (MON..FRI), `sla.business.holidays` (comma-separated dates, may be empty). An SLA policy chooses ALWAYS (24/7) or BUSINESS_HOURS; every deadline and every "percent of the clock elapsed" is computed through a `WorkCalendar` (Strategy pattern: `AlwaysCalendar`, `BusinessHoursCalendar`). Worked example: an 8-hour P3 reported Friday 16:00 is due Monday 15:00.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **One company calendar** ✔ | Simple, live-editable, no schema change | Every service shares the same hours |
+| Per-service calendars | Realistic (Payment 24/7, Intranet office hours) | Schema change beyond Appendix A and more admin screens; partly covered anyway because each policy picks ALWAYS or BUSINESS_HOURS |
+| Fixed office hours, no holidays | Simplest | Unrealistic, and the hours would be constants |
+
+**Rules.** Paused time is counted in the same calendar (a pause overnight does not move the deadline); `paused_seconds` holds the counted paused time. Holidays fit in one `app_config` value (200 characters, about 18 dates). The monitor's percentages use counted time, so a clock does not advance at night.
+
+**Cross-questions.** *"Why does a P3 reported on Friday evening not breach over the weekend?"* Its policy counts only business hours; P1 policies stay ALWAYS. *"Why not a calendar table?"* The agreed schema has none, and one company calendar was enough (user decision).
+
+### DEC-40: Notification preferences and templates
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-07 | M9 | ✅ user decision, to be built with M9 |
+
+**Decision.** Preferences are per user, per event type and channel (the handbook's `notification_preferences` table). In-app notifications are always kept so nothing is lost; SMS is only ever sent for P1; critical alerts (SLA violation to admins, escalation to the new owner) cannot be switched off. Message wording lives in a resource file with placeholders (`{code}`, `{priority}`, ...); the backend ships default wording and the Report teammate can refine it, as the handbook plans. No schema change.
+
+**Options considered.** Per-channel-only switches (simpler, less control) and fully switchable alerts (someone could miss a violation) for preferences; an admin-editable template table (needs a new table) for wording.

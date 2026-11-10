@@ -5,6 +5,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.iitsm.domain.sla.SlaTargets;
+import com.iitsm.domain.sla.WorkCalendar;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
@@ -77,18 +80,19 @@ public class SlaTracker {
     }
 
     /** Sets both deadlines from the creation time once the priority (and so the SLA policy) is known. */
-    void start(Instant createdAt, Duration responseTarget, Duration resolutionTarget) {
-        responseDue = createdAt.plus(responseTarget);
-        resolutionDue = createdAt.plus(resolutionTarget);
+    void start(Instant createdAt, SlaTargets targets) {
+        responseDue = targets.calendar().addWorkingTime(createdAt, targets.response());
+        resolutionDue = targets.calendar().addWorkingTime(createdAt, targets.resolution());
     }
 
     /**
      * The priority changed: deadlines are recalculated from the original creation time (handbook 2.5 M5), keeping
      * any time already spent paused. A response clock that has already stopped is left alone.
      */
-    void retarget(Instant createdAt, Duration responseTarget, Duration resolutionTarget, boolean responseStopped) {
+    void retarget(Instant createdAt, SlaTargets targets, boolean responseStopped) {
+        WorkCalendar calendar = targets.calendar();
         if (!responseStopped) {
-            Instant newDue = createdAt.plus(responseTarget);
+            Instant newDue = calendar.addWorkingTime(createdAt, targets.response());
             if (!newDue.equals(responseDue) && !responseViolated) {
                 // a new deadline gets its own warnings (decision DEC-37)
                 responseFirstWarningSent = false;
@@ -96,7 +100,7 @@ public class SlaTracker {
             }
             responseDue = newDue;
         }
-        Instant newDue = createdAt.plus(resolutionTarget).plusSeconds(pausedSeconds);
+        Instant newDue = calendar.addWorkingTime(createdAt, targets.resolution().plusSeconds(pausedSeconds));
         if (!newDue.equals(resolutionDue) && !resolutionViolated) {
             resolutionFirstWarningSent = false;
             resolutionSecondWarningSent = false;
@@ -108,22 +112,26 @@ public class SlaTracker {
         pausedAt = now;
     }
 
-    /** Adds the paused time to the total and pushes the resolution deadline later by exactly that much. */
-    void resume(Instant now) {
+    /**
+     * The clock resumes with the counted time it had left when it was paused, so the deadline moves later by exactly
+     * the paused (counted) time. {@code pausedSeconds} adds up that counted time.
+     */
+    void resume(Instant now, WorkCalendar calendar) {
         if (pausedAt == null) {
             return;
         }
-        long seconds = Duration.between(pausedAt, now).toSeconds();
-        pausedSeconds += seconds;
+        long paused = calendar.workingTimeBetween(pausedAt, now).toSeconds();
+        pausedSeconds += paused;
         if (resolutionDue != null) {
-            resolutionDue = resolutionDue.plusSeconds(seconds);
+            // counting the paused time forward from the old deadline leaves the same counted time after `now`
+            resolutionDue = calendar.addWorkingTime(resolutionDue, Duration.ofSeconds(paused));
         }
         pausedAt = null;
     }
 
     /** Reopen: a fresh resolution clock with the full target, and fresh warnings for it. */
-    void restartResolution(Instant now, Duration resolutionTarget) {
-        resolutionDue = now.plus(resolutionTarget);
+    void restartResolution(Instant now, SlaTargets targets) {
+        resolutionDue = targets.calendar().addWorkingTime(now, targets.resolution());
         resolutionViolated = false;
         resolutionFirstWarningSent = false;
         resolutionSecondWarningSent = false;
@@ -138,39 +146,42 @@ public class SlaTracker {
      *
      * @return the alerts that fired now, possibly none
      */
-    List<SlaAlert> check(Instant now, boolean responseOpen, boolean resolutionOpen, Duration responseTarget,
-                         Duration resolutionTarget, int firstPercent, int secondPercent) {
+    List<SlaAlert> check(Instant now, boolean responseOpen, boolean resolutionOpen, SlaTargets targets,
+                         int firstPercent, int secondPercent) {
         List<SlaAlert> alerts = new ArrayList<>(2);
+        WorkCalendar calendar = targets.calendar();
         if (responseOpen && responseDue != null && !responseViolated) {
-            SlaAlert.Level level = levelReached(now, responseDue, responseTarget, firstPercent, secondPercent,
-                    responseFirstWarningSent, responseSecondWarningSent);
+            SlaAlert.Level level = levelReached(now, responseDue, targets.response(), calendar, firstPercent,
+                    secondPercent, responseFirstWarningSent, responseSecondWarningSent);
             if (level != null) {
                 responseFirstWarningSent = true;
                 responseSecondWarningSent |= level != SlaAlert.Level.FIRST_WARNING;
                 responseViolated = level == SlaAlert.Level.VIOLATION;
-                alerts.add(SlaAlert.of(SlaClockType.RESPONSE, level, now, responseDue, responseTarget));
+                alerts.add(SlaAlert.of(SlaClockType.RESPONSE, level, now, responseDue, targets.response(), calendar));
             }
         }
         if (resolutionOpen && resolutionDue != null && !resolutionViolated && !isPaused()) {
-            SlaAlert.Level level = levelReached(now, resolutionDue, resolutionTarget, firstPercent, secondPercent,
-                    resolutionFirstWarningSent, resolutionSecondWarningSent);
+            SlaAlert.Level level = levelReached(now, resolutionDue, targets.resolution(), calendar, firstPercent,
+                    secondPercent, resolutionFirstWarningSent, resolutionSecondWarningSent);
             if (level != null) {
                 resolutionFirstWarningSent = true;
                 resolutionSecondWarningSent |= level != SlaAlert.Level.FIRST_WARNING;
                 resolutionViolated = level == SlaAlert.Level.VIOLATION;
-                alerts.add(SlaAlert.of(SlaClockType.RESOLUTION, level, now, resolutionDue, resolutionTarget));
+                alerts.add(SlaAlert.of(SlaClockType.RESOLUTION, level, now, resolutionDue, targets.resolution(),
+                        calendar));
             }
         }
         return alerts;
     }
 
     /** The highest alert this clock has reached and not yet raised, or null. */
-    private static SlaAlert.Level levelReached(Instant now, Instant due, Duration target, int firstPercent,
-                                               int secondPercent, boolean firstSent, boolean secondSent) {
+    private static SlaAlert.Level levelReached(Instant now, Instant due, Duration target, WorkCalendar calendar,
+                                               int firstPercent, int secondPercent, boolean firstSent,
+                                               boolean secondSent) {
         if (!now.isBefore(due)) {
             return SlaAlert.Level.VIOLATION;
         }
-        double elapsed = elapsedPercent(now, due, target);
+        double elapsed = elapsedPercent(now, due, target, calendar);
         if (elapsed >= secondPercent && !secondSent) {
             return SlaAlert.Level.SECOND_WARNING;
         }
@@ -183,9 +194,11 @@ public class SlaTracker {
     /**
      * The SLA state shown in lists and on the detail page. WARNING starts at the first warning percentage of either
      * open clock. AT_RISK comes from the SLA risk score (module M12) and is not decided here.
+     *
+     * @param targets the policy's targets, or null if no policy applies any more (warnings are then not shown)
      */
     public SlaState stateAt(Instant now, IncidentStatus status, Instant acknowledgedAt, Instant resolvedAt,
-                            Duration responseTarget, Duration resolutionTarget, int firstWarningPercent) {
+                            SlaTargets targets, int firstWarningPercent) {
         if (resolutionDue == null) {
             return SlaState.OK; // no priority yet
         }
@@ -201,17 +214,22 @@ public class SlaTracker {
                 || (responseOpen && now.isAfter(responseDue))) {
             return SlaState.VIOLATED;
         }
-        boolean warning = elapsedPercent(now, resolutionDue, resolutionTarget) >= firstWarningPercent
-                || (responseOpen && elapsedPercent(now, responseDue, responseTarget) >= firstWarningPercent);
+        if (targets == null) {
+            return SlaState.OK;
+        }
+        WorkCalendar calendar = targets.calendar();
+        boolean warning = elapsedPercent(now, resolutionDue, targets.resolution(), calendar) >= firstWarningPercent
+                || (responseOpen && elapsedPercent(now, responseDue, targets.response(), calendar)
+                >= firstWarningPercent);
         return warning ? SlaState.WARNING : SlaState.OK;
     }
 
-    /** How much of a clock has run, in percent: 100 - remaining / target. */
-    static double elapsedPercent(Instant now, Instant due, Duration target) {
+    /** How much of a clock has run, in percent: 100 - remaining counted time / target. */
+    static double elapsedPercent(Instant now, Instant due, Duration target, WorkCalendar calendar) {
         if (target == null || target.isZero()) {
             return 0;
         }
-        double remaining = Duration.between(now, due).toSeconds();
+        double remaining = calendar.workingTimeBetween(now, due).toSeconds();
         return 100.0 * (1 - remaining / target.toSeconds());
     }
 }

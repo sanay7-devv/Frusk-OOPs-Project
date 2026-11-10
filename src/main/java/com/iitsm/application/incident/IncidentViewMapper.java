@@ -1,7 +1,6 @@
 package com.iitsm.application.incident;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +24,7 @@ import com.iitsm.domain.incident.Resolution;
 import com.iitsm.domain.incident.SlaState;
 import com.iitsm.domain.sla.SlaPolicy;
 import com.iitsm.domain.sla.SlaPolicyResolver;
+import com.iitsm.domain.sla.SlaTargets;
 
 /**
  * Turns incidents into the API shapes, computing the SLA state centrally (handbook 2.5 M7: "slaState is computed
@@ -98,10 +98,9 @@ public class IncidentViewMapper {
         Optional<SlaPolicy> policy = incident.getPriority() == null ? Optional.empty()
                 : cache.computeIfAbsent(incident.getService().getId() + ":" + incident.getPriority(),
                         key -> findPolicy(incident));
-        Duration responseTarget = policy.map(SlaPolicy::responseTarget).orElse(null);
-        Duration resolutionTarget = policy.map(SlaPolicy::resolutionTarget).orElse(null);
+        SlaTargets targets = policy.map(p -> p.targets(config.current())).orElse(null);
         return incident.getSla().stateAt(now, incident.getStatus(), incident.getAcknowledgedAt(),
-                incident.getResolvedAt(), responseTarget, resolutionTarget, firstWarningPercent);
+                incident.getResolvedAt(), targets, firstWarningPercent);
     }
 
     /** A policy deleted after the incident was created must not break the list: the state then ignores warnings. */

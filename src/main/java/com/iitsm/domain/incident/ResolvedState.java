@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
+import com.iitsm.domain.sla.SlaTargets;
+
 /** Status RESOLVED. */
 final class ResolvedState extends IncidentState {
 
@@ -23,9 +25,9 @@ final class ResolvedState extends IncidentState {
     }
 
     @Override
-    void reopen(Incident incident, String reason, Instant now, Duration reopenWindow, Duration resolutionTarget) {
+    void reopen(Incident incident, String reason, Instant now, Duration reopenWindow, SlaTargets targets) {
         requireText("reason", reason, 10, 1000);
-        incident.markReopened(now, resolutionTarget);
+        incident.markReopened(now, targets);
         incident.moveTo(IncidentStatus.REOPENED, now);
     }
 }

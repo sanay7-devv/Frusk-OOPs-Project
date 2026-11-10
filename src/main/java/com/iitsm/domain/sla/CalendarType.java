@@ -1,6 +1,6 @@
 package com.iitsm.domain.sla;
 
-/** How SLA minutes are counted. Only ALWAYS (24/7) is built; BUSINESS_HOURS is Tier 3 (handbook 2.5 M7). */
+/** How SLA minutes are counted: ALWAYS (24/7) or BUSINESS_HOURS (the company calendar in app_config, DEC-39). */
 public enum CalendarType {
     ALWAYS,
     BUSINESS_HOURS

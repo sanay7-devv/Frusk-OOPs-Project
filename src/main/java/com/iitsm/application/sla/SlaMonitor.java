@@ -94,7 +94,7 @@ public class SlaMonitor {
         AppSettings settings = config.current();
         SlaPolicy policy = slaPolicies.resolve(incident.getService(), incident.getPriority());
         Instant now = clock.instant();
-        List<SlaAlert> alerts = incident.checkSla(now, policy.responseTarget(), policy.resolutionTarget(),
+        List<SlaAlert> alerts = incident.checkSla(now, policy.targets(settings),
                 settings.intValue(ConfigKey.SLA_WARN_FIRST_PERCENT), settings.intValue(ConfigKey.SLA_WARN_SECOND_PERCENT));
         if (alerts.isEmpty()) {
             return alerts;

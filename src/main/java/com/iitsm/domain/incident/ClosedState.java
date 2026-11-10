@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
+import com.iitsm.domain.sla.SlaTargets;
 import com.iitsm.domain.exception.InvalidStateTransitionException;
 
 /** Status CLOSED. */
@@ -25,13 +26,13 @@ final class ClosedState extends IncidentState {
     }
 
     @Override
-    void reopen(Incident incident, String reason, Instant now, Duration reopenWindow, Duration resolutionTarget) {
+    void reopen(Incident incident, String reason, Instant now, Duration reopenWindow, SlaTargets targets) {
         requireText("reason", reason, 10, 1000);
         if (!withinWindow(incident, now, reopenWindow)) {
             throw new InvalidStateTransitionException(status().name(), IncidentAction.REOPEN.name(),
                     "the reopen window of " + reopenWindow.toDays() + " days after closure has passed");
         }
-        incident.markReopened(now, resolutionTarget);
+        incident.markReopened(now, targets);
         incident.moveTo(IncidentStatus.REOPENED, now);
     }
 }

@@ -5,12 +5,14 @@ import java.time.Duration;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.service.ItService;
 
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -58,7 +60,7 @@ public class SlaPolicy {
     @Column(name = "resolution_minutes", nullable = false)
     private int resolutionMinutes;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = CalendarTypeConverter.class)
     @Column(name = "calendar_type", nullable = false, length = 12)
     private CalendarType calendarType = CalendarType.ALWAYS;
 
@@ -108,6 +110,11 @@ public class SlaPolicy {
         return calendarType;
     }
 
+    /** The targets with the calendar they are counted in, taken from the live settings. */
+    public SlaTargets targets(AppSettings settings) {
+        return new SlaTargets(responseTarget(), resolutionTarget(), settings.workCalendar(calendarType));
+    }
+
     /** Validates the API Data Dictionary C.9 limits; resolution must be longer than response. */
     public void changeTargets(int newResponseMinutes, int newResolutionMinutes, CalendarType newCalendarType) {
         if (newResponseMinutes < 1 || newResponseMinutes > MAX_RESPONSE_MINUTES) {
@@ -120,8 +127,8 @@ public class SlaPolicy {
         if (newResolutionMinutes <= newResponseMinutes) {
             throw new InputValidationException("resolutionMinutes", "must be greater than responseMinutes");
         }
-        if (newCalendarType != CalendarType.ALWAYS) {
-            throw new InputValidationException("calendarType", "only ALWAYS is supported");
+        if (newCalendarType == null) {
+            throw new InputValidationException("calendarType", "must be ALWAYS or BUSINESS_HOURS");
         }
         this.responseMinutes = newResponseMinutes;
         this.resolutionMinutes = newResolutionMinutes;

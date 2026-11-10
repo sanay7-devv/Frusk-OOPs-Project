@@ -1,9 +1,15 @@
 package com.iitsm.domain.config;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Every runtime setting the system reads from app_config (handbook Appendix A.5), with its default and the range a
@@ -47,6 +53,13 @@ public enum ConfigKey {
             Type.INTEGER, "1", "99"),
     SLA_MONITOR_INTERVAL_SECONDS("sla.monitor.interval.seconds", "60", "How often the SLA monitor runs",
             Type.INTEGER, "5", "3600"),
+    // the company business-hours calendar used by SLA policies of type BUSINESS_HOURS (decision DEC-39)
+    SLA_BUSINESS_ZONE("sla.business.zone", "Asia/Kolkata", "Time zone of the business-hours calendar", Type.ZONE),
+    SLA_BUSINESS_OPEN("sla.business.open", "09:00", "Business hours start (HH:mm)", Type.TIME),
+    SLA_BUSINESS_CLOSE("sla.business.close", "18:00", "Business hours end (HH:mm)", Type.TIME),
+    SLA_BUSINESS_DAYS("sla.business.days", "MON,TUE,WED,THU,FRI", "Working days, comma separated", Type.DAYS),
+    SLA_BUSINESS_HOLIDAYS("sla.business.holidays", "", "Holidays, comma separated yyyy-MM-dd (may be empty)",
+            Type.DATES),
     ESCALATION_MONITOR_INTERVAL_SECONDS("escalation.monitor.interval.seconds", "60",
             "How often the escalation monitor runs", Type.INTEGER, "5", "3600"),
 
@@ -73,7 +86,7 @@ public enum ConfigKey {
             Type.INTEGER, "1", "1440");
 
     /** The kind of value a key holds. */
-    public enum Type { INTEGER, DECIMAL, CHOICE }
+    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES }
 
     private final String key;
     private final String defaultValue;
@@ -108,7 +121,7 @@ public enum ConfigKey {
 
     /** Checks one value on its own; returns an error message, or empty if the value is fine. */
     public Optional<String> check(String value) {
-        if (value == null || value.isBlank()) {
+        if (value == null || (value.isBlank() && type != Type.DATES)) {
             return Optional.of("must not be empty");
         }
         String trimmed = value.strip();
@@ -118,7 +131,45 @@ public enum ConfigKey {
                     : Optional.of("must be one of " + String.join(", ", constraints));
             case INTEGER -> checkNumber(trimmed, true);
             case DECIMAL -> checkNumber(trimmed, false);
+            case TIME -> parses(() -> LocalTime.parse(trimmed), "must be a time like 09:00");
+            case ZONE -> parses(() -> ZoneId.of(trimmed), "must be a time zone like Asia/Kolkata");
+            case DAYS -> parses(() -> {
+                List<String> days = items(trimmed);
+                days.forEach(DayOfWeek::valueOf);
+                if (days.isEmpty() || days.size() != Set.copyOf(days).size()) {
+                    throw new IllegalArgumentException();
+                }
+            }, "must be distinct days like MON,TUE,WED,THU,FRI");
+            case DATES -> parses(() -> items(trimmed).forEach(LocalDate::parse),
+                    "must be dates like 2026-12-25,2027-01-26 (or empty)");
         };
+    }
+
+    /** Comma-separated items, blanks removed; day names may be written MON or MONDAY. */
+    public static List<String> items(String value) {
+        return Arrays.stream(value.split(","))
+                .map(String::strip)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toUpperCase(Locale.ROOT))
+                .map(s -> s.length() == 3 ? expandDay(s) : s)
+                .toList();
+    }
+
+    private static String expandDay(String abbreviation) {
+        return Arrays.stream(DayOfWeek.values())
+                .map(DayOfWeek::name)
+                .filter(name -> name.startsWith(abbreviation))
+                .findFirst()
+                .orElse(abbreviation);
+    }
+
+    private static Optional<String> parses(Runnable parser, String problem) {
+        try {
+            parser.run();
+            return Optional.empty();
+        } catch (RuntimeException ex) {
+            return Optional.of(problem);
+        }
     }
 
     private Optional<String> checkNumber(String value, boolean wholeNumber) {

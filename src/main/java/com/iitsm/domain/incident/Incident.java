@@ -13,6 +13,8 @@ import com.iitsm.domain.exception.InvalidStateTransitionException;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.priority.PriorityBreakdown;
 import com.iitsm.domain.service.ItService;
+import com.iitsm.domain.sla.SlaTargets;
+import com.iitsm.domain.sla.WorkCalendar;
 import com.iitsm.domain.user.User;
 
 import jakarta.persistence.CheckConstraint;
@@ -211,8 +213,9 @@ public class Incident {
         state().requestInfo(this, message, now);
     }
 
-    public void provideInfo(String message, Instant now) {
-        state().provideInfo(this, message, now);
+    /** @param calendar the calendar of the incident's SLA, to move the deadline by the paused counted time */
+    public void provideInfo(String message, Instant now, WorkCalendar calendar) {
+        state().provideInfo(this, message, now, calendar);
     }
 
     public void resolve(Resolution newResolution, Instant now) {
@@ -229,10 +232,10 @@ public class Incident {
 
     /**
      * @param reopenWindow     how long after closure a CLOSED incident may still be reopened (setting)
-     * @param resolutionTarget the full resolution target of the incident's SLA, for the restarted clock
+     * @param targets          the incident's SLA targets, for the restarted resolution clock
      */
-    public void reopen(String reason, Instant now, Duration reopenWindow, Duration resolutionTarget) {
-        state().reopen(this, reason, now, reopenWindow, resolutionTarget);
+    public void reopen(String reason, Instant now, Duration reopenWindow, SlaTargets targets) {
+        state().reopen(this, reason, now, reopenWindow, targets);
     }
 
     public void reassign(User technician, Instant now) {
@@ -271,8 +274,7 @@ public class Incident {
      * Sets or changes the priority and the SLA deadlines that follow from it. The first time, both clocks start
      * from the creation time; afterwards they are recalculated from the creation time (handbook 2.5 M5).
      */
-    public void applyPriority(PriorityBreakdown breakdown, Duration responseTarget, Duration resolutionTarget,
-                              Instant now) {
+    public void applyPriority(PriorityBreakdown breakdown, SlaTargets targets, Instant now) {
         if (status.isResolvedOrLater()) {
             throw new InvalidStateTransitionException(status.name(), IncidentAction.OVERRIDE_PRIORITY.name(),
                     "the priority of a resolved incident cannot change");
@@ -283,9 +285,9 @@ public class Incident {
         priority = breakdown.band();
         major = priority == Priority.P1;
         if (firstTime) {
-            sla.start(createdAt, responseTarget, resolutionTarget);
+            sla.start(createdAt, targets);
         } else {
-            sla.retarget(createdAt, responseTarget, resolutionTarget, acknowledgedAt != null);
+            sla.retarget(createdAt, targets, acknowledgedAt != null);
         }
         touch(now);
     }
@@ -294,11 +296,11 @@ public class Incident {
      * Lets the SLA monitor check both clocks (handbook 2.5 M7). The response clock runs until the incident is
      * acknowledged, the resolution clock until it is resolved; the tracker decides which alerts fire.
      */
-    public List<SlaAlert> checkSla(Instant now, Duration responseTarget, Duration resolutionTarget,
-                                   int firstWarningPercent, int secondWarningPercent) {
+    public List<SlaAlert> checkSla(Instant now, SlaTargets targets, int firstWarningPercent,
+                                   int secondWarningPercent) {
         boolean done = status.isResolvedOrLater();
-        return sla.check(now, !done && acknowledgedAt == null, !done, responseTarget, resolutionTarget,
-                firstWarningPercent, secondWarningPercent);
+        return sla.check(now, !done && acknowledgedAt == null, !done, targets, firstWarningPercent,
+                secondWarningPercent);
     }
 
     public boolean isReportedBy(Long userId) {
@@ -332,8 +334,8 @@ public class Incident {
         sla.pause(now);
     }
 
-    void resumeSla(Instant now) {
-        sla.resume(now);
+    void resumeSla(Instant now, WorkCalendar calendar) {
+        sla.resume(now, calendar);
     }
 
     void markResolved(Resolution newResolution, Instant now) {
@@ -346,12 +348,12 @@ public class Incident {
         closedAt = now;
     }
 
-    void markReopened(Instant now, Duration resolutionTarget) {
+    void markReopened(Instant now, SlaTargets targets) {
         reopenCount++;
         resolvedAt = null;
         closedAt = null;
         closureReason = null;
-        sla.restartResolution(now, resolutionTarget);
+        sla.restartResolution(now, targets);
     }
 
     private void touch(Instant now) {
