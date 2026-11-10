@@ -1,0 +1,2165 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "planned",
+    "version": "0"
+  },
+  "paths": {
+    "/api/v1/auth/google": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Sign in with a Google ID token",
+        "description": "**Planned for M2b; not implemented yet.** Who: public. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M2b",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleLoginRequest"
+              }
+            }
+          }
+        },
+        "security": [],
+        "operationId": "planned_post_auth_google"
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "My notifications",
+        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M9",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageNotification"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "unread",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "operationId": "planned_get_notifications"
+      }
+    },
+    "/api/v1/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Number of unread notifications",
+        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M9",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCount"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_get_notifications_unread_count"
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Mark one notification read",
+        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M9",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_post_notifications_by_id_read"
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Mark all my notifications read",
+        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M9",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "operationId": "planned_post_notifications_read_all"
+      }
+    },
+    "/api/v1/notifications/preferences": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "My notification preferences",
+        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M9",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationPreference"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_get_notifications_preferences"
+      },
+      "put": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Replace my notification preferences",
+        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M9",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationPreference"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NotificationPreference"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_put_notifications_preferences"
+      }
+    },
+    "/api/v1/reports/overview": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Totals: open, critical, resolved, violations, averages",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOverview"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_overview"
+      }
+    },
+    "/api/v1/reports/workload": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Workload per technician",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkloadReportRow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_get_reports_workload"
+      }
+    },
+    "/api/v1/reports/services": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Incidents per service",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceReportRow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_services"
+      }
+    },
+    "/api/v1/reports/trends": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Created and resolved per day or week",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrendPoint"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week"
+              ]
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_trends"
+      }
+    },
+    "/api/v1/reports/priority-distribution": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Incidents per priority",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LabelCount"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_priority_distribution"
+      }
+    },
+    "/api/v1/reports/category-distribution": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Incidents per category",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LabelCount"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_category_distribution"
+      }
+    },
+    "/api/v1/reports/sla-compliance": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "SLA compliance grouped by priority, service or technician",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SlaComplianceRow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "priority",
+                "service",
+                "technician"
+              ]
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_sla_compliance"
+      }
+    },
+    "/api/v1/reports/export": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Download a report as CSV",
+        "description": "**Planned for M10; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M10",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv"
+              ]
+            }
+          }
+        ],
+        "operationId": "planned_get_reports_export"
+      }
+    },
+    "/api/v1/incidents/{id}/escalate": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Raise the escalation level by one",
+        "description": "**Planned for M11; not implemented yet.** Who: assignee, team lead, admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M11",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentDetail"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscalateRequest"
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_incidents_by_id_escalate"
+      }
+    },
+    "/api/v1/intelligence/suggest-category": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "AI category suggestion (LLM, keyword fallback)",
+        "description": "**Planned for M12; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategorySuggestion"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestCategoryRequest"
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_intelligence_suggest_category"
+      }
+    },
+    "/api/v1/intelligence/suggest-intake": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "AI suggestion of category, impact and urgency",
+        "description": "**Planned for M12; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeSuggestion"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestIntakeRequest"
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_intelligence_suggest_intake"
+      }
+    },
+    "/api/v1/intelligence/similar": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Similar open incidents for a draft report",
+        "description": "**Planned for M12; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimilarIncident"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarRequest"
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_intelligence_similar"
+      }
+    },
+    "/api/v1/incidents/{id}/similar": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Similar incidents for an existing incident",
+        "description": "**Planned for M12; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimilarIncident"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_incidents_by_id_similar"
+      }
+    },
+    "/api/v1/incidents/{id}/suggested-resolutions": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Fixes used on similar resolved incidents",
+        "description": "**Planned for M12; not implemented yet.** Who: assignee, admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestedResolution"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_incidents_by_id_suggested_resolutions"
+      }
+    },
+    "/api/v1/incidents/{id}/sla-risk": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "SLA risk score with factors",
+        "description": "**Planned for M12; not implemented yet.** Who: assignee, admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlaRisk"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_incidents_by_id_sla_risk"
+      }
+    },
+    "/api/v1/incidents/{id}/summary": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "AI summary and handover notes of the thread",
+        "description": "**Planned for M12; not implemented yet.** Who: assignee, admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadSummary"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_post_incidents_by_id_summary"
+      }
+    },
+    "/api/v1/incidents/{id}/mark-duplicate": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Close as a duplicate of another incident",
+        "description": "**Planned for M12; not implemented yet.** Who: admin, team lead. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentDetail"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkDuplicateRequest"
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_incidents_by_id_mark_duplicate"
+      }
+    },
+    "/api/v1/problems": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Problem records grouping correlated incidents",
+        "description": "**Planned for M12; not implemented yet.** Who: admin, team lead. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProblemRecord"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_get_problems"
+      }
+    },
+    "/api/v1/problems/{id}": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "One problem record with its incidents",
+        "description": "**Planned for M12; not implemented yet.** Who: admin, team lead. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M12",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemRecord"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_problems_by_id"
+      }
+    },
+    "/api/v1/dashboard/live": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Initial snapshot for the live dashboard",
+        "description": "**Planned for M13; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M13",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSnapshot"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_get_dashboard_live"
+      }
+    },
+    "/api/v1/services/graph": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Service dependency graph with open incidents",
+        "description": "**Planned for M13; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M13",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceGraph"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "planned_get_services_graph"
+      }
+    },
+    "/api/v1/services/{id}/impact": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Services affected if this one fails (transitive)",
+        "description": "**Planned for M13; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M13",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceImpact"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_services_by_id_impact"
+      }
+    },
+    "/api/v1/incidents/{id}/attachments": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Upload a file (type and 5 MB size checked)",
+        "description": "**Planned for M14; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M14",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_incidents_by_id_attachments"
+      },
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Attachments of an incident",
+        "description": "**Planned for M14; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M14",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Attachment"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_incidents_by_id_attachments"
+      }
+    },
+    "/api/v1/attachments/{id}/download": {
+      "get": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Download an attachment",
+        "description": "**Planned for M14; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M14",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "operationId": "planned_get_attachments_by_id_download"
+      }
+    },
+    "/api/v1/incidents/{id}/feedback": {
+      "post": {
+        "tags": [
+          "Planned"
+        ],
+        "summary": "Rate the resolution (reporter, once, after RESOLVED)",
+        "description": "**Planned for M14; not implemented yet.** Who: reporter. Agreed in the API contract (Appendix B/C).",
+        "x-status": "planned",
+        "x-module": "M14",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feedback"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackRequest"
+              }
+            }
+          }
+        },
+        "operationId": "planned_post_incidents_by_id_feedback"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GoogleLoginRequest": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Google ID token from the Sign-In button"
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "EscalateRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "MarkDuplicateRequest": {
+        "type": "object",
+        "properties": {
+          "duplicateOfId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "An existing, different incident"
+          }
+        },
+        "required": [
+          "duplicateOfId"
+        ]
+      },
+      "FeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "rating"
+        ]
+      },
+      "Feedback": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "comment": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Attachment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uploadedBy": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "Allowed types png, jpg, jpeg, gif, pdf, txt, log; max 5 MB; max 10 per incident"
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "INCIDENT_CREATED",
+              "INCIDENT_ASSIGNED",
+              "INCIDENT_ACKNOWLEDGED",
+              "PRIORITY_CHANGED",
+              "INFO_REQUESTED",
+              "INFO_PROVIDED",
+              "SLA_WARNING",
+              "SLA_VIOLATED",
+              "INCIDENT_ESCALATED",
+              "INCIDENT_RESOLVED",
+              "INCIDENT_VERIFIED",
+              "INCIDENT_CLOSED",
+              "INCIDENT_REOPENED",
+              "DUPLICATE_SUSPECTED",
+              "TRIAGE_NEEDED"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "message": {
+            "type": "string"
+          },
+          "incidentId": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "format": "int64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "IN_APP",
+              "EMAIL",
+              "WEBSOCKET",
+              "SMS_SIM"
+            ]
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UnreadCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "NotificationPreference": {
+        "type": "object",
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "INCIDENT_CREATED",
+              "INCIDENT_ASSIGNED",
+              "INCIDENT_ACKNOWLEDGED",
+              "PRIORITY_CHANGED",
+              "INFO_REQUESTED",
+              "INFO_PROVIDED",
+              "SLA_WARNING",
+              "SLA_VIOLATED",
+              "INCIDENT_ESCALATED",
+              "INCIDENT_RESOLVED",
+              "INCIDENT_VERIFIED",
+              "INCIDENT_CLOSED",
+              "INCIDENT_REOPENED",
+              "DUPLICATE_SUSPECTED",
+              "TRIAGE_NEEDED"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "IN_APP",
+              "EMAIL",
+              "WEBSOCKET",
+              "SMS_SIM"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SuggestCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "serviceId": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "format": "int64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ]
+      },
+      "CategorySuggestion": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "format": "int64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "categoryName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LLM",
+              "KEYWORD"
+            ]
+          }
+        },
+        "description": "Null category and empty reason when confidence is below autocat.min.confidence (0.60)"
+      },
+      "SuggestIntakeRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description"
+        ]
+      },
+      "IntakeSuggestion": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "format": "int64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "categoryName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "impact": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "urgency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LLM",
+              "KEYWORD"
+            ]
+          }
+        }
+      },
+      "SimilarRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "serviceId"
+        ]
+      },
+      "SimilarIncident": {
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "similarity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "CLASSIFIED",
+              "ASSIGNED",
+              "ACKNOWLEDGED",
+              "IN_PROGRESS",
+              "PENDING_USER_INFO",
+              "RESOLVED",
+              "VERIFIED",
+              "CLOSED",
+              "REOPENED"
+            ]
+          }
+        }
+      },
+      "SuggestedResolution": {
+        "type": "object",
+        "properties": {
+          "fromIncidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "similarity": {
+            "type": "number"
+          },
+          "rootCause": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "steps": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reusable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ThreadSummary": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "handoverNotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SlaRisk": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "contribution": {
+                  "type": "number"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "description": "LOW under 0.40, MEDIUM 0.40-0.69, HIGH 0.70 or more"
+      },
+      "ProblemRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "service": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            }
+          }
+        }
+      },
+      "ReportOverview": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "critical": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Open P1"
+          },
+          "resolved": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "slaViolations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "avgResolutionMinutes": {
+            "type": "number"
+          },
+          "avgSatisfaction": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "WorkloadReportRow": {
+        "type": "object",
+        "properties": {
+          "technicianId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "load": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxLoad": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "avgResolutionMinutes": {
+            "type": "number"
+          }
+        }
+      },
+      "ServiceReportRow": {
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TrendPoint": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resolved": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LabelCount": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SlaComplianceRow": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "met": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "violated": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "compliancePercent": {
+            "type": "number"
+          }
+        }
+      },
+      "DashboardEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "INCIDENT_CREATED",
+              "INCIDENT_ASSIGNED",
+              "INCIDENT_ACKNOWLEDGED",
+              "PRIORITY_CHANGED",
+              "INFO_REQUESTED",
+              "INFO_PROVIDED",
+              "SLA_WARNING",
+              "SLA_VIOLATED",
+              "INCIDENT_ESCALATED",
+              "INCIDENT_RESOLVED",
+              "INCIDENT_VERIFIED",
+              "INCIDENT_CLOSED",
+              "INCIDENT_REOPENED",
+              "DUPLICATE_SUSPECTED",
+              "TRIAGE_NEEDED"
+            ]
+          },
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "priority": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "P1",
+                  "P2",
+                  "P3",
+                  "P4"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "CLASSIFIED",
+              "ASSIGNED",
+              "ACKNOWLEDGED",
+              "IN_PROGRESS",
+              "PENDING_USER_INFO",
+              "RESOLVED",
+              "VERIFIED",
+              "CLOSED",
+              "REOPENED"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "Also pushed on the WebSocket topic /topic/dashboard"
+      },
+      "DashboardSnapshot": {
+        "type": "object",
+        "properties": {
+          "counters": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "open": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "critical": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "resolved": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "slaViolations": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          "byPriority": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCount"
+            }
+          },
+          "recentEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardEvent"
+            }
+          },
+          "atRisk": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            }
+          }
+        }
+      },
+      "ServiceGraph": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "criticality": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "openIncidents": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "hasOpenP1": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "to": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              },
+              "description": "from depends on to"
+            }
+          }
+        }
+      },
+      "ServiceImpact": {
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "affected": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "distance": {
+                  "type": "integer",
+                  "description": "1 = direct dependant"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PageNotification": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "One page of Notification (API contract B.1 paging)"
+      }
+    }
+  }
+}
