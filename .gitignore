@@ -1,25 +1,28 @@
 # ========================================================
-# Whitelist only frontend/, icons/, and .gitignore
+# Whitelist only frontend/, icons/, .gitignore, and README.md
 # ========================================================
 
 # Ignore everything in root by default
 /*
 
-# Whitelist .gitignore
+# Whitelist repository documentation and configuration
 !.gitignore
+!README.md
+!README.MD
+!readme.md
 
 # Whitelist allowed directories
 !/frontend/
 !/icons/
 
-# Explicitly ignore design folders and reference materials
+# Explicitly ignore design mockups and reference materials
 /admin design/
 /employee design/
 /team lead/
 /technician design/
 /reference's of other sites/
 
-# Documentation and project spec files
+# Documentation and project spec PDFs
 /DESIGN_BRIEF.md
 /*.pdf
 
