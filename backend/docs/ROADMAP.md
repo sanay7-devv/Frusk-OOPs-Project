@@ -2,7 +2,7 @@
 
 Living document. Update after every working session. Source of truth for scope: the team handbooks (Backend Lead Handbook, section 2.5 modules M1 to M14).
 
-Last updated: 2026-11-07 (stale-statement check after M8)
+Last updated: 2026-11-10 (repo moved into the shared repo; backend now in `backend/`)
 
 Scope rule (D-012): every feature in the handbook is built in full; there are no scope tiers, no cut order and no timeline. Work follows module dependencies only.
 
@@ -116,6 +116,7 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 | D-014 | 2026-11-07 | M7 SLA monitor (full reasoning in DECISIONS.md DEC-37): scheduled job with the interval re-read from `app_config` after every run; one transaction per incident (a failure is retried next run); fire-once flags flipped in the domain (`SlaTracker.check` returns `SlaAlert`s); a late run raises only the highest alert; a priority change resets that clock's warnings, a pause does not; violation rows record overdue seconds and the assignee; `SlaWarning` / `SlaViolated` events published for M8/M9; `GET /sla/violations` (SLA_VIOLATION_VIEW); scheduling off in the test profile (`app.scheduling.enabled=false`). | Handbook 1.7, 2.5 M7, 2.7, T23. Testing: call `SlaMonitor.runOnce()` directly with a fixed `Clock`. |
 | D-015 | 2026-11-07 | M8 events and audit (full reasoning in DECISIONS.md DEC-38): one `IncidentChanged` event (action, actor, previous/new status, description) per incident action, published by `IncidentService`; `AuditListener` writes it in the action's transaction (no commit without a record, a refused action leaves none); `SecurityAuditEvent` (LOGIN_FAILED, ACCESS_DENIED for every 403, USER_ROLE_CHANGED, CONFIG_CHANGED) written in its own transaction; creation is four entries; reporters do not see internal-note entries (description prefix, no schema change); `AuditRecord` is `@Immutable` and the repository only inserts and reads. Contract: `PUT /admin/config` and role changes now record the caller. | Handbook 2.5 M8, M2 (audit LOGIN_FAILED, ACCESS_DENIED), 2.6, 2.10. |
 | D-016 | 2026-11-07 | Business-hours SLA calendar (user decision, DEC-39): one company calendar in `app_config` (`sla.business.zone`, `open`, `close`, `days`, `holidays`), validated and live; `WorkCalendar` strategy (`AlwaysCalendar`, `BusinessHoursCalendar`) used for every deadline, pause shift and elapsed percentage; policies choose ALWAYS or BUSINESS_HOURS; `CalendarTypeConverter` stores BUSINESS_HRS (E-022). | Handbook 2.5 M7 (WorkCalendar), D-012 full scope. |
+| D-017 | 2026-11-10 | Shared repo layout (full reasoning in DECISIONS.md DEC-41): backend merged into `sanay7-devv/Frusk-OOPs-Project` by PR #1, then moved into `backend/` beside `frontend/` by PR #2. Run Maven from `backend/`. Vercel's check fails for `Vishh-t` until that account joins the Vercel team, and its Root Directory should be `frontend`. |
 
 ## 7. Open questions / blockers
 

@@ -54,6 +54,7 @@
 | [DEC-38](#dec-38-audit-trail-through-events-same-transaction-for-actions-own-transaction-for-refusals) | Audit trail through events: same transaction for actions, own transaction for refusals | 2026-11-07 | M8 | ✅ |
 | [DEC-39](#dec-39-one-company-business-hours-calendar-in-app_config) | One company business-hours calendar in app_config | 2026-11-07 | M7 | ✅ user decision |
 | [DEC-40](#dec-40-notification-preferences-and-templates) | Notification preferences and templates | 2026-11-07 | M9 | ✅ user decision, to build |
+| [DEC-41](#dec-41-shared-repository-layout-backend-and-frontend-folders) | Shared repository layout: backend/ and frontend/ folders | 2026-11-10 | Repo | ✅ |
 
 ---
 
@@ -750,3 +751,20 @@ Smaller rules the handbook left open:
 **Decision.** Preferences are per user, per event type and channel (the handbook's `notification_preferences` table). In-app notifications are always kept so nothing is lost; SMS is only ever sent for P1; critical alerts (SLA violation to admins, escalation to the new owner) cannot be switched off. Message wording lives in a resource file with placeholders (`{code}`, `{priority}`, ...); the backend ships default wording and the Report teammate can refine it, as the handbook plans. No schema change.
 
 **Options considered.** Per-channel-only switches (simpler, less control) and fully switchable alerts (someone could miss a violation) for preferences; an admin-editable template table (needs a new table) for wording.
+
+
+### DEC-41: Shared repository layout: backend/ and frontend/ folders
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-10 | Repo | ✅ |
+
+**Decision.** The team repo (`sanay7-devv/Frusk-OOPs-Project`) holds the Spring Boot project in `backend/` and the React app in `frontend/`. `icons/`, `README.md`, `.gitignore`, `.npmrc` and `vercel.json` stay at the root. The backend history was merged in with `--allow-unrelated-histories` and reached `main` through pull requests (#1 import, #2 move into `backend/`), as the handbook asks (no direct pushes to `main`).
+
+**Options considered.** Backend at the repo root beside `frontend/` (the handbook layout, but the root then mixes a Maven project with a Vite project); backend in its own folder (clear split, one extra path segment); two repositories (cleaner, but the handbook wants one monorepo).
+
+**Why.** Each role owns one folder, Vercel can use `frontend` as its Root Directory, and the root stays free of build files. The shared `.gitignore` used an ignore-everything-except whitelist; that block was dropped so the backend is tracked, and the frontend rules were kept.
+
+**Trade-offs.** Maven commands now run from `backend/`; IDE projects must be re-imported from `backend/pom.xml`. The Vercel check fails for the author `Vishh-t` until that account is added to the Vercel team (not a code issue).
+
+**Cross-questions.** *Why not push to main?* Protected branch plus review, per the handbook. *Why a merge, not a copy?* It keeps the backend commit history and authorship. *Are secrets in the repo?* No: `.env`, `credentials/` and `target/` are ignored and untracked.
