@@ -1,0 +1,39 @@
+# ========================================================
+# Whitelist only frontend/, icons/, and .gitignore
+# ========================================================
+
+# Ignore everything in root by default
+/*
+
+# Whitelist .gitignore
+!.gitignore
+
+# Whitelist allowed directories
+!/frontend/
+!/icons/
+
+# Explicitly ignore design folders and reference materials
+/admin design/
+/employee design/
+/team lead/
+/technician design/
+/reference's of other sites/
+
+# Documentation and project spec files
+/DESIGN_BRIEF.md
+/*.pdf
+
+# Dependencies, build output, and local environment files
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/*.log
+.vitest-cache/
+.vitest/
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
