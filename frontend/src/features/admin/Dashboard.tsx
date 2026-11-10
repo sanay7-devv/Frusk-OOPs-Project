@@ -874,7 +874,7 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#111c2d' }}>
-                  Technician Team Capacity Heatmap
+                  Team Capacity Heatmap
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: '#425059', mt: 0.2 }}>
                   On-duty SRE concurrency quotas (5 incidents max / engineer)
@@ -993,7 +993,7 @@ export default function Dashboard() {
                 onClick={handleRebalance}
                 sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700, color: '#004d99' }}
               >
-                Rebalance Workload
+                Rebalance Workload(Just timepass)
               </Button>
             </Box>
           </Paper>
