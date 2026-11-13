@@ -4468,9 +4468,7 @@ paths:
       - Incidents
   /api/v1/incidents/{id}/escalate:
     post:
-      description: "**Planned for M11; not implemented yet.** Who: assignee, team\
-        \ lead, admin. Agreed in the API contract (Appendix B/C)."
-      operationId: planned_post_incidents_by_id_escalate
+      operationId: escalate
       parameters:
       - in: path
         name: id
@@ -4482,7 +4480,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EscalateRequest"
+              $ref: "#/components/schemas/ReasonRequest"
         required: true
       responses:
         "200":
@@ -4490,12 +4488,100 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentDetail"
-          description: Success
-      summary: Raise the escalation level by one
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: INCIDENT_NOT_FOUND
+                fieldErrors: []
+                message: "No such incident, or the caller may not see it."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may\
+            \ not see it"
+        "409":
+          content:
+            application/json:
+              example:
+                code: INVALID_STATE_TRANSITION
+                fieldErrors: []
+                message: Action not allowed in the incident's current status.
+                path: /api/v1/...
+                status: 409
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `INVALID_STATE_TRANSITION`: Action not allowed in the incident's current status
+            - `OPTIMISTIC_LOCK_CONFLICT`: Someone else changed the incident meanwhile; reload and retry
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "Raise the escalation level by one (assignee, team lead, admin); the\
+        \ status does not change"
       tags:
-      - Planned
-      x-module: M11
-      x-status: planned
+      - Incidents
   /api/v1/incidents/{id}/feedback:
     post:
       description: "**Planned for M14; not implemented yet.** Who: reporter. Agreed\
@@ -8157,15 +8243,6 @@ components:
         timestamp:
           type: string
           format: date-time
-    EscalateRequest:
-      type: object
-      properties:
-        reason:
-          type: string
-          maxLength: 1000
-          minLength: 10
-      required:
-      - reason
     EscalationPolicyRequest:
       type: object
       properties:
@@ -8207,6 +8284,32 @@ components:
           - P3
           - P4
         timeoutMinutes:
+          type: integer
+          format: int32
+    EscalationPreview:
+      type: object
+      properties:
+        dueAt:
+          type: string
+          format: date-time
+        fromLevel:
+          type: integer
+          format: int32
+        kind:
+          type: string
+          enum:
+          - RAISE
+          - EXHAUSTED
+        recipients:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ref"
+        secondsRemaining:
+          type: integer
+          format: int64
+        targetRole:
+          type: string
+        toLevel:
           type: integer
           format: int32
     ExcludedTechnician:
@@ -8315,6 +8418,8 @@ components:
         escalationLevel:
           type: integer
           format: int32
+        escalationPreview:
+          $ref: "#/components/schemas/EscalationPreview"
         feedback: {}
         id:
           type: integer

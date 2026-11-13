@@ -24,6 +24,11 @@ public interface IncidentCommand {
         return Optional.empty();
     }
 
+    /** A note only the staff see (never the reporter), for example why an incident was escalated. */
+    default Optional<String> internalNote(Incident incident) {
+        return Optional.empty();
+    }
+
     /** The audit wording, with one {@code %s} for the actor's name. Called after {@link #perform}. */
     String auditText(Incident incident);
 }

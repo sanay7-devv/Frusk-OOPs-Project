@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.config.ConfigService;
 import com.iitsm.application.feedback.FeedbackView;
+import com.iitsm.application.escalation.EscalationPreviewer;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
 import com.iitsm.application.incident.IncidentViews.IncidentSummary;
@@ -41,15 +42,17 @@ public class IncidentViewMapper {
     private final SlaPolicyResolver slaPolicies;
     private final ConfigService config;
     private final IncidentAccessPolicy access;
+    private final EscalationPreviewer escalationPreviews;
     private final Clock clock;
     private final FeedbackRepository feedbackRepository;
 
     public IncidentViewMapper(SlaPolicyResolver slaPolicies, ConfigService config, IncidentAccessPolicy access,
-                              Clock clock, FeedbackRepository feedbackRepository) {
+                              EscalationPreviewer escalationPreviews, Clock clock, FeedbackRepository feedbackRepository) {
         this.feedbackRepository = feedbackRepository;
         this.slaPolicies = slaPolicies;
         this.config = config;
         this.access = access;
+        this.escalationPreviews = escalationPreviews;
         this.clock = clock;
     }
 
@@ -99,7 +102,13 @@ public class IncidentViewMapper {
                 incident.getClosedAt(), incident.getClosureReason(), incident.getProblemId(),
                 incident.getDuplicateOf() == null ? null : incident.getDuplicateOf().getId(),
                 incident.getReopenCount(), incident.getSla().getPausedAt(), resolution, feedback,
+                staffSeesPreview(caller, incident) ? escalationPreviews.preview(incident, now) : null,
                 allowed.stream().sorted().toList(), incident.getVersion());
+    }
+
+    /** The escalation preview names people and timers, so only staff on the incident see it. */
+    private boolean staffSeesPreview(AuthenticatedUser caller, Incident incident) {
+        return access.seesAll(caller) || incident.isAssignedTo(caller.id());
     }
 
     public CommentView comment(IncidentComment comment) {

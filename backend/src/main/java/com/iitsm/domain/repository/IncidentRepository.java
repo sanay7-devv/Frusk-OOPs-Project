@@ -27,5 +27,14 @@ public interface IncidentRepository {
     /** SLA monitor: ids of incidents in the given states with deadlines set and at least one clock not violated. */
     List<Long> findSlaMonitorCandidates(Collection<IncidentStatus> statuses);
 
+    /**
+     * Escalation monitor: ids of P1 and P2 incidents nobody has acknowledged: ASSIGNED, or CLASSIFIED with no
+     * assignee (triage, DEC-48).
+     */
+    List<Long> findEscalationCandidates();
+
+    /** Auto-verify: ids of incidents RESOLVED at or before the cutoff and not reopened since. */
+    List<Long> findResolvedUpTo(Instant cutoff);
+
     Incident save(Incident incident);
 }

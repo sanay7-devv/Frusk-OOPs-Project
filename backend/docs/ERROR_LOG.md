@@ -307,6 +307,42 @@ Entry template:
 - Fix: run the suites with `PYTHONIOENCODING=utf-8`.
 - Status: workaround (no code change)
 
+### E-M11-1: A monitor job waited a whole interval before its first run
+- Date: 2026-11-14
+- Area: domain
+- Symptom: in the first m11 smoke runs the auto-verify check failed ("still RESOLVED" after 30 s) although the incident was old enough; the log showed no auto-verify run until five minutes after start.
+- Cause: the job's trigger scheduled the first run `interval` seconds after start, using the setting value at that moment (default 300 s). The interval set later by the test only applies after the first run. The SLA monitor job has the same shape (its smoke test waits 75 s for the same reason).
+- Fix: `EscalationMonitorJob` and `AutoVerifyJob` run 10 seconds after start and use the configured interval from then on.
+- Prevention: a trigger that reads its interval from `app_config` should not use that interval for the very first run. (The SLA job is unchanged; it works, it is only slower to start.)
+- Status: fixed (M11 jobs); SLA job left as is
+
+### E-M11-2: Smoke script P1 incidents came out as P3
+- Date: 2026-11-14
+- Area: other
+- Symptom: `m11_smoke.py` created "P1" incidents on a service with `alwaysP1: true` and impact 3 / urgency 3; they were P3 and never escalated (every escalation check failed).
+- Cause: not investigated further; the scoring path, not the service flag, decided the band in this setup. The test, not the backend, was wrong for what it wanted to show.
+- Fix: the script now uses impact 5, urgency 5, 150 affected users on a criticality 5 service, which is P1 by score.
+- Prevention: create test incidents with inputs that give the wanted priority by score, and assert the priority in the first check.
+- Status: fixed (test script)
+
+### E-M11-3: Smoke checks counted recipients of users left by an earlier run
+- Date: 2026-11-14
+- Area: other
+- Symptom: the second run on the same database failed "one recipient" checks (2 team leads, 4 administrators) and the "level nobody holds" check (another team lead still existed).
+- Cause: every run creates its own users and the escalation chain notifies every holder of a level; earlier runs' users are still there.
+- Fix: run `m11_smoke.py` against a freshly created database (drop and create `iitsm_m11`, restart the backend); noted at the top of the script.
+- Prevention: tests that count "everyone holding a role" need an empty database.
+- Status: fixed (procedure)
+
+### E-M11-4: m8 smoke aborted printing an arrow on Windows
+- Date: 2026-11-14
+- Area: other
+- Symptom: `UnicodeEncodeError: 'charmap' codec can't encode character '→'` in the atexit report of `m8_smoke.py`.
+- Cause: the console code page is cp1252; a check name contains an arrow.
+- Fix: run the suites with `PYTHONIOENCODING=utf-8`; the suite itself is unchanged.
+- Prevention: same setting for every suite on this machine.
+- Status: fixed (environment)
+
 ---
 
 ## Known things to watch (not errors yet)

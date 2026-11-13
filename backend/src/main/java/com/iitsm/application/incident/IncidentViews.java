@@ -3,6 +3,7 @@ package com.iitsm.application.incident;
 import java.time.Instant;
 import java.util.List;
 
+import com.iitsm.application.escalation.EscalationViews.EscalationPreview;
 import com.iitsm.domain.category.Category;
 import com.iitsm.domain.incident.ClosureReason;
 import com.iitsm.domain.incident.CommentVisibility;
@@ -48,6 +49,7 @@ public final class IncidentViews {
     /**
      * Everything about one incident, plus what the current user may do with it. {@code version} is an addition to
      * the contract: send it back on PUT to be told if someone else changed the incident meanwhile.
+     * {@code escalationPreview} (A11, DEC-50) is null for the reporter and whenever nothing is coming.
      */
     public record IncidentDetail(Long id, String code, String title, IncidentStatus status, Priority priority,
                                  Ref category, Ref service, Ref reporter, Ref assignee, Instant createdAt,
@@ -57,7 +59,8 @@ public final class IncidentViews {
                                  Instant acknowledgedAt, Instant resolvedAt, Instant closedAt,
                                  ClosureReason closureReason, Long problemId, Long duplicateOfId, int reopenCount,
                                  Instant pausedAt, ResolutionView resolution, Object feedback,
-                                 List<IncidentAction> allowedActions, long version) {
+                                 EscalationPreview escalationPreview, List<IncidentAction> allowedActions,
+                                 long version) {
     }
 
     public record CommentView(Long id, Long incidentId, Ref author, CommentVisibility visibility, String body,

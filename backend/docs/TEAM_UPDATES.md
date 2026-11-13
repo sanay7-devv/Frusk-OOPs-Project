@@ -2,7 +2,7 @@
 
 > **Read this first.** The five handbook PDFs (dated 2026-10-15) are frozen and are not in this repository. This page lists every point where the project now differs from them, per role. Where this page and a handbook disagree, this page wins. Reasons are in `DECISIONS.md` (DEC numbers); the order of work is in `ROADMAP.md` section 5.
 
-Last updated: 2026-11-14 (M9, M10, M12 core)
+Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 
 ---
 
@@ -18,12 +18,12 @@ Last updated: 2026-11-14 (M9, M10, M12 core)
 | Skill score | "Best skill proficiency match" | 70% best proficiency + 30% share of required skills held | DEC-29 |
 | Team lead visibility | "Team lead sees their team" | Team leads see all incidents (the schema has no team) | DEC-26 |
 | SLA calendars | Listed as a Tier 3 extra | Built: a policy is ALWAYS or BUSINESS_HOURS; one company calendar in `app_config` (`sla.business.*`) | DEC-39 |
-| Settings | 27 keys in Appendix A.5 | 41 keys (35 plus six `notification.*` with M9); defaults live in the code, so seed rows are optional | DEC-18 |
+| Settings | 27 keys in Appendix A.5 | 60 keys (35, plus six `notification.*` with M9, three `report.*` and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with M12); defaults live in the code, so seed rows are optional | DEC-18 |
 | Demo | Docker Compose | Unchanged: the recorded demo runs locally with Docker Compose. Cloud deployment is the last priority | DEC-45 |
 | Grading | Summary table in section 1.2 | Use the rubric in the course brief; our plan against it is `ROADMAP.md` section 8 | DEC-43 |
 
-**Built so far (backend):** M1 to M10 and the core of M12: users and login, catalog and live settings, incidents with the full lifecycle, priority, five assignment strategies with explainable recommendations, SLA monitor with warnings and violations, audit trail, notifications (M9), search and reports (M10), suggestions, similar incidents and SLA risk (M12 core).
-**Not built yet:** M11 escalation (decided, being merged), the rest of M12 (duplicate check, problem records, Major Incident Mode, chatbot), M13 real-time and graph, M14 hardening, Google sign-in.
+**Built so far (backend):** M1 to M11 and the core of M12: users and login, catalog and live settings, incidents with the full lifecycle, priority, five assignment strategies with explainable recommendations, SLA monitor with warnings and violations, audit trail, notifications (M9), search and reports (M10), escalation (M11), suggestions, similar incidents and SLA risk (M12 core).
+**Not built yet:** the rest of M12 (duplicate check, problem records, Major Incident Mode, chatbot), M13 real-time and graph, M14 hardening, Google sign-in.
 
 
 ### New features accepted on 2026-11-13 (none built yet)
@@ -43,7 +43,7 @@ Last updated: 2026-11-14 (M9, M10, M12 core)
 
 **Behavior that will change** (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned, only a team lead or administrator can change impact, urgency and affected users; a resolved incident nobody confirms is verified and closed automatically.
 
-**Escalation behavior decided for M11** (DEC-48, DEC-49; not built yet): an unassigned P1 or P2 in triage escalates to the team lead after the normal timeout and then climbs the chain; after level 3 with no acknowledgement, one final "escalation exhausted" alert goes to all administrators (SMS for P1) and the monitor stops. The alert reuses the audit action ESCALATED and the notification event type INCIDENT_ESCALATED, so no new schema values are needed. Testing: expected values for the demo profile (1-minute timeouts) are one escalation per minute, then one exhausted alert.
+**Escalation (M11, built 2026-11-14, DEC-48 to DEC-53).** An unacknowledged P1 or P2 climbs level by level (team lead, system administrator, IT manager) after the timeouts in `escalation_policies`; one in triage with nobody assigned starts at level 0 and climbs the same way; after level 3 and `escalation.exhausted.minutes` one final "escalation exhausted" alert goes to all administrators (SMS for P1) and the monitor stops. Acknowledging stops everything. The alert reuses the audit action ESCALATED and the notification event type INCIDENT_ESCALATED, so no new schema values are needed. Also built: `POST /incidents/{id}/escalate`, the `escalationPreview` field on the incident detail, the auto-verify job (a resolved incident nobody confirms closes as AUTO_VERIFIED after `verify.auto.hours`) and, in the `demo` profile only, `GET /admin/demo/clock` and `POST /admin/demo/clock/advance`. Settings are now 37 (new: `escalation.exhausted.minutes`, `verify.monitor.interval.seconds`).
 
 ---
 
@@ -70,6 +70,12 @@ Last updated: 2026-11-14 (M9, M10, M12 core)
   - Store the new refresh token from every refresh response; reusing an old one logs the user out everywhere.
   - For an error code you do not know, fall back to the HTTP status.
 - **Additions to the original contract** are listed in `backend/docs/openapi/README.md`. A typed client can be generated from `iitsm-api.json`.
+- **Escalation (M11, live):**
+  - `POST /incidents/{id}/escalate` with `{reason}` (10 to 1000 characters) returns `IncidentDetail`; show the button when `allowedActions` contains `ESCALATE` (assignee, team lead, administrator; ASSIGNED, ACKNOWLEDGED, IN_PROGRESS; not at level 3). 409 at level 3 or wrong status, 403 for anybody else.
+  - `IncidentDetail.escalationPreview` (staff only, otherwise null): `{kind: RAISE | EXHAUSTED, fromLevel, toLevel, targetRole, dueAt, secondsRemaining, recipients: [{id, name}]}`. Draw "escalates to Team Lead in 04:12" from it. `escalationLevel` (0 to 3) is on every incident and list row.
+  - An incident in triage (no assignee) also escalates when it is P1 or P2, so the escalations screen should list level 1 to 3 incidents with no assignee too.
+  - A resolved incident nobody confirms is closed by the system after `verify.auto.hours`: `status` CLOSED, `closureReason` AUTO_VERIFIED, history entries without an actor.
+  - **Demo profile only:** `GET /admin/demo/clock` returns `{now, offsetMinutes}`; `POST /admin/demo/clock/advance` with `{minutes: 1..1440}` moves the clock forward (admin only; any other profile answers 404). Offer it as a small "+10 min" control for the recording. After a large advance the access token can be expired: refresh it and retry.
 - **New screens to plan:** everything in the table above, plus the known-outage banner on the report form, the audit Verify button and the demo controls.
 - **Root `README.md`:** it describes features that have no backend (for example runbook automation). Please align it with what the demo will show.
 - **Still needed from you:** the Google client ID for sign-in.
@@ -90,6 +96,7 @@ Last updated: 2026-11-14 (M9, M10, M12 core)
   - One new table, `audit_seals` (id, from_id, to_id, record_count, hash, prev_hash, created_at), for the sealed audit trail.
   - `sla_violations` as in Appendix A.3.
 - **M10 (2026-11-14):** two new tables from Appendix A.4, `feedback` (`incident_id` PK FK, `rating` SMALLINT CHECK 1 to 5, `comment` TEXT, `created_at`) and `saved_filters` (`id`, `user_id` FK, `name` VARCHAR(60), `filter_json` JSONB, `created_at`); both are created by the entities under `schema-auto`. New settings: `report.export.max.rows`, `report.trend.max.buckets`, `coverage.window.days`, `coverage.min.criticality`, `coverage.min.holders`, `saved.filters.max` (the settings count grows by these six). New smoke suite `m10_smoke.py`; `m4_smoke.py` now expects `GIVE_FEEDBACK` in a closed incident's actions and `endpoint_sweep.py` calls every M10 endpoint. Class names and expected values for unit tests are in `ROADMAP.md` section 7 (M10 line). The reports are native SQL (PostgreSQL), so report tests need the Testcontainers database.
+- **M11 escalation (built 2026-11-14), class names and expected values** are in `ROADMAP.md` section 7; the smoke script is `m11_smoke.py`. Schema: no new table or column. Seed and demo data: `escalation_policies` rows for P1 and P2, levels 1 to 3 (demo: 1 minute each); `app_config` demo overrides `escalation.monitor.interval.seconds` 15, `escalation.exhausted.minutes` 1, `verify.auto.hours` 0.033, `verify.monitor.interval.seconds` 30 (the old property `app.autoverify.monitor-interval-seconds` is no longer read). Demo users should include at least one team lead (technician, escalation level 1), one administrator with scope SYSTEM_ADMIN and one with IT_MANAGER; a level nobody holds is passed over. Call `EscalationMonitor.runOnce()` and `AutoVerifyMonitor.runOnce()` directly with a fixed `Clock`; scheduling is off in the test profile. The `demo` profile has an adjustable clock bean; no other profile does.
 - **Seed data:** if `app_config` is seeded, values must pass validation: the five assignment weights (including `assignment.weight.familiarity`) must add up to 1.0 and priority bands must descend, or startup fails. A category named "Security" triggers override rule 1.
 - **Docker Compose and CI** are not in the repository yet.
 - **Tests:** only one test exists. Everything under `src/test` is yours, as in the handbook: unit, integration and boundary tests for the 26 documented cases. (A version of this page from earlier on 2026-11-13 said the backend lead writes domain unit tests; that was a mistake and is withdrawn.) The backend lead supplies class names and expected values (`ROADMAP.md` section 7) and the smoke scripts. Suggested addition: architecture rule tests proving `domain` imports no Spring or web code. Expected values for assignment use the five-factor weights. For time-based cases use a fixed `Clock`; scheduling is off in the test profile (`app.scheduling.enabled=false`), so call `SlaMonitor.runOnce()` directly.

@@ -16,7 +16,18 @@ final class AssignedState extends IncidentState {
 
     @Override
     public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
-        return Set.of(IncidentAction.ACKNOWLEDGE, IncidentAction.REASSIGN);
+        return withEscalate(incident, IncidentAction.ACKNOWLEDGE, IncidentAction.REASSIGN);
+    }
+
+    @Override
+    void escalate(Incident incident, Instant now) {
+        raiseLevel(incident, now);
+    }
+
+    /** ASSIGNED and not acknowledged: the escalation monitor watches it. */
+    @Override
+    boolean isUnattended(Incident incident) {
+        return true;
     }
 
     /** Stops the response clock. */

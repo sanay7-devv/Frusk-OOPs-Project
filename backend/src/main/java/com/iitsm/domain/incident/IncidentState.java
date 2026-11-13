@@ -73,6 +73,24 @@ public abstract class IncidentState {
         throw refused(IncidentAction.REASSIGN);
     }
 
+    /** Manual escalation by a person; only the states that allow it override this. */
+    void escalate(Incident incident, Instant now) {
+        throw refused(IncidentAction.ESCALATE);
+    }
+
+    /** Escalation by the monitor: allowed exactly while {@link #isUnattended} is true. */
+    void escalateUnattended(Incident incident, Instant now) {
+        if (!isUnattended(incident)) {
+            throw refused(IncidentAction.ESCALATE);
+        }
+        raiseLevel(incident, now);
+    }
+
+    /** Whether nobody has acknowledged the incident yet, so the escalation monitor still watches it. */
+    boolean isUnattended(Incident incident) {
+        return false;
+    }
+
     // ------------------------------------------------------------------ shared helpers for the subclasses
 
     protected final InvalidStateTransitionException refused(IncidentAction action) {
@@ -88,6 +106,25 @@ public abstract class IncidentState {
             throw new ConflictOfInterestException(technician.getName());
         }
         incident.setAssignee(technician);
+    }
+
+    /** One step up the chain; the chain ends at level 3. */
+    protected final void raiseLevel(Incident incident, Instant now) {
+        if (incident.getEscalationLevel() >= 3) {
+            throw new InvalidStateTransitionException(status().name(), IncidentAction.ESCALATE.name(),
+                    "the incident is already at the highest escalation level (3)");
+        }
+        incident.raiseEscalationLevel(now);
+    }
+
+    /** ESCALATE joins the legal actions of the states that allow it, until level 3 is reached. */
+    protected static Set<IncidentAction> withEscalate(Incident incident, IncidentAction... actions) {
+        java.util.EnumSet<IncidentAction> legal = java.util.EnumSet.noneOf(IncidentAction.class);
+        legal.addAll(java.util.List.of(actions));
+        if (incident.getEscalationLevel() < 3) {
+            legal.add(IncidentAction.ESCALATE);
+        }
+        return legal;
     }
 
     protected static void requireText(String field, String value, int min, int max) {

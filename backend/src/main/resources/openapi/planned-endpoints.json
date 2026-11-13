@@ -40,51 +40,6 @@
         "operationId": "planned_post_auth_google"
       }
     },
-    "/api/v1/incidents/{id}/escalate": {
-      "post": {
-        "tags": [
-          "Planned"
-        ],
-        "summary": "Raise the escalation level by one",
-        "description": "**Planned for M11; not implemented yet.** Who: assignee, team lead, admin. Agreed in the API contract (Appendix B/C).",
-        "x-status": "planned",
-        "x-module": "M11",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IncidentDetail"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EscalateRequest"
-              }
-            }
-          }
-        },
-        "operationId": "planned_post_incidents_by_id_escalate"
-      }
-    },
     "/api/v1/incidents/{id}/mark-duplicate": {
       "post": {
         "tags": [
@@ -414,19 +369,6 @@
         },
         "required": [
           "idToken"
-        ]
-      },
-      "EscalateRequest": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 1000
-          }
-        },
-        "required": [
-          "reason"
         ]
       },
       "MarkDuplicateRequest": {
