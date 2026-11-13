@@ -170,3 +170,37 @@ Rubric from the brief: Functionality 60, Technical depth 15, System design 10, U
 | Documentation and presentation | 10 | This roadmap, guide, decision record | [ ] PDF report, 15 to 20 minute video | [ ] A13 · [ ] three workflows mapped to the brief's examples |
 
 Gaps found on 2026-11-13: the smoke scripts named in section 3 (`m7_smoke.py`, `m8_smoke.py`, `calendar_smoke.py`) are not in the repository; the frontend already reads `VITE_API_BASE_URL` (default `http://localhost:8080/api/v1`).
+
+
+## 9. Findings of the code and frontend review (2026-11-13)
+
+Read: `Incident`, the state classes, `IncidentService`, `IncidentAccessPolicy`, `PriorityEngine`, the assignment strategies, the controllers, the frontend sources and `planned-endpoints.json`. Nothing here is built or decided yet.
+
+### 9.1 Gaps
+
+| # | Finding | Evidence | Proposed action |
+|---|---|---|---|
+| G1 | Most of the frontend is not connected to the backend | 11 screens are five-line TODO stubs (admin: all incidents, audit log, categories, config, reports, service graph, services, SLA policies, users; employee: my incidents, incident detail). Six large screens (admin dashboard, team queue, escalations, technician queue and workload, employee home) run on hardcoded arrays such as `INITIAL_QUEUE`. Only login, register and the report form call the API | The Frontend teammate wires screens in demo-workflow order; the backend can supply a typed client generated from the OpenAPI file |
+| G2 | `AutoVerifyJob` belongs to no module | Handbook 2.7 lists it (RESOLVED with no reply for 48 hours to VERIFIED, then CLOSED as AUTO_VERIFIED); no code exists and sections 4 and 5 never mention it. Today a verified incident closes only when an administrator closes it | Build it with M11 (same scheduler pattern) |
+| G3 | `ClosureReason.WITHDRAWN` is unused | No withdraw action in `IncidentAction` or the controller | Add a reporter withdraw action, or drop the value |
+| G4 | A reporter can raise their own priority after creation | `IncidentAccessPolicy`: EDIT is allowed for the reporter, and `update` recalculates the priority from the new impact and urgency | Decide: lock impact and urgency once assigned, or keep and rely on the PRIORITY_CHANGED audit entry |
+| G5 | `major` already means "is P1" | `Incident.applyPriority` sets `major = priority == P1` | Decide its meaning before Major Incident Mode (DEC-44 S2) |
+
+### 9.2 Code quality
+
+| # | Finding | Proposed action |
+|---|---|---|
+| C1 | `IncidentService` has 16 dependencies and about 500 lines; every lifecycle method repeats load, permission check, state move, publish, view | One small command object per action behind a shared runner (Command pattern); do it only after the domain unit tests exist |
+| C2 | Events are published by hand in each service method, so a new action could forget its audit entry | The `Incident` aggregate records its own events and the service drains them after saving |
+| C3 | Two rules depend on text: the Security override matches the category name "security"; internal audit entries are recognised by the prefix "Internal note" | Replace with explicit data (a setting naming the security category; a factory method for internal entries) |
+| C4 | Patterns present but not yet named in the documents: Template Method (`FactorStrategy` with `score`), a second and third Strategy (`WorkCalendar`, `PriorityStrategy`), Policy (`IncidentAccessPolicy`) | Add them to SYSTEM_GUIDE and the report |
+
+### 9.3 Further feature proposals (each answers a challenge the brief names)
+
+| # | Proposal | Brief challenge it answers | Data it needs |
+|---|---|---|---|
+| E1 | Service status board: every service shown as Healthy, Degraded or Outage from open incidents, active P1s and SLA compliance; visible to employees | "Poor visibility into service health" | Existing incidents and services |
+| E2 | Recurring-problem detector: the same service and category failing repeatedly within a period, or repeated reopens, proposes a problem record | "Difficulty identifying recurring problems" | Existing incidents |
+| E3 | Coverage risk report: services whose required skills are held by only one available technician | "Inefficient technician allocation" | Existing skills, categories, availability |
+| E4 | Post-incident report: timeline, time spent in each status, SLA outcome and people involved, built from the audit trail, exportable as PDF | "Incomplete incident history" | Existing audit records; PDF export from M10 |
+| E5 | Reporter tracking view: a step-by-step progress line with the SLA due time | "Delayed response" as seen by the employee | Existing incident detail; frontend only |
