@@ -14,6 +14,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.iitsm.application.config.ConfigService;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
+import com.iitsm.domain.event.SlaRunCompleted;
 import com.iitsm.domain.event.SlaViolated;
 import com.iitsm.domain.event.SlaWarning;
 import com.iitsm.domain.incident.Incident;
@@ -83,6 +84,8 @@ public class SlaMonitor {
                 log.warn("SLA check of incident {} failed, retrying next run: {}", id, ex.toString());
             }
         }
+        // tells the notification listener the run is over, so it can fold many warnings into digests (DEC-42, DEC-48)
+        events.publishEvent(new SlaRunCompleted(warnings, violated, clock.instant()));
         return new RunResult(candidates.size(), warnings, violated, failed);
     }
 

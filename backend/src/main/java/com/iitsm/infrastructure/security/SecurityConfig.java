@@ -33,7 +33,9 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
             "/actuator/health", "/actuator/info",
             "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**", "/swagger-ui.html",
-            "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh"
+            "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh",
+            // WebSocket handshake: a browser cannot send headers on it; the access token is checked on the STOMP CONNECT
+            "/ws", "/ws/**"
     };
 
     /** BCrypt with the default cost 10, matching the seed data hashes (Testing handbook A.3). */

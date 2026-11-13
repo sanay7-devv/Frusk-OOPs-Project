@@ -25,5 +25,8 @@ public interface UserRepository {
     /** Every user holding the TECHNICIAN role (team leads included), active or not. */
     List<User> findAllTechnicians();
 
+    /** Every user holding the ADMINISTRATOR role, active or not (notifications, escalation targets). */
+    List<User> findAllAdministrators();
+
     User save(User user);
 }

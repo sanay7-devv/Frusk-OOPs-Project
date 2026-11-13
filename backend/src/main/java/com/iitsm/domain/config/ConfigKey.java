@@ -80,13 +80,28 @@ public enum ConfigKey {
     AI_PRIMARY("ai.primary", "LLM", "Primary text analysis engine (falls back to KEYWORD on failure)", Type.CHOICE,
             "LLM", "KEYWORD"),
 
+    // notifications (module M9, decisions DEC-40, DEC-42, DEC-48)
+    NOTIFICATION_DIGEST_THRESHOLD("notification.digest.threshold", "5",
+            "SLA warnings one person may get in one monitor run before they are folded into one digest",
+            Type.INTEGER, "1", "1000"),
+    NOTIFICATION_EMAIL_RETRIES("notification.email.retries", "3",
+            "Retries after a failed email (the first attempt is not counted)", Type.INTEGER, "0", "10"),
+    NOTIFICATION_EMAIL_BACKOFF_SECONDS("notification.email.backoff.seconds", "2",
+            "Wait before the first email retry; doubles with every retry", Type.INTEGER, "1", "300"),
+    NOTIFICATION_EMAIL_FROM("notification.email.from", "no-reply@iitsm.local",
+            "Sender address of notification emails", Type.EMAIL),
+    NOTIFICATION_LINK_BASE_URL("notification.link.base.url", "http://localhost:5173",
+            "Frontend address used for links in emails", Type.URL),
+    NOTIFICATION_CHAT_WEBHOOK_URL("notification.chat.webhook.url", "",
+            "Incoming-webhook URL of the chat room; empty means chat messages are only logged", Type.OPTIONAL_URL),
+
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
     SECURITY_LOCKOUT_MINUTES("security.lockout.minutes", "15", "Minutes an account stays locked",
             Type.INTEGER, "1", "1440");
 
     /** The kind of value a key holds. */
-    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES }
+    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }
 
     private final String key;
     private final String defaultValue;
@@ -121,7 +136,7 @@ public enum ConfigKey {
 
     /** Checks one value on its own; returns an error message, or empty if the value is fine. */
     public Optional<String> check(String value) {
-        if (value == null || (value.isBlank() && type != Type.DATES)) {
+        if (value == null || (value.isBlank() && type != Type.DATES && type != Type.OPTIONAL_URL)) {
             return Optional.of("must not be empty");
         }
         String trimmed = value.strip();
@@ -142,6 +157,10 @@ public enum ConfigKey {
             }, "must be distinct days like MON,TUE,WED,THU,FRI");
             case DATES -> parses(() -> items(trimmed).forEach(LocalDate::parse),
                     "must be dates like 2026-12-25,2027-01-26 (or empty)");
+            case EMAIL -> trimmed.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")
+                    ? Optional.empty()
+                    : Optional.of("must be an email address like no-reply@iitsm.local");
+            case URL, OPTIONAL_URL -> trimmed.isEmpty() ? Optional.empty() : checkHttpUrl(trimmed);
         };
     }
 
@@ -161,6 +180,16 @@ public enum ConfigKey {
                 .filter(name -> name.startsWith(abbreviation))
                 .findFirst()
                 .orElse(abbreviation);
+    }
+
+    private static Optional<String> checkHttpUrl(String value) {
+        try {
+            java.net.URI uri = java.net.URI.create(value);
+            boolean http = "http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme());
+            return http && uri.getHost() != null ? Optional.empty() : Optional.of("must be an http or https address");
+        } catch (IllegalArgumentException ex) {
+            return Optional.of("must be an http or https address");
+        }
     }
 
     private static Optional<String> parses(Runnable parser, String problem) {

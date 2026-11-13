@@ -15,4 +15,8 @@ public interface JpaUserRepository extends JpaRepository<User, Long>, UserReposi
     @Override
     @Query("select distinct u from User u join u.roles r where type(r) = TechnicianRole order by u.name")
     List<User> findAllTechnicians();
+
+    @Override
+    @Query("select distinct u from User u join u.roles r where type(r) = AdministratorRole order by u.name")
+    List<User> findAllAdministrators();
 }
