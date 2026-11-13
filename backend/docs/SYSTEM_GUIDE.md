@@ -1740,6 +1740,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-14 | M10 search and reports built and smoke-tested (section 12A, DEC-60 to DEC-66): `slaState` filter, seven reports and CSV export with formula-injection protection, E3 coverage risk, E4 post-incident report and PDF (OpenPDF adapter), feedback, saved views, priority what-if; tables `feedback` and `saved_filters`; six new settings. Withdraw (G3) is still open. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
+| 2026-11-13 | Decisions only, no code: M11 escalation behavior fixed by the user (DEC-48 triage incidents escalate from level 0, DEC-49 one final exhausted alert after level 3); listed in section 18. |
 
 ---
 
@@ -1760,4 +1761,4 @@ Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/D
 | D1, D2 | Demo aids (demo profile only) | Move the clock forward; start a prepared outage | M11, M12 |
 | A1, A2, A6, A11 | Chatbot and voice reporting, chat-webhook channel, priority what-if and escalation preview | | M9 to M12 |
 
-Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned only a team lead or administrator can change impact, urgency and affected users; resolved incidents nobody confirms are verified and closed automatically.
+Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned only a team lead or administrator can change impact, urgency and affected users; resolved incidents nobody confirms are verified and closed automatically. Escalation (DEC-48, DEC-49): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to all administrators.
