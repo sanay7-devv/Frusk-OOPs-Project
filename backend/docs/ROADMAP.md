@@ -2,7 +2,7 @@
 
 Living document. Update after every working session. Source of truth for scope: the team handbooks (Backend Lead Handbook, section 2.5 modules M1 to M14).
 
-Last updated: 2026-11-13 (DEC-42 review, DEC-43 score plan, DEC-44 signature features approved, DEC-45 demo-shaped plan; no code change)
+Last updated: 2026-11-13 (review and plan day: DEC-42 to DEC-47 recorded, order of work in section 5 extended; no code change)
 
 Scope rule (D-012): every feature in the handbook is built in full; there are no scope tiers, no cut order and no timeline. Work follows module dependencies only.
 
@@ -15,6 +15,8 @@ Legend: [x] done, [~] written but not yet verified, [ ] not started
 M1 Foundations is done and verified over HTTP (2026-11-06): standard-format 401 and 404, `X-Request-Id` and security headers. M2 login works end to end (2026-11-06): register, login, refresh (rotation + re-use detection), logout and me, JWT filter with TOKEN_EXPIRED vs TOKEN_INVALID, five-strike lockout (423), permission-based authorities, multi-role permission union; a smoke run of 27 checks plus the expired-token and CORS checks all passed. M3 catalog and configuration is done (2026-11-06, smoke run 42/42): services with a cycle-free dependency graph, category tree with required skills, skills, SLA and escalation policies, `SlaPolicyResolver`, live `app_config` (validated, cached, applied without restart); admin endpoints are guarded by `@PreAuthorize` and return 403 to others, which also closes the M2 done-when. M2 was completed by M6 (admin users and roles) and M8 (audit of LOGIN_FAILED / ACCESS_DENIED). M4 incidents and M5 priority are done (2026-11-06, smoke run 54/54 covering T01, T03, T05, T06, T08, T09, T11, T12, T14, T15, T18, T21, T24, T25; M2 and M3 suites re-run green): `Incident` aggregate with the State pattern (10 states, `StateFactory`), `IncidentFactory`, creation pipeline (classify, priority, SLA deadlines), manual assignment with `EligibilityFilter` and `WorkloadTracker`, SLA clocks with pause and resume, comments, role-based list with filters and paging, optimistic locking, priority engine with override rules and manual override. M6 assignment is done (2026-11-06, smoke run 33/33; M2, M3, M4 re-run green, 156 checks): five strategies (Composite with the team's service-familiarity factor), skill = best + coverage, eligibility with reasons, auto-assignment on creation, triage, explainable recommendations, technician workload and queue; admin user, role and skill management completes M2. The API contract is published (2026-11-07, D-013, `docs/openapi`). M7 SLA monitor is done (2026-11-07, D-014): fire-once warnings at 75 and 90 percent, violations with `sla_violations` rows, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`; the business-hours calendar followed the same day (D-016). M8 events and audit is done (2026-11-07, D-015): every incident action, SLA alert, failed login, refused request, role and settings change is in the append-only audit trail; incident history and admin audit search are live. Next: M9 notifications. The living system description for the report and demo is `docs/SYSTEM_GUIDE.md`. The V1 to V6 migrations are still to come from the Testing teammate; until then the temporary `schema-auto` profile is used (D-006).
 
 Local run on this machine: port 8080 after `net stop MTAgentService` in an Administrator prompt (MiniTool ShadowMaker's agent takes 8080 at every boot), otherwise `SERVER_PORT=8081` (E-015); `DB_URL=jdbc:postgresql://localhost:5433/iitsm`, `SPRING_PROFILES_ACTIVE=dev,schema-auto`.
+
+**Plan after the 2026-11-13 review.** M1 to M8 are built; M9 to M14 and M2b are not started. Beyond the handbook the team accepted: three signature features (S1 Service Desk Simulator, S2 Major Incident Mode, S3 sealed audit trail, DEC-44), two demo aids (D1 adjustable clock, D2 outage drill, DEC-45), five challenge features (E1 to E5, DEC-47), the additions A1 to A14 (DEC-43) and the review fixes G1 to G5 and C1 to C4 (DEC-46). The order is in section 5. The largest risk is outside the backend: most frontend screens are not yet connected to the API (section 9, G1).
 
 ## 2. Done so far
 
@@ -49,7 +51,9 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 12. [x] M6 assignment strategies (Skill, Load, RoundRobin, ExperiencePriority, Composite) and automatic assignment on creation; triage queue + TRIAGE_NEEDED; recommendations endpoint. Done 2026-11-06. Done-when (handbook 2.5): changing assignment.strategy changes who receives the next incident with no restart (T04 verified), ineligible technicians are never chosen (excluded list verified).
 14. [x] M7 SLA monitor (2026-11-07, D-014, smoke-tested `m7_smoke.py`, T23 included): scheduled job, 75 / 90 percent warnings, violations, `sla_violations`, fire-once flags, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`. Business-hours calendar done too (2026-11-07, D-016, user decision DEC-39, `calendar_smoke.py` 11/11): `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`, settings `sla.business.*` in `app_config`, policies may use BUSINESS_HOURS (stored as BUSINESS_HRS, E-022). Audit rows and notifications for the SLA events come with M8 and M9.
 15. [x] M8 events and audit (2026-11-07, D-015, smoke-tested `m8_smoke.py`): `IncidentChanged` for every incident action, `TriageNeeded`, `SecurityAuditEvent`; `AuditListener` writes `audit_records` in the action's transaction (refusals and failed logins in their own); `GET /incidents/{id}/history`, `GET /audit`. Finishes the M2 audit (LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED) and the M4 history.
-16. [ ] M9 notifications (next).
+16. [ ] Test foundation (next): domain unit tests for the state machine, priority boundaries, SLA tracker, calendars and assignment strategies, plus architecture rule tests (A9).
+17. [ ] Refactor on top of those tests: `Incident` records its own events (C2), one command object per lifecycle action (C1) (DEC-46).
+18. [ ] M9 notifications, then section 5 in order.
 13. [ ] M4 leftovers: `POST /incidents/{id}/escalate` (M11), `mark-duplicate` and duplicate check on create (M12), feedback, attachments (M14 checks). The audit history endpoint is done (M8, 2026-11-07).
 8. [ ] M2b Google sign-in (after M2 login passes its done-when check): add `POST /auth/google`, Google ID token verification, account linking by email, tests. See D-001 for the design.
 
@@ -73,6 +77,33 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | M13 | Real-time layer, dashboard, service graph | [ ] |
 | M14 | Hardening | [ ] |
 
+### 4.1 Accepted additions beyond the handbook (2026-11-13)
+
+| Id | Addition | Decision | Built with | Status |
+|---|---|---|---|---|
+| S1 | Service Desk Simulator (one screen, one chart) | DEC-44, DEC-45 | after M13 | [ ] |
+| S2 | Major Incident Mode: root cause from the graph, known-outage join, crowd-driven priority | DEC-44 | M12 + M13 | [ ] |
+| S3 | Sealed audit trail and `GET /audit/verify` (needs table `audit_seals`) | DEC-44 | M14 | [ ] |
+| D1 | Adjustable clock, demo profile only | DEC-45 | M11 | [ ] |
+| D2 | Outage drill, demo profile only | DEC-45 | M12 | [ ] |
+| E1 | Service status board | DEC-47 | M13 | [ ] |
+| E2 | Recurring-problem detector | DEC-47 | M12 | [ ] |
+| E3 | Coverage risk report | DEC-47 | M10 | [ ] |
+| E4 | Post-incident report | DEC-47 | M10 | [ ] |
+| E5 | Reporter tracking view | DEC-47 | Frontend | [ ] |
+| A1, A2 | Chatbot and voice incident reporting | DEC-43 | M12, Frontend | [ ] |
+| A6 | Chat-webhook notification channel | DEC-43 | M9 | [ ] |
+| A9, A10 | Architecture rule tests; CI quality gate | DEC-43 | Test foundation; CI | [ ] |
+| A11 | Priority what-if, escalation preview | DEC-43 | M10, M11 | [ ] |
+| A13, A14 | Traceability matrix; campus demo data | DEC-43 | Report, seed data | [ ] |
+| A7 | Load test and scale-out path | DEC-43 | M14 | [ ] |
+| G2 | `AutoVerifyJob` | DEC-46 | M11 | [ ] |
+| G3 | Reporter withdraw action | DEC-46 | M10 | [ ] |
+| G4 | Lock impact and urgency for the reporter once assigned | DEC-46 | M14 | [ ] |
+| C1, C2 | Command objects; aggregate-recorded events | DEC-46 | before M9 | [ ] |
+| C3 | Security category as a setting; factory for internal audit entries | DEC-46 | M14 | [ ] |
+| Last | A4 mobile push, A8 Prometheus and Grafana, A12 password reset and TOTP, A5 cloud deployment | DEC-45 | after everything else | [ ] |
+
 ## 5. Order of work
 
 The handbook's week-by-week plan, freeze dates, scope tiers and cut order are not used (D-012). Every feature is built, in module-dependency order, and every leftover of an earlier module is finished inside the module it depends on. The extras the handbook labels "Tier 3" are part of their modules here:
@@ -86,13 +117,17 @@ The handbook's week-by-week plan, freeze dates, scope tiers and cut order are no
 | 5 | M6 Assignment | [x] | M4 auto-assign |
 | 6 | M7 SLA monitor | [x] | business-hours calendar (`BusinessHoursCalendar`) |
 | 7 | M8 Events and audit | [x] | M2 auth audit, M4 history, audit of SLA warnings and violations |
-| 8 | M9 Notifications | [ ] next | M6 TRIAGE_NEEDED notice, notification preferences |
-| 9 | M10 Search and reports | [ ] | slaState filter, PDF export, saved views |
-| 10 | M11 Escalation | [ ] | M4 escalate |
-| 11 | M12 Intelligence and AI | [ ] | M4 duplicates, mark-duplicate, thread summarizer |
-| 12 | M13 Real-time, dashboard, graph | [ ] | dependency graph and impact |
-| 13 | M14 Hardening (+ attachments, feedback) | [ ] | |
+| 8a | Test foundation | [ ] next | domain unit tests, architecture rule tests (A9) |
+| 8b | Refactor under test | [ ] | aggregate-recorded events (C2), command objects (C1) |
+| 8 | M9 Notifications | [ ] | M6 TRIAGE_NEEDED notice, notification preferences, chat-webhook channel (A6) |
+| 9 | M10 Search and reports | [ ] | slaState filter, PDF export, saved views, feedback after resolution, withdraw (G3), coverage risk report (E3), post-incident report (E4), priority what-if (A11) |
+| 10 | M11 Escalation | [ ] | M4 escalate, `AutoVerifyJob` (G2), escalation preview (A11), adjustable demo clock (D1) |
+| 11 | M12 Intelligence and AI | [ ] | M4 duplicates, mark-duplicate, thread summarizer, chatbot intake (A1), recurring-problem detector (E2), Major Incident Mode grouping and join (S2), outage drill (D2) |
+| 12 | M13 Real-time, dashboard, graph | [ ] | dependency graph and impact, root cause from the graph (S2), service status board (E1) |
+| 12a | Service Desk Simulator (S1) | [ ] | uses the reports of M10 and the history built up by then |
+| 13 | M14 Hardening (+ attachments) | [ ] | sealed audit trail (S3), DEC-42 risk fixes, reporter edit lock (G4), text-rule fixes (C3), load test (A7) |
 | 14 | M2b Google sign-in | [ ] | |
+| 15 | Last priority | [ ] | mobile push (A4), Prometheus and Grafana (A8), password reset and TOTP (A12), cloud deployment (A5) |
 
 ## 6. Decisions log
 
@@ -118,11 +153,19 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 | D-016 | 2026-11-07 | Business-hours SLA calendar (user decision, DEC-39): one company calendar in `app_config` (`sla.business.zone`, `open`, `close`, `days`, `holidays`), validated and live; `WorkCalendar` strategy (`AlwaysCalendar`, `BusinessHoursCalendar`) used for every deadline, pause shift and elapsed percentage; policies choose ALWAYS or BUSINESS_HOURS; `CalendarTypeConverter` stores BUSINESS_HRS (E-022). | Handbook 2.5 M7 (WorkCalendar), D-012 full scope. |
 | D-017 | 2026-11-10 | Shared repo layout (full reasoning in DECISIONS.md DEC-41): backend merged into `sanay7-devv/Frusk-OOPs-Project` by PR #1, then moved into `backend/` beside `frontend/` by PR #2. Run Maven from `backend/`. Vercel's check fails for `Vishh-t` until that account joins the Vercel team, and its Root Directory should be `frontend`. |
 | D-018 | 2026-11-13 | Design review of the open questions for M9 to M14 (DECISIONS.md DEC-42): one choice per question, risks found in DEC-17, 21, 37, 38, and a clarification of DEC-23. |
-| D-019 | 2026-11-13 | Rubric-driven additions A1 to A14 (DECISIONS.md DEC-43), **proposed, waiting for the user's choice**. |
+| D-019 | 2026-11-13 | Rubric-driven additions A1 to A14 (DECISIONS.md DEC-43), accepted the same day with the priorities of D-021. |
 | D-020 | 2026-11-13 | Cloud deployment (A5) is last priority (user decision). Three signature features proposed in DECISIONS.md DEC-44: S1 Service Desk Simulator, S2 Major Incident Mode, S3 sealed audit trail; approved the same day (D-021). |
 | D-021 | 2026-11-13 | Plan shaped by the recorded demo (DECISIONS.md DEC-45): S1 to S3 approved, S1 cut to one screen; demo-only adjustable clock (D1) and outage drill (D2) added; mobile push, Grafana, password reset, TOTP and cloud deployment are last priority; run sheet for the video recorded there. |
+| D-022 | 2026-11-13 | Fixes from the code and frontend review (DECISIONS.md DEC-46): G1 frontend wiring order, G2 `AutoVerifyJob` with M11, G3 withdraw action, G4 reporter edit lock, G5 `major` keeps its meaning, C1 command objects, C2 aggregate-recorded events, C3 text rules replaced, C4 patterns named. |
+| D-023 | 2026-11-13 | Five features answering the brief's named challenges (DECISIONS.md DEC-47): E1 service status board, E2 recurring-problem detector, E3 coverage risk report, E4 post-incident report, E5 reporter tracking view. |
 
 ## 7. Open questions / blockers
+
+- Frontend teammate (D-022, G1): 11 screens are stubs and 6 run on hardcoded data. Wire them in demo order: (1) report form, my incidents, incident detail with `allowedActions`; (2) technician queue, workbench, workload; (3) team queue with assign and recommendations, escalations; (4) admin incidents, audit log, SLA violations, config, catalog screens; (5) dashboard, reports, service graph. A typed client can be generated from `docs/openapi/iitsm-api.json`. On 409 `OPTIMISTIC_LOCK_CONFLICT` reload and retry (DEC-42).
+- Frontend teammate (D-020 to D-023): new screens to plan: Major Incident view with the known-outage banner on the report form (S2), simulator screen (S1), audit Verify button (S3), service status board (E1), post-incident report (E4), tracking view (E5), demo clock and outage drill controls (D1, D2), chatbot and voice intake (A1, A2). Endpoints are added to the planned part of the contract as each is designed.
+- Testing teammate (D-020, D-022): one new table beyond Appendix A, `audit_seals` (S3: id, from_id, to_id, record_count, hash, prev_hash, created_at); the partial unique index for the global SLA default (DEC-17); decide whether V5 gets a visibility column on `audit_records` (DEC-42). Tests: the backend lead writes domain unit tests, integration and boundary tests stay with Testing (DEC-42). The smoke scripts named in section 3 are not in the repository; add them or their JUnit equivalents.
+- Report teammate (D-019 to D-023): rubric mapping in section 8; challenge-to-feature table (DEC-47); pattern list now includes Template Method and Command (SYSTEM_GUIDE 14.3); video run sheet in DEC-45; cite `ERROR_LOG.md` as bug-resolution evidence; state that deployment is local Docker Compose.
+- Open design questions for later modules (DEC-42): an unassigned P1 in triage never escalates; what happens after escalation level 3; whether a confident AI category is applied automatically; mapping `IncidentChanged` actions to the 15 notification event types; CSV formula injection.
 
 - Testing teammate (D-015): the V5 trigger that rejects UPDATE and DELETE on `audit_records` is still wanted (the app side is append-only already). Test idea for the M8 done-when: count `audit_records` for the incident before and after one transition (exactly +1) and after a refused one (+0). Frontend: `GET /incidents/{id}/history` for the timeline, `GET /audit` for the admin log.
 - Frontend (E-021): `reusableSolution` on resolve and `alwaysP1` on services may now be omitted (default false).
@@ -157,15 +200,15 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 
 ## 8. Score plan against the course rubric (2026-11-13)
 
-Rubric from the brief: Functionality 60, Technical depth 15, System design 10, User experience 10, Innovation 10, Testing 5, Documentation and presentation 10. Proposed additions are A1 to A14 in DECISIONS.md DEC-43; none is built until the user says yes.
+Rubric from the brief: Functionality 60, Technical depth 15, System design 10, User experience 10, Innovation 10, Testing 5, Documentation and presentation 10. Additions A1 to A14 (DEC-43), S1 to S3 (DEC-44), D1 and D2 (DEC-45) and E1 to E5 (DEC-47) are accepted; build order in section 5.
 
-| Rubric line | Marks | Built | Planned in the handbook scope | Proposed additions |
+| Rubric line | Marks | Built | Planned in the handbook scope | Accepted additions |
 |---|---|---|---|---|
-| Functionality | 60 | Users, incidents and lifecycle, priority, five assignment strategies, SLA, audit, 12 search filters | [ ] M9 notifications · [ ] M10 reports · [ ] feedback after resolution (moved from M14 to M10) · [ ] M12 duplicates · [ ] M14 database and network failure handling | [ ] A13 traceability matrix proves every listed capability |
-| Technical depth | 15 | Layered design, JWT, live config, generated OpenAPI | [ ] M2b Google sign-in · [ ] LLM API · [ ] Docker, CI (Testing teammate) | [ ] A6 chat webhook · [ ] A7 load test and scale-out path · [ ] A8 observability · [ ] A10 quality gate |
-| System design | 10 | DECISIONS.md, SYSTEM_GUIDE.md with diagrams | [ ] report diagrams (Report teammate) | [ ] A9 architecture rule tests · [ ] A13 · [ ] A14 campus data |
-| User experience | 10 | `allowedActions`, priority explanation, explainable recommendations | [ ] M13 live dashboard · [ ] notification preferences | [ ] A11 what-if, preview, replay · [ ] A12 password reset, TOTP |
-| Innovation | 10 | Explainable assignment, business-hours SLA, event-driven core | [ ] M11 escalation · [ ] M12 classification, similarity, resolutions, SLA risk · [ ] M13 graph, real-time | [ ] **S1 simulator · S2 major incident mode · S3 sealed audit (DEC-44, approved)** · [ ] A1 chatbot · [ ] A2 voice · [ ] D1 adjustable demo clock · [ ] D2 outage drill (DEC-45) · last priority: A4 mobile push, A5 cloud deployment |
+| Functionality | 60 | Users, incidents and lifecycle, priority, five assignment strategies, SLA, audit, 12 search filters | [ ] M9 notifications · [ ] M10 reports · [ ] feedback after resolution (moved from M14 to M10) · [ ] M12 duplicates · [ ] M14 database and network failure handling | [ ] A13 traceability matrix proves every listed capability · [ ] `AutoVerifyJob` (G2) · [ ] withdraw (G3) · [ ] frontend wiring (G1) |
+| Technical depth | 15 | Layered design, JWT, live config, generated OpenAPI | [ ] M2b Google sign-in · [ ] LLM API · [ ] Docker, CI (Testing teammate) | [ ] A6 chat webhook · [ ] A7 load test and scale-out path · [ ] A10 quality gate · last priority: A8 observability |
+| System design | 10 | DECISIONS.md, SYSTEM_GUIDE.md with diagrams | [ ] report diagrams (Report teammate) | [ ] A9 architecture rule tests · [ ] A13 · [ ] A14 campus data · [ ] Command and aggregate events (C1, C2) |
+| User experience | 10 | `allowedActions`, priority explanation, explainable recommendations | [ ] M13 live dashboard · [ ] notification preferences | [ ] A11 what-if, preview · [ ] E1 status board · [ ] E5 tracking view · [ ] E4 post-incident report · last priority: A12 |
+| Innovation | 10 | Explainable assignment, business-hours SLA, event-driven core | [ ] M11 escalation · [ ] M12 classification, similarity, resolutions, SLA risk · [ ] M13 graph, real-time | [ ] **S1 simulator · S2 major incident mode · S3 sealed audit (DEC-44, approved)** · [ ] A1 chatbot · [ ] A2 voice · [ ] D1 adjustable demo clock · [ ] D2 outage drill (DEC-45) · [ ] E2 recurring problems · [ ] E3 coverage risk · last priority: A4 mobile push, A5 cloud deployment |
 | Testing | 5 | One context test; smoke runs recorded here | [ ] 26 documented cases (Testing teammate) | [ ] domain unit tests (DEC-42) · [ ] A9 · [ ] smoke scripts into the repository · [ ] ERROR_LOG.md cited as bug-resolution evidence |
 | Documentation and presentation | 10 | This roadmap, guide, decision record | [ ] PDF report, 15 to 20 minute video | [ ] A13 · [ ] three workflows mapped to the brief's examples |
 
@@ -174,33 +217,33 @@ Gaps found on 2026-11-13: the smoke scripts named in section 3 (`m7_smoke.py`, `
 
 ## 9. Findings of the code and frontend review (2026-11-13)
 
-Read: `Incident`, the state classes, `IncidentService`, `IncidentAccessPolicy`, `PriorityEngine`, the assignment strategies, the controllers, the frontend sources and `planned-endpoints.json`. Nothing here is built or decided yet.
+Read: `Incident`, the state classes, `IncidentService`, `IncidentAccessPolicy`, `PriorityEngine`, the assignment strategies, the controllers, the frontend sources and `planned-endpoints.json`. Every finding has a decision in DECISIONS.md (DEC-46 for G and C, DEC-47 for E); nothing is built yet.
 
 ### 9.1 Gaps
 
-| # | Finding | Evidence | Proposed action |
+| # | Finding | Evidence | Decision |
 |---|---|---|---|
-| G1 | Most of the frontend is not connected to the backend | 11 screens are five-line TODO stubs (admin: all incidents, audit log, categories, config, reports, service graph, services, SLA policies, users; employee: my incidents, incident detail). Six large screens (admin dashboard, team queue, escalations, technician queue and workload, employee home) run on hardcoded arrays such as `INITIAL_QUEUE`. Only login, register and the report form call the API | The Frontend teammate wires screens in demo-workflow order; the backend can supply a typed client generated from the OpenAPI file |
-| G2 | `AutoVerifyJob` belongs to no module | Handbook 2.7 lists it (RESOLVED with no reply for 48 hours to VERIFIED, then CLOSED as AUTO_VERIFIED); no code exists and sections 4 and 5 never mention it. Today a verified incident closes only when an administrator closes it | Build it with M11 (same scheduler pattern) |
-| G3 | `ClosureReason.WITHDRAWN` is unused | No withdraw action in `IncidentAction` or the controller | Add a reporter withdraw action, or drop the value |
-| G4 | A reporter can raise their own priority after creation | `IncidentAccessPolicy`: EDIT is allowed for the reporter, and `update` recalculates the priority from the new impact and urgency | Decide: lock impact and urgency once assigned, or keep and rely on the PRIORITY_CHANGED audit entry |
-| G5 | `major` already means "is P1" | `Incident.applyPriority` sets `major = priority == P1` | Decide its meaning before Major Incident Mode (DEC-44 S2) |
+| G1 | Most of the frontend is not connected to the backend | 11 screens are five-line TODO stubs (admin: all incidents, audit log, categories, config, reports, service graph, services, SLA policies, users; employee: my incidents, incident detail). Six large screens (admin dashboard, team queue, escalations, technician queue and workload, employee home) run on hardcoded arrays such as `INITIAL_QUEUE`. Only login, register and the report form call the API | Wire in demo-workflow order (section 7); typed client from the OpenAPI file |
+| G2 | `AutoVerifyJob` belonged to no module | Handbook 2.7 lists it; no code exists. Today a verified incident closes only when an administrator closes it | Built with M11 |
+| G3 | `ClosureReason.WITHDRAWN` is unused | No withdraw action in `IncidentAction` or the controller | Reporter withdraw action, built with M10 |
+| G4 | A reporter can raise their own priority after creation | `IncidentAccessPolicy`: EDIT is allowed for the reporter, and `update` recalculates the priority | Impact, urgency and affected users locked for the reporter once ASSIGNED (M14) |
+| G5 | `major` already means "is P1" | `Incident.applyPriority` sets `major = priority == P1` | Meaning kept; Major Incident Mode uses the problem record |
 
 ### 9.2 Code quality
 
-| # | Finding | Proposed action |
+| # | Finding | Decision |
 |---|---|---|
-| C1 | `IncidentService` has 16 dependencies and about 500 lines; every lifecycle method repeats load, permission check, state move, publish, view | One small command object per action behind a shared runner (Command pattern); do it only after the domain unit tests exist |
-| C2 | Events are published by hand in each service method, so a new action could forget its audit entry | The `Incident` aggregate records its own events and the service drains them after saving |
-| C3 | Two rules depend on text: the Security override matches the category name "security"; internal audit entries are recognised by the prefix "Internal note" | Replace with explicit data (a setting naming the security category; a factory method for internal entries) |
-| C4 | Patterns present but not yet named in the documents: Template Method (`FactorStrategy` with `score`), a second and third Strategy (`WorkCalendar`, `PriorityStrategy`), Policy (`IncidentAccessPolicy`) | Add them to SYSTEM_GUIDE and the report |
+| C1 | `IncidentService` has 16 dependencies and about 500 lines; every lifecycle method repeats load, permission check, state move, publish, view | One command object per action behind a shared runner, after the domain unit tests exist |
+| C2 | Events are published by hand in each service method, so a new action could forget its audit entry | `Incident` records its own events; the service publishes them after saving |
+| C3 | Two rules depend on text: the Security override matches the category name "security"; internal audit entries are recognised by the prefix "Internal note" | A setting names the security category; one factory method creates internal entries (M14) |
+| C4 | Template Method (`FactorStrategy`), the third Strategy (`WorkCalendar`) and the access policy were missing from the pattern table (the template method was mentioned only in SYSTEM_GUIDE 10.3) | Added as SYSTEM_GUIDE section 14.3 (done) |
 
-### 9.3 Further feature proposals (each answers a challenge the brief names)
+### 9.3 Features answering the brief's named challenges (accepted, DEC-47)
 
-| # | Proposal | Brief challenge it answers | Data it needs |
+| # | Feature | Brief challenge it answers | Built with |
 |---|---|---|---|
-| E1 | Service status board: every service shown as Healthy, Degraded or Outage from open incidents, active P1s and SLA compliance; visible to employees | "Poor visibility into service health" | Existing incidents and services |
-| E2 | Recurring-problem detector: the same service and category failing repeatedly within a period, or repeated reopens, proposes a problem record | "Difficulty identifying recurring problems" | Existing incidents |
-| E3 | Coverage risk report: services whose required skills are held by only one available technician | "Inefficient technician allocation" | Existing skills, categories, availability |
-| E4 | Post-incident report: timeline, time spent in each status, SLA outcome and people involved, built from the audit trail, exportable as PDF | "Incomplete incident history" | Existing audit records; PDF export from M10 |
-| E5 | Reporter tracking view: a step-by-step progress line with the SLA due time | "Delayed response" as seen by the employee | Existing incident detail; frontend only |
+| E1 | Service status board: every service shown as Healthy, Degraded or Outage, visible to employees | "Poor visibility into service health" | M13 |
+| E2 | Recurring-problem detector: the same service and category failing repeatedly, or repeated reopens, proposes a problem record | "Difficulty identifying recurring problems" | M12 |
+| E3 | Coverage risk report: services whose required skills are held by only one available technician | "Inefficient technician allocation" | M10 |
+| E4 | Post-incident report: timeline, time in each status, SLA outcome and people involved, from the audit trail, as PDF | "Incomplete incident history" | M10 |
+| E5 | Reporter tracking view: a progress line with the SLA due time | "Delayed response" as seen by the employee | Frontend |

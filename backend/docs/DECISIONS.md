@@ -56,9 +56,11 @@
 | [DEC-40](#dec-40-notification-preferences-and-templates) | Notification preferences and templates | 2026-11-07 | M9 | ✅ user decision, to build |
 | [DEC-41](#dec-41-shared-repository-layout-backend-and-frontend-folders) | Shared repository layout: backend/ and frontend/ folders | 2026-11-10 | Repo | ✅ |
 | [DEC-42](#dec-42-design-review-of-the-open-questions-for-m9-to-m14) | Design review of the open questions for M9 to M14 | 2026-11-13 | M9 to M14 | ✅ review, user may veto |
-| [DEC-43](#dec-43-rubric-driven-additions-for-full-marks) | Rubric-driven additions for full marks | 2026-11-13 | All | 🕓 Proposed |
+| [DEC-43](#dec-43-rubric-driven-additions-for-full-marks) | Rubric-driven additions for full marks | 2026-11-13 | All | ✅ accepted, with the priorities in DEC-45 |
 | [DEC-44](#dec-44-three-signature-features) | Three signature features | 2026-11-13 | M10 to M13 | ✅ user approved, shaped for the demo video (DEC-45) |
 | [DEC-45](#dec-45-plan-shaped-by-the-recorded-demo) | Plan shaped by the recorded demo | 2026-11-13 | All | ✅ |
+| [DEC-46](#dec-46-fixes-from-the-code-and-frontend-review) | Fixes from the code and frontend review | 2026-11-13 | M9 to M14 | ✅ |
+| [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
 
 ---
 
@@ -835,7 +837,7 @@ Smaller rules the handbook left open:
 
 | When | Module | Status |
 |---|---|---|
-| 2026-11-13 | All | 🕓 Proposed; each line needs the user's yes before it is built |
+| 2026-11-13 | All | ✅ Accepted by the user the same day; DEC-45 sets which lines are built first and which are last priority |
 
 **Context.** The course rubric (brief, last page): Functionality 60 (mandatory modules), Technical depth 15 (code quality, use of APIs, third-party integration, scalability), System design 10, User experience 10 (value-added features: SLA, security, new features, intelligent features), Innovation 10 (the brief's Innovation Challenge list), Testing 5 (unit, integration, bug resolution, edge cases), Documentation and presentation 10. The handbook scope already covers 10 of the 16 innovation items. The additions below close what is left.
 
@@ -873,13 +875,13 @@ Smaller rules the handbook left open:
 
 #### S1. Service Desk Simulator (the desk in fast-forward)
 
-**What.** An admin picks a workload (the last N real incidents, or a generated outage storm) and a set of configurations (assignment strategy, weights, SLA policy, number of technicians). The system replays the workload in memory on a virtual clock and reports, per configuration: SLA violations, mean time to resolve, and how evenly work was spread. The admin can apply the winning configuration live. Optional extra: search the weight space and recommend the best weights with the evidence.
+**What.** An admin picks a workload (the last N real incidents, or a generated outage storm) and a set of configurations (assignment strategy, weights, SLA policy, number of technicians). The system replays the workload in memory on a virtual clock and reports, per configuration: SLA violations, mean time to resolve, and how evenly work was spread. The admin can apply the winning configuration live. (An automatic search of the weight space was considered and dropped in DEC-45.)
 
 **Why only we can do it.** `AssignmentEngine.recommend(incident, candidates, settings)` is a pure domain call with no Spring or database (DEC-01); every time rule reads an injected `Clock` (DEC-13); settings are an immutable snapshot (DEC-18); the lifecycle is a domain State machine (DEC-19). The simulator is therefore a discrete-event loop over the real production classes, not a copy of the rules.
 
 | Option | For | Against |
 |---|---|---|
-| **In-memory discrete-event simulation over the real domain classes** (proposed) | Results come from the same code that runs live; no test data written to the database | Needs a handling-time model (historical resolution times per priority and category) |
+| **In-memory discrete-event simulation over the real domain classes** ✔ | Results come from the same code that runs live; no test data written to the database | Needs a handling-time model (historical resolution times per priority and category) |
 | Replay by writing sandbox incidents to the database | Simple | Pollutes real data and the audit trail; slow |
 | Static report of past assignments only | Trivial | Shows nothing about the alternatives |
 
@@ -897,7 +899,7 @@ Smaller rules the handbook left open:
 
 | Option | For | Against |
 |---|---|---|
-| **Graph analysis first, LLM note optional** (proposed) | Deterministic, explainable, works offline | Only finds causes that are services in the graph |
+| **Graph analysis first, LLM note optional** ✔ | Deterministic, explainable, works offline | Only finds causes that are services in the graph |
 | LLM-written root cause only | Reads well | Not reproducible; fails without a key |
 | Manual linking by an admin | Simple | Not intelligent |
 
@@ -911,7 +913,7 @@ Smaller rules the handbook left open:
 
 | Option | For | Against |
 |---|---|---|
-| **Seals over batches in a new `audit_seals` table** (proposed) | No change to `audit_records`; no locking on the write path | The newest records are unsealed for one interval; one new table beyond Appendix A |
+| **Seals over batches in a new `audit_seals` table** ✔ | No change to `audit_records`; no locking on the write path | The newest records are unsealed for one interval; one new table beyond Appendix A |
 | Hash columns on every audit record, chained at insert | Every record protected at once | Concurrent writers must be serialised; changes the agreed table |
 | Database trigger only (already planned for V5) | Prevents changes | Prevents but cannot prove; a database administrator can disable it |
 
@@ -966,3 +968,62 @@ Smaller rules the handbook left open:
 **Trade-off.** D1 and D2 are code that exists for the demonstration; both are confined to the `demo` profile and to administrators, and the report says so.
 
 **Cross-questions.** *"Is the SLA real if you can move the clock?"* The rules and durations are the production ones; only the clock source differs, in one profile. The same seam is what makes the time rules testable. *"Can a user move the clock in production?"* No: the adjustable clock bean is only created in the `demo` profile.
+
+
+### DEC-46: Fixes from the code and frontend review
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13 | M9 to M14 | ✅ the user asked for every finding to be taken up |
+
+**Context.** A read of `Incident`, the state classes, `IncidentService`, `IncidentAccessPolicy`, `PriorityEngine`, the assignment strategies, the controllers and the frontend sources (ROADMAP section 9).
+
+**Decision.**
+
+| # | Finding | Decision | Built with |
+|---|---|---|---|
+| G1 | 11 frontend screens are stubs and 6 run on hardcoded arrays; only login, register and the report form call the API | The Frontend teammate wires screens in the order of the three demo workflows (DEC-45 run sheet); the backend documents how to generate a typed client from `docs/openapi/iitsm-api.json` | Frontend; note in `docs/openapi/README.md` |
+| G2 | `AutoVerifyJob` (handbook 2.7) belongs to no module | Built with escalation: RESOLVED with no reply for `verify.auto.hours` moves to VERIFIED and closes as AUTO_VERIFIED; idempotent, one transaction per incident like the SLA monitor (DEC-37) | M11 |
+| G3 | `ClosureReason.WITHDRAWN` is unused | New reporter action `withdraw` (reason required), legal until work has started (CLASSIFIED, ASSIGNED, ACKNOWLEDGED); closes with WITHDRAWN and frees the technician's load. An addition to the contract | M10 |
+| G4 | A reporter can raise their own priority by editing impact and urgency | Once an incident is ASSIGNED, only a team lead or administrator may change impact, urgency and affected users; the reporter can still edit the description. Before assignment the reporter may edit everything. Check the documented test cases before changing behavior | M14 |
+| G5 | `major` already means "is P1" | The stored meaning stays. Major Incident Mode (DEC-44 S2) is modelled by the problem record (`problem_id`); the lead incident is the highest-priority, earliest linked one | M12 |
+| C1 | `IncidentService`: 16 dependencies, about 500 lines, the same five steps in every lifecycle method | One command object per action behind a shared runner (Command pattern). Done only after the domain unit tests exist, so the refactor is checked | Before M9 |
+| C2 | Events are published by hand in each method | `Incident` records its own events in a transient list; the service publishes them after saving. No action can then skip its audit entry | Before M9 |
+| C3 | Rules that depend on text: category name "security"; audit prefix "Internal note" | The security category name becomes an `app_config` setting; internal audit entries are created only through one factory method on `AuditRecord`, with a test | M14 |
+| C4 | Template Method (`FactorStrategy`), the third Strategy (`WorkCalendar`) and the access policy are in the code but missing from the pattern table | Added to SYSTEM_GUIDE section 14.3 now | Done (docs) |
+
+**Options considered.**
+
+| Topic | Option | Verdict |
+|---|---|---|
+| G4 | Leave edits open and rely on the PRIORITY_CHANGED audit entry | Rejected: the audit shows the gaming but does not stop it, and crowd-driven priority (S2) makes the affected-users field matter more |
+| G4 | Lock impact and urgency for the reporter from creation | Rejected: a reporter who made a mistake could not correct it before anyone picks the incident up |
+| G5 | Redefine `major` as "heads a problem record" | Rejected: it changes verified behavior and the meaning the frontend may already show |
+| C1 | Keep the service as it is | Rejected: every new action (escalate, withdraw, mark duplicate, feedback) would add another copy of the same five steps |
+| C2 | Publish from the entity through Spring Data's `AbstractAggregateRoot` | Rejected: it puts a Spring type in the domain (DEC-01) |
+
+**Trade-off.** C1 and C2 change code that is already smoke-tested; that is why the domain unit tests come first.
+
+**Cross-questions.** *"Is Command not over-engineering?"* Twelve lifecycle actions share the same five steps today and four more are coming; the runner removes the repetition and gives the chatbot and the simulator one way to invoke an action. *"Why does the aggregate hold events if the domain must not know Spring?"* It only keeps a plain list of event records; publishing stays in the application layer.
+
+### DEC-47: Five features that answer the brief's named challenges
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13 | M10 to M13 | ✅ user approved |
+
+**Context.** The brief's problem statement lists eight challenges. Six were already answered by planned modules; "poor visibility into service health" and "difficulty identifying recurring problems" were not. Every feature below uses data the system already stores and needs no schema change.
+
+| # | Feature | Challenge in the brief | Rule | Built with |
+|---|---|---|---|---|
+| E1 | Service status board, visible to employees | Poor visibility into service health | Outage: an open P1 on the service. Degraded: an open P2, or an Outage on a service it depends on. Otherwise Healthy. Shown with open counts and 30-day SLA compliance | M13 |
+| E2 | Recurring-problem detector | Difficulty identifying recurring problems | The same service and category resolved N times in a window, or an incident reopened more than once, proposes a problem record to a team lead (N and the window in `app_config`) | M12 |
+| E3 | Coverage risk report | Inefficient technician allocation | For each category's required skills, count the available technicians who hold them; one or none on a service of criticality 4 or 5 is flagged | M10 |
+| E4 | Post-incident report | Incomplete incident history | Timeline, time spent in each status, SLA outcome and people involved, computed from the audit trail; exportable as PDF | M10 |
+| E5 | Reporter tracking view | Delayed response | A progress line over the lifecycle with the SLA due time; frontend only, from the existing incident detail | Frontend |
+
+**Options considered.** A status board fed by real monitoring probes (out of scope: the system manages incidents, it does not monitor servers) against one derived from incidents (chosen: it is honest about its source and needs nothing new).
+
+**Trade-off.** E1 reflects reported incidents only; a failing service nobody has reported shows Healthy. The board says "based on reported incidents".
+
+**Cross-questions.** *"How is E2 different from duplicate detection?"* Duplicates are the same failure reported several times within 24 hours; a recurring problem is the same kind of failure coming back over weeks after being resolved. *"Why does a dependency make a service Degraded?"* Its upstream is down, so it is likely affected even before anyone reports it; the graph is already there (DEC-16).

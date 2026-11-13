@@ -33,6 +33,7 @@
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
 16. [Key decisions](#16-key-decisions)
 17. [Changelog](#17-changelog)
+18. [Planned work beyond the handbook](#18-planned-work-beyond-the-handbook)
 
 ---
 
@@ -48,7 +49,8 @@
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
-| M9 to M14 | Notifications, reports, escalation, AI, real-time, hardening | ⬜ Not started |
+| M9 to M14, M2b | Notifications, reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
+| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -1541,6 +1543,15 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them. Notification (M9) and dashboard (M13) listeners subscribe to the same events. |
 | **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
 
+### 14.3 Further patterns in the code
+
+| Pattern | Status | Where |
+|---|---|---|
+| **Template Method** | ✅ in use | `FactorStrategy.rank` is final: it scores every candidate, sorts best first and applies the tie-break; subclasses (`CompositeStrategy`, `SkillBasedStrategy`, `LoadBasedStrategy`, `ExperiencePriorityStrategy`) only supply `score` (section 10.3). |
+| **Strategy** (third use) | ✅ in use | `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`: an SLA policy chooses how time is counted (section 11.3). |
+| **Policy object** | ✅ in use | `IncidentAccessPolicy` holds every "who may do what" rule in one class, separate from the State pattern's "is it legal now" (section 8.4). |
+| **Command** | ⬜ planned (DEC-46) | One command object per incident action behind a shared runner, replacing the repeated steps in `IncidentService`. |
+
 ---
 
 ## 15. Configuration and running the backend
@@ -1602,6 +1613,13 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | D-014 | SLA monitor design | One transaction per incident, fire-once flags in the domain, only the highest alert on a late run, a moved deadline gets fresh warnings |
 | D-015 | Audit through events | One `IncidentChanged` event per action written in the action's transaction; refusals and failed logins written in their own; append-only |
 | D-016 | Business-hours calendar | One company calendar in `app_config`; policies choose ALWAYS or BUSINESS_HOURS |
+| D-017 | Shared repository layout | Backend in `backend/`, frontend in `frontend/`, one team repository |
+| D-018 | Design review of the open questions for M9 to M14 | One choice per question before the modules are built (DEC-42) |
+| D-019 | Rubric-driven additions A1 to A14 | What each rubric line still needs (DEC-43) |
+| D-020 | Three signature features | Service Desk Simulator, Major Incident Mode, sealed audit trail; deployment last (DEC-44) |
+| D-021 | Plan shaped by the recorded demo | Adjustable demo clock, outage drill, video run sheet, priorities (DEC-45) |
+| D-022 | Fixes from the code and frontend review | Command objects, aggregate-recorded events, `AutoVerifyJob`, withdraw, reporter edit lock (DEC-46) |
+| D-023 | Features answering the brief's challenges | Status board, recurring problems, coverage risk, post-incident report, tracking view (DEC-47) |
 
 ---
 
@@ -1621,3 +1639,25 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-07 | M8 events and audit trail built and smoke-tested (section 12, D-015): `IncidentChanged`, `TriageNeeded`, `SecurityAuditEvent`, `AuditListener`, `audit_records`, `GET /incidents/{id}/history`, `GET /audit`; LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED audited. Fixed E-021 (optional booleans rejected by Jackson 3). Sections renumbered again (M8 is 12). |
 | 2026-11-07 | Business-hours SLA calendar (section 11.3, D-016): `WorkCalendar`, `BusinessHoursCalendar`, `sla.business.*` settings, BUSINESS_HOURS policies; fixed E-022 (calendar_type too short for BUSINESS_HOURS). |
 | 2026-11-10 | Repository moved into the shared team repo and the backend placed in `backend/` beside `frontend/` (D-017, DEC-41). No code or behavior change; Maven commands run from `backend/`. |
+| 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook. |
+
+---
+
+## 18. Planned work beyond the handbook
+
+Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
+
+| Id | Feature | What the user will see | Built with |
+|---|---|---|---|
+| S1 | Service Desk Simulator | An administrator replays a workload under up to three configurations on a virtual clock and compares SLA violations, time to resolve and workload spread | after M13 |
+| S2 | Major Incident Mode | Related incidents are grouped, the common upstream service is named as probable root cause, employees join a known outage with one click, and the priority climbs as they join | M12, M13 |
+| S3 | Sealed audit trail | A Verify action proves the audit log is intact or names the first altered record | M14 |
+| E1 | Service status board | Every service as Healthy, Degraded or Outage, derived from reported incidents | M13 |
+| E2 | Recurring-problem detector | A team lead is told when the same failure keeps coming back | M12 |
+| E3 | Coverage risk report | Critical services that only one available technician can handle | M10 |
+| E4 | Post-incident report | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
+| E5 | Reporter tracking view | A progress line with the SLA due time | Frontend |
+| D1, D2 | Demo aids (demo profile only) | Move the clock forward; start a prepared outage | M11, M12 |
+| A1, A2, A6, A11 | Chatbot and voice reporting, chat-webhook channel, priority what-if and escalation preview | | M9 to M12 |
+
+Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned only a team lead or administrator can change impact, urgency and affected users; resolved incidents nobody confirms are verified and closed automatically.
