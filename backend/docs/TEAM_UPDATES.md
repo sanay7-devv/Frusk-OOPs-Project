@@ -93,3 +93,29 @@ Last updated: 2026-11-13
   - `DECISIONS.md` DEC-47: which feature answers which challenge named in the brief.
 - **State openly in the report:** team leads see all incidents; the system runs as one instance (settings cache, rate limits and the message broker are in memory); the demo is local.
 - **Still needed from you:** notification wording, the AI prompts, the labelled evaluation set, and seed incident text. Demo data should use the institute's own IT services (DEC-43, A14).
+
+---
+
+## 5. M12 core: intelligence and AI (2026-11-14)
+
+Seven endpoints moved from Planned to built (contract: 72 operations built, 26 planned). Reasons: `DECISIONS.md` DEC-M12-1 to DEC-M12-9; description and verified behavior: `SYSTEM_GUIDE.md` section 12c. **Still to come in M12:** the duplicate check on creation (409 `DUPLICATE_INCIDENT`), `mark-duplicate`, problem records and Major Incident Mode, recurring-problem detector, chatbot intake.
+
+**Frontend**
+- `src/api/intelligence.ts` already matches. Calls and answers: `POST /intelligence/suggest-category {title, description, serviceId?}` gives `{categoryId, categoryName, confidence, reason, source}`; `POST /intelligence/suggest-intake {description}` gives the same plus `impact` and `urgency`; `POST /intelligence/similar {title, description, serviceId}` gives `[{incidentId, code, title, similarity, status, match}]`.
+- **Show a category only when `categoryId` is not null.** The backend hides it below 0.60 confidence (then `categoryId`, `categoryName` and `reason` are null or empty, `confidence` is still sent). `source` is `LLM` or `KEYWORD`; with no API key it is always `KEYWORD`, so do not promise "AI" wording.
+- New field `match` on a similar incident: `DUPLICATE` (likely the same problem, 0.55 or more) or `RELATED`. Titles only, never descriptions, are returned.
+- Per incident (detail screen): `GET /incidents/{id}/similar` (any viewer), `GET /incidents/{id}/suggested-resolutions`, `POST /incidents/{id}/summary` (note: **POST**) and `GET /incidents/{id}/sla-risk` for the assignee, team lead and admin. SLA risk answers `{score 0 to 1, level LOW|MEDIUM|HIGH, atRisk, threshold, factors: [{name, contribution, detail}]}`: draw the factors as bars that add up to the score.
+- Suggestion calls are limited to 20 per minute per user: on 429 `RATE_LIMITED` wait and retry; debounce typing (the backend also caches identical requests for 60 seconds).
+- Generated schema names are `CategorySuggestionView`, `IntakeSuggestionView`, `SimilarIncidentView`, `SuggestedResolutionView`, `ThreadSummaryView`, `SlaRiskView`.
+
+**Testing and DevOps**
+- 14 new `app_config` keys (35 to 49); defaults live in the code, so no seed rows are needed: `dup.tfidf.threshold.duplicate` 0.55, `dup.tfidf.threshold.related` 0.35, `resolution.min.similarity` 0.30, `ai.idf.window.days` 90, `ai.timeout.seconds` 8, `ai.breaker.failures` 3, `ai.breaker.cooloff.seconds` 60, `ai.cache.ttl.seconds` 60, `ai.ratelimit.per.minute` 20, `sla.risk.weight.elapsed|load|priority|history` 0.50 / 0.20 / 0.15 / 0.15 (must add up to 1.0), `sla.risk.scan.interval.seconds` 300. Two cross rules: tf-idf duplicate must exceed related; the four risk weights add up to 1.0.
+- No schema change: `incident_embeddings` stays unused (no embeddings in this part).
+- Environment: `LLM_API_KEY` (empty = LLM off), optional `LLM_MODEL`, `LLM_PROVIDER` (`anthropic` or `fake`; `fake` is a scripted client that never calls the network, for tests and demos). In the test profile there is no key, so the keyword engine answers, and scheduling is off; call `SlaRiskService.scanOnce()` directly with a fixed `Clock`.
+- Class names and expected values for unit tests: `ROADMAP.md` section 7. New smoke scripts (backend lead's machine): `m12_smoke.py`, `m12_calibrate.py`, `m12_common.py`; the endpoint sweep gained a section for the seven endpoints (72 operations).
+
+**Report and content**
+- **Prompts you can refine without code changes:** `backend/src/main/resources/ai/prompts/suggest-category.txt`, `suggest-intake.txt`, `summarize-thread.txt`. They must keep asking for the same JSON fields: the backend rejects any other shape and uses the keyword answer instead.
+- **Keyword dictionary:** `backend/src/main/resources/ai/keywords.json` (topics, weighted words, impact and urgency phrases); edit it when the real category names are known.
+- **Labelled evaluation set:** `m12_calibrate.py` holds a first set of 20 labelled pairs and prints the scores; add your pairs there and rerun to update the table in `SYSTEM_GUIDE.md` 12c.6 (DEC-42 asks for a repeatable evaluation of both paths).
+- Patterns to cite: Strategy (`TextAnalysisService` with three implementations), Adapter (`LlmClient`, `LlmTextAnalysisService`), plus a circuit breaker (DEC-M12-5).

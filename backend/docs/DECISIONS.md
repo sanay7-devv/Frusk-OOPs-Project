@@ -61,6 +61,15 @@
 | [DEC-45](#dec-45-plan-shaped-by-the-recorded-demo) | Plan shaped by the recorded demo | 2026-11-13 | All | ✅ |
 | [DEC-46](#dec-46-fixes-from-the-code-and-frontend-review) | Fixes from the code and frontend review | 2026-11-13 | M9 to M14 | ✅ |
 | [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
+| [DEC-M12-1](#dec-m12-1-tf-idf-similarity-with-its-own-calibrated-thresholds) | TF-IDF similarity with its own calibrated thresholds | 2026-11-14 | M12 | ✅ |
+| [DEC-M12-2](#dec-m12-2-category-suggestion-blends-a-dictionary-with-past-categorised-incidents) | Category suggestion blends a dictionary with past categorised incidents | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-M12-3](#dec-m12-3-no-embeddings-in-this-part) | No embeddings in this part | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-M12-4](#dec-m12-4-the-llm-is-an-http-adapter-behind-a-port-with-redaction-and-strict-json) | The LLM is an HTTP adapter behind a port, with redaction and strict JSON | 2026-11-14 | M12 | ✅ |
+| [DEC-M12-5](#dec-m12-5-fallback-wrapper-and-circuit-breaker) | Fallback wrapper and circuit breaker | 2026-11-14 | M12 | ✅ |
+| [DEC-M12-6](#dec-m12-6-the-summary-is-post-as-in-the-contract) | The summary is POST, as in the contract | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-M12-7](#dec-m12-7-who-may-call-what) | Who may call what | 2026-11-14 | M12 | ✅ |
+| [DEC-M12-8](#dec-m12-8-sla-risk-details-and-the-scan) | SLA risk details and the scan | 2026-11-14 | M12 | ✅ |
+| [DEC-M12-9](#dec-m12-9-cache-rate-limit-and-no-connection-held-during-the-model-call) | Cache, rate limit and no connection held during the model call | 2026-11-14 | M12 | ✅ |
 
 ---
 
@@ -1031,3 +1040,129 @@ Smaller rules the handbook left open:
 **Trade-off.** E1 reflects reported incidents only; a failing service nobody has reported shows Healthy. The board says "based on reported incidents".
 
 **Cross-questions.** *"How is E2 different from duplicate detection?"* Duplicates are the same failure reported several times within 24 hours; a recurring problem is the same kind of failure coming back over weeks after being resolved. *"Why does a dependency make a service Degraded?"* Its upstream is down, so it is likely affected even before anyone reports it; the graph is already there (DEC-16).
+
+
+---
+
+## M12 Intelligence and AI (core)
+
+> Numbered DEC-M12-1 to DEC-M12-9 so they cannot clash with decisions the M9 and M10 sessions record in parallel; renumber to DEC-48 and on when the branches are merged.
+
+### DEC-M12-1: TF-IDF similarity with its own calibrated thresholds
+
+| When | Module | Status | Also in |
+|---|---|---|---|
+| 2026-11-14 | M12 | ✅ (the IDF corpus was chosen by the user) | SYSTEM_GUIDE 12c.3 and 12c.6, DEC-42 |
+
+**Decision.** The default similarity is TF-IDF cosine over stemmed words, titles counted double. The word-rarity weights (IDF) come from the texts of **all incidents of the last 90 days** (`ai.idf.window.days`), cached for a minute; the compared candidates are only **open incidents of the same service created inside `dup.window.hours`**. The thresholds are separate settings: `dup.tfidf.threshold.duplicate` 0.55, `dup.tfidf.threshold.related` 0.35 and `resolution.min.similarity` 0.30. The handbook's 0.80 / 0.65 / 0.60 stay in the keys for embeddings and are not used.
+
+**Why separate numbers.** Those thresholds were written for embedding cosine, which scores paraphrases around 0.8 to 0.9. TF-IDF scores the same paraphrase around 0.5 to 0.85, because it only sees shared words. Using 0.80 would miss most real duplicates.
+
+**How it was calibrated.** 20 labelled queries (8 duplicates, 6 related, 6 unrelated) against 6 existing incidents and 8 background incidents (`smoke-tests/m12_calibrate.py`). Duplicates scored 0.53 to 0.85, related 0.19 to 0.54, so 0.55 gives precision 100 % and recall 87.5 % for DUPLICATE, and 0.35 keeps 4 of 6 related pairs. The full table is in SYSTEM_GUIDE 12c.6.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **TF-IDF cosine, IDF from 90 days of all incidents** ✔ | Offline, deterministic, explainable (the shared words), stable weights even when only 2 candidates exist | Misses paraphrases that share no word ("cannot reach the office" against "network unreachable") |
+| TF-IDF with IDF from the candidates only | No extra query | With 1 to 3 candidates every word looks equally rare, so scores jump around |
+| Plain word-overlap (Jaccard) | Trivial | Common words ("error", "cannot") inflate scores |
+| Embeddings | Understands synonyms | Needs a second provider and key (see DEC-M12-3) |
+
+**Trade-off.** Scores depend on the corpus: a bigger corpus lowers the weight of common words, so the numbers above are a starting point and the thresholds are live settings the team can retune.
+
+**Cross-questions.** *"Why not 0.80 as the handbook says?"* That number belongs to embeddings; we measured TF-IDF on a labelled set and chose 0.55. *"How do you know it works?"* The labelled set, the table, and the staged duplicate pairs in `m12_smoke.py`. *"Does it find duplicates on other services?"* No, by design (handbook 1.7: same service, last 24 hours).
+
+### DEC-M12-2: Category suggestion blends a dictionary with past categorised incidents
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision |
+
+**Decision.** Two independent signals, combined like two witnesses: `1 - (1 - dictionary)(1 - history)`, capped at 0.95. The dictionary (`ai/keywords.json`, edited by the Report teammate) links a category to the topics whose name words appear in its name; each matched word adds its weight `w` and the dictionary confidence is `1 - 0.5^(sum w)`. The history signal is the share of the five most similar past categorised incidents that carry the category, times the best similarity. Impact and urgency come from phrase cues, the longest matching phrase winning; a number of people named also sets impact.
+
+**Options.** Dictionary only (predictable, never learns); past incidents only (needs data, a fresh database suggests nothing); **blend** ✔ (works on day one and improves).
+
+**Trade-off.** The dictionary is English and tuned to common IT words; a category with an unusual name and no history is never suggested. Wrong suggestions are cheap: below 0.60 nothing is shown and the user can always override.
+
+**Cross-questions.** *"Why noisy-or and not an average?"* Agreement between two weak signals should raise confidence, an average would lower the strong one. *"Why cap at 0.95?"* A keyword match is evidence, not proof.
+
+### DEC-M12-3: No embeddings in this part
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision |
+
+**Decision.** The embeddings path (`incident_embeddings`, asynchronous computation after commit, hourly backfill) is not built. The table stays unused. `TextAnalysisService.findSimilar` is the interface an embedding engine would implement; the fallback wrapper already routes similarity to one place.
+
+**Why.** The Anthropic API has no embeddings endpoint, so real embeddings need a second provider, a second key and a second failure mode, and cannot be verified offline. TF-IDF is the default in DEC-42 anyway.
+
+**Options.** Skip ✔; store TF-IDF vectors in the table (small, but they are not embeddings and add a write path and a listener for no gain); full embeddings through a second provider (largest scope).
+
+**Cross-questions.** *"The handbook says embeddings."* It also says keyword similarity is the fallback and that the no-key path must work; the default is the one we can verify, and the seam for the other is in place.
+
+### DEC-M12-4: The LLM is an HTTP adapter behind a port, with redaction and strict JSON
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ |
+
+**Decision.** `LlmClient` is a two-method port (`isAvailable`, `complete`). `AnthropicLlmClient` calls `POST /v1/messages` with the JDK `HttpClient`: no SDK dependency, a per-request timeout set from `ai.timeout.seconds`, no retries (a retry would double the wait; the fallback is the retry). Model `LLM_MODEL` (default `claude-haiku-5-5`), `anthropic-version` and base URL are properties; the key is `LLM_API_KEY` and is never logged. No sampling parameters are sent (current models reject them) and effort is `low` (a short classification should not think for long). Prompts are resource files. `LlmTextAnalysisService` sends only the title, description and category names (for summaries: comment and audit text without names), after `TextRedactor` removed emails, IP addresses and tokens; incident text is untrusted and travels as quoted JSON values. The answer must be one JSON object of the exact shape; a category id that is not in the active list, a number out of range or any other shape is a failure.
+
+**Options.** The official Java SDK (typed, but a new dependency tree and its own retry and timeout behaviour that would have to be switched off); **plain HTTP** ✔ (the brief asked for HTTP, full control of the 8-second limit); a provider-neutral framework (more code than the three calls need).
+
+**Smoke runs.** `LLM_PROVIDER=fake` swaps in `ScriptedLlmClient`, which never touches the network, answers in valid JSON, echoes the redacted text it received (so a check can prove redaction) and fails on demand from inside the text (`[[LLM_FAIL]]`, `[[LLM_BAD_JSON]]`, `[[LLM_BAD_CATEGORY]]`). It is a property, not a profile, so a production start with the default value always uses the real client.
+
+**Cross-questions.** *"What stops prompt injection?"* The model only chooses among ids we validate and returns fields we validate; the worst an injected text can do is pick a wrong category, which the user can override. *"What leaves the system?"* Title, description and category names, redacted; never emails, IP addresses, tokens, names or ids of people.
+
+### DEC-M12-5: Fallback wrapper and circuit breaker
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ (DEC-42 chose the breaker; this fixes its numbers) |
+
+**Decision.** `FallbackTextAnalysisService` is the `@Primary` implementation. `ai.primary` (live) picks LLM or KEYWORD. With LLM primary and a key, an exception, timeout or malformed answer is logged as a warning and the keyword engine answers. After `ai.breaker.failures` (3) consecutive failures the LLM is skipped for `ai.breaker.cooloff.seconds` (60); the first request after the cool-off is the trial (success closes the breaker, failure re-opens it). Similarity is always TF-IDF and never goes to the model.
+
+**Trade-off.** The breaker is per instance and in memory (like the config cache, DEC-18). During the cool-off a recovered provider is not used until the trial. After the cool-off several concurrent requests may all be let through as trials.
+
+**Cross-questions.** *"Why a breaker at all?"* Without it a provider outage costs 8 seconds on every keystroke-triggered suggestion.
+
+### DEC-M12-6: The summary is POST, as in the contract
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision |
+
+**Decision.** `POST /incidents/{id}/summary`, as in the handbook (Appendix B), the API Data Dictionary and `planned-endpoints.json`. The task text for this session said GET; the contract wins. A summary can call a paid model, so it also fits POST and counts against the rate limit.
+
+**Other differences from the contract, for the frontend.** `SimilarIncident` has one extra field, `match` (`DUPLICATE` or `RELATED`); `SlaRisk` has `atRisk` and `threshold` besides `score`, `level` and `factors`; the generated schema names are `CategorySuggestionView`, `IntakeSuggestionView`, `SimilarIncidentView`, `SuggestedResolutionView`, `ThreadSummaryView`, `SlaRiskView` (the JSON shape is the one in Appendix C.6). The frontend's `intelligence.ts` already matches (it ignores the extra fields).
+
+### DEC-M12-7: Who may call what
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ |
+
+**Decision.** The three `/intelligence/*` calls need `INCIDENT_CREATE` (every user has it: the contract says "any"). The per-incident calls check visibility first and answer **404 `INCIDENT_NOT_FOUND`** to a caller who may not see the incident (DEC-21, DEC-42); `similar` is open to every viewer (reporter, assignee, team lead, admin); `suggested-resolutions`, `summary` and `sla-risk` need the assignee, a team lead or an admin, and a viewer who is none of these (the reporter) gets **403**. The `@PreAuthorize` on the staff calls keeps employees out at once with 403.
+
+**Privacy note.** `POST /intelligence/similar` returns the code, title and status of other people's open incidents on the same service to any employee: that is the feature (join the existing ticket instead of filing another). Only titles, never descriptions.
+
+### DEC-M12-8: SLA risk details and the scan
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ |
+
+**Decision.** The handbook's four factors with the weights as settings (`sla.risk.weight.*`, sum 1.0). Gaps the handbook left: nobody assigned counts as load 1.0 ("nobody is working on it"); no similar resolved incident counts as history 0.5 (neutral); the elapsed share uses the policy's calendar and freezes while the clock is paused; a resolved incident scores 0. Levels: HIGH from `sla.risk.threshold`, MEDIUM from threshold minus 0.30, else LOW (0.40 at the default, matching the contract). The scan visits incidents being worked on (assigned, acknowledged, in progress, pending info, reopened) that still have a running clock, each in its own transaction, and publishes `SlaAtRisk` once per crossing, tracked in an in-memory set.
+
+**Trade-off.** After a restart the set is empty, so an incident that was already at risk is announced once more. The first scan runs at most 30 seconds after start, so a restart re-announces quickly rather than after five minutes. Nothing listens to `SlaAtRisk` yet; M9 can notify the assignee from it.
+
+### DEC-M12-9: Cache, rate limit and no connection held during the model call
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ |
+
+**Decision.** Identical suggestion requests within `ai.cache.ttl.seconds` (60, 0 turns it off) get the same answer; the key is a hash of the operation, `ai.primary` and the text. Each user may make `ai.ratelimit.per.minute` (20) suggestion or summary requests in any sliding minute, then 429 `RATE_LIMITED`; cache hits count, the per-incident reads (`similar`, `suggested-resolutions`, `sla-risk`) are not limited. Both are in memory and per instance (DEC-42); module M14's general rate limiting will replace the limiter. Data is read in short read-only transactions and the engine runs afterwards, so a slow model call never holds a database connection.
+
+**Cross-questions.** *"Is the limit safe behind two instances?"* No: each instance counts separately; stated openly in DEC-42.

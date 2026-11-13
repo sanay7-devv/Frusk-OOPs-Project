@@ -28,6 +28,7 @@
 10. [M6 Technician assignment](#10-m6-technician-assignment)
 11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
 12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
+    - 12c. [M12 Intelligence and AI (core)](#12c-m12-intelligence-and-ai-core)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -49,6 +50,7 @@
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
+| **M12** Intelligence (core) | Category and intake suggestions, TF-IDF similar incidents, suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Done and smoke-tested (55 + scan + no-key) · ⏳ duplicate check on create, mark-duplicate, problem records, Major Incident Mode, chatbot, recurring-problem detector |
 | M9 to M14, M2b | Notifications, reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
 | Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
 
@@ -1308,6 +1310,108 @@ Smoke test `m8_smoke.py` against the running app.
 
 ---
 
+## 12c. M12 Intelligence and AI (core)
+
+**Built 2026-11-14 (branch `claude/m12-core-d3df02`).** The first part of M12: suggestions while a person fills in the report form, similar incidents, suggested fixes, the thread summary and the SLA risk score. Everything works with no API key; an LLM is an optional upgrade behind the same interface. **Not in this part** (they touch `Incident` and `IncidentService`): the duplicate check on creation (409 `DUPLICATE_INCIDENT`), `mark-duplicate`, problem records and Major Incident Mode, the recurring-problem detector, the chatbot intake. `TextAnalysisService.findSimilar` and `IntelligenceService.similarTo` are the entry points they will call.
+
+### 12c.1 How a suggestion is made
+
+```mermaid
+flowchart LR
+    UI[Report form] -->|POST /intelligence/*| C[IntelligenceController]
+    C --> S[IntelligenceService<br/>rate limit, cache, threshold]
+    S --> R[IntelligenceReader<br/>short read-only transaction]
+    R --> DB[(incidents, categories)]
+    S --> F[FallbackTextAnalysisService]
+    F -->|ai.primary = LLM and breaker closed| L[LlmTextAnalysisService<br/>redact, strict JSON, validate]
+    L --> P[LlmClient port]
+    P --> A[AnthropicLlmClient<br/>HTTP, 8 s timeout]
+    F -->|key missing, KEYWORD primary,<br/>failure, timeout, bad JSON, breaker open| K[KeywordTextAnalysisService<br/>TF-IDF + dictionary]
+    L -.->|findSimilar is always TF-IDF| K
+```
+
+The data is loaded first (a few milliseconds, then the connection is released), the engine runs with no database connection held, and the answer carries `source` (`LLM` or `KEYWORD`).
+
+### 12c.2 Endpoints (API contract B.4, C.6)
+
+| Endpoint | Who | Answer |
+|---|---|---|
+| `POST /intelligence/suggest-category` `{title, description, serviceId?}` | any signed-in user | `{categoryId, categoryName, confidence, reason, source}`; category null and reason empty when confidence is below `autocat.min.confidence` (0.60) |
+| `POST /intelligence/suggest-intake` `{description}` | any | `{categoryId, categoryName, impact, urgency, confidence, reason, source}` |
+| `POST /intelligence/similar` `{title, description, serviceId}` | any | `[{incidentId, code, title, similarity, status, match}]`: open incidents of that service created inside `dup.window.hours`; `match` is `DUPLICATE` or `RELATED` (addition to the contract) |
+| `GET /incidents/{id}/similar` | reporter, assignee, team lead, admin | the same list for an existing incident (window counted either side of its creation) |
+| `GET /incidents/{id}/suggested-resolutions` | assignee, team lead, admin | `[{fromIncidentId, code, title, similarity, rootCause, notes, steps, reusable}]` from resolved incidents |
+| `POST /incidents/{id}/summary` | assignee, team lead, admin | `{summary, handoverNotes, source}` |
+| `GET /incidents/{id}/sla-risk` | assignee, team lead, admin | `{score, level, atRisk, threshold, factors: [{name, contribution, detail}]}` |
+
+A caller who may not see the incident gets 404 `INCIDENT_NOT_FOUND`; a viewer who is not staff (the reporter) gets 403 on the last four. The three `/intelligence/*` calls and the summary are rate-limited per user (`ai.ratelimit.per.minute`, 429 `RATE_LIMITED`) and briefly cached (`ai.cache.ttl.seconds`).
+
+### 12c.3 The keyword engine (the default, fully offline)
+
+* **Similarity: TF-IDF cosine.** Text becomes word stems (lower case, filler words dropped, a light stemmer so "disconnects" and "disconnected" meet). A word weighs more the rarer it is across incidents of the last `ai.idf.window.days` (90) days; the title counts double; two texts are compared by the cosine of their weight vectors (1.0 identical wording, 0.0 nothing in common). Candidates are open incidents of the same service inside the window.
+* **Thresholds are its own, not the embedding ones.** The handbook's 0.80 and 0.65 were written for embeddings; TF-IDF scores lower for the same pair, so there are separate keys `dup.tfidf.threshold.duplicate` (0.55) and `.related` (0.35), plus `resolution.min.similarity` (0.30) for suggested fixes. Calibration below.
+* **Category: two witnesses.** (1) A dictionary (`ai/keywords.json`, editable by the Report teammate): a category is linked to every topic whose name words appear in the category's name, and each matched word adds its weight `w`; the dictionary confidence is `1 - 0.5^(sum of w)`, so one strong word (1.5) gives 0.65 and two normal words 0.75. (2) The five nearest past incidents that people categorised, with TF-IDF: share of the neighbours in the category times its best similarity. Combined as `1 - (1 - dictionary)(1 - history)`, capped at 0.95. A single weak word stays below 0.60 and nothing is shown.
+* **Impact and urgency:** phrase cues from the same file (`everyone`, `outage`, `only me`, `not urgent`, `asap`, ...); the longest matching phrase wins, so "not urgent" beats "urgent"; a number of people named ("150 users") also sets impact. Neutral 3 and 3 when no cue.
+* **Summary:** a template over the thread: status, priority, assignee, counts, latest note, resolution, and handover notes (next step for the status, due time, last three notes, last four recorded actions).
+
+### 12c.4 The LLM engine (optional, behind the same interface)
+
+| Piece | Rule |
+|---|---|
+| Key | `LLM_API_KEY` in the environment only. No key: the LLM path is off and the keyword engine answers. Model `LLM_MODEL` (default `claude-haiku-5-5`) |
+| Prompts | `src/main/resources/ai/prompts/suggest-category.txt`, `suggest-intake.txt`, `summarize-thread.txt`; the Report teammate edits them, no Java change |
+| What is sent | Title, description and category names (for summaries: comment and audit text without names), after `TextRedactor` replaced emails by `[email]`, IP addresses by `[ip]`, and tokens, keys and `password=...` pairs by `[token]` / `[redacted]` |
+| Untrusted text | Incident text travels as quoted JSON values and the prompts say to treat it as data, never as instructions |
+| Answer | Strict JSON in the exact shape; a category id that is not in the active list, a number out of range or any other shape is a failure |
+| Failure | Any exception, timeout (`ai.timeout.seconds`, 8), malformed answer: a warning is logged and the keyword engine answers (`source` KEYWORD) |
+| Circuit breaker | After `ai.breaker.failures` (3) consecutive failures the LLM is skipped for `ai.breaker.cooloff.seconds` (60); the first request after the cool-off is the trial: success closes the breaker, failure re-opens it |
+| Smoke runs | `LLM_PROVIDER=fake` swaps in a scripted client that never touches the network and can be told to fail from inside the text (`[[LLM_FAIL]]`, `[[LLM_BAD_JSON]]`, `[[LLM_BAD_CATEGORY]]`) |
+
+### 12c.5 SLA risk
+
+Score = 50 % elapsed share of the resolution time (counted in the policy's calendar, frozen while paused) + 20 % the assignee's load ratio (load points over `maxLoad`; nobody assigned counts as 1.0) + 15 % priority (P1 1.0, P2 0.75, P3 0.5, P4 0.25) + 15 % how long similar resolved incidents took compared with the SLA target (0.5 when there is no similar one). The weights are settings (`sla.risk.weight.*`, must add up to 1.0). Level: HIGH from `sla.risk.threshold` (0.70, "at risk"), MEDIUM from threshold minus 0.30 (0.40), else LOW. Resolved incidents score 0. It is computed on read, and `SlaRiskScanJob` runs `SlaRiskService.scanOnce()` every `sla.risk.scan.interval.seconds` (300; first run at most 30 s after start): one transaction per incident, failures logged and retried next scan, and `SlaAtRisk` is published (and logged) once when an incident first crosses the threshold, not again until it dropped below and rose again.
+
+### 12c.6 Calibration of the TF-IDF thresholds (2026-11-14)
+
+A labelled set of 20 queries against 6 existing incidents (`smoke-tests/m12_calibrate.py`): 8 paraphrases of the same problem (duplicates), 6 same-area-different-problem (related), 6 unrelated, 8 background incidents on the same service.
+
+| Group | Similarity of the target incident | At 0.55 / 0.35 |
+|---|---|---|
+| Duplicates (8) | 0.53, 0.64, 0.70, 0.70, 0.74, 0.80, 0.81, 0.85 | 7 of 8 are DUPLICATE; the one at 0.53 is RELATED |
+| Related (6) | 0.19, 0.21, 0.37, 0.40, 0.50, 0.54 | none is DUPLICATE; 4 of 6 are RELATED, 2 stay hidden |
+| Unrelated (6) | 0 for the target; best match of any incident 0.00 to 0.44 | one shares "second monitor" with an older incident (0.44) and shows as RELATED, which is fair |
+
+Precision of DUPLICATE is 100 % on this set and recall 87.5 %; lowering the duplicate threshold to 0.50 would catch the last pair but also label two related pairs (0.50, 0.54) as duplicates. Both keys are live settings, so the team can retune them with its own data. Scores depend on the corpus: a bigger corpus lowers the weight of common words.
+
+### 12c.7 Classes
+
+| Layer | Classes |
+|---|---|
+| domain `intelligence` (no Spring) | `TextAnalysisService` (port), `KeywordTextAnalysisService`, `KeywordDictionary`, `Tokenizer`, `TfIdfModel`, `TextRedactor`, `SlaRiskScorer`, `CircuitBreaker`, `LlmClient` (port), records `CategorySuggestion`, `IntakeSuggestion`, `SimilarMatch`, `ThreadSummary`, `AnalysisContext` and others; event `SlaAtRisk` |
+| domain `repository` | `IncidentTextRepository` (read-only queries), implemented by `JpaIncidentTextRepository` |
+| application `intelligence` | `IntelligenceService`, `IntelligenceReader`, `SlaRiskService`, `AiResultCache`, `AiRateLimiter`, `IntelligenceViews` |
+| infrastructure | `ai/AnthropicLlmClient`, `ai/ScriptedLlmClient`, `ai/LlmTextAnalysisService`, `ai/FallbackTextAnalysisService`, `ai/AiConfig`, `ai/LlmProperties`, `ai/PromptLibrary`; `scheduler/SlaRiskScanJob` |
+| web | `IntelligenceController`, `web/dto/intelligence/*` |
+
+### 12c.8 Verified behavior (2026-11-14)
+
+`m12_smoke.py` (55 checks, scripted client) plus its scan phase (1) and no-key phase (3), against a running app:
+
+| Area | Checked |
+|---|---|
+| Keyword path | Network, Email and Printer texts give the right category with source KEYWORD; one weak clue (0.50) is hidden with confidence kept; the threshold is live; "no clue" gives null; intake cues (`everyone`, `urgent`, `not urgent`, `only me`, 150 users, neutral) |
+| Similarity | Staged duplicates found (DUPLICATE, at least 0.55); a related pair; unrelated text gives []; the same text on another service is absent; thresholds and their cross-rule are live and validated; `GET /incidents/{id}/similar` excludes itself; a non-viewer gets 404 |
+| LLM path | source LLM; redaction proven (the scripted model echoes what it received: `[email]`, `[ip]`, `[redacted]`, no raw values, surrounding text kept); forced failure, non-JSON answer and unknown category id all give 200 with source KEYWORD; the confidence threshold applies to the LLM too |
+| Circuit breaker | Two failures open it, a healthy request is answered by KEYWORD without calling the LLM, after the cool-off the trial request goes to the LLM and closes it |
+| Rate limit | Third request passes, fourth is 429 `RATE_LIMITED`; another user unaffected |
+| SLA risk | Four factors adding up to the score; fresh incident low; deadline in 5 minutes gives elapsed contribution of at least 0.45; threshold live (0.30 flags it); weights rule (sum 1.0) validated; reporter 403; non-viewer 404; scan flags once (second phase after a restart) |
+| Fixes and summary | A resolved incident with a reusable fix is suggested (notes, steps, root cause, reusable); reporter 403; summary with handover notes (LLM and KEYWORD); the keyword summary names the code, status and latest note |
+| No key | With the real provider and no key: suggest-category, suggest-intake and similar answer from the keyword engine |
+
+Earlier suites run against this build: auth 27/27, M3 42/42, M6 33/33, M7 35/35, M8 24/24, calendar 11/11, M4 53/54 (the one failure expects `GIVE_FEEDBACK`, an M10 feature that is not in this branch), endpoint sweep 72/72 (65 earlier operations plus the 7 new ones; the M10 checks added to the shared sweep were removed from the copy used for this branch).
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
@@ -1537,9 +1641,9 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 |---|---|---|
 | **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` follows in M9. |
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
-| **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. Notification channels and the LLM client follow in M9 / M12. |
+| **Adapter** | 🟡 growing | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `LlmClient` port with `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c). Notification channels follow in M9. |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
-| **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. |
+| **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. M12: `TextAnalysisService` with `KeywordTextAnalysisService`, `LlmTextAnalysisService` and the `FallbackTextAnalysisService` that chooses by `ai.primary` (section 12c). |
 | **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them. Notification (M9) and dashboard (M13) listeners subscribe to the same events. |
 | **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
 
@@ -1642,6 +1746,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook; new `docs/TEAM_UPDATES.md` tells teammates what differs from the handbook PDFs. |
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
+| 2026-11-14 | M12 core built and smoke-tested (section 12c, DEC-M12-1 to DEC-M12-9): suggest-category, suggest-intake, TF-IDF similar incidents (own calibrated thresholds), suggested resolutions, thread summary, SLA risk with a 5-minute scan, optional LLM behind a redacting adapter with fallback and circuit breaker; 14 new settings (35 to 49); the seven endpoints moved from Planned to implemented (72 implemented, 26 planned). |
 
 ---
 
