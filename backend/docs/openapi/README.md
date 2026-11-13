@@ -49,12 +49,29 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | Every response has an `X-Request-Id` header | All | Quote it when reporting a problem | D-005 |
 | `POST /auth/google` (planned, M2b) | Auth | Google sign-in as an extra | D-001 |
 
+## Coming additions (accepted 2026-11-13, shapes not designed yet)
+
+These features were accepted after the contract was published. Their endpoints are added to the Planned part as each one is designed; until then they are not in the files here. Details per role: `../TEAM_UPDATES.md`.
+
+| Feature | Expect | Module |
+|---|---|---|
+| Reporter withdraw | `POST /incidents/{id}/withdraw` with a reason | M10 |
+| Coverage risk report, post-incident report | new `/reports/...` operations; PDF | M10 |
+| Escalation preview | a field on `IncidentDetail` | M11 |
+| Major Incident Mode | known-outage lookup for the report form, join action, root cause on `/problems/{id}` | M12, M13 |
+| Recurring-problem detector | suggestions on `/problems` | M12 |
+| Service status board | a status per service | M13 |
+| Service Desk Simulator | one operation to run a simulation | after M13 |
+| Sealed audit trail | `GET /audit/verify` | M14 |
+| Demo aids (demo profile only) | move the clock forward; start an outage drill | M11, M12 |
+| Chat-webhook channel | a new notification channel value | M9 |
+
 ## Regenerating the export
 
 With the backend running on port 8081 (`SERVER_PORT=8081`, profiles `dev,schema-auto`), from the project folder that contains `IITSM_Backend` and `smoke-tests`:
 
 ```bash
-python -I smoke-tests/check_contract.py IITSM_Backend/docs/openapi
+python -I smoke-tests/check_contract.py IITSM_Backend/backend/docs/openapi
 ```
 
 It checks the contract (every `$ref` resolves, unique operation ids, path parameters declared, every operation has a success response and implemented ones list their errors) and rewrites both files.

@@ -1639,7 +1639,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-07 | M8 events and audit trail built and smoke-tested (section 12, D-015): `IncidentChanged`, `TriageNeeded`, `SecurityAuditEvent`, `AuditListener`, `audit_records`, `GET /incidents/{id}/history`, `GET /audit`; LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED audited. Fixed E-021 (optional booleans rejected by Jackson 3). Sections renumbered again (M8 is 12). |
 | 2026-11-07 | Business-hours SLA calendar (section 11.3, D-016): `WorkCalendar`, `BusinessHoursCalendar`, `sla.business.*` settings, BUSINESS_HOURS policies; fixed E-022 (calendar_type too short for BUSINESS_HOURS). |
 | 2026-11-10 | Repository moved into the shared team repo and the backend placed in `backend/` beside `frontend/` (D-017, DEC-41). No code or behavior change; Maven commands run from `backend/`. |
-| 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook. |
+| 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook; new `docs/TEAM_UPDATES.md` tells teammates what differs from the handbook PDFs. |
 
 ---
 
