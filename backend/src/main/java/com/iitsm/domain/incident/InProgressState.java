@@ -17,7 +17,12 @@ final class InProgressState extends IncidentState {
 
     @Override
     public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
-        return Set.of(IncidentAction.REQUEST_INFO, IncidentAction.RESOLVE, IncidentAction.REASSIGN);
+        return withEscalate(incident, IncidentAction.REQUEST_INFO, IncidentAction.RESOLVE, IncidentAction.REASSIGN);
+    }
+
+    @Override
+    void escalate(Incident incident, Instant now) {
+        raiseLevel(incident, now);
     }
 
     /** Pauses the resolution clock until the reporter replies. Needs a message. */

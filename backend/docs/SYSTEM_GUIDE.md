@@ -28,6 +28,10 @@
 10. [M6 Technician assignment](#10-m6-technician-assignment)
 11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
 12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
+    - [12a. M9 Notifications](#12a-m9-notifications)
+    - 12b. [M10 Search and reports](#12b-m10-search-and-reports)
+    - 12c. [M12 Intelligence and AI (core)](#12c-m12-intelligence-and-ai-core)
+    - [12d. M11 Escalation, auto-verify and the demo clock](#12d-m11-escalation-auto-verify-and-the-demo-clock)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -44,12 +48,16 @@
 | **M1** Foundations | Exception hierarchy, one global error handler, request IDs, CORS, security headers, OpenAPI | ✅ Done, verified over HTTP |
 | **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, admin user / role / skill management | ✅ Done and smoke-tested (failed logins and refusals audited since M8) |
 | **M3** Catalog and configuration | Services (with dependency graph), category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` | ✅ Done and smoke-tested (42/42) |
-| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ escalate (M11), duplicates (M12) |
+| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ duplicates (M12); escalate done with M11 |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
-| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
+| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar; its events become notifications (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
-| M9 to M14, M2b | Notifications, reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
+| **M9** Notifications | Five channels (inbox, WebSocket push, mail, simulated SMS for P1, chat webhook), after-commit async listener, per-user preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints | ✅ Done and smoke-tested (72 checks, needs Mailpit) |
+| **M12** Intelligence (core) | Category and intake suggestions, TF-IDF similar incidents, suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Done and smoke-tested (55 + scan + no-key) · ⏳ duplicate check on create, mark-duplicate, problem records, Major Incident Mode, chatbot, recurring-problem detector |
+| **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV export; E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12b) | ✅ Done and smoke-tested (135 checks); the reporter withdraw action (G3) is still open |
+| **M11** Escalation (section 12d) | Chain of Responsibility (technician, team lead, system admin, IT manager), escalation monitor with triage escalation and one final exhausted alert, manual `POST /incidents/{id}/escalate`, escalation preview, auto-verify job, demo-only adjustable clock | ✅ Done and smoke-tested (`m11_smoke.py`) · ⏳ notifications of the events (M9) |
+| M13, M14, M2b | Real-time and graph, hardening, Google sign-in | ⬜ Not started |
 | Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
@@ -120,7 +128,7 @@ com.iitsm
 ├── web
 │   ├── controller                   AuthController, CatalogController, IncidentController, TechnicianController,
 │   │                                AdminUserController, AdminCatalogController, AdminSlaController,
-│   │                                AdminConfigController, SlaController, AuditController
+│   │                                AdminConfigController, SlaController, AuditController, NotificationController
 │   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/admin, dto/catalog, dto/incident)
 │   ├── filter                       RequestIdFilter
 │   ├── handler                      GlobalExceptionHandler
@@ -133,6 +141,8 @@ com.iitsm
 │   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews
 │   ├── sla                          SlaMonitor (the monitor run), SlaViolationService
 │   ├── audit                        AuditListener (Observer), AuditService
+│   ├── notification                 NotificationListener (Observer), NotificationPlanner, NotificationDispatcher,
+│   │                                DigestCollector, NotificationService, NotificationRequest
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
 │   ├── assignment                   AssignmentStrategy + 5 strategies, FactorStrategy, AssignmentEngine,
@@ -141,7 +151,10 @@ com.iitsm
 │   ├── config                       ConfigKey, AppSettings, AppConfigEntry
 │   ├── audit                        AuditRecord (immutable), AuditAction, AuditQuery
 │   ├── event                        IncidentEvent, IncidentChanged, TriageNeeded, SlaWarning, SlaViolated,
-│   │                                SecurityAuditEvent (Observer pattern events)
+│   │                                SlaRunCompleted, SecurityAuditEvent (Observer pattern events)
+│   ├── notification                 Notification, NotificationPreference, NotificationEventType, ChannelType, Audience,
+│   │                                NotificationChannel (Adapter port), NotificationFactory, NotificationRules,
+│   │                                NotificationMessage, TeamResolver
 │   ├── exception                    ItsmException + 18 business exceptions
 │   ├── incident                     Incident, IncidentState + 10 states, StateFactory, IncidentFactory,
 │   │                                SlaTracker, SlaAlert, Resolution, IncidentComment, enums
@@ -154,6 +167,8 @@ com.iitsm
 └── infrastructure
     ├── config                       ClockConfig, CorsConfig, DomainConfig
     ├── persistence                  Spring Data implementations of the domain repositories
+    ├── notification                 InAppChannel, EmailChannel, WebSocketChannel, SmsSimulatedChannel,
+    │                                ChatWebhookChannel, GlobalTeamResolver, NotificationAsyncConfig, WebSocketConfig
     ├── scheduler                    SchedulingConfig, SlaMonitorJob (interval from app_config)
     └── security                     SecurityConfig, JwtService, JwtAuthenticationFilter, ApiErrorWriter, ApiErrorCorsProcessor
 ```
@@ -1308,6 +1323,367 @@ Smoke test `m8_smoke.py` against the running app.
 
 ---
 
+## 12a. M9 Notifications
+
+Every incident event that matters to a person becomes a **notification**: a row in their inbox, a live push, a mail, for P1 a simulated text message, and for team-wide alerts a post to a chat room. The listener runs **after the action's transaction commits and on its own thread**, so a broken mail server can never roll back or slow down an incident (decisions DEC-40, DEC-42, DEC-54).
+
+### 12a.1 From event to delivery
+
+```mermaid
+flowchart LR
+    E[IncidentChanged / TriageNeeded / SlaWarning / SlaViolated / SlaRunCompleted] -->|after commit, async| NL[NotificationListener]
+    NL --> NP[NotificationPlanner: who? values?]
+    NP -->|TeamResolver| TR[GlobalTeamResolver]
+    NL --> ND[NotificationDispatcher: which channels?]
+    ND --> NF[NotificationFactory: words from templates]
+    ND --> C1[InAppChannel: row]
+    ND --> C2[WebSocketChannel: push]
+    ND --> C3[SmsSimulatedChannel: log + row, P1]
+    ND --> C4[EmailChannel: SMTP, 3 retries]
+    ND --> C5[ChatWebhookChannel: HTTP POST]
+    ND -. SLA warnings .-> DC[DigestCollector]
+    C1 --> N[(notifications)]
+    C3 --> N
+```
+
+Patterns: **Observer** (`NotificationListener`), **Adapter** (`NotificationChannel` and its five adapters), **Factory** (`NotificationFactory`), a small seam for later teams (`TeamResolver`), **Repository**.
+
+### 12a.2 Who hears what
+
+The single `IncidentChanged` event carries an action; it is mapped onto the 15 notification types of Appendix A.4 (DEC-54). Actions with no type send nothing. The person who did the action is not told, except the reporter of a new incident, who gets a receipt.
+
+| Action (audit) | Notification type | Who |
+|---|---|---|
+| INCIDENT_CREATED | INCIDENT_CREATED | reporter |
+| ASSIGNED, REASSIGNED | INCIDENT_ASSIGNED | reporter, new assignee |
+| ACKNOWLEDGED | INCIDENT_ACKNOWLEDGED | reporter |
+| PRIORITY_CHANGED | PRIORITY_CHANGED | assignee, reporter |
+| INFO_REQUESTED / INFO_PROVIDED | INFO_REQUESTED / INFO_PROVIDED | reporter / assignee |
+| RESOLVED, VERIFIED, CLOSED, REOPENED | INCIDENT_RESOLVED, _VERIFIED, _CLOSED, _REOPENED | reporter, assignee, reporter, assignee |
+| ESCALATED | INCIDENT_ESCALATED | holders of the new level (critical), assignee |
+| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (for M12) |
+| CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody |
+| `TriageNeeded` event | TRIAGE_NEEDED | every team lead |
+| `SlaWarning` event | SLA_WARNING | assignee; team leads if nobody is assigned |
+| `SlaViolated` event | SLA_VIOLATED | every administrator (critical), assignee |
+
+A **team lead** is a technician with escalation level 1; one global pool behind the `TeamResolver` interface (DEC-42). Escalation targets: level 1 team leads, 2 `SYSTEM_ADMIN`, 3 `IT_MANAGER`; if nobody holds the level, every administrator.
+
+### 12a.3 Channels
+
+| Channel | What it does | Stored? | When |
+|---|---|---|---|
+| `IN_APP` | inserts the inbox row | row, channel IN_APP | always |
+| `WEBSOCKET` | pushes the same Notification object (with the inbox row id) to `/user/queue/notifications` | no | unless switched off |
+| `SMS_SIM` | log line and a row (channel SMS_SIM, 160 characters) | row | P1 only, staff only (assigned, triage, SLA warning and violation, escalation) |
+| `EMAIL` | HTML mail through SMTP (Mailpit on 1025); first try plus `notification.email.retries` retries, wait `notification.email.backoff.seconds` doubling; then dropped and logged | no | unless switched off |
+| `CHAT` | one JSON POST (`text`, `content`) to `notification.chat.webhook.url`; empty URL means only logged | no | SLA violations and escalations always; assigned, triage and SLA warning for P1 |
+
+Each channel is tried alone; a failure is logged and the others still run. The wording lives in `notification-templates.properties` (`<EVENT>.<audience>.title|message`, placeholders such as `{code}` and `{priority}`), the mail shell in `notification-email.html`.
+
+### 12a.4 Preferences and alert storm control
+
+- **Preferences** (`notification_preferences`, one row per user, event type and channel; no row means on). The inbox is always on. **Critical alerts cannot be switched off**: SLA violation for an administrator, escalation for a team lead or administrator. `PUT` replaces the caller's switches and answers 400 for a locked switch, `CHAT` or an unknown value.
+- **Digest.** The SLA monitor publishes `SlaRunCompleted` at the end of each run. Warnings of a run are held; if one person has more than `notification.digest.threshold` (default 5) they get **one** digest, otherwise single messages. **P1 incidents and SLA violations are never held back.**
+
+### 12a.5 Endpoints (any logged-in user, always the caller's own data)
+
+| Endpoint | Result |
+|---|---|
+| `GET /api/v1/notifications?unread&channel&page&size` | page of `{id, eventType, title, message, incidentId, channel, read, createdAt}`, newest first; `channel` defaults to IN_APP, `SMS_SIM` is allowed |
+| `GET /api/v1/notifications/unread-count` | `{count}` |
+| `POST /api/v1/notifications/{id}/read` | 204; someone else's id is 404 |
+| `POST /api/v1/notifications/read-all` | 204 |
+| `GET /api/v1/notifications/preferences` | 60 switches `{eventType, channel, enabled, locked}` (15 types x IN_APP, EMAIL, WEBSOCKET, SMS_SIM) |
+| `PUT /api/v1/notifications/preferences` | body: list of `{eventType, channel, enabled}`; returns the 60 switches |
+
+WebSocket: connect to `/ws`, send the access token as the STOMP `Authorization: Bearer ...` header on CONNECT, subscribe to `/user/queue/notifications`. Assumptions and what M13 will extend: DEC-54.
+
+### 12a.6 Settings (live, `app_config`) and tables
+
+`notification.digest.threshold` (5), `notification.email.retries` (3), `notification.email.backoff.seconds` (2), `notification.email.from` (`no-reply@iitsm.local`), `notification.link.base.url` (`http://localhost:5173`), `notification.chat.webhook.url` (empty).
+Tables `notifications` and `notification_preferences` as in Appendix A.4 (column `read` is `seen` in the entity). Under `schema-auto` Hibernate adds a CHECK that also allows `CHAT`; the migration should keep the four values of the appendix.
+
+### 12a.7 Verified behavior (2026-11-13)
+
+Smoke test `m9_smoke.py` (needs Mailpit): 72 checks, all passed against the running app.
+
+| Area | Checked |
+|---|---|
+| **M9 done-when** | One P1 assignment: reporter gets created + assigned (inbox and mail), technician gets assigned (inbox, mail, SMS row, WebSocket push with the inbox row id), the chat room gets one post; admin and team lead get nothing |
+| Lifecycle | Acknowledge, resolve, verify, close notify the right person and never the actor; work started sends nothing |
+| Triage | Team lead gets TRIAGE_NEEDED, SMS and chat only for P1 |
+| Inbox API | unread count, mark one and all, other user's id 404, paging, `channel=WEBSOCKET` 400 |
+| Preferences | 60 switches, locked ones per role, 400 for inbox, critical, CHAT and unknown values; a switched-off mail is not sent; empty `PUT` resets |
+| Failing channels | Mail server stopped: incident still created, inbox and push still delivered, mail arrives after a retry; dead webhook and empty webhook handled and logged |
+| Storm control | Threshold 1: two P4 warnings in one run become one digest, two P1 warnings stay single (with SMS); below the threshold single messages; violations single even at threshold 1 |
+| WebSocket | CONNECT without token and other destinations refused |
+## 12c. M12 Intelligence and AI (core)
+
+**Built 2026-11-14 (branch `claude/m12-core-d3df02`).** The first part of M12: suggestions while a person fills in the report form, similar incidents, suggested fixes, the thread summary and the SLA risk score. Everything works with no API key; an LLM is an optional upgrade behind the same interface. **Not in this part** (they touch `Incident` and `IncidentService`): the duplicate check on creation (409 `DUPLICATE_INCIDENT`), `mark-duplicate`, problem records and Major Incident Mode, the recurring-problem detector, the chatbot intake. `TextAnalysisService.findSimilar` and `IntelligenceService.similarTo` are the entry points they will call.
+
+### 12c.1 How a suggestion is made
+
+```mermaid
+flowchart LR
+    UI[Report form] -->|POST /intelligence/*| C[IntelligenceController]
+    C --> S[IntelligenceService<br/>rate limit, cache, threshold]
+    S --> R[IntelligenceReader<br/>short read-only transaction]
+    R --> DB[(incidents, categories)]
+    S --> F[FallbackTextAnalysisService]
+    F -->|ai.primary = LLM and breaker closed| L[LlmTextAnalysisService<br/>redact, strict JSON, validate]
+    L --> P[LlmClient port]
+    P --> A[AnthropicLlmClient<br/>HTTP, 8 s timeout]
+    F -->|key missing, KEYWORD primary,<br/>failure, timeout, bad JSON, breaker open| K[KeywordTextAnalysisService<br/>TF-IDF + dictionary]
+    L -.->|findSimilar is always TF-IDF| K
+```
+
+The data is loaded first (a few milliseconds, then the connection is released), the engine runs with no database connection held, and the answer carries `source` (`LLM` or `KEYWORD`).
+
+### 12c.2 Endpoints (API contract B.4, C.6)
+
+| Endpoint | Who | Answer |
+|---|---|---|
+| `POST /intelligence/suggest-category` `{title, description, serviceId?}` | any signed-in user | `{categoryId, categoryName, confidence, reason, source}`; category null and reason empty when confidence is below `autocat.min.confidence` (0.60) |
+| `POST /intelligence/suggest-intake` `{description}` | any | `{categoryId, categoryName, impact, urgency, confidence, reason, source}` |
+| `POST /intelligence/similar` `{title, description, serviceId}` | any | `[{incidentId, code, title, similarity, status, match}]`: open incidents of that service created inside `dup.window.hours`; `match` is `DUPLICATE` or `RELATED` (addition to the contract) |
+| `GET /incidents/{id}/similar` | reporter, assignee, team lead, admin | the same list for an existing incident (window counted either side of its creation) |
+| `GET /incidents/{id}/suggested-resolutions` | assignee, team lead, admin | `[{fromIncidentId, code, title, similarity, rootCause, notes, steps, reusable}]` from resolved incidents |
+| `POST /incidents/{id}/summary` | assignee, team lead, admin | `{summary, handoverNotes, source}` |
+| `GET /incidents/{id}/sla-risk` | assignee, team lead, admin | `{score, level, atRisk, threshold, factors: [{name, contribution, detail}]}` |
+
+A caller who may not see the incident gets 404 `INCIDENT_NOT_FOUND`; a viewer who is not staff (the reporter) gets 403 on the last four. The three `/intelligence/*` calls and the summary are rate-limited per user (`ai.ratelimit.per.minute`, 429 `RATE_LIMITED`) and briefly cached (`ai.cache.ttl.seconds`).
+
+### 12c.3 The keyword engine (the default, fully offline)
+
+* **Similarity: TF-IDF cosine.** Text becomes word stems (lower case, filler words dropped, a light stemmer so "disconnects" and "disconnected" meet). A word weighs more the rarer it is across incidents of the last `ai.idf.window.days` (90) days; the title counts double; two texts are compared by the cosine of their weight vectors (1.0 identical wording, 0.0 nothing in common). Candidates are open incidents of the same service inside the window.
+* **Thresholds are its own, not the embedding ones.** The handbook's 0.80 and 0.65 were written for embeddings; TF-IDF scores lower for the same pair, so there are separate keys `dup.tfidf.threshold.duplicate` (0.55) and `.related` (0.35), plus `resolution.min.similarity` (0.30) for suggested fixes. Calibration below.
+* **Category: two witnesses.** (1) A dictionary (`ai/keywords.json`, editable by the Report teammate): a category is linked to every topic whose name words appear in the category's name, and each matched word adds its weight `w`; the dictionary confidence is `1 - 0.5^(sum of w)`, so one strong word (1.5) gives 0.65 and two normal words 0.75. (2) The five nearest past incidents that people categorised, with TF-IDF: share of the neighbours in the category times its best similarity. Combined as `1 - (1 - dictionary)(1 - history)`, capped at 0.95. A single weak word stays below 0.60 and nothing is shown.
+* **Impact and urgency:** phrase cues from the same file (`everyone`, `outage`, `only me`, `not urgent`, `asap`, ...); the longest matching phrase wins, so "not urgent" beats "urgent"; a number of people named ("150 users") also sets impact. Neutral 3 and 3 when no cue.
+* **Summary:** a template over the thread: status, priority, assignee, counts, latest note, resolution, and handover notes (next step for the status, due time, last three notes, last four recorded actions).
+
+### 12c.4 The LLM engine (optional, behind the same interface)
+
+| Piece | Rule |
+|---|---|
+| Key | `LLM_API_KEY` in the environment only. No key: the LLM path is off and the keyword engine answers. Model `LLM_MODEL` (default `claude-haiku-5-5`) |
+| Prompts | `src/main/resources/ai/prompts/suggest-category.txt`, `suggest-intake.txt`, `summarize-thread.txt`; the Report teammate edits them, no Java change |
+| What is sent | Title, description and category names (for summaries: comment and audit text without names), after `TextRedactor` replaced emails by `[email]`, IP addresses by `[ip]`, and tokens, keys and `password=...` pairs by `[token]` / `[redacted]` |
+| Untrusted text | Incident text travels as quoted JSON values and the prompts say to treat it as data, never as instructions |
+| Answer | Strict JSON in the exact shape; a category id that is not in the active list, a number out of range or any other shape is a failure |
+| Failure | Any exception, timeout (`ai.timeout.seconds`, 8), malformed answer: a warning is logged and the keyword engine answers (`source` KEYWORD) |
+| Circuit breaker | After `ai.breaker.failures` (3) consecutive failures the LLM is skipped for `ai.breaker.cooloff.seconds` (60); the first request after the cool-off is the trial: success closes the breaker, failure re-opens it |
+| Smoke runs | `LLM_PROVIDER=fake` swaps in a scripted client that never touches the network and can be told to fail from inside the text (`[[LLM_FAIL]]`, `[[LLM_BAD_JSON]]`, `[[LLM_BAD_CATEGORY]]`) |
+
+### 12c.5 SLA risk
+
+Score = 50 % elapsed share of the resolution time (counted in the policy's calendar, frozen while paused) + 20 % the assignee's load ratio (load points over `maxLoad`; nobody assigned counts as 1.0) + 15 % priority (P1 1.0, P2 0.75, P3 0.5, P4 0.25) + 15 % how long similar resolved incidents took compared with the SLA target (0.5 when there is no similar one). The weights are settings (`sla.risk.weight.*`, must add up to 1.0). Level: HIGH from `sla.risk.threshold` (0.70, "at risk"), MEDIUM from threshold minus 0.30 (0.40), else LOW. Resolved incidents score 0. It is computed on read, and `SlaRiskScanJob` runs `SlaRiskService.scanOnce()` every `sla.risk.scan.interval.seconds` (300; first run at most 30 s after start): one transaction per incident, failures logged and retried next scan, and `SlaAtRisk` is published (and logged) once when an incident first crosses the threshold, not again until it dropped below and rose again.
+
+### 12c.6 Calibration of the TF-IDF thresholds (2026-11-14)
+
+A labelled set of 20 queries against 6 existing incidents (`smoke-tests/m12_calibrate.py`): 8 paraphrases of the same problem (duplicates), 6 same-area-different-problem (related), 6 unrelated, 8 background incidents on the same service.
+
+| Group | Similarity of the target incident | At 0.55 / 0.35 |
+|---|---|---|
+| Duplicates (8) | 0.53, 0.64, 0.70, 0.70, 0.74, 0.80, 0.81, 0.85 | 7 of 8 are DUPLICATE; the one at 0.53 is RELATED |
+| Related (6) | 0.19, 0.21, 0.37, 0.40, 0.50, 0.54 | none is DUPLICATE; 4 of 6 are RELATED, 2 stay hidden |
+| Unrelated (6) | 0 for the target; best match of any incident 0.00 to 0.44 | one shares "second monitor" with an older incident (0.44) and shows as RELATED, which is fair |
+
+Precision of DUPLICATE is 100 % on this set and recall 87.5 %; lowering the duplicate threshold to 0.50 would catch the last pair but also label two related pairs (0.50, 0.54) as duplicates. Both keys are live settings, so the team can retune them with its own data. Scores depend on the corpus: a bigger corpus lowers the weight of common words.
+
+### 12c.7 Classes
+
+| Layer | Classes |
+|---|---|
+| domain `intelligence` (no Spring) | `TextAnalysisService` (port), `KeywordTextAnalysisService`, `KeywordDictionary`, `Tokenizer`, `TfIdfModel`, `TextRedactor`, `SlaRiskScorer`, `CircuitBreaker`, `LlmClient` (port), records `CategorySuggestion`, `IntakeSuggestion`, `SimilarMatch`, `ThreadSummary`, `AnalysisContext` and others; event `SlaAtRisk` |
+| domain `repository` | `IncidentTextRepository` (read-only queries), implemented by `JpaIncidentTextRepository` |
+| application `intelligence` | `IntelligenceService`, `IntelligenceReader`, `SlaRiskService`, `AiResultCache`, `AiRateLimiter`, `IntelligenceViews` |
+| infrastructure | `ai/AnthropicLlmClient`, `ai/ScriptedLlmClient`, `ai/LlmTextAnalysisService`, `ai/FallbackTextAnalysisService`, `ai/AiConfig`, `ai/LlmProperties`, `ai/PromptLibrary`; `scheduler/SlaRiskScanJob` |
+| web | `IntelligenceController`, `web/dto/intelligence/*` |
+
+### 12c.8 Verified behavior (2026-11-14)
+
+`m12_smoke.py` (55 checks, scripted client) plus its scan phase (1) and no-key phase (3), against a running app:
+
+| Area | Checked |
+|---|---|
+| Keyword path | Network, Email and Printer texts give the right category with source KEYWORD; one weak clue (0.50) is hidden with confidence kept; the threshold is live; "no clue" gives null; intake cues (`everyone`, `urgent`, `not urgent`, `only me`, 150 users, neutral) |
+| Similarity | Staged duplicates found (DUPLICATE, at least 0.55); a related pair; unrelated text gives []; the same text on another service is absent; thresholds and their cross-rule are live and validated; `GET /incidents/{id}/similar` excludes itself; a non-viewer gets 404 |
+| LLM path | source LLM; redaction proven (the scripted model echoes what it received: `[email]`, `[ip]`, `[redacted]`, no raw values, surrounding text kept); forced failure, non-JSON answer and unknown category id all give 200 with source KEYWORD; the confidence threshold applies to the LLM too |
+| Circuit breaker | Two failures open it, a healthy request is answered by KEYWORD without calling the LLM, after the cool-off the trial request goes to the LLM and closes it |
+| Rate limit | Third request passes, fourth is 429 `RATE_LIMITED`; another user unaffected |
+| SLA risk | Four factors adding up to the score; fresh incident low; deadline in 5 minutes gives elapsed contribution of at least 0.45; threshold live (0.30 flags it); weights rule (sum 1.0) validated; reporter 403; non-viewer 404; scan flags once (second phase after a restart) |
+| Fixes and summary | A resolved incident with a reusable fix is suggested (notes, steps, root cause, reusable); reporter 403; summary with handover notes (LLM and KEYWORD); the keyword summary names the code, status and latest note |
+| No key | With the real provider and no key: suggest-category, suggest-intake and similar answer from the keyword engine |
+
+Earlier suites run against this build: auth 27/27, M3 42/42, M6 33/33, M7 35/35, M8 24/24, calendar 11/11, M4 53/54 (the one failure expects `GIVE_FEEDBACK`, an M10 feature that is not in this branch), endpoint sweep 72/72 (65 earlier operations plus the 7 new ones; the M10 checks added to the shared sweep were removed from the copy used for this branch).
+
+## 12b. M10 Search and reports
+
+Built 2026-11-14 (decisions DEC-60 to DEC-66). The incident list gets its last filter, every report is a database aggregate over the incidents the caller may see, and four small features answer the brief: coverage risk (E3), post-incident report with PDF (E4), feedback after resolution, saved views and the priority what-if (A11). The reporter withdraw action (G3) is not part of this module's first delivery.
+
+```mermaid
+flowchart LR
+    C[Client] --> RC[ReportController]
+    C --> IC[IncidentController GET /incidents]
+    C --> X[Feedback, SavedFilter, Priority, PostIncidentReport controllers]
+    RC --> RS[ReportService]
+    RC --> EX[ReportExportService + CsvWriter]
+    RC --> CV[CoverageRiskService]
+    IC --> IS[IncidentService.list]
+    IS --> CR[CriteriaIncidentSearch<br/>filters + slaState + visibility]
+    RS --> RR[(ReportRepository<br/>NativeReportRepository: COUNT / GROUP BY)]
+    CV --> RR
+    EX --> RS
+    EX --> IS
+    X --> PS[PostIncidentReportService] --> AU[(audit_records)]
+    PS --> PDF[PostIncidentPdfRenderer port<br/>OpenPdfPostIncidentRenderer adapter]
+    X --> FS[FeedbackService] --> FB[(feedback)]
+    X --> SF[SavedFilterService] --> SV[(saved_filters)]
+    X --> WI[PriorityWhatIfService] --> PE[PriorityEngine, live settings]
+```
+
+### 12b.1 Search: all filters of Appendix B
+
+`GET /incidents` takes `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `slaState`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`, `page`, `size` (max 100) and `sort` (`createdAt`, `priority`, `status`, `code`, `resolutionDue`, `,asc|desc`). Everything is one dynamic Criteria query (DEC-24); visibility (own and assigned incidents for everyone except team leads and administrators) is added by `IncidentService` and cannot be chosen by the client.
+
+**`slaState` (DEC-61).** The shown state needs business-hours elapsed time, which SQL cannot compute, so the filter reads the flags the SLA monitor stores plus the status:
+
+| Filter | Matches |
+|---|---|
+| `OK` | no deadline yet, or open, not paused, no violation flag and no warning flag |
+| `WARNING` | open, not paused, not violated, and a first or second warning has fired (response warnings count only until acknowledged) |
+| `VIOLATED` | open, not paused, and a response or resolution violation flag is set; or finished (RESOLVED, VERIFIED, CLOSED) but not met |
+| `PAUSED` | open and the resolution clock is paused (PENDING_USER_INFO) |
+| `MET` | finished, resolved no later than the resolution deadline, and no violation flag |
+| `AT_RISK` | nothing until the SLA risk score exists (M12) |
+
+Consequence: the list can trail the detail view by up to one monitor interval (60 s by default). The detail view computes the state live; the list filter reports what the monitor has recorded.
+
+### 12b.2 Reports
+
+Every report covers the incidents the caller may see (employee: own; technician: own and assigned; team lead and administrator: all), the same rule as the list (DEC-60). Workload and coverage risk show other people's work and need `TEAM_VIEW`. All numbers come from one SQL `COUNT` or `GROUP BY` (`NativeReportRepository`), so a total equals a direct count.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /reports/overview?from&to` | `total, open, critical (open P1), resolved, slaViolations, avgResolutionMinutes, avgSatisfaction (null if no rating)` |
+| `GET /reports/services?from&to` | `[{serviceId, name, count}]`, most first |
+| `GET /reports/trends?from&to&bucket=day\|week` | `[{date, created, resolved}]`, empty buckets filled with zero, UTC, weeks start Monday; default last 30 days or 12 weeks; limit `report.trend.max.buckets` |
+| `GET /reports/priority-distribution?from&to` | `[{label, count}]`, P1 to P4 always listed (then UNSET if any) |
+| `GET /reports/category-distribution?from&to` | `[{label, count}]`, `Uncategorized` for incidents still in triage |
+| `GET /reports/sla-compliance?from&to&groupBy=priority\|service\|technician` | `[{label, total, met, violated, compliancePercent}]` |
+| `GET /reports/workload` (TEAM_VIEW) | `[{technicianId, name, active, load, maxLoad, avgResolutionMinutes}]` |
+| `GET /reports/coverage-risk?onlyFlagged` (TEAM_VIEW) | E3, section 12b.4 |
+| `GET /reports/export?type&from&to&format=csv` | CSV, section 12b.3 |
+
+Definitions shared by all reports (one place, `NativeReportRepository`): **open** = NEW to REOPENED, **resolved** = RESOLVED, VERIFIED or CLOSED, so open + resolved = total. **Violated** = the incident has an `sla_violations` row, or was resolved after its resolution deadline. **Judged** = has a deadline, was not closed as duplicate or withdrawn, and is finished or violated. **Met** = judged and not violated, so met + violated = total in every compliance row, and `overview.slaViolations` equals the sum of `violated`. `from`/`to` limit by creation time (trends: created by creation time, resolved by resolution time); `to` is exclusive and must be after `from`.
+
+### 12b.3 CSV export
+
+`GET /reports/export?type=` with `incidents`, `overview`, `services`, `trends`, `priority-distribution`, `category-distribution`, `sla-compliance` or `workload` (TEAM_VIEW). The rows are written straight to the response (no async dispatch, so the JWT check stays valid), the incident export walks through the list 200 rows at a time, and the number of rows is capped by the setting `report.export.max.rows` (default 10000). **Formula injection (DEC-62):** a text cell starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe; numbers are never altered; cells with commas, quotes or line breaks are quoted (RFC 4180).
+
+### 12b.4 E3 Coverage risk report
+
+A service has no category of its own, so the report ties them through history (DEC-63): every service and category seen together on incidents in the last `coverage.window.days` (90). For each pair it counts the technicians the assignment engine would accept for that category (active account, AVAILABLE or BUSY, holding at least one required skill; anyone if the category needs none) and lists them, with how many hold each required skill. `level` is `NO_COVERAGE` (0), `SINGLE_HOLDER` (1), `THIN` (below `coverage.min.holders`, default 2) or `COVERED`. A pair is **flagged** when the service criticality is at least `coverage.min.criticality` (4) and the count is below the minimum holders. Flagged pairs come first.
+
+### 12b.5 E4 Post-incident report
+
+`GET /incidents/{id}/post-incident-report` (JSON) and `.../pdf`, for whoever may see the incident (others get 404). Computed from the audit trail: `timeline` (every entry; a reporter without staff rights does not get internal-note entries), `timeInStatus` (wall-clock seconds per status over all visits; the current status runs to now, CLOSED is final and has no duration), `sla` (state, response and resolution due and result, violation rows), `people` (reporter, assignee and every actor, with roles and action counts), `resolution`, `satisfaction`, `totalSeconds`. An open incident gives a report so far (`complete: false`). The PDF is drawn by the `PostIncidentPdfRenderer` port; `OpenPdfPostIncidentRenderer` (OpenPDF 3.0.5) is the Adapter (DEC-64).
+
+### 12b.6 Feedback, saved views, what-if
+
+| Endpoint | Rules |
+|---|---|
+| `POST /incidents/{id}/feedback {rating 1-5, comment ≤1000}` | 201 `{rating, comment, createdAt}`. Stranger: 404. Viewer who is not the reporter: 403. Before RESOLVED: 409. Second time: 409 (primary key `incident_id`). `IncidentDetail.feedback` shows it; `allowedActions` has `GIVE_FEEDBACK` for the reporter until a rating exists. |
+| `GET /saved-filters`, `POST /saved-filters {name ≤60, filter}`, `DELETE /saved-filters/{id}` | Private to the owner (another user's id is 404). `filter` may hold only the keys of `GET /incidents`, with valid values (400 with `filter.<key>` field errors otherwise); a name is unique per user; at most `saved.filters.max` (20) per user (DEC-65). |
+| `POST /priority/what-if {incidentId? \| serviceId?+categoryId?, impact, urgency, affectedUsers}` | Any user who can see the incident. Returns `current` (stored priority and score, only for an incident), `whatIf` (the live `PriorityEngine` result with its breakdown and the SLA minutes of the resulting priority), `changed`, `scoreDifference`. Changes nothing: no save, no audit entry, no version change (DEC-66). |
+
+### 12b.7 Verified behavior (2026-11-14)
+
+Smoke test `m10_smoke.py` (135 checks) against the running app: each of the ten filters alone equals a direct database count, combinations and paging and sorting, `slaState` against the stored flags (OK, WARNING, VIOLATED, PAUSED, MET), visibility for employee, technician, team lead and administrator; every report total equals a direct count for five users and open + resolved = total, distributions and services sum to the total, compliance met + violated = total, trends equal creation and resolution counts, employees count only their own incidents; CSV neutralises a `=HYPERLINK` title, is capped by the setting and refuses an unknown type and a non-staff workload export; coverage flags a single holder, gives NO_COVERAGE when that holder goes OFF_DUTY and leaves a two-holder minor service unflagged; the post-incident report and its PDF (text extracted with `pdftotext`) show the timeline, SLA outcome, durations and people; feedback follows reporter-only, once, status rules; saved views are private, validated and limited; the what-if matches a real incident's priority and changes nothing.
+
+## 12d. M11 Escalation, auto-verify and the demo clock
+
+Built 2026-11-14 (decisions DEC-48 to DEC-53). A critical incident nobody acknowledges climbs a chain of people; a resolved incident nobody confirms closes itself; and for the recorded demo the clock can be moved forward so both happen on camera in seconds.
+
+### 12d.1 The chain (Chain of Responsibility)
+
+```mermaid
+flowchart LR
+    T["Level 0<br/>TechnicianHandler<br/>(assigned technician, or nobody in triage)"] -->|"timeout of level 1<br/>P1 10 min, P2 30 min"| TL["Level 1<br/>TeamLeadHandler<br/>(technicians with escalation level 1)"]
+    TL -->|"timeout of level 2"| SA["Level 2<br/>SystemAdminHandler<br/>(administrators, scope SYSTEM_ADMIN)"]
+    SA -->|"timeout of level 3"| IM["Level 3<br/>ItManagerHandler<br/>(administrators, scope IT_MANAGER)"]
+    IM -->|"escalation.exhausted.minutes"| EX(["One final 'escalation exhausted' alert<br/>to all administrators, then nothing more"])
+```
+
+- `EscalationHandler` (domain, no Spring) is the abstract link. An incident at another level is passed on; at its own level a handler returns the step to perform once the time its level may take has passed (`EscalationStep`: `RAISE` to the next level, or `EXHAUSTED` at the top). `EscalationChain` links the four handlers once.
+- The waiting times are the rows of `escalation_policies` (per priority and level, wall-clock minutes, DEC-42) and the setting `escalation.exhausted.minutes`. Only P1 and P2 have rows, so only they climb.
+- `EscalationPlanner` (application) turns an incident and the live policies into the chain's input. The monitor and the preview both ask it, so they cannot disagree. The moment the incident came to its level is read from the audit trail (DEC-50): the newest of creation, ASSIGNED, REASSIGNED, ESCALATED, PRIORITY_CHANGED.
+- `EscalationRecipients` finds the people at a level: team lead = active technician with escalation level 1; system administrator and IT manager = active administrators by `AdminScope`. Every holder is notified; a level nobody holds is passed over in the same run.
+
+### 12d.2 What the monitor does
+
+```mermaid
+sequenceDiagram
+    participant J as EscalationMonitorJob
+    participant M as EscalationMonitor
+    participant P as EscalationPlanner
+    participant I as Incident
+    participant B as Event bus
+    J->>M: runOnce() every escalation.monitor.interval.seconds
+    M->>M: candidates: P1/P2, ASSIGNED, or CLASSIFIED with no assignee
+    loop one transaction per incident
+        M->>P: due(incident, now)?
+        P-->>M: step (RAISE or EXHAUSTED) or nothing
+        M->>I: escalateUnattended(now) records an ESCALATED fact
+        M->>B: IncidentChanged (the audit entry) + IncidentEscalated (recipients)
+    end
+```
+
+- Same shape as the SLA monitor (DEC-37): one transaction per incident, a failed row is logged and retried next run, the interval is read again after every run, scheduling is off in the test profile.
+- **Stops at acknowledgement:** an acknowledged incident is no longer ASSIGNED, so it is not a candidate any more.
+- **Triage (DEC-48):** a P1 or P2 in CLASSIFIED with no assignee starts at level 0 and climbs after the same timeout; the first ESCALATED entry says "no technician was assigned within N min". Assigning it ends the triage climb: the timer restarts, the level is kept, and it is then an ordinary unacknowledged incident.
+- **Exhausted (DEC-49):** at level 3, after `escalation.exhausted.minutes`, one ESCALATED entry "Escalation exhausted at level 3 ..." and an `EscalationExhausted` event for all administrators. The audit trail is the memory of "already raised"; nothing more follows.
+- **Events for M9:** `IncidentEscalated(incidentId, code, priority, fromLevel, toLevel, target, recipientIds, assigneeId, manual)` and `EscalationExhausted(incidentId, code, priority, recipientIds)`. M9's listener sends notification type INCIDENT_ESCALATED to `recipientIds` (SMS also for P1 on the exhausted alert); the audit entries already exist without it.
+
+### 12d.3 Manual escalation and the preview
+
+| Endpoint | Who | Rules |
+|---|---|---|
+| `POST /incidents/{id}/escalate` `{reason}` (10 to 1000 characters) | the assignee, a team lead, an administrator | allowed from ASSIGNED, ACKNOWLEDGED, IN_PROGRESS; raises the level by one, status unchanged; 403 for anybody else, 409 from other statuses and at level 3, 400 for a short reason; the reason is an internal note; audit entry "Escalated to level N (role) by name"; `IncidentEscalated` with `manual = true` |
+
+It is an `IncidentCommand` (`EscalateCommand`) run by `IncidentCommandRunner`; `IncidentAccessPolicy` answers who (403), the State pattern answers when (409, `ESCALATE` is in the legal actions of ASSIGNED, ACKNOWLEDGED and IN_PROGRESS below level 3).
+
+The incident detail carries `escalationPreview` for staff (DEC-51): `{kind, fromLevel, toLevel, targetRole, dueAt, secondsRemaining, recipients}`, or null.
+
+### 12d.4 Auto-verify (G2)
+
+`AutoVerifyMonitor` + `AutoVerifyJob`: a RESOLVED incident older than `verify.auto.hours` (default 48, demo 0.033) is moved to VERIFIED and closed with `AUTO_VERIFIED`, two audit entries without an actor, one transaction per incident, idempotent. The interval is the setting `verify.monitor.interval.seconds` (default 300; the demo seed should set 30). DEC-53.
+
+### 12d.5 The demo clock (D1), demo profile only
+
+| Endpoint | Who | Rules |
+|---|---|---|
+| `GET /admin/demo/clock` | administrators (CONFIG_MANAGE) | `{now, offsetMinutes}` |
+| `POST /admin/demo/clock/advance` `{minutes}` | administrators | 1 to 1440 minutes per call, forward only; audited as CONFIG_CHANGED |
+
+In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forward-only offset); in every other profile it is the system clock and these two routes do not exist (404). SLA warnings and violations, escalation hops and auto-verify all read the injected clock, so one advance triggers them within one monitor interval. **For the recorded demo only.** After a large advance the access token (15 minutes) may be expired; refresh it. DEC-52.
+
+### 12d.6 Settings added
+
+| Key | Default | Range | Meaning |
+|---|---|---|---|
+| `escalation.exhausted.minutes` | 15 | 1 to 1440 | Minutes at level 3 before the one final exhausted alert |
+| `verify.monitor.interval.seconds` | 300 | 5 to 3600 | How often the auto-verify job runs |
+
+(`escalation.monitor.interval.seconds` and `verify.auto.hours` already existed.) `app_config` now has 37 keys.
+
+### 12d.7 Verified behavior
+
+`m11_smoke.py` (78 checks in the dev profile, 88 in the demo profile, which adds the demo-clock checks): the chain climbs one level per timeout with one audit entry and one logged event per hop; acknowledging stops it; an unassigned P1 starts at level 0 and says "no technician was assigned"; one exhausted alert and nothing after it; a level nobody holds is passed over; manual escalate gives 403 for the wrong person and 409 for the wrong status or level 3; P3 and P4 never escalate; auto-verify closes only the old unconfirmed incident, once.
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
@@ -1512,6 +1888,15 @@ Plus the four warning flags (`resp_warn75_sent`, `resp_warn90_sent`, `res_warn75
 
 The database also enforces the rules with constraints: unique `(user_id, role_type)`, unique email and `google_sub`, unique service name, unique `(service_id, priority)` and `(priority, level)`, and `CHECK` constraints on every range and enum column.
 
+### 13.x Tables added by M10 (2026-11-14)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `feedback` | `incident_id` BIGINT PK FK, `rating` SMALLINT CHECK 1 to 5, `comment` TEXT, `created_at` | One row per incident (Appendix A.4) |
+| `saved_filters` | `id`, `user_id` FK, `name` VARCHAR(60), `filter_json` JSONB, `created_at` | Private to the user; name unique per user is checked in code (DEC-65) |
+
+New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 10000, `report.trend.max.buckets` 400, `coverage.window.days` 90, `coverage.min.criticality` 4, `coverage.min.holders` 2, `saved.filters.max` 20.
+
 ---
 
 ## 14. OOP and design patterns: where to find them
@@ -1535,13 +1920,13 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 | Pattern | Status | Where |
 |---|---|---|
-| **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` follows in M9. |
+| **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` (M9) builds notification wording from templates. |
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
-| **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. Notification channels and the LLM client follow in M9 / M12. |
+| **Adapter** | 🟡 growing | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); `LlmClient` port with `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c). |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
-| **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. |
-| **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them. Notification (M9) and dashboard (M13) listeners subscribe to the same events. |
-| **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
+| **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. M12: `TextAnalysisService` with `KeywordTextAnalysisService`, `LlmTextAnalysisService` and the `FallbackTextAnalysisService` that chooses by `ai.primary` (section 12c). |
+| **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them in the action's transaction; `NotificationListener` (M9) reacts after commit, asynchronously. The dashboard listener (M13) follows. |
+| **Chain of Responsibility** | ✅ in use (M11) | `EscalationHandler` with `TechnicianHandler`, `TeamLeadHandler`, `SystemAdminHandler`, `ItManagerHandler`, linked by `EscalationChain` (section 12d.1). |
 
 ### 14.3 Further patterns in the code
 
@@ -1550,7 +1935,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Template Method** | ✅ in use | `FactorStrategy.rank` is final: it scores every candidate, sorts best first and applies the tie-break; subclasses (`CompositeStrategy`, `SkillBasedStrategy`, `LoadBasedStrategy`, `ExperiencePriorityStrategy`) only supply `score` (section 10.3). |
 | **Strategy** (third use) | ✅ in use | `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`: an SLA policy chooses how time is counted (section 11.3). |
 | **Policy object** | ✅ in use | `IncidentAccessPolicy` holds every "who may do what" rule in one class, separate from the State pattern's "is it legal now" (section 8.4). |
-| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with eight implementations (`AcknowledgeCommand` ... `ReopenCommand`) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
+| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with nine implementations (`EscalateCommand` joined with M11) (`AcknowledgeCommand` ... `ReopenCommand`) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
 
 ---
 
@@ -1641,8 +2026,13 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-10 | Repository moved into the shared team repo and the backend placed in `backend/` beside `frontend/` (D-017, DEC-41). No code or behavior change; Maven commands run from `backend/`. |
 | 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook; new `docs/TEAM_UPDATES.md` tells teammates what differs from the handbook PDFs. |
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
+| 2026-11-14 | M10 search and reports built and smoke-tested (section 12b, DEC-60 to DEC-66): `slaState` filter, seven reports and CSV export with formula-injection protection, E3 coverage risk, E4 post-incident report and PDF (OpenPDF adapter), feedback, saved views, priority what-if; tables `feedback` and `saved_filters`; six new settings. Withdraw (G3) is still open. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | Decisions only, no code: M11 escalation behavior fixed by the user (DEC-48 triage incidents escalate from level 0, DEC-49 one final exhausted alert after level 3); listed in section 18. |
+| 2026-11-13 | M9 notifications built and smoke-tested (section 12a, DEC-54): five channels, after-commit async listener, preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints, six new settings, minimal STOMP endpoint `/ws`. `SlaMonitor` publishes `SlaRunCompleted`. |
+| 2026-11-14 | M12 core built and smoke-tested (section 12c, DEC-M12-1 to DEC-M12-9): suggest-category, suggest-intake, TF-IDF similar incidents (own calibrated thresholds), suggested resolutions, thread summary, SLA risk with a 5-minute scan, optional LLM behind a redacting adapter with fallback and circuit breaker; 14 new settings (35 to 49); the seven endpoints moved from Planned to implemented (72 implemented, 26 planned). |
+| 2026-11-14 | M11 built and smoke-tested (section 12d, D-030, DEC-50 to DEC-53): escalation chain and monitor, triage escalation, exhausted alert, `POST /incidents/{id}/escalate`, `escalationPreview`, `AutoVerifyJob` (G2), adjustable demo clock (D1, demo profile only). New settings `escalation.exhausted.minutes` and `verify.monitor.interval.seconds` (37 keys). `m11_smoke.py` 78/78 (dev) and 88/88 (demo); auth 27, M6 33, M7 35, M8 24, calendar 11 unchanged. Jobs now first run 10 s after start. |
+| 2026-11-14 | M9, M10, M11 and M12 core merged into `main` together (ERROR_LOG E-033): decision ids renumbered (M9 DEC-54, M12 DEC-M12-n, M11 DEC-50 to DEC-53, section 12d), `planned-endpoints.json` merged by key, 63 settings. All smoke suites run on the merged build. |
 
 ---
 
@@ -1657,10 +2047,10 @@ Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/D
 | S3 | Sealed audit trail | A Verify action proves the audit log is intact or names the first altered record | M14 |
 | E1 | Service status board | Every service as Healthy, Degraded or Outage, derived from reported incidents | M13 |
 | E2 | Recurring-problem detector | A team lead is told when the same failure keeps coming back | M12 |
-| E3 | Coverage risk report | Critical services that only one available technician can handle | M10 |
-| E4 | Post-incident report | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
+| E3 | Coverage risk report (built 2026-11-14, section 12b.4) | Critical services that only one available technician can handle | M10 |
+| E4 | Post-incident report (built 2026-11-14, section 12b.5) | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
 | E5 | Reporter tracking view | A progress line with the SLA due time | Frontend |
-| D1, D2 | Demo aids (demo profile only) | Move the clock forward; start a prepared outage | M11, M12 |
+| D2 | Demo aid (demo profile only) | Start a prepared outage (the clock control D1 is built, section 12A.5) | M12 |
 | A1, A2, A6, A11 | Chatbot and voice reporting, chat-webhook channel, priority what-if and escalation preview | | M9 to M12 |
 
 Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned only a team lead or administrator can change impact, urgency and affected users; resolved incidents nobody confirms are verified and closed automatically. Escalation (DEC-48, DEC-49): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to all administrators.

@@ -16,7 +16,12 @@ final class AcknowledgedState extends IncidentState {
 
     @Override
     public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
-        return Set.of(IncidentAction.START_WORK, IncidentAction.REASSIGN);
+        return withEscalate(incident, IncidentAction.START_WORK, IncidentAction.REASSIGN);
+    }
+
+    @Override
+    void escalate(Incident incident, Instant now) {
+        raiseLevel(incident, now);
     }
 
     @Override

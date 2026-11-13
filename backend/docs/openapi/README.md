@@ -48,6 +48,13 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | Taken email on register: 400 `VALIDATION_FAILED` with `fieldErrors: [{field: "email", message: "is already registered"}]` | Auth | No dedicated code in B.2 | D-008 (5) |
 | Every response has an `X-Request-Id` header | All | Quote it when reporting a problem | D-005 |
 | `POST /auth/google` (planned, M2b) | Auth | Google sign-in as an extra | D-001 |
+| `GET /notifications` takes an optional `channel` (default `IN_APP`, `SMS_SIM` allowed) | Notifications | List the simulated text messages | DEC-54 |
+| `NotificationPreference` carries `locked`; `GET /notifications/preferences` returns every event type on every personal channel (60); `PUT` replaces the saved set and answers 400 for a locked switch | Notifications | Draw locked toggles disabled; critical alerts cannot be switched off | DEC-40, DEC-54 |
+| The `channel` enum of a notification stays `IN_APP, EMAIL, WEBSOCKET, SMS_SIM` in what is stored; the code also knows `CHAT` (a room, never stored, never a preference) | Notifications | Chat webhook channel | DEC-43 A6, DEC-54 |
+| STOMP over WebSocket at `/ws`: `Authorization: Bearer` header on CONNECT, subscribe to `/user/queue/notifications` (not part of the REST contract) | Real time | Live push of new notifications | DEC-54 |
+| `escalationPreview` in `IncidentDetail` (staff only, otherwise null): `{kind, fromLevel, toLevel, targetRole, dueAt, secondsRemaining, recipients}` | Incidents | A team lead sees when the incident will next escalate and to whom (A11) | DEC-51 |
+| `POST /incidents/{id}/escalate` takes `{reason}`; 409 at level 3 and in statuses other than ASSIGNED, ACKNOWLEDGED, IN_PROGRESS | Incidents | Manual escalation, status unchanged | DEC-50 |
+| `GET /admin/demo/clock` and `POST /admin/demo/clock/advance` exist **only in the demo profile**, so they are not in this file; `{minutes: 1..1440}`, administrators only | Admin | Recorded demo (D1): move the clock forward | DEC-52 |
 
 ## Coming additions (accepted 2026-11-13, shapes not designed yet)
 
@@ -56,14 +63,14 @@ These features were accepted after the contract was published. Their endpoints a
 | Feature | Expect | Module |
 |---|---|---|
 | Reporter withdraw | `POST /incidents/{id}/withdraw` with a reason | M10 |
-| Coverage risk report, post-incident report | new `/reports/...` operations; PDF | M10 |
+| Coverage risk report, post-incident report, priority what-if, saved views | built 2026-11-14 (M10): `/reports/coverage-risk`, `/incidents/{id}/post-incident-report` (+ `/pdf`), `/priority/what-if`, `/saved-filters` | M10 |
 | Escalation preview | a field on `IncidentDetail` | M11 |
 | Major Incident Mode | known-outage lookup for the report form, join action, root cause on `/problems/{id}` | M12, M13 |
 | Recurring-problem detector | suggestions on `/problems` | M12 |
 | Service status board | a status per service | M13 |
 | Service Desk Simulator | one operation to run a simulation | after M13 |
 | Sealed audit trail | `GET /audit/verify` | M14 |
-| Demo aids (demo profile only) | move the clock forward; start an outage drill | M11, M12 |
+| Demo aids (demo profile only) | start an outage drill (the demo clock is built, see above) | M12 |
 | Chat-webhook channel | a new notification channel value | M9 |
 
 ## Regenerating the export

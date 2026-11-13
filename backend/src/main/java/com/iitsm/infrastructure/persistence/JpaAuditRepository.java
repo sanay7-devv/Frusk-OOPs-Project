@@ -1,12 +1,17 @@
 package com.iitsm.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
+import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.audit.AuditQuery;
 import com.iitsm.domain.audit.AuditRecord;
+import com.iitsm.domain.incident.Incident;
 import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.repository.PageSlice;
 
@@ -40,6 +45,26 @@ public class JpaAuditRepository implements AuditRepository {
                         + "where a.incident.id = :incidentId order by a.createdAt, a.id", AuditRecord.class)
                 .setParameter("incidentId", incidentId)
                 .getResultList();
+    }
+
+    @Override
+    public Optional<Instant> latestAt(Long incidentId, Collection<AuditAction> actions) {
+        return Optional.ofNullable(em.createQuery("select max(a.createdAt) from AuditRecord a "
+                        + "where a.incident.id = :incidentId and a.action in :actions", Instant.class)
+                .setParameter("incidentId", incidentId)
+                .setParameter("actions", actions)
+                .getSingleResult());
+    }
+
+    @Override
+    public boolean hasEscalationExhausted(Long incidentId) {
+        Long count = em.createQuery("select count(a) from AuditRecord a where a.incident.id = :incidentId "
+                        + "and a.action = :action and a.description like :prefix", Long.class)
+                .setParameter("incidentId", incidentId)
+                .setParameter("action", AuditAction.ESCALATED)
+                .setParameter("prefix", Incident.EXHAUSTED_PREFIX + "%")
+                .getSingleResult();
+        return count > 0;
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.audit.AuditService.AuditEntryView;
 import com.iitsm.application.auth.AuthenticatedUser;
+import com.iitsm.application.escalation.EscalationService;
 import com.iitsm.application.incident.IncidentService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
@@ -27,6 +28,7 @@ import com.iitsm.application.incident.IncidentViews.IncidentSummary;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.incident.IncidentQuery;
 import com.iitsm.domain.incident.IncidentStatus;
+import com.iitsm.domain.incident.SlaState;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.web.dto.PageResponse;
 import com.iitsm.web.dto.incident.AssignRequest;
@@ -61,9 +63,11 @@ public class IncidentController {
     private static final Set<String> SORT_FIELDS = Set.of("createdAt", "priority", "status", "code", "resolutionDue");
 
     private final IncidentService incidents;
+    private final EscalationService escalation;
 
-    public IncidentController(IncidentService incidents) {
+    public IncidentController(IncidentService incidents, EscalationService escalation) {
         this.incidents = incidents;
+        this.escalation = escalation;
     }
 
     @PostMapping
@@ -88,6 +92,7 @@ public class IncidentController {
             @RequestParam(required = false) Long serviceId,
             @RequestParam(required = false) Long assigneeId,
             @RequestParam(required = false) Long reporterId,
+            @RequestParam(required = false) SlaState slaState,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo,
             @RequestParam(defaultValue = "false") boolean mine,
@@ -103,7 +108,7 @@ public class IncidentController {
         boolean ascending = sortParts.length > 1 && sortParts[1].strip().equalsIgnoreCase("asc");
         IncidentQuery query = new IncidentQuery(null, status, priority, categoryId, serviceId,
                 assignedToMe ? caller.id() : assigneeId, mine ? caller.id() : reporterId, code, q, createdFrom,
-                createdTo, page, size, sortField, ascending);
+                createdTo, page, size, sortField, ascending, slaState);
         return PageResponse.of(incidents.list(caller, query));
     }
 
@@ -164,6 +169,19 @@ public class IncidentController {
     public IncidentDetail reassign(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                    @Valid @RequestBody ReassignRequest request) {
         return incidents.reassign(caller, id, request.technicianId(), request.reason());
+    }
+
+    @PostMapping("/{id}/escalate")
+    @Operation(summary = "Raise the escalation level by one (assignee, team lead, admin); the status does not change")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.VALIDATION_FAILED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
+    public IncidentDetail escalate(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                   @Valid @RequestBody ReasonRequest request) {
+        return escalation.escalate(caller, id, request.reason());
     }
 
     @PostMapping("/{id}/acknowledge")

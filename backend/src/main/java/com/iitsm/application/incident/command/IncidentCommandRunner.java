@@ -29,7 +29,7 @@ import com.iitsm.domain.user.User;
  *   <li>load the incident (404 if unknown);</li>
  *   <li>check who may do the action (403 UNAUTHORIZED_OPERATION);</li>
  *   <li>perform the command (the State pattern may refuse it: 409 INVALID_STATE_TRANSITION);</li>
- *   <li>leave the public note, if the command has one;</li>
+ *   <li>leave the public note and the internal note, if the command has them;</li>
  *   <li>publish the audit event from the fact the incident recorded;</li>
  *   <li>return the detail view built inside the transaction.</li>
  * </ol>
@@ -71,6 +71,8 @@ public class IncidentCommandRunner {
         User actor = users.findById(caller.id()).orElseThrow(() -> new UserNotFoundException(caller.id()));
         command.publicNote().ifPresent(text -> comments.save(new IncidentComment(incident, actor,
                 CommentVisibility.PUBLIC, truncated(text), now)));
+        command.internalNote(incident).ifPresent(text -> comments.save(new IncidentComment(incident, actor,
+                CommentVisibility.INTERNAL, truncated(text), now)));
         publisher.publishFact(incident, actor, command.auditText(incident).formatted(actor.getName()));
         return views.detail(incident, caller);
     }

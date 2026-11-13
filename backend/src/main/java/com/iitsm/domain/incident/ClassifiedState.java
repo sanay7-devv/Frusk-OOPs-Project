@@ -20,6 +20,12 @@ final class ClassifiedState extends IncidentState {
         return Set.of(IncidentAction.ASSIGN);
     }
 
+    /** In triage with nobody to take it: the escalation monitor watches it from level 0 (DEC-48). */
+    @Override
+    boolean isUnattended(Incident incident) {
+        return incident.getAssignee() == null;
+    }
+
     /** Needs a technician and a known priority. */
     @Override
     void assign(Incident incident, User technician, Instant now) {

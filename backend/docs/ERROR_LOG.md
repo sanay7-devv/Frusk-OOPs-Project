@@ -220,6 +220,129 @@ Entry template:
 - Second symptom on the local `schema-auto` database: after the converter, inserts still failed on `sla_policies_calendar_type_check`. Hibernate had generated that CHECK from the old `@Enumerated` mapping, and `ddl-auto=update` never drops constraints. Fixed locally with `alter table sla_policies drop constraint sla_policies_calendar_type_check`; Flyway databases are not affected.
 - Status: fixed (team to confirm the seed value)
 
+### E-023: Hibernate's CHECK on the notification channel allows CHAT, the appendix does not
+- Date: 2026-11-13
+- Area: db
+- Symptom: under `schema-auto`, `notifications.channel` has two CHECK constraints: ours (`IN_APP, EMAIL, WEBSOCKET, SMS_SIM`, from the entity's `@Table(check=...)`) and one Hibernate generated from the `ChannelType` enum, which also lists `CHAT`.
+- Cause: the enum has a fifth value for the chat webhook (DEC-43 A6) that is never stored; Hibernate 7 always adds a CHECK for `@Enumerated(STRING)` columns.
+- Fix: none needed in code: `Notification` refuses channels that are not stored. Testing teammate: in the real migration write only the four values of Appendix A.4 (and the 15 event types).
+- Status: noted
+
+### E-024: The older smoke scripts counted 35 settings; stdout redirected to a file broke on an arrow
+- Date: 2026-11-13
+- Area: tests
+- Symptom: `m3_smoke.py` and `endpoint_sweep.py` failed one check each ("35 settings", got 41); `m8_smoke.py` crashed with `UnicodeEncodeError` on a character in a check name when its output was redirected to a file.
+- Cause: M9 added six settings (`notification.*`). On Windows, Python writes redirected output in cp1252.
+- Fix: both counts are 41 now; run the suites with `PYTHONIOENCODING=utf-8` when redirecting.
+- Prevention: Testing teammate: count the settings from `ConfigKey.values().length`, not from a literal.
+
+### E-M12-1: Summary of an unresolved incident returned 500 (null embedded Resolution)
+- Date: 2026-11-14
+- Area: domain
+- Symptom: `POST /incidents/{id}/summary` returned 500 INTERNAL_ERROR; log: `NullPointerException: Cannot invoke "Resolution.isPresent()" because the return value of "Incident.getResolution()" is null`. Found by `m12_smoke.py`.
+- Cause: `Resolution` is an embedded value whose columns are all NULL until the incident is resolved. When Hibernate loads such a row it leaves the embedded field null, although the entity initialises it with `Resolution.none()` for new objects. `Resolution.isPresent()` never gets called on a null.
+- Fix: `IntelligenceReader.threadFor` checks `getResolution() != null` before `isPresent()`.
+- Prevention: treat every embedded value of a loaded entity as nullable. The queries for suggested resolutions only select incidents with a root cause, so they never see the null.
+- Status: fixed
+
+### E-M12-2: The scheduled risk scan did not run for five minutes after a start
+- Date: 2026-11-14
+- Area: config
+- Symptom: after setting `sla.risk.scan.interval.seconds` to 5 in the smoke run, the first scan still came 300 seconds after the application started, so a freshly started demo showed nothing for five minutes.
+- Cause: the trigger computes the first execution as start time plus the interval stored at that moment (the default 300); a changed interval is only read after a run has completed.
+- Fix: `SlaRiskScanJob` runs the first scan at most 30 seconds after start and later ones every interval. The smoke test checks the scan in a second phase after a restart (`M12_MODE=scan`).
+- Prevention: for any scheduled job, decide the first-run delay explicitly. `SlaMonitorJob` has the same shape (first run one interval after start); left unchanged.
+- Status: fixed
+
+### E-M12-3: The smoke suite gave different answers on a reused database
+- Date: 2026-11-14
+- Area: other
+- Symptom: on the second run of `m12_smoke.py` against the same database, category suggestions returned categories of the first run and similarity scores dropped below their thresholds.
+- Cause: categories and incidents of earlier runs are still active and still count: an old "Network xxxxxx" category wins ties by name, and old printer incidents lower the TF-IDF weight of the words "printer" and "floor".
+- Fix: the script retires every existing category and moves older incidents 400 days back at the start, so only its own data counts. It stays re-runnable on the shared dev database.
+- Prevention: any suite that depends on text statistics must isolate its data. Related: the category names carry a random run suffix, so texts must not contain it (it matched the category name words).
+- Status: fixed
+
+### E-M12-4: Hard-coded settings count and a wrong claim about "all suites green"
+- Date: 2026-11-14
+- Area: other
+- Symptom: `m3_smoke.py` and `endpoint_sweep.py` check that `GET /admin/config` lists exactly N settings; with 14 new keys they fail until N is raised (35 to 49 for this branch). The shared `m4_smoke.py` and `endpoint_sweep.py` also expect M10 features (`GIVE_FEEDBACK`, `/reports/*`) that are not in this branch.
+- Cause: the checks pin an exact number and the shared scripts follow the newest branch, not this one.
+- Fix: for this branch the copies used for the run carry 49 and without the M10 checks; the endpoint sweep gained a section for the seven new operations in the shared copy.
+- Prevention: when branches are merged, add up the new keys (35 + M9/M10/M11 keys + 14) and update the two numbers once; consider checking `>=` and the presence of the keys.
+- Status: fixed (merge task)
+
+### E-M12-5: Smoke output redirected to a file crashed on an arrow character
+- Date: 2026-11-14
+- Area: other
+- Symptom: `m8_smoke.py > file` ended with `UnicodeEncodeError: 'charmap' codec can't encode character '→'` and no summary line.
+- Cause: on Windows, Python writes to a redirected stdout with the console code page (cp1252); the audit text contains `→`.
+- Fix: run with `PYTHONIOENCODING=utf-8`.
+- Prevention: set it in the shell profile or the CI job that runs the smoke scripts.
+- Status: fixed
+
+### E-030: Post-incident report returned 500 for an open incident (NullPointerException)
+- Date: 2026-11-14
+- Area: app
+- Symptom: `GET /incidents/{id}/post-incident-report` on an incident that was not yet resolved answered 500 `INTERNAL_ERROR`; the log showed `Cannot invoke "java.lang.Boolean.booleanValue()"`.
+- Cause: a nested conditional expression mixed a primitive `boolean` branch with `Boolean.FALSE` and `null`; Java unboxes the whole expression to `boolean`, so the `null` branch threw. Finished incidents took the primitive branch and hid the bug.
+- Fix: the "met / missed / still running" result moved into `PostIncidentReportService.outcomeOf`, written with plain `if` statements returning a `Boolean`.
+- Prevention: never put `null` in one branch of a conditional expression whose other branch is a primitive; the M10 smoke test checks an open, overdue incident as well as a finished one.
+- Status: fixed
+
+### E-031: Smoke expectations that M10 legitimately changed
+- Date: 2026-11-14
+- Area: tests
+- Symptom: `m4_smoke.py` failed one check after M10: a CLOSED incident now offers its reporter `[COMMENT, REOPEN, GIVE_FEEDBACK]`; `endpoint_sweep.py` listed the new endpoints as NOT HIT.
+- Cause: not a bug. Feedback is allowed once an incident is RESOLVED, VERIFIED or CLOSED, so `allowedActions` gains `GIVE_FEEDBACK` until a rating exists; the sweep did not know the new endpoints.
+- Fix: the m4 expectation now includes `GIVE_FEEDBACK`; the sweep calls every M10 endpoint (reports, export, coverage risk, post-incident report and PDF, saved views, what-if, feedback).
+- Prevention: when a module adds an action to `allowedActions`, update the earlier suites that list them.
+- Status: fixed
+
+### E-032: Python 3 cp1252 console cannot print the arrow in audit descriptions
+- Date: 2026-11-14
+- Area: tooling
+- Symptom: `m8_smoke.py` crashed at exit with `UnicodeEncodeError: 'charmap' codec can't encode character '→'` when run from a Windows terminal.
+- Cause: the suite prints audit descriptions that contain an arrow; the default console encoding is cp1252.
+- Fix: run the suites with `PYTHONIOENCODING=utf-8`.
+- Status: workaround (no code change)
+
+### E-M11-1: A monitor job waited a whole interval before its first run
+- Date: 2026-11-14
+- Area: domain
+- Symptom: in the first m11 smoke runs the auto-verify check failed ("still RESOLVED" after 30 s) although the incident was old enough; the log showed no auto-verify run until five minutes after start.
+- Cause: the job's trigger scheduled the first run `interval` seconds after start, using the setting value at that moment (default 300 s). The interval set later by the test only applies after the first run. The SLA monitor job has the same shape (its smoke test waits 75 s for the same reason).
+- Fix: `EscalationMonitorJob` and `AutoVerifyJob` run 10 seconds after start and use the configured interval from then on.
+- Prevention: a trigger that reads its interval from `app_config` should not use that interval for the very first run. (The SLA job is unchanged; it works, it is only slower to start.)
+- Status: fixed (M11 jobs); SLA job left as is
+
+### E-M11-2: Smoke script P1 incidents came out as P3
+- Date: 2026-11-14
+- Area: other
+- Symptom: `m11_smoke.py` created "P1" incidents on a service with `alwaysP1: true` and impact 3 / urgency 3; they were P3 and never escalated (every escalation check failed).
+- Cause: not investigated further; the scoring path, not the service flag, decided the band in this setup. The test, not the backend, was wrong for what it wanted to show.
+- Fix: the script now uses impact 5, urgency 5, 150 affected users on a criticality 5 service, which is P1 by score.
+- Prevention: create test incidents with inputs that give the wanted priority by score, and assert the priority in the first check.
+- Status: fixed (test script)
+
+### E-M11-3: Smoke checks counted recipients of users left by an earlier run
+- Date: 2026-11-14
+- Area: other
+- Symptom: the second run on the same database failed "one recipient" checks (2 team leads, 4 administrators) and the "level nobody holds" check (another team lead still existed).
+- Cause: every run creates its own users and the escalation chain notifies every holder of a level; earlier runs' users are still there.
+- Fix: run `m11_smoke.py` against a freshly created database (drop and create `iitsm_m11`, restart the backend); noted at the top of the script.
+- Prevention: tests that count "everyone holding a role" need an empty database.
+- Status: fixed (procedure)
+
+### E-M11-4: m8 smoke aborted printing an arrow on Windows
+- Date: 2026-11-14
+- Area: other
+- Symptom: `UnicodeEncodeError: 'charmap' codec can't encode character '→'` in the atexit report of `m8_smoke.py`.
+- Cause: the console code page is cp1252; a check name contains an arrow.
+- Fix: run the suites with `PYTHONIOENCODING=utf-8`; the suite itself is unchanged.
+- Prevention: same setting for every suite on this machine.
+- Status: fixed (environment)
+
 ---
 
 ## Known things to watch (not errors yet)
@@ -234,3 +357,13 @@ Entry template:
 - Boot 4 specifics: Jackson 3 (`tools.jackson.*` packages), Spring Security 7, Hibernate 7. If a library pulls in Jackson 2, it needs the compatibility module or a different serializer (that is why jjwt uses Gson here). springdoc 3.0.3 was built against Boot 4.0.5, check Maven Central for a newer 3.x if Swagger UI misbehaves on 4.1.1. Check Maven Central for a newer 4.1.x patch of the parent before the first commit.
 - `IitsmBackendApplicationTests.contextLoads` will fail without a running database (or Testcontainers). Expected until the test setup is done by the Testing teammate.
 - Flyway will warn about a missing/empty `db/migration` location until V1 is added.
+
+### E-033: Merging the four parallel module branches (M9, M10, M11, M12)
+
+- Date: 2026-11-14
+- Area: process
+- Symptom: (1) the M12 branch's merge commit `e74f840` had committed git conflict markers inside `DECISIONS.md`; (2) M9 and M11 both used DEC-48 and D-027/D-028, M9 and M10 and M11 each named a guide section 12a; (3) `planned-endpoints.json` conflicted because every branch deleted the operations it had built; (4) after the merge `m11_smoke.py` failed three log checks and `m3_smoke.py` and `endpoint_sweep.py` failed their settings count.
+- Cause: (1) a conflicted merge was committed without removing the markers; (2) parallel sessions picked the next free number independently; (3) a textual merge of one JSON file cannot tell "deleted because built" from "changed"; (4) the m11 checks matched any log line holding the incident code and the word "Escalated", which M9's SMS and chat channels now also log; the setting counts were hard-coded (41).
+- Fix: M12's feature commit `5d993b3` was merged instead of the broken merge commit; ids were renumbered (M9 is DEC-54 and D-028, M12 D-029, M11 D-030 and section 12d, M10 section 12b); `planned-endpoints.json` was merged as JSON (a three-way merge by key); `m11_smoke.py` counts only `EscalationMonitor` log lines; the settings count is 63 (35 plus 6 M9, 6 M10, 2 M11, 14 M12) in the two older suites and in `TEAM_UPDATES.md`.
+- Prevention: before merging parallel branches, grep each one for `<<<<<<<`; give parallel sessions disjoint id ranges up front; regenerate `planned-endpoints.json` from `gen_planned.py` rather than merging it; count settings from `ConfigKey.values().length`, not a literal (Testing teammate).
+- Status: fixed

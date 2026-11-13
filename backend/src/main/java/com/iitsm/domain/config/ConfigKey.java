@@ -62,6 +62,9 @@ public enum ConfigKey {
             Type.DATES),
     ESCALATION_MONITOR_INTERVAL_SECONDS("escalation.monitor.interval.seconds", "60",
             "How often the escalation monitor runs", Type.INTEGER, "5", "3600"),
+    ESCALATION_EXHAUSTED_MINUTES("escalation.exhausted.minutes", "15",
+            "Minutes an unacknowledged P1 or P2 may stay at level 3 before the one final 'escalation exhausted' alert",
+            Type.INTEGER, "1", "1440"),
 
     DUP_THRESHOLD_DUPLICATE("dup.threshold.duplicate", "0.80", "Similarity from which an incident is a likely duplicate",
             Type.DECIMAL, "0", "1"),
@@ -75,10 +78,68 @@ public enum ConfigKey {
 
     VERIFY_AUTO_HOURS("verify.auto.hours", "48", "Hours after which a resolved incident is verified automatically",
             Type.DECIMAL, "0.01", "720"),
+    VERIFY_MONITOR_INTERVAL_SECONDS("verify.monitor.interval.seconds", "300",
+            "How often the auto-verify job looks for resolved incidents nobody confirmed", Type.INTEGER, "5", "3600"),
     REOPEN_WINDOW_DAYS("reopen.window.days", "7", "Days after closure during which an incident can be reopened",
             Type.INTEGER, "1", "90"),
     AI_PRIMARY("ai.primary", "LLM", "Primary text analysis engine (falls back to KEYWORD on failure)", Type.CHOICE,
             "LLM", "KEYWORD"),
+
+    // notifications (module M9, decisions DEC-40, DEC-42, DEC-54)
+    NOTIFICATION_DIGEST_THRESHOLD("notification.digest.threshold", "5",
+            "SLA warnings one person may get in one monitor run before they are folded into one digest",
+            Type.INTEGER, "1", "1000"),
+    NOTIFICATION_EMAIL_RETRIES("notification.email.retries", "3",
+            "Retries after a failed email (the first attempt is not counted)", Type.INTEGER, "0", "10"),
+    NOTIFICATION_EMAIL_BACKOFF_SECONDS("notification.email.backoff.seconds", "2",
+            "Wait before the first email retry; doubles with every retry", Type.INTEGER, "1", "300"),
+    NOTIFICATION_EMAIL_FROM("notification.email.from", "no-reply@iitsm.local",
+            "Sender address of notification emails", Type.EMAIL),
+    NOTIFICATION_LINK_BASE_URL("notification.link.base.url", "http://localhost:5173",
+            "Frontend address used for links in emails", Type.URL),
+    NOTIFICATION_CHAT_WEBHOOK_URL("notification.chat.webhook.url", "",
+            "Incoming-webhook URL of the chat room; empty means chat messages are only logged", Type.OPTIONAL_URL),
+    // M12 intelligence (DEC-M12-1 to DEC-M12-9). The two dup.* thresholds above were written for embeddings; the default
+    // similarity is TF-IDF, which scores lower for the same pair of texts, so it has its own calibrated pair.
+    DUP_TFIDF_THRESHOLD_DUPLICATE("dup.tfidf.threshold.duplicate", "0.55",
+            "TF-IDF similarity from which an incident is a likely duplicate", Type.DECIMAL, "0", "1"),
+    DUP_TFIDF_THRESHOLD_RELATED("dup.tfidf.threshold.related", "0.35",
+            "TF-IDF similarity from which incidents are possibly related", Type.DECIMAL, "0", "1"),
+    RESOLUTION_MIN_SIMILARITY("resolution.min.similarity", "0.30",
+            "Minimum TF-IDF similarity for a resolved incident to be suggested as a fix", Type.DECIMAL, "0", "1"),
+    AI_IDF_WINDOW_DAYS("ai.idf.window.days", "90",
+            "How far back incident texts count when TF-IDF weights words by rarity", Type.INTEGER, "1", "365"),
+    AI_TIMEOUT_SECONDS("ai.timeout.seconds", "8", "Seconds to wait for the LLM before using the keyword engine",
+            Type.INTEGER, "1", "60"),
+    AI_BREAKER_FAILURES("ai.breaker.failures", "3", "Consecutive LLM failures after which the LLM is skipped",
+            Type.INTEGER, "1", "100"),
+    AI_BREAKER_COOLOFF_SECONDS("ai.breaker.cooloff.seconds", "60", "Seconds the LLM is skipped after the breaker opens",
+            Type.INTEGER, "1", "86400"),
+    AI_CACHE_TTL_SECONDS("ai.cache.ttl.seconds", "60", "Seconds an identical suggestion request reuses its answer",
+            Type.INTEGER, "0", "3600"),
+    AI_RATE_LIMIT_PER_MINUTE("ai.ratelimit.per.minute", "20", "Suggestion requests per user per minute (429 above)",
+            Type.INTEGER, "1", "10000"),
+    SLA_RISK_WEIGHT_ELAPSED("sla.risk.weight.elapsed", "0.50", "SLA risk weight: share of resolution time elapsed",
+            Type.DECIMAL, "0", "1"),
+    SLA_RISK_WEIGHT_LOAD("sla.risk.weight.load", "0.20", "SLA risk weight: assigned technician's load ratio",
+            Type.DECIMAL, "0", "1"),
+    SLA_RISK_WEIGHT_PRIORITY("sla.risk.weight.priority", "0.15", "SLA risk weight: priority", Type.DECIMAL, "0", "1"),
+    SLA_RISK_WEIGHT_HISTORY("sla.risk.weight.history", "0.15",
+            "SLA risk weight: how long similar past incidents took against the target", Type.DECIMAL, "0", "1"),
+    SLA_RISK_SCAN_INTERVAL_SECONDS("sla.risk.scan.interval.seconds", "300", "How often the SLA risk scan runs",
+            Type.INTEGER, "5", "86400"),
+    // search, reports and coverage risk (module M10)
+    REPORT_EXPORT_MAX_ROWS("report.export.max.rows", "10000", "Most rows a CSV export writes", Type.INTEGER, "1", "100000"),
+    REPORT_TREND_MAX_BUCKETS("report.trend.max.buckets", "400", "Most days or weeks one trend report may span",
+            Type.INTEGER, "1", "5000"),
+    COVERAGE_WINDOW_DAYS("coverage.window.days", "90",
+            "How far back incidents tie a service to the categories it needs (coverage risk report)", Type.INTEGER,
+            "1", "365"),
+    COVERAGE_MIN_CRITICALITY("coverage.min.criticality", "4",
+            "Services from this criticality on are flagged when coverage is thin", Type.INTEGER, "1", "5"),
+    COVERAGE_MIN_HOLDERS("coverage.min.holders", "2",
+            "Available technicians a flagged service's category needs at least", Type.INTEGER, "1", "50"),
+    SAVED_FILTERS_MAX("saved.filters.max", "20", "Most saved incident views one user may keep", Type.INTEGER, "1", "200"),
 
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
@@ -86,7 +147,7 @@ public enum ConfigKey {
             Type.INTEGER, "1", "1440");
 
     /** The kind of value a key holds. */
-    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES }
+    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }
 
     private final String key;
     private final String defaultValue;
@@ -121,7 +182,7 @@ public enum ConfigKey {
 
     /** Checks one value on its own; returns an error message, or empty if the value is fine. */
     public Optional<String> check(String value) {
-        if (value == null || (value.isBlank() && type != Type.DATES)) {
+        if (value == null || (value.isBlank() && type != Type.DATES && type != Type.OPTIONAL_URL)) {
             return Optional.of("must not be empty");
         }
         String trimmed = value.strip();
@@ -142,6 +203,10 @@ public enum ConfigKey {
             }, "must be distinct days like MON,TUE,WED,THU,FRI");
             case DATES -> parses(() -> items(trimmed).forEach(LocalDate::parse),
                     "must be dates like 2026-12-25,2027-01-26 (or empty)");
+            case EMAIL -> trimmed.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")
+                    ? Optional.empty()
+                    : Optional.of("must be an email address like no-reply@iitsm.local");
+            case URL, OPTIONAL_URL -> trimmed.isEmpty() ? Optional.empty() : checkHttpUrl(trimmed);
         };
     }
 
@@ -161,6 +226,16 @@ public enum ConfigKey {
                 .filter(name -> name.startsWith(abbreviation))
                 .findFirst()
                 .orElse(abbreviation);
+    }
+
+    private static Optional<String> checkHttpUrl(String value) {
+        try {
+            java.net.URI uri = java.net.URI.create(value);
+            boolean http = "http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme());
+            return http && uri.getHost() != null ? Optional.empty() : Optional.of("must be an http or https address");
+        } catch (IllegalArgumentException ex) {
+            return Optional.of("must be an http or https address");
+        }
     }
 
     private static Optional<String> parses(Runnable parser, String problem) {

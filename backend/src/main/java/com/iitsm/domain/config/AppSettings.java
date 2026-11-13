@@ -121,6 +121,20 @@ public final class AppSettings {
             issues.add(new FieldIssue(ConfigKey.DUP_THRESHOLD_DUPLICATE.key(),
                     "must be greater than dup.threshold.related"));
         }
+        BigDecimal tfidfDuplicate = new BigDecimal(v.get(ConfigKey.DUP_TFIDF_THRESHOLD_DUPLICATE));
+        BigDecimal tfidfRelated = new BigDecimal(v.get(ConfigKey.DUP_TFIDF_THRESHOLD_RELATED));
+        if (tfidfDuplicate.compareTo(tfidfRelated) <= 0) {
+            issues.add(new FieldIssue(ConfigKey.DUP_TFIDF_THRESHOLD_DUPLICATE.key(),
+                    "must be greater than dup.tfidf.threshold.related"));
+        }
+        BigDecimal riskWeights = new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_ELAPSED))
+                .add(new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_LOAD)))
+                .add(new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_PRIORITY)))
+                .add(new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_HISTORY)));
+        if (riskWeights.subtract(ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+            issues.add(new FieldIssue(ConfigKey.SLA_RISK_WEIGHT_ELAPSED.key(),
+                    "the four SLA risk weights must add up to 1.0 (now " + riskWeights.stripTrailingZeros() + ")"));
+        }
         return issues;
     }
 
