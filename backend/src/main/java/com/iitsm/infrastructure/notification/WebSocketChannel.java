@@ -14,7 +14,7 @@ import com.iitsm.domain.notification.NotificationMessage;
 /**
  * Adapter: a live push to the person's STOMP queue {@code /user/queue/notifications} (handbook B.5).
  * <p>
- * Thin on purpose. Assumption (decision DEC-48): the STOMP session of a logged-in person is named after their user id
+ * Thin on purpose. Assumption (decision DEC-54): the STOMP session of a logged-in person is named after their user id
  * ({@link WebSocketConfig} sets that from the access token on CONNECT; module M13 will extend that part). The payload
  * is the same Notification object as the REST inbox, with the id of the inbox row, so the browser can mark it read.
  * A person who is not connected simply does not receive it; the inbox row is still there.

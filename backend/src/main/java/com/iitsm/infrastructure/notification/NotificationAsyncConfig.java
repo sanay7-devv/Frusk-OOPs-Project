@@ -22,7 +22,7 @@ import java.util.Properties;
 import org.springframework.core.io.ClassPathResource;
 
 /**
- * Threads and wording of the notification module (decision DEC-48):
+ * Threads and wording of the notification module (decision DEC-54):
  * <ul>
  *   <li>{@code notificationExecutor}: ONE worker thread. Events are handled after commit, off the request thread,
  *       and in the order they happened, which the digest of an SLA monitor run relies on.</li>

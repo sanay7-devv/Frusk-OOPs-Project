@@ -17,7 +17,7 @@ import static com.iitsm.domain.notification.Audience.TEAM_LEAD;
  * escalation; admins on SLA violation).
  * <p>
  * The single {@code IncidentChanged} event carries an {@link AuditAction}; {@link #forAction} maps it onto one of
- * these types (decision DEC-48). Actions without a type (classified, priority calculated, work started, comment
+ * these types (decision DEC-54). Actions without a type (classified, priority calculated, work started, comment
  * added) notify nobody.
  */
 public enum NotificationEventType {

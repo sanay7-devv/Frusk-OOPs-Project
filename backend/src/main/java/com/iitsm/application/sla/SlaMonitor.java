@@ -84,7 +84,7 @@ public class SlaMonitor {
                 log.warn("SLA check of incident {} failed, retrying next run: {}", id, ex.toString());
             }
         }
-        // tells the notification listener the run is over, so it can fold many warnings into digests (DEC-42, DEC-48)
+        // tells the notification listener the run is over, so it can fold many warnings into digests (DEC-42, DEC-54)
         events.publishEvent(new SlaRunCompleted(warnings, violated, clock.instant()));
         return new RunResult(candidates.size(), warnings, violated, failed);
     }

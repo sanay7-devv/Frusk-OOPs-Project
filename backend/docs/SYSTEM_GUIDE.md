@@ -1319,7 +1319,7 @@ Smoke test `m8_smoke.py` against the running app.
 
 ## 12a. M9 Notifications
 
-Every incident event that matters to a person becomes a **notification**: a row in their inbox, a live push, a mail, for P1 a simulated text message, and for team-wide alerts a post to a chat room. The listener runs **after the action's transaction commits and on its own thread**, so a broken mail server can never roll back or slow down an incident (decisions DEC-40, DEC-42, DEC-48).
+Every incident event that matters to a person becomes a **notification**: a row in their inbox, a live push, a mail, for P1 a simulated text message, and for team-wide alerts a post to a chat room. The listener runs **after the action's transaction commits and on its own thread**, so a broken mail server can never roll back or slow down an incident (decisions DEC-40, DEC-42, DEC-54).
 
 ### 12a.1 From event to delivery
 
@@ -1344,7 +1344,7 @@ Patterns: **Observer** (`NotificationListener`), **Adapter** (`NotificationChann
 
 ### 12a.2 Who hears what
 
-The single `IncidentChanged` event carries an action; it is mapped onto the 15 notification types of Appendix A.4 (DEC-48). Actions with no type send nothing. The person who did the action is not told, except the reporter of a new incident, who gets a receipt.
+The single `IncidentChanged` event carries an action; it is mapped onto the 15 notification types of Appendix A.4 (DEC-54). Actions with no type send nothing. The person who did the action is not told, except the reporter of a new incident, who gets a receipt.
 
 | Action (audit) | Notification type | Who |
 |---|---|---|
@@ -1391,7 +1391,7 @@ Each channel is tried alone; a failure is logged and the others still run. The w
 | `GET /api/v1/notifications/preferences` | 60 switches `{eventType, channel, enabled, locked}` (15 types x IN_APP, EMAIL, WEBSOCKET, SMS_SIM) |
 | `PUT /api/v1/notifications/preferences` | body: list of `{eventType, channel, enabled}`; returns the 60 switches |
 
-WebSocket: connect to `/ws`, send the access token as the STOMP `Authorization: Bearer ...` header on CONNECT, subscribe to `/user/queue/notifications`. Assumptions and what M13 will extend: DEC-48.
+WebSocket: connect to `/ws`, send the access token as the STOMP `Authorization: Bearer ...` header on CONNECT, subscribe to `/user/queue/notifications`. Assumptions and what M13 will extend: DEC-54.
 
 ### 12a.6 Settings (live, `app_config`) and tables
 
@@ -1749,7 +1749,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook; new `docs/TEAM_UPDATES.md` tells teammates what differs from the handbook PDFs. |
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
-| 2026-11-13 | M9 notifications built and smoke-tested (section 12a, DEC-48): five channels, after-commit async listener, preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints, six new settings, minimal STOMP endpoint `/ws`. `SlaMonitor` publishes `SlaRunCompleted`. |
+| 2026-11-13 | M9 notifications built and smoke-tested (section 12a, DEC-54): five channels, after-commit async listener, preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints, six new settings, minimal STOMP endpoint `/ws`. `SlaMonitor` publishes `SlaRunCompleted`. |
 
 ---
 

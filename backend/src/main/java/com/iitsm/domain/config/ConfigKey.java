@@ -80,7 +80,7 @@ public enum ConfigKey {
     AI_PRIMARY("ai.primary", "LLM", "Primary text analysis engine (falls back to KEYWORD on failure)", Type.CHOICE,
             "LLM", "KEYWORD"),
 
-    // notifications (module M9, decisions DEC-40, DEC-42, DEC-48)
+    // notifications (module M9, decisions DEC-40, DEC-42, DEC-54)
     NOTIFICATION_DIGEST_THRESHOLD("notification.digest.threshold", "5",
             "SLA warnings one person may get in one monitor run before they are folded into one digest",
             Type.INTEGER, "1", "1000"),

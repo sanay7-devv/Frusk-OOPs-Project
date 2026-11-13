@@ -23,7 +23,7 @@ import com.iitsm.domain.exception.ItsmException;
 import com.iitsm.infrastructure.security.JwtService;
 
 /**
- * The smallest STOMP setup that lets the notification push work (decision DEC-48): endpoint {@code /ws}, an in-memory
+ * The smallest STOMP setup that lets the notification push work (decision DEC-54): endpoint {@code /ws}, an in-memory
  * broker (single instance, DEC-42), user destinations under {@code /user}.
  * <p>
  * Module M13 owns the real-time layer and will extend this class (dashboard topic, per-destination permissions,

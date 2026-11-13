@@ -61,7 +61,7 @@
 | [DEC-45](#dec-45-plan-shaped-by-the-recorded-demo) | Plan shaped by the recorded demo | 2026-11-13 | All | ✅ |
 | [DEC-46](#dec-46-fixes-from-the-code-and-frontend-review) | Fixes from the code and frontend review | 2026-11-13 | M9 to M14 | ✅ |
 | [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
-| [DEC-48](#dec-48-m9-notifications-mapping-delivery-storm-control-and-the-websocket-seam) | M9 notifications: mapping, delivery, storm control and the WebSocket seam | 2026-11-13 | M9 | ✅ |
+| [DEC-54](#dec-54-m9-notifications-mapping-delivery-storm-control-and-the-websocket-seam) | M9 notifications: mapping, delivery, storm control and the WebSocket seam | 2026-11-13 | M9 | ✅ |
 
 ---
 
@@ -1033,7 +1033,7 @@ Smaller rules the handbook left open:
 
 **Cross-questions.** *"How is E2 different from duplicate detection?"* Duplicates are the same failure reported several times within 24 hours; a recurring problem is the same kind of failure coming back over weeks after being resolved. *"Why does a dependency make a service Degraded?"* Its upstream is down, so it is likely affected even before anyone reports it; the graph is already there (DEC-16).
 
-### DEC-48: M9 notifications: mapping, delivery, storm control and the WebSocket seam
+### DEC-54: M9 notifications: mapping, delivery, storm control and the WebSocket seam
 
 | When | Module | Status |
 |---|---|---|

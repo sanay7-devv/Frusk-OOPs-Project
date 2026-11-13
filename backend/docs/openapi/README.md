@@ -48,10 +48,10 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | Taken email on register: 400 `VALIDATION_FAILED` with `fieldErrors: [{field: "email", message: "is already registered"}]` | Auth | No dedicated code in B.2 | D-008 (5) |
 | Every response has an `X-Request-Id` header | All | Quote it when reporting a problem | D-005 |
 | `POST /auth/google` (planned, M2b) | Auth | Google sign-in as an extra | D-001 |
-| `GET /notifications` takes an optional `channel` (default `IN_APP`, `SMS_SIM` allowed) | Notifications | List the simulated text messages | DEC-48 |
-| `NotificationPreference` carries `locked`; `GET /notifications/preferences` returns every event type on every personal channel (60); `PUT` replaces the saved set and answers 400 for a locked switch | Notifications | Draw locked toggles disabled; critical alerts cannot be switched off | DEC-40, DEC-48 |
-| The `channel` enum of a notification stays `IN_APP, EMAIL, WEBSOCKET, SMS_SIM` in what is stored; the code also knows `CHAT` (a room, never stored, never a preference) | Notifications | Chat webhook channel | DEC-43 A6, DEC-48 |
-| STOMP over WebSocket at `/ws`: `Authorization: Bearer` header on CONNECT, subscribe to `/user/queue/notifications` (not part of the REST contract) | Real time | Live push of new notifications | DEC-48 |
+| `GET /notifications` takes an optional `channel` (default `IN_APP`, `SMS_SIM` allowed) | Notifications | List the simulated text messages | DEC-54 |
+| `NotificationPreference` carries `locked`; `GET /notifications/preferences` returns every event type on every personal channel (60); `PUT` replaces the saved set and answers 400 for a locked switch | Notifications | Draw locked toggles disabled; critical alerts cannot be switched off | DEC-40, DEC-54 |
+| The `channel` enum of a notification stays `IN_APP, EMAIL, WEBSOCKET, SMS_SIM` in what is stored; the code also knows `CHAT` (a room, never stored, never a preference) | Notifications | Chat webhook channel | DEC-43 A6, DEC-54 |
+| STOMP over WebSocket at `/ws`: `Authorization: Bearer` header on CONNECT, subscribe to `/user/queue/notifications` (not part of the REST contract) | Real time | Live push of new notifications | DEC-54 |
 
 ## Coming additions (accepted 2026-11-13, shapes not designed yet)
 
