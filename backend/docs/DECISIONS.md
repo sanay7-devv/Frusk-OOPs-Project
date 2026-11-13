@@ -61,6 +61,8 @@
 | [DEC-45](#dec-45-plan-shaped-by-the-recorded-demo) | Plan shaped by the recorded demo | 2026-11-13 | All | ✅ |
 | [DEC-46](#dec-46-fixes-from-the-code-and-frontend-review) | Fixes from the code and frontend review | 2026-11-13 | M9 to M14 | ✅ |
 | [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
+| [DEC-48](#dec-48-an-unassigned-p1-or-p2-in-triage-escalates-from-level-0) | An unassigned P1 or P2 in triage escalates from level 0 | 2026-11-13 | M11 | ✅ user decision |
+| [DEC-49](#dec-49-one-final-alert-when-escalation-is-exhausted) | One final alert when escalation is exhausted | 2026-11-13 | M11 | ✅ user decision |
 
 ---
 
@@ -829,7 +831,7 @@ Smaller rules the handbook left open:
 | DEC-17 | Code check alone can race | Partial unique index in V1 (Testing teammate) |
 | DEC-28 | Weights differ from the handbook's locked constants | Tests and report use the five-factor weights |
 
-**Questions still open (decide when their module starts).** An unassigned P1 waiting in triage never escalates (the monitor reads ASSIGNED only); what happens after level 3; whether a confident AI category is applied when the reporter gives none (DEC-33); mapping the single `IncidentChanged` action to the 15 notification event types; CSV formula injection in exports.
+**Questions still open (decide when their module starts).** (An unassigned P1 in triage and what happens after level 3 were decided the same day: DEC-48 and DEC-49.) Whether a confident AI category is applied when the reporter gives none (DEC-33); mapping the single `IncidentChanged` action to the 15 notification event types; CSV formula injection in exports.
 
 **Cross-questions.** *"Why not an outbox table for notifications?"* The agreed schema has no delivery columns; the in-app row is the durable record and email is retried in process. *"Why can a list and a detail view disagree on SLA state?"* The list filters on flags written by the monitor; the detail computes live; the gap is at most one monitor interval.
 
@@ -1031,3 +1033,58 @@ Smaller rules the handbook left open:
 **Trade-off.** E1 reflects reported incidents only; a failing service nobody has reported shows Healthy. The board says "based on reported incidents".
 
 **Cross-questions.** *"How is E2 different from duplicate detection?"* Duplicates are the same failure reported several times within 24 hours; a recurring problem is the same kind of failure coming back over weeks after being resolved. *"Why does a dependency make a service Degraded?"* Its upstream is down, so it is likely affected even before anyone reports it; the graph is already there (DEC-16).
+
+
+---
+
+## M11 Escalation decisions (2026-11-13)
+
+> Two open questions from the design review (DEC-42) were put to the user with options before M11 is built. Nothing is built yet.
+
+### DEC-48: An unassigned P1 or P2 in triage escalates from level 0
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-13 | M11 | ✅ user decision, to be built with M11 | User (option A of three) |
+
+**Context.** The escalation monitor looks for P1 and P2 incidents in ASSIGNED that nobody has acknowledged. An incident that stays in triage (no category, or no eligible technician) is CLASSIFIED with no assignee, so it was never escalated; only the one TRIAGE_NEEDED notice at creation reached a team lead.
+
+**Decision.** An unassigned P1 or P2 in triage is escalated like an assigned one, starting from level 0 (nobody): after the same timeout as a technician level (10 minutes for P1 and 30 for P2, 1 minute in demo) it moves to level 1 (team lead), is notified, audited as ESCALATED and published as the escalation event, and then climbs level by level exactly as in the handbook. Assigning or acknowledging it stops the climb. The timeouts are the existing per-level escalation settings; no new setting.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **A. Escalate from level 0** ✔ | Closes the gap with no new concept; the same timeouts, audit entries and notifications; the story "nothing critical is ever ignored" holds for every state | The monitor now reads two statuses, ASSIGNED and (for P1 and P2 only) CLASSIFIED without assignee |
+| B. Separate triage timeout | Triage can be tuned independently | More settings to explain and test; a second path to the same result |
+| C. Leave as is | Nothing to build | A critical incident nobody can be assigned to is only caught later by the SLA violation alert |
+
+**Why.** An incident nobody can take is exactly the one most likely to be ignored, and the brief's example of automatic escalation (a critical incident not acknowledged in time) does not say the incident must already have an owner.
+
+**Trade-off.** An unassigned incident has no technician to appear as "level 0" in the history; the first ESCALATED entry says "no technician assigned" in its description.
+
+**Cross-questions.** *"What if the incident has no category, so nobody can be matched?"* It still escalates to the team lead, who can classify and assign it (the manual assign action already exists). *"Does this change the SLA clock?"* No; escalation is separate from the SLA monitor, and the response clock keeps running until acknowledgement.
+
+### DEC-49: One final alert when escalation is exhausted
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-13 | M11 | ✅ user decision, to be built with M11 | User (option A of three) |
+
+**Context.** The chain is technician (0), team lead (1), system administrator (2), IT manager (3). The handbook does not say what happens when a P1 or P2 is still not acknowledged after level 3.
+
+**Decision.** The incident stays at level 3. The monitor raises one final "escalation exhausted" alert: an audit entry, an event and a notification to all administrators (SMS as well for P1), once per incident, and then nothing more from the escalation monitor. Acknowledging the incident still ends everything as before.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **A. One final exhausted alert** ✔ | Tells everyone who can still act that the chain has run out; one alert is easy to explain and to demo; no repeating job to stop | If the first alert is missed nothing repeats (the SLA violation alerts still fire) |
+| B. Re-alert every N minutes | Hard to miss | Noisy; needs its own interval setting and a stop rule |
+| C. Stop silently | Simplest | The end of the chain looks like success |
+
+**Implementation note (kept inside the agreed schema, can be changed when M11 is built).** The exhausted alert reuses the existing audit action ESCALATED (the description says "escalation exhausted at level 3") and the existing notification event type INCIDENT_ESCALATED with its own wording, so Appendix A.3 and A.4 do not gain new values. If the team prefers distinct values, that is a schema change to agree with the Testing teammate first.
+
+**Trade-off.** "Once per incident" needs a remembered fact; the incident already stores `escalation_level` (0 to 3), so the monitor can tell level 3 from "exhausted" with the audit trail (one exhausted entry exists) and needs no new column.
+
+**Cross-questions.** *"Why not keep alerting?"* A repeating alert to people who already ignored three of them adds noise, not action; the SLA violation alerts are the continuing signal. *"Who counts as all administrators?"* Every user with the administrator role, as in the SLA violation notification.

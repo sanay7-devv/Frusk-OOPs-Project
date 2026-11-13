@@ -42,6 +42,8 @@ Last updated: 2026-11-13
 
 **Behavior that will change** (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned, only a team lead or administrator can change impact, urgency and affected users; a resolved incident nobody confirms is verified and closed automatically.
 
+**Escalation behavior decided for M11** (DEC-48, DEC-49; not built yet): an unassigned P1 or P2 in triage escalates to the team lead after the normal timeout and then climbs the chain; after level 3 with no acknowledgement, one final "escalation exhausted" alert goes to all administrators (SMS for P1) and the monitor stops. The alert reuses the audit action ESCALATED and the notification event type INCIDENT_ESCALATED, so no new schema values are needed. Testing: expected values for the demo profile (1-minute timeouts) are one escalation per minute, then one exhausted alert.
+
 ---
 
 ## 2. Frontend developer
