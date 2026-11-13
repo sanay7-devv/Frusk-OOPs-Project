@@ -1295,7 +1295,7 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 |---|---|---|
 | 2026-11-14 | M10 | ✅ user decision |
 
-**Decision.** Every report except workload and coverage risk may be called by any logged-in user and counts only the incidents that user may see: employees their own, technicians their own and assigned ones, team leads and administrators all (the same rule as the incident list, DEC-26). Workload and coverage risk need `TEAM_VIEW`, because they show other people's work. Every number is one `COUNT` or `GROUP BY` in the database (`NativeReportRepository`); definitions of open, resolved, violated, judged and met are in one place (SYSTEM_GUIDE 12A.2).
+**Decision.** Every report except workload and coverage risk may be called by any logged-in user and counts only the incidents that user may see: employees their own, technicians their own and assigned ones, team leads and administrators all (the same rule as the incident list, DEC-26). Workload and coverage risk need `TEAM_VIEW`, because they show other people's work. Every number is one `COUNT` or `GROUP BY` in the database (`NativeReportRepository`); definitions of open, resolved, violated, judged and met are in one place (SYSTEM_GUIDE 12b.2).
 
 **Options considered.** Administrators only, as the API Data Dictionary says (simplest, but then "role visibility in reports" cannot be shown and employees have no view of their own numbers) · administrators and team leads with `REPORT_VIEW` · **everyone, scoped** ✔.
 
@@ -1311,7 +1311,7 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 |---|---|---|
 | 2026-11-14 | M10 | ✅ follows DEC-42 |
 
-**Decision.** `GET /incidents?slaState=` filters on the fire-once warning and violated flags, the paused marker and the status, written as Criteria predicates that follow the branches of `SlaTracker.stateAt` (SYSTEM_GUIDE 12A.1). `AT_RISK` is accepted and matches nothing until M12.
+**Decision.** `GET /incidents?slaState=` filters on the fire-once warning and violated flags, the paused marker and the status, written as Criteria predicates that follow the branches of `SlaTracker.stateAt` (SYSTEM_GUIDE 12b.1). `AT_RISK` is accepted and matches nothing until M12.
 
 **Why.** With business hours (DEC-39) elapsed time cannot be computed in SQL. The flags are written by the monitor within one interval.
 
