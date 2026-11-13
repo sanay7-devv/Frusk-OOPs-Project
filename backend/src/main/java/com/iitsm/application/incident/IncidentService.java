@@ -17,30 +17,36 @@ import com.iitsm.application.config.ConfigService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
 import com.iitsm.application.incident.IncidentViews.IncidentSummary;
+import com.iitsm.application.incident.command.AcknowledgeCommand;
+import com.iitsm.application.incident.command.CloseCommand;
+import com.iitsm.application.incident.command.IncidentCommandRunner;
+import com.iitsm.application.incident.command.ProvideInfoCommand;
+import com.iitsm.application.incident.command.ReopenCommand;
+import com.iitsm.application.incident.command.RequestInfoCommand;
+import com.iitsm.application.incident.command.ResolveCommand;
+import com.iitsm.application.incident.command.StartWorkCommand;
+import com.iitsm.application.incident.command.VerifyCommand;
 import com.iitsm.domain.assignment.EligibilityFilter;
 import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.audit.AuditRecord;
-import com.iitsm.domain.event.IncidentChanged;
 import com.iitsm.domain.event.TriageNeeded;
 import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.assignment.WorkloadTracker;
 import com.iitsm.domain.category.Category;
-import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.exception.IncidentNotFoundException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.OptimisticLockConflictException;
 import com.iitsm.domain.exception.ServiceNotFoundException;
 import com.iitsm.domain.exception.TechnicianUnavailableException;
 import com.iitsm.domain.exception.UserNotFoundException;
-import com.iitsm.domain.incident.ClosureReason;
 import com.iitsm.domain.incident.CommentVisibility;
 import com.iitsm.domain.incident.Incident;
 import com.iitsm.domain.incident.IncidentAction;
 import com.iitsm.domain.incident.IncidentComment;
+import com.iitsm.domain.incident.IncidentFact;
 import com.iitsm.domain.incident.IncidentFactory;
 import com.iitsm.domain.incident.IncidentQuery;
 import com.iitsm.domain.incident.IncidentStatus;
-import com.iitsm.domain.incident.Resolution;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.priority.PriorityBreakdown;
 import com.iitsm.domain.priority.PriorityEngine;
@@ -62,7 +68,8 @@ import com.iitsm.domain.user.User;
  * Incident use cases (module M4 with the M5 priority engine). Every action follows the same steps: load, check that
  * the caller may do it (403 UNAUTHORIZED_OPERATION), let the State pattern decide whether the move is legal in the
  * current status (409 INVALID_STATE_TRANSITION), save, return the detail view. One transaction per call, so a
- * failed step changes nothing.
+ * failed step changes nothing. The plain lifecycle actions are command objects run by {@link IncidentCommandRunner}
+ * (Command pattern, decision DEC-46); creation, edits, assignment, priority override and comments stay here.
  * <p>
  * Every successful action publishes an {@link IncidentChanged} event (Observer, module M8); the audit listener
  * writes it in the same transaction, so an action never commits without its audit record and a refused one leaves
@@ -86,6 +93,8 @@ public class IncidentService {
     private final AssignmentService assignment;
     private final AuditRepository audit;
     private final ApplicationEventPublisher events;
+    private final IncidentEventPublisher publisher;
+    private final IncidentCommandRunner commands;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
@@ -93,7 +102,7 @@ public class IncidentService {
                            IncidentFactory factory, PriorityEngine priorityEngine, SlaPolicyResolver slaPolicies,
                            ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
                            AssignmentService assignment, AuditRepository audit, ApplicationEventPublisher events,
-                           Clock clock) {
+                           IncidentEventPublisher publisher, IncidentCommandRunner commands, Clock clock) {
         this.incidents = incidents;
         this.search = search;
         this.comments = comments;
@@ -109,6 +118,8 @@ public class IncidentService {
         this.assignment = assignment;
         this.audit = audit;
         this.events = events;
+        this.publisher = publisher;
+        this.commands = commands;
         this.clock = clock;
     }
 
@@ -136,20 +147,29 @@ public class IncidentService {
         return views.detail(incident, caller);
     }
 
-    /** The creation pipeline as audit steps: reported, classified, prioritized, then assigned or sent to triage. */
+    /**
+     * The creation pipeline as audit steps: the incident recorded reported, classified, prioritized and (if a
+     * technician was found) assigned; here each fact gets its actor and wording. Without an assignee the incident
+     * goes to triage.
+     */
     private void publishCreation(Incident incident, User reporter) {
-        IncidentStatus classified = IncidentStatus.CLASSIFIED;
-        publish(incident, AuditAction.INCIDENT_CREATED, reporter, null, IncidentStatus.NEW,
-                "Reported by " + reporter.getName() + " on " + incident.getService().getName());
         Category category = incident.getCategory();
-        publish(incident, AuditAction.CLASSIFIED, null, IncidentStatus.NEW, classified,
-                category == null ? "No category given: waiting in triage" : "Classified as " + category.getName());
-        publish(incident, AuditAction.PRIORITY_CALCULATED, null, classified, classified, priorityText(incident));
-        if (incident.getStatus() == IncidentStatus.ASSIGNED) {
-            publish(incident, AuditAction.ASSIGNED, null, classified, IncidentStatus.ASSIGNED,
-                    "Assigned to " + incident.getAssignee().getName() + " by the "
-                            + config.current().assignmentStrategy() + " strategy");
-        } else {
+        for (IncidentFact fact : incident.drainFacts()) {
+            switch (fact.action()) {
+                case INCIDENT_CREATED -> publish(incident, fact, reporter,
+                        "Reported by " + reporter.getName() + " on " + incident.getService().getName());
+                case CLASSIFIED -> publish(incident, fact, null,
+                        category == null ? "No category given: waiting in triage"
+                                : "Classified as " + category.getName());
+                case PRIORITY_CALCULATED -> publish(incident, fact, null, priorityText(incident));
+                case ASSIGNED -> publish(incident, fact, null,
+                        "Assigned to " + incident.getAssignee().getName() + " by the "
+                                + config.current().assignmentStrategy() + " strategy");
+                default -> throw new IllegalStateException(
+                        "Unexpected " + fact.action() + " while creating " + incident.getCode());
+            }
+        }
+        if (incident.getStatus() != IncidentStatus.ASSIGNED) {
             events.publishEvent(new TriageNeeded(incident.getId(), incident.getCode(), incident.getPriority(),
                     category == null ? "no category" : "no eligible technician", clock.instant()));
         }
@@ -220,8 +240,7 @@ public class IncidentService {
         recalculatePriority(incident);
         boolean changed = before != incident.getPriority();
         User actor = loadUser(caller.id());
-        publish(incident, changed ? AuditAction.PRIORITY_CHANGED : AuditAction.PRIORITY_CALCULATED,
-                actor, incident.getStatus(), incident.getStatus(),
+        publishFact(incident, actor,
                 "Details updated by " + actor.getName() + "; "
                         + (changed ? "priority " + before + " → " + incident.getPriority() + ". " : "")
                         + priorityText(incident));
@@ -240,10 +259,10 @@ public class IncidentService {
         SlaPolicy policy = slaPolicies.resolve(incident.getService(), priority);
         Instant now = clock.instant();
         Priority before = incident.getPriority();
-        incident.applyPriority(manual, policy.targets(config.current()), now);
+        incident.overridePriority(manual, policy.targets(config.current()), now);
         addNote(incident, actor, CommentVisibility.INTERNAL, "Priority set to " + priority + ": " + reason, now);
         // the reason is in the internal note, not here: reporters see this entry
-        publish(incident, AuditAction.PRIORITY_CHANGED, actor, incident.getStatus(), incident.getStatus(),
+        publishFact(incident, actor,
                 "Priority set by hand from " + before + " to " + priority + " by " + actor.getName());
         return views.detail(incident, caller);
     }
@@ -263,10 +282,9 @@ public class IncidentService {
                 : assignment.recommend(incident).best()
                         .map(choice -> choice.candidate().technician())
                         .orElseThrow(TechnicianUnavailableException::noneEligible);
-        IncidentStatus before = incident.getStatus();
         assignment.assign(incident, technician);
         User actor = loadUser(caller.id());
-        publish(incident, AuditAction.ASSIGNED, actor, before, incident.getStatus(),
+        publishFact(incident, actor,
                 "Assigned to " + technician.getName() + " by " + actor.getName()
                         + (technicianId == null ? " using the " + config.current().assignmentStrategy() + " strategy"
                         : ""));
@@ -287,108 +305,57 @@ public class IncidentService {
         User actor = loadUser(caller.id());
         addNote(incident, actor, CommentVisibility.INTERNAL, "Reassigned to " + technician.getName() + ": " + reason,
                 now);
-        publish(incident, AuditAction.REASSIGNED, actor, incident.getStatus(), incident.getStatus(),
+        publishFact(incident, actor,
                 "Reassigned from " + previous + " to " + technician.getName() + " by " + actor.getName());
         return views.detail(incident, caller);
     }
 
-    // ------------------------------------------------------------------ lifecycle
+    // ------------------------------------------------------------------ lifecycle (Command pattern)
+
+    // Each action is a small command object; the runner does the steps they all share (see IncidentCommandRunner).
 
     @Transactional
     public IncidentDetail acknowledge(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.ACKNOWLEDGE);
-        IncidentStatus before = incident.getStatus();
-        incident.acknowledge(clock.instant());
-        published(caller, incident, AuditAction.ACKNOWLEDGED, before, "Acknowledged by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new AcknowledgeCommand());
     }
 
     @Transactional
     public IncidentDetail startWork(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.START_WORK);
-        IncidentStatus before = incident.getStatus();
-        incident.startWork(clock.instant());
-        published(caller, incident, AuditAction.WORK_STARTED, before, "Work started by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new StartWorkCommand());
     }
 
     /** The question is saved as a public note so the reporter sees it. */
     @Transactional
     public IncidentDetail requestInfo(AuthenticatedUser caller, Long id, String message) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.REQUEST_INFO);
-        Instant now = clock.instant();
-        IncidentStatus before = incident.getStatus();
-        incident.requestInfo(message, now);
-        addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
-        published(caller, incident, AuditAction.INFO_REQUESTED, before,
-                "Information requested by %s; resolution clock paused");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new RequestInfoCommand(message));
     }
 
     @Transactional
     public IncidentDetail provideInfo(AuthenticatedUser caller, Long id, String message) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.PROVIDE_INFO);
-        Instant now = clock.instant();
-        IncidentStatus before = incident.getStatus();
-        incident.provideInfo(message, now, slaPolicies.resolve(incident.getService(), incident.getPriority())
-                .targets(config.current()).calendar());
-        addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
-        published(caller, incident, AuditAction.INFO_PROVIDED, before,
-                "Information provided by %s; resolution clock resumed, due " + incident.getSla().getResolutionDue());
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new ProvideInfoCommand(message));
     }
 
     @Transactional
     public IncidentDetail resolve(AuthenticatedUser caller, Long id, String rootCause, String notes, String steps,
                                   Integer timeSpentMinutes, boolean reusableSolution) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.RESOLVE);
-        Resolution resolution = new Resolution(rootCause, notes, steps,
-                timeSpentMinutes == null ? 0 : timeSpentMinutes, reusableSolution);
-        IncidentStatus before = incident.getStatus();
-        incident.resolve(resolution, clock.instant());
-        published(caller, incident, AuditAction.RESOLVED, before, "Resolved by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id,
+                new ResolveCommand(rootCause, notes, steps, timeSpentMinutes, reusableSolution));
     }
 
     @Transactional
     public IncidentDetail verify(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.VERIFY);
-        IncidentStatus before = incident.getStatus();
-        incident.verify(clock.instant());
-        published(caller, incident, AuditAction.VERIFIED, before, "Fix confirmed by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new VerifyCommand());
     }
 
     @Transactional
     public IncidentDetail close(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.CLOSE);
-        IncidentStatus before = incident.getStatus();
-        incident.close(ClosureReason.VERIFIED, clock.instant());
-        published(caller, incident, AuditAction.CLOSED, before, "Closed by %s (reason VERIFIED)");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new CloseCommand());
     }
 
     /** Restarts the resolution clock with the full target of the incident's SLA; the reason is a public note. */
     @Transactional
     public IncidentDetail reopen(AuthenticatedUser caller, Long id, String reason) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.REOPEN);
-        AppSettings settings = config.current();
-        SlaPolicy policy = slaPolicies.resolve(incident.getService(), incident.getPriority());
-        Instant now = clock.instant();
-        IncidentStatus before = incident.getStatus();
-        incident.reopen(reason, now, settings.reopenWindow(), policy.targets(settings));
-        addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, "Reopened: " + reason, now);
-        published(caller, incident, AuditAction.REOPENED, before,
-                "Reopened by %s; resolution clock restarted, due " + incident.getSla().getResolutionDue());
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new ReopenCommand(reason));
     }
 
     // ------------------------------------------------------------------ comments
@@ -405,25 +372,23 @@ public class IncidentService {
         }
         IncidentComment saved = comments.save(
                 new IncidentComment(incident, loadUser(caller.id()), chosen, body, clock.instant()));
-        published(caller, incident, AuditAction.COMMENT_ADDED, incident.getStatus(),
-                chosen == CommentVisibility.INTERNAL ? AuditRecord.INTERNAL_PREFIX + " added by %s"
-                        : "Comment added by %s");
+        // a comment is a separate record, not a change of the incident itself, so the incident has no fact for it
+        User author = loadUser(caller.id());
+        IncidentStatus status = incident.getStatus();
+        publish(incident, new IncidentFact(AuditAction.COMMENT_ADDED, status, status), author,
+                (chosen == CommentVisibility.INTERNAL ? AuditRecord.INTERNAL_PREFIX + " added by %s"
+                        : "Comment added by %s").formatted(author.getName()));
         return views.comment(saved);
     }
 
     // ------------------------------------------------------------------ helpers
 
-    /** Publishes the event of an action the caller just performed; {@code template} has one %s for the name. */
-    private void published(AuthenticatedUser caller, Incident incident, AuditAction action, IncidentStatus before,
-                           String template) {
-        User actor = loadUser(caller.id());
-        publish(incident, action, actor, before, incident.getStatus(), template.formatted(actor.getName()));
+    private void publishFact(Incident incident, User actor, String description) {
+        publisher.publishFact(incident, actor, description);
     }
 
-    private void publish(Incident incident, AuditAction action, User actor, IncidentStatus before,
-                         IncidentStatus after, String description) {
-        events.publishEvent(new IncidentChanged(incident.getId(), incident.getCode(), action,
-                actor == null ? null : actor.getId(), before, after, description, clock.instant()));
+    private void publish(Incident incident, IncidentFact fact, User actor, String description) {
+        publisher.publish(incident, fact, actor, description);
     }
 
     private static String priorityText(Incident incident) {

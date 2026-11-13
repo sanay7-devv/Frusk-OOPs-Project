@@ -1281,7 +1281,7 @@ flowchart LR
 | `SecurityAuditEvent` | failed login, any 403, role change, settings change | in its **own** transaction, so it survives the failed request |
 | `TriageNeeded` | a new incident could not be assigned | not audited (for M9 notifications) |
 
-Creating an incident leaves four entries: INCIDENT_CREATED (by the reporter), CLASSIFIED, PRIORITY_CALCULATED (score, rule and deadlines) and ASSIGNED (by the system, naming the strategy).
+Inside the aggregate, every move records a fact (`IncidentFact`: action, status before, status after); the service drains the facts after the action and publishes one `IncidentChanged` per fact, adding the actor and the wording. An action that recorded no fact cannot be published and fails loudly (DEC-46, C2). Creating an incident leaves four entries: INCIDENT_CREATED (by the reporter), CLASSIFIED, PRIORITY_CALCULATED (score, rule and deadlines) and ASSIGNED (by the system, naming the strategy).
 
 ### 12.2 Who sees what
 
@@ -1550,7 +1550,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Template Method** | ✅ in use | `FactorStrategy.rank` is final: it scores every candidate, sorts best first and applies the tie-break; subclasses (`CompositeStrategy`, `SkillBasedStrategy`, `LoadBasedStrategy`, `ExperiencePriorityStrategy`) only supply `score` (section 10.3). |
 | **Strategy** (third use) | ✅ in use | `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`: an SLA policy chooses how time is counted (section 11.3). |
 | **Policy object** | ✅ in use | `IncidentAccessPolicy` holds every "who may do what" rule in one class, separate from the State pattern's "is it legal now" (section 8.4). |
-| **Command** | ⬜ planned (DEC-46) | One command object per incident action behind a shared runner, replacing the repeated steps in `IncidentService`. |
+| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with eight implementations (`AcknowledgeCommand` ... `ReopenCommand`) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
 
 ---
 
@@ -1640,6 +1640,8 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-07 | Business-hours SLA calendar (section 11.3, D-016): `WorkCalendar`, `BusinessHoursCalendar`, `sla.business.*` settings, BUSINESS_HOURS policies; fixed E-022 (calendar_type too short for BUSINESS_HOURS). |
 | 2026-11-10 | Repository moved into the shared team repo and the backend placed in `backend/` beside `frontend/` (D-017, DEC-41). No code or behavior change; Maven commands run from `backend/`. |
 | 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook; new `docs/TEAM_UPDATES.md` tells teammates what differs from the handbook PDFs. |
+| 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
+| 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
 
 ---
 
