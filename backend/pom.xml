@@ -91,6 +91,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- PDF export of the post-incident report (decision DEC-64) -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>3.0.5</version>
+        </dependency>
+
         <!-- OpenAPI 3 / Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>

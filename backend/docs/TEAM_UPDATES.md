@@ -2,7 +2,7 @@
 
 > **Read this first.** The five handbook PDFs (dated 2026-10-15) are frozen and are not in this repository. This page lists every point where the project now differs from them, per role. Where this page and a handbook disagree, this page wins. Reasons are in `DECISIONS.md` (DEC numbers); the order of work is in `ROADMAP.md` section 5.
 
-Last updated: 2026-11-13 (M9)
+Last updated: 2026-11-14 (M9, M10, M12 core)
 
 ---
 
@@ -22,8 +22,9 @@ Last updated: 2026-11-13 (M9)
 | Demo | Docker Compose | Unchanged: the recorded demo runs locally with Docker Compose. Cloud deployment is the last priority | DEC-45 |
 | Grading | Summary table in section 1.2 | Use the rubric in the course brief; our plan against it is `ROADMAP.md` section 8 | DEC-43 |
 
-**Built so far (backend):** M1 to M9 (M9 notifications: five channels, inbox API, preferences, WebSocket push): users and login, catalog and live settings, incidents with the full lifecycle, priority, five assignment strategies with explainable recommendations, SLA monitor with warnings and violations, audit trail.
-**Not built yet:** M9 notifications, M10 reports, M11 escalation, M12 AI features, M13 real-time and graph, M14 hardening, Google sign-in.
+**Built so far (backend):** M1 to M10 and the core of M12: users and login, catalog and live settings, incidents with the full lifecycle, priority, five assignment strategies with explainable recommendations, SLA monitor with warnings and violations, audit trail, notifications (M9), search and reports (M10), suggestions, similar incidents and SLA risk (M12 core).
+**Not built yet:** M11 escalation (decided, being merged), the rest of M12 (duplicate check, problem records, Major Incident Mode, chatbot), M13 real-time and graph, M14 hardening, Google sign-in.
+
 
 ### New features accepted on 2026-11-13 (none built yet)
 
@@ -56,6 +57,13 @@ Last updated: 2026-11-13 (M9)
   4. Administrator: all incidents, audit log, SLA violations, config, services, categories, SLA policies, users.
   5. Dashboard, reports, service graph (their endpoints arrive with M10 and M13).
 - **Endpoints you can use today** are every operation in the contract without the tag Planned. The report form already calls `/intelligence/*` and `/notifications/*`; those are still Planned (M12, M9).
+- **M10 endpoints (live 2026-11-14), all in the standard error body:**
+  - `GET /incidents` now also takes `slaState` (`OK`, `WARNING`, `VIOLATED`, `PAUSED`, `MET`; `AT_RISK` is empty until M12). It reads the flags the SLA monitor wrote, so a list can trail the detail view by up to one monitor interval (60 s).
+  - Reports, for every logged-in user, counting only the incidents that user may see: `GET /reports/overview`, `/services`, `/trends?bucket=day|week`, `/priority-distribution`, `/category-distribution`, `/sla-compliance?groupBy=priority|service|technician` (all with optional `from`, `to`); `GET /reports/export?type=incidents|overview|services|trends|priority-distribution|category-distribution|sla-compliance|workload` returns CSV. Staff only (team lead, admin): `GET /reports/workload` and `GET /reports/coverage-risk?onlyFlagged=` (E3). Shapes are in `iitsm-api.json`.
+  - Post-incident report (E4): `GET /incidents/{id}/post-incident-report` (JSON: timeline, `timeInStatus`, `sla`, `people`, `resolution`) and `.../pdf` (download).
+  - Feedback: `POST /incidents/{id}/feedback {rating 1-5, comment}` returns 201; show the form when `allowedActions` contains `GIVE_FEEDBACK`; `IncidentDetail.feedback` is `{rating, comment, createdAt}` or null.
+  - Saved views: `GET /saved-filters`, `POST /saved-filters {name, filter}`, `DELETE /saved-filters/{id}`; `filter` holds the same keys as `GET /incidents` (`status` and `priority` as arrays).
+  - Priority what-if: `POST /priority/what-if {incidentId | serviceId+categoryId, impact, urgency, affectedUsers}` returns `current`, `whatIf`, `changed`, `scoreDifference`; use it for a live preview while the user moves the sliders. It changes nothing.
 - **Rules to follow:**
   - Never re-implement permissions: `IncidentDetail.allowedActions` says which buttons to show.
   - Send `version` on `PUT /incidents/{id}`; on 409 `OPTIMISTIC_LOCK_CONFLICT` reload and retry.
@@ -81,6 +89,7 @@ Last updated: 2026-11-13 (M9)
   - The trigger that rejects UPDATE and DELETE on `audit_records`.
   - One new table, `audit_seals` (id, from_id, to_id, record_count, hash, prev_hash, created_at), for the sealed audit trail.
   - `sla_violations` as in Appendix A.3.
+- **M10 (2026-11-14):** two new tables from Appendix A.4, `feedback` (`incident_id` PK FK, `rating` SMALLINT CHECK 1 to 5, `comment` TEXT, `created_at`) and `saved_filters` (`id`, `user_id` FK, `name` VARCHAR(60), `filter_json` JSONB, `created_at`); both are created by the entities under `schema-auto`. New settings: `report.export.max.rows`, `report.trend.max.buckets`, `coverage.window.days`, `coverage.min.criticality`, `coverage.min.holders`, `saved.filters.max` (the settings count grows by these six). New smoke suite `m10_smoke.py`; `m4_smoke.py` now expects `GIVE_FEEDBACK` in a closed incident's actions and `endpoint_sweep.py` calls every M10 endpoint. Class names and expected values for unit tests are in `ROADMAP.md` section 7 (M10 line). The reports are native SQL (PostgreSQL), so report tests need the Testcontainers database.
 - **Seed data:** if `app_config` is seeded, values must pass validation: the five assignment weights (including `assignment.weight.familiarity`) must add up to 1.0 and priority bands must descend, or startup fails. A category named "Security" triggers override rule 1.
 - **Docker Compose and CI** are not in the repository yet.
 - **Tests:** only one test exists. Everything under `src/test` is yours, as in the handbook: unit, integration and boundary tests for the 26 documented cases. (A version of this page from earlier on 2026-11-13 said the backend lead writes domain unit tests; that was a mistake and is withdrawn.) The backend lead supplies class names and expected values (`ROADMAP.md` section 7) and the smoke scripts. Suggested addition: architecture rule tests proving `domain` imports no Spring or web code. Expected values for assignment use the five-factor weights. For time-based cases use a fixed `Clock`; scheduling is off in the test profile (`app.scheduling.enabled=false`), so call `SlaMonitor.runOnce()` directly.
@@ -101,11 +110,12 @@ Last updated: 2026-11-13 (M9)
 - **Design patterns:** the seven in the handbook, plus Template Method (already in the code) and Command (planned). See `SYSTEM_GUIDE.md` sections 14.2 and 14.3.
 - **Ready-made material:**
   - `SYSTEM_GUIDE.md`: diagrams and a description of every built module.
-  - `DECISIONS.md`: 47 decisions with options, reasons and likely examiner questions.
+  - `DECISIONS.md`: 47 decisions (66 with M10) with options, reasons and likely examiner questions.
   - `ERROR_LOG.md`: the record of bugs found and fixed; cite it for the rubric's "bug resolution".
   - `ROADMAP.md` section 8: our plan against each rubric line.
   - `DECISIONS.md` DEC-45: the run sheet for the 15 to 20 minute video.
   - `DECISIONS.md` DEC-47: which feature answers which challenge named in the brief.
+- **M10 (2026-11-14):** reports are scoped by the viewer's role (an employee's overview counts only their own incidents) and computed in the database, so every number can be proven against a direct count: see `SYSTEM_GUIDE.md` section 12A and `DECISIONS.md` DEC-60 to DEC-66. Good demo material: E3 coverage risk (a critical service with one holder, then that technician goes off duty), E4 post-incident report and PDF, the CSV formula-injection protection (DEC-62), the priority what-if.
 - **State openly in the report:** team leads see all incidents; the system runs as one instance (settings cache, rate limits and the message broker are in memory); the demo is local.
 - **Still needed from you:** notification wording, the AI prompts, the labelled evaluation set, and seed incident text. Demo data should use the institute's own IT services (DEC-43, A14).
 
