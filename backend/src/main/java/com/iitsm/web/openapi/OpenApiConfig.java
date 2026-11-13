@@ -25,7 +25,7 @@ import io.swagger.v3.oas.models.tags.Tag;
 public class OpenApiConfig {
 
     public static final String BEARER_SCHEME = "bearerAuth";
-    public static final String CONTRACT_VERSION = "1.0.0-m9";
+    public static final String CONTRACT_VERSION = "1.0.0-m12";
 
     private static final String DESCRIPTION = """
             Intelligent IT Service Management and Incident Resolution System: REST API contract.
