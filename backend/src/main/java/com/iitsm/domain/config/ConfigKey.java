@@ -62,6 +62,9 @@ public enum ConfigKey {
             Type.DATES),
     ESCALATION_MONITOR_INTERVAL_SECONDS("escalation.monitor.interval.seconds", "60",
             "How often the escalation monitor runs", Type.INTEGER, "5", "3600"),
+    ESCALATION_EXHAUSTED_MINUTES("escalation.exhausted.minutes", "15",
+            "Minutes an unacknowledged P1 or P2 may stay at level 3 before the one final 'escalation exhausted' alert",
+            Type.INTEGER, "1", "1440"),
 
     DUP_THRESHOLD_DUPLICATE("dup.threshold.duplicate", "0.80", "Similarity from which an incident is a likely duplicate",
             Type.DECIMAL, "0", "1"),
@@ -75,6 +78,8 @@ public enum ConfigKey {
 
     VERIFY_AUTO_HOURS("verify.auto.hours", "48", "Hours after which a resolved incident is verified automatically",
             Type.DECIMAL, "0.01", "720"),
+    VERIFY_MONITOR_INTERVAL_SECONDS("verify.monitor.interval.seconds", "300",
+            "How often the auto-verify job looks for resolved incidents nobody confirmed", Type.INTEGER, "5", "3600"),
     REOPEN_WINDOW_DAYS("reopen.window.days", "7", "Days after closure during which an incident can be reopened",
             Type.INTEGER, "1", "90"),
     AI_PRIMARY("ai.primary", "LLM", "Primary text analysis engine (falls back to KEYWORD on failure)", Type.CHOICE,

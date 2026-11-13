@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.audit.AuditService.AuditEntryView;
 import com.iitsm.application.auth.AuthenticatedUser;
+import com.iitsm.application.escalation.EscalationService;
 import com.iitsm.application.incident.IncidentService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
@@ -61,9 +62,11 @@ public class IncidentController {
     private static final Set<String> SORT_FIELDS = Set.of("createdAt", "priority", "status", "code", "resolutionDue");
 
     private final IncidentService incidents;
+    private final EscalationService escalation;
 
-    public IncidentController(IncidentService incidents) {
+    public IncidentController(IncidentService incidents, EscalationService escalation) {
         this.incidents = incidents;
+        this.escalation = escalation;
     }
 
     @PostMapping
@@ -164,6 +167,19 @@ public class IncidentController {
     public IncidentDetail reassign(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                    @Valid @RequestBody ReassignRequest request) {
         return incidents.reassign(caller, id, request.technicianId(), request.reason());
+    }
+
+    @PostMapping("/{id}/escalate")
+    @Operation(summary = "Raise the escalation level by one (assignee, team lead, admin); the status does not change")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.VALIDATION_FAILED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
+    public IncidentDetail escalate(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                   @Valid @RequestBody ReasonRequest request) {
+        return escalation.escalate(caller, id, request.reason());
     }
 
     @PostMapping("/{id}/acknowledge")

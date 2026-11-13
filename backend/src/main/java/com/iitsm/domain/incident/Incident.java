@@ -68,6 +68,12 @@ import jakarta.persistence.Version;
                 @CheckConstraint(name = "ck_incidents_escalation_level", constraint = "escalation_level BETWEEN 0 AND 3")})
 public class Incident {
 
+    /**
+     * Start of the audit description of the one final "escalation exhausted" alert (DEC-49). The audit trail is the
+     * memory that the alert was already raised, so no column is needed; see AuditRepository.hasEscalationExhausted.
+     */
+    public static final String EXHAUSTED_PREFIX = "Escalation exhausted at level 3";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -270,6 +276,39 @@ public class Incident {
         recorded(AuditAction.REASSIGNED, () -> state().reassign(this, technician, now));
     }
 
+    /**
+     * A person escalates by hand (ASSIGNED, ACKNOWLEDGED or IN_PROGRESS): the level goes up by one and the status
+     * does not change (handbook 1.8). Refused at level 3.
+     */
+    public void escalate(Instant now) {
+        recorded(AuditAction.ESCALATED, () -> state().escalate(this, now));
+    }
+
+    /**
+     * The escalation monitor raises an incident nobody has acknowledged (ASSIGNED, or unassigned in triage, DEC-48).
+     * Refused for any incident somebody is already working on.
+     */
+    public void escalateUnattended(Instant now) {
+        recorded(AuditAction.ESCALATED, () -> state().escalateUnattended(this, now));
+    }
+
+    /**
+     * Records the one final "escalation exhausted" alert (DEC-49): nothing about the incident changes, but the fact
+     * becomes an audit entry. Only legal at level 3 for an incident nobody has acknowledged.
+     */
+    public void recordEscalationExhausted(Instant now) {
+        if (escalationLevel != 3 || !isUnattended()) {
+            throw new IllegalStateException("Escalation is not exhausted for " + code);
+        }
+        touch(now);
+        facts.add(new IncidentFact(AuditAction.ESCALATED, status, status));
+    }
+
+    /** True while nobody has acknowledged it: ASSIGNED, or still in triage with no technician. */
+    public boolean isUnattended() {
+        return state().isUnattended(this);
+    }
+
     /** The transitions legal in the current status (who may perform them is checked separately). */
     public Set<IncidentAction> legalTransitions(Instant now, Duration reopenWindow) {
         return state().legalActions(this, now, reopenWindow);
@@ -354,6 +393,11 @@ public class Incident {
 
     void moveTo(IncidentStatus next, Instant now) {
         status = next;
+        touch(now);
+    }
+
+    void raiseEscalationLevel(Instant now) {
+        escalationLevel++;
         touch(now);
     }
 

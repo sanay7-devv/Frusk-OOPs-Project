@@ -52,8 +52,11 @@ public class IncidentAccessPolicy {
             case CLOSE -> admin;
             case REOPEN -> reporter || admin;
             case OVERRIDE_PRIORITY -> caller.can(PermissionKey.INCIDENT_OVERRIDE_PRIORITY);
-            // escalation (M11), duplicates (M12) and feedback come with their modules
-            case ESCALATE, MARK_DUPLICATE, GIVE_FEEDBACK -> false;
+            // the assignee, a team lead (INCIDENT_VIEW_TEAM) or an administrator (API Data Dictionary C.5)
+            case ESCALATE -> (assignee && caller.can(PermissionKey.INCIDENT_HANDLE))
+                    || caller.can(PermissionKey.INCIDENT_VIEW_TEAM) || admin;
+            // duplicates (M12) and feedback come with their modules
+            case MARK_DUPLICATE, GIVE_FEEDBACK -> false;
         };
     }
 

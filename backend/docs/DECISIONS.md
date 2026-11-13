@@ -63,6 +63,10 @@
 | [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
 | [DEC-48](#dec-48-an-unassigned-p1-or-p2-in-triage-escalates-from-level-0) | An unassigned P1 or P2 in triage escalates from level 0 | 2026-11-13 | M11 | ✅ user decision |
 | [DEC-49](#dec-49-one-final-alert-when-escalation-is-exhausted) | One final alert when escalation is exhausted | 2026-11-13 | M11 | ✅ user decision |
+| [DEC-50](#dec-50-how-the-escalation-chain-moves) | How the escalation chain moves | 2026-11-14 | M11 | ✅ timer and exhausted wait chosen by the user |
+| [DEC-51](#dec-51-escalation-preview-as-a-field-of-the-incident-detail) | Escalation preview as a field of the incident detail | 2026-11-14 | M11 | ✅ user decision |
+| [DEC-52](#dec-52-the-demo-clock-is-a-forward-only-offset) | The demo clock is a forward-only offset | 2026-11-14 | M11 | ✅ user decision |
+| [DEC-53](#dec-53-auto-verify-job) | Auto-verify job | 2026-11-14 | M11 | ✅ |
 
 ---
 
@@ -1088,3 +1092,71 @@ Smaller rules the handbook left open:
 **Trade-off.** "Once per incident" needs a remembered fact; the incident already stores `escalation_level` (0 to 3), so the monitor can tell level 3 from "exhausted" with the audit trail (one exhausted entry exists) and needs no new column.
 
 **Cross-questions.** *"Why not keep alerting?"* A repeating alert to people who already ignored three of them adds noise, not action; the SLA violation alerts are the continuing signal. *"Who counts as all administrators?"* Every user with the administrator role, as in the SLA violation notification.
+
+### DEC-50: How the escalation chain moves
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M11 | ✅ the timer anchor and the exhausted wait were chosen by the user; the rest follows DEC-42, DEC-48, DEC-49 | User (recommended option for the anchor, a new setting for the exhausted wait) |
+
+**Context.** DEC-48 and DEC-49 say what the chain covers; they do not say how the monitor measures "how long at this level", what the final alert waits for, or what to do at a level nobody holds.
+
+**Decision.**
+1. **Chain of Responsibility.** `EscalationHandler` is the abstract link; `TechnicianHandler` (0), `TeamLeadHandler` (1), `SystemAdminHandler` (2) and `ItManagerHandler` (3) each own one level. A handler passes an incident at another level to the next link; for its own level it returns the step to perform once the time its level may take has passed. The time comes from the `escalation_policies` row of the level above (the row says "minutes at the previous level before moving up to this one"). The domain classes know nothing about Spring.
+2. **The timer (user's choice).** "How long at this level" is the newest of: creation, ASSIGNED, REASSIGNED, ESCALATED and PRIORITY_CHANGED in the audit trail. No new column. A reassignment restarts the timer and keeps the level (DEC-42), so a reassign cannot hide a critical incident; a priority raised to P1 starts its timers then, not at creation.
+3. **The exhausted wait (user's choice).** The incident stays at level 3 for the new setting `escalation.exhausted.minutes` (default 15, 1 to 1440) before the one final alert of DEC-49.
+4. **"Once per incident" without a column.** The exhausted alert is an ESCALATED audit entry whose description starts with `Incident.EXHAUSTED_PREFIX` ("Escalation exhausted at level 3"); the monitor checks for such an entry. A text prefix is the one place we accept a text rule here (see C3 in DEC-46); it is one constant, in the domain, with a repository method named for it.
+5. **A level nobody holds is passed over (DEC-42).** The incident climbs on in the same run: each hop is its own audit entry and event, and the passed-over one has no recipients and says "nobody holds this level, passed over". Level 3 always stays, even if empty, because the exhausted alert goes to all administrators. A manual escalation raises exactly one level and does not skip.
+6. **Assigning an incident that is in triage (reading of DEC-48).** "Assigning or acknowledging it stops the climb" is read as: the triage climb (no technician) stops, the technician gets a fair window (the assignment restarts the timer, level kept) and the incident is then an ordinary unacknowledged assigned incident; acknowledging stops everything. The alternative reading, that an assigned incident never climbs again, would contradict the rule for incidents assigned from the start, so it was not built. **If the user meant the alternative, it is a small change in `IncidentState.isUnattended`.**
+7. **What the monitor publishes.** One `IncidentChanged` (action ESCALATED, written to the audit trail by `AuditListener` in the same transaction) and one `IncidentEscalated` per hop; for the final alert one `IncidentChanged` and one `EscalationExhausted`. The notification module (M9) sends INCIDENT_ESCALATED to `recipientIds`; for the exhausted alert it uses the same type with its own wording, to every administrator, with SMS for P1.
+8. **Who may escalate by hand.** The assignee (needs INCIDENT_HANDLE), a team lead (INCIDENT_VIEW_TEAM) or an administrator (INCIDENT_VIEW_ALL), from ASSIGNED, ACKNOWLEDGED and IN_PROGRESS, never at level 3 (409). The status does not change (handbook 1.8). The reason is an internal note, hidden from the reporter.
+
+**Options considered (timer anchor).**
+
+| Option | For | Against |
+|---|---|---|
+| **A. Newest of creation, assign, reassign, escalate, priority change** ✔ | Fair window for each new owner; no new column | One audit query per watched incident per run |
+| B. A reassignment resets the level to 0 | Easy to say | A reassign loop hides a critical incident |
+| C. Counted from creation only | No lookup | An incident assigned late gives the technician almost no time |
+
+**Options considered (exhausted wait).** Same time as the level-3 policy (no new setting), a new setting (chosen), or at once on reaching level 3 (the manager gets no time to react).
+
+**Trade-offs.** One more setting to explain; the exhausted alert depends on a text prefix. A busy run costs one small query per candidate (P1 and P2 only, never acknowledged ones).
+
+**Cross-questions.** *"Why does a reassigned P1 not start again at level 0?"* The chain exists because the first owner did not react; a new owner does not make the incident less urgent. *"Can two monitors escalate the same incident twice?"* No: the incident row has a version, so one of two concurrent writers gets a conflict and retries next run, and a second run finds the timer restarted by the first entry. *"What if M9 is not merged?"* The audit entries and the two events are complete without it; M9 only listens.
+
+### DEC-51: Escalation preview as a field of the incident detail
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M11 (A11) | ✅ user decision | User (recommended option) |
+
+**Decision.** `IncidentDetail` gets `escalationPreview`: `{kind (RAISE or EXHAUSTED), fromLevel, toLevel, targetRole, dueAt, secondsRemaining, recipients: [{id, name}]}`, or null when nothing is coming (not P1 or P2, acknowledged, already exhausted). It is computed by the same planner as the monitor, so the preview and the real escalation cannot disagree. Only staff see it: the assignee, team leads and administrators; the reporter gets null (the list of people to be woken is not for them).
+
+**Options.** A field on the detail (chosen: no extra call, shows on the incident screen), a separate `GET /incidents/{id}/escalation-preview` (extra call), both (more surface).
+
+**Cross-questions.** *"Does this slow the lists?"* No. Only the detail computes it; lists do not.
+
+### DEC-52: The demo clock is a forward-only offset
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M11 (D1) | ✅ user decision | User (recommended option) |
+
+**Decision.** In the `demo` profile only, the `Clock` bean is an `AdjustableClock`: the system clock plus an offset that an administrator can only increase, `POST /admin/demo/clock/advance {minutes}` (1 to 1440 per call), `GET /admin/demo/clock` (current time and offset). Both need CONFIG_MANAGE, both exist only in the `demo` profile (`@Profile("demo")` on the controller and on `DemoClockConfig`; `ClockConfig` is `@Profile("!demo")`), and every advance is a CONFIG_CHANGED audit entry. Scheduled jobs keep running in real time (every 15 to 30 seconds in the demo) and read the moved clock, so a hop happens within one monitor interval after the advance.
+
+**Options.** Offset only (chosen: deterministic, nothing runs fast), offset plus a speed multiplier (livelier, but timestamps and job intervals become confusing), offset with reset (handy between takes, but time going backwards breaks audit order and SLA flags).
+
+**Things to know for the recording.** The access token is judged against the same clock: after advancing more than 15 minutes the next call may answer TOKEN_EXPIRED; refresh it (the refresh token lasts 7 days). It is for the recorded demo only; the production and test profiles cannot reach it.
+
+**Cross-questions.** *"Is this not a back door?"* It does not exist as a bean or a route unless the profile is `demo`, which is never the production profile; the permission is the same one that guards settings.
+
+### DEC-53: Auto-verify job
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M11 (G2) | ✅ | Backend lead (follows DEC-46) |
+
+**Decision.** `AutoVerifyMonitor` finds incidents RESOLVED at least `verify.auto.hours` ago (existing key, default 48, demo 0.033), re-checks each inside its own transaction, moves it to VERIFIED and then CLOSED with `ClosureReason.AUTO_VERIFIED`; both steps are audit entries with no actor. Idempotent (a closed incident is no longer RESOLVED). The interval is a new setting `verify.monitor.interval.seconds` (default 300, demo 30), read again after every run, like the other monitors, instead of the property `app.autoverify.monitor-interval-seconds` that only existed in the demo properties file (that property is now unused; the demo seed should set the new key to 30).
+
+**Cross-questions.** *"What if the reporter replies at the same moment?"* The transaction re-reads the incident; the version column makes one of the two writers lose, and the loser is retried or refused cleanly.
