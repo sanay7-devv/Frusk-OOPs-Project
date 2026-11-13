@@ -23,7 +23,7 @@ info:
     **Real-time** (module M13, planned): STOMP over WebSocket at `/ws` with the access token; topics
     `/user/queue/notifications` (Notification) and `/topic/dashboard` (DashboardEvent and counters).
   title: I-ITSM API
-  version: 1.0.0-m8
+  version: 1.0.0-m9
 servers:
 - description: Local backend
   url: http://localhost:8080
