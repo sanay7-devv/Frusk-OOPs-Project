@@ -80,6 +80,19 @@ public enum ConfigKey {
     AI_PRIMARY("ai.primary", "LLM", "Primary text analysis engine (falls back to KEYWORD on failure)", Type.CHOICE,
             "LLM", "KEYWORD"),
 
+    // search, reports and coverage risk (module M10)
+    REPORT_EXPORT_MAX_ROWS("report.export.max.rows", "10000", "Most rows a CSV export writes", Type.INTEGER, "1", "100000"),
+    REPORT_TREND_MAX_BUCKETS("report.trend.max.buckets", "400", "Most days or weeks one trend report may span",
+            Type.INTEGER, "1", "5000"),
+    COVERAGE_WINDOW_DAYS("coverage.window.days", "90",
+            "How far back incidents tie a service to the categories it needs (coverage risk report)", Type.INTEGER,
+            "1", "365"),
+    COVERAGE_MIN_CRITICALITY("coverage.min.criticality", "4",
+            "Services from this criticality on are flagged when coverage is thin", Type.INTEGER, "1", "5"),
+    COVERAGE_MIN_HOLDERS("coverage.min.holders", "2",
+            "Available technicians a flagged service's category needs at least", Type.INTEGER, "1", "50"),
+    SAVED_FILTERS_MAX("saved.filters.max", "20", "Most saved incident views one user may keep", Type.INTEGER, "1", "200"),
+
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
     SECURITY_LOCKOUT_MINUTES("security.lockout.minutes", "15", "Minutes an account stays locked",

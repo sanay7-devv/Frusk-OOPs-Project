@@ -499,8 +499,6 @@ public class IncidentService {
     }
 
     private static IncidentQuery withVisibility(IncidentQuery q, Long userId) {
-        return new IncidentQuery(userId, q.statuses(), q.priorities(), q.categoryId(), q.serviceId(),
-                q.assigneeId(), q.reporterId(), q.code(), q.text(), q.createdFrom(), q.createdTo(), q.page(),
-                q.size(), q.sortField(), q.ascending());
+        return q.visibleTo(userId);
     }
 }

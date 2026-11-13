@@ -27,6 +27,7 @@ import com.iitsm.application.incident.IncidentViews.IncidentSummary;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.incident.IncidentQuery;
 import com.iitsm.domain.incident.IncidentStatus;
+import com.iitsm.domain.incident.SlaState;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.web.dto.PageResponse;
 import com.iitsm.web.dto.incident.AssignRequest;
@@ -88,6 +89,7 @@ public class IncidentController {
             @RequestParam(required = false) Long serviceId,
             @RequestParam(required = false) Long assigneeId,
             @RequestParam(required = false) Long reporterId,
+            @RequestParam(required = false) SlaState slaState,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo,
             @RequestParam(defaultValue = "false") boolean mine,
@@ -103,7 +105,7 @@ public class IncidentController {
         boolean ascending = sortParts.length > 1 && sortParts[1].strip().equalsIgnoreCase("asc");
         IncidentQuery query = new IncidentQuery(null, status, priority, categoryId, serviceId,
                 assignedToMe ? caller.id() : assigneeId, mine ? caller.id() : reporterId, code, q, createdFrom,
-                createdTo, page, size, sortField, ascending);
+                createdTo, page, size, sortField, ascending, slaState);
         return PageResponse.of(incidents.list(caller, query));
     }
 

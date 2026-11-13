@@ -1,6 +1,7 @@
 package com.iitsm.infrastructure.persistence;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,9 @@ public interface JpaSlaViolationRepository extends Repository<SlaViolation, Long
             + "where v.createdAt >= :from and v.createdAt < :to",
             countQuery = "select count(v) from SlaViolation v where v.createdAt >= :from and v.createdAt < :to")
     Page<SlaViolation> findPage(Instant from, Instant to, Pageable pageable);
+
+    @Override
+    List<SlaViolation> findByIncident_IdOrderByCreatedAtAsc(Long incidentId);
 
     @Override
     default PageSlice<SlaViolation> findRecorded(Instant from, Instant to, int page, int size) {

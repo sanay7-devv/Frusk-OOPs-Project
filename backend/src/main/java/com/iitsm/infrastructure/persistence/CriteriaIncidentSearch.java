@@ -1,5 +1,6 @@
 package com.iitsm.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -10,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.iitsm.domain.incident.Incident;
 import com.iitsm.domain.incident.IncidentQuery;
+import com.iitsm.domain.incident.IncidentStatus;
+import com.iitsm.domain.incident.SlaState;
 import com.iitsm.domain.repository.IncidentSearch;
 import com.iitsm.domain.repository.PageSlice;
 
@@ -37,6 +40,9 @@ public class CriteriaIncidentSearch implements IncidentSearch {
             "status", "status",
             "code", "code",
             "resolutionDue", "sla.resolutionDue");
+
+    private static final List<IncidentStatus> FINISHED =
+            List.of(IncidentStatus.RESOLVED, IncidentStatus.VERIFIED, IncidentStatus.CLOSED);
 
     @PersistenceContext
     private EntityManager em;
@@ -110,7 +116,42 @@ public class CriteriaIncidentSearch implements IncidentSearch {
         if (q.createdTo() != null) {
             where.add(cb.lessThan(root.get("createdAt"), q.createdTo()));
         }
+        if (q.slaState() != null) {
+            where.add(slaState(cb, root, q.slaState()));
+        }
         return where.toArray(Predicate[]::new);
+    }
+
+    /**
+     * The SLA state filter, written from the stored fire-once flags and the status (decision DEC-42): the shown state
+     * of {@code SlaTracker.stateAt} needs business-hours elapsed time, which SQL cannot compute. So this follows
+     * the same branches (no deadline, finished, paused, violated, warned) but reads the flags the SLA monitor wrote,
+     * and can trail the detail view by up to one monitor interval. AT_RISK comes with the risk score (M12).
+     */
+    private static Predicate slaState(CriteriaBuilder cb, Root<Incident> root, SlaState wanted) {
+        Path<Object> sla = root.get("sla");
+        Predicate hasDue = cb.isNotNull(sla.get("resolutionDue"));
+        Predicate finished = root.get("status").in(FINISHED);
+        Predicate open = cb.not(finished);
+        Predicate paused = cb.isNotNull(sla.get("pausedAt"));
+        Predicate violatedFlag = cb.or(cb.isTrue(sla.get("responseViolated")), cb.isTrue(sla.get("resolutionViolated")));
+        Predicate warnedFlag = cb.or(
+                cb.isTrue(sla.get("resolutionFirstWarningSent")), cb.isTrue(sla.get("resolutionSecondWarningSent")),
+                cb.and(cb.isNull(root.get("acknowledgedAt")),
+                        cb.or(cb.isTrue(sla.get("responseFirstWarningSent")),
+                                cb.isTrue(sla.get("responseSecondWarningSent")))));
+        Predicate met = cb.and(hasDue, finished, cb.isNotNull(root.get("resolvedAt")),
+                cb.lessThanOrEqualTo(root.<Instant>get("resolvedAt"), sla.<Instant>get("resolutionDue")),
+                cb.not(violatedFlag));
+        Predicate openRunning = cb.and(hasDue, open, cb.not(paused));
+        return switch (wanted) {
+            case MET -> met;
+            case PAUSED -> cb.and(hasDue, open, paused);
+            case VIOLATED -> cb.or(cb.and(openRunning, violatedFlag), cb.and(hasDue, finished, cb.not(met)));
+            case WARNING -> cb.and(openRunning, cb.not(violatedFlag), warnedFlag);
+            case OK -> cb.or(cb.not(hasDue), cb.and(openRunning, cb.not(violatedFlag), cb.not(warnedFlag)));
+            case AT_RISK -> cb.disjunction();
+        };
     }
 
     private static Path<?> path(Root<Incident> root, String dotted) {
