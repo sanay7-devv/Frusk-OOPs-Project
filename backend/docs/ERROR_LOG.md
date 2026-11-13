@@ -357,3 +357,13 @@ Entry template:
 - Boot 4 specifics: Jackson 3 (`tools.jackson.*` packages), Spring Security 7, Hibernate 7. If a library pulls in Jackson 2, it needs the compatibility module or a different serializer (that is why jjwt uses Gson here). springdoc 3.0.3 was built against Boot 4.0.5, check Maven Central for a newer 3.x if Swagger UI misbehaves on 4.1.1. Check Maven Central for a newer 4.1.x patch of the parent before the first commit.
 - `IitsmBackendApplicationTests.contextLoads` will fail without a running database (or Testcontainers). Expected until the test setup is done by the Testing teammate.
 - Flyway will warn about a missing/empty `db/migration` location until V1 is added.
+
+### E-033: Merging the four parallel module branches (M9, M10, M11, M12)
+
+- Date: 2026-11-14
+- Area: process
+- Symptom: (1) the M12 branch's merge commit `e74f840` had committed git conflict markers inside `DECISIONS.md`; (2) M9 and M11 both used DEC-48 and D-027/D-028, M9 and M10 and M11 each named a guide section 12a; (3) `planned-endpoints.json` conflicted because every branch deleted the operations it had built; (4) after the merge `m11_smoke.py` failed three log checks and `m3_smoke.py` and `endpoint_sweep.py` failed their settings count.
+- Cause: (1) a conflicted merge was committed without removing the markers; (2) parallel sessions picked the next free number independently; (3) a textual merge of one JSON file cannot tell "deleted because built" from "changed"; (4) the m11 checks matched any log line holding the incident code and the word "Escalated", which M9's SMS and chat channels now also log; the setting counts were hard-coded (41).
+- Fix: M12's feature commit `5d993b3` was merged instead of the broken merge commit; ids were renumbered (M9 is DEC-54 and D-028, M12 D-029, M11 D-030 and section 12d, M10 section 12b); `planned-endpoints.json` was merged as JSON (a three-way merge by key); `m11_smoke.py` counts only `EscalationMonitor` log lines; the settings count is 63 (35 plus 6 M9, 6 M10, 2 M11, 14 M12) in the two older suites and in `TEAM_UPDATES.md`.
+- Prevention: before merging parallel branches, grep each one for `<<<<<<<`; give parallel sessions disjoint id ranges up front; regenerate `planned-endpoints.json` from `gen_planned.py` rather than merging it; count settings from `ConfigKey.values().length`, not a literal (Testing teammate).
+- Status: fixed

@@ -18,7 +18,7 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 | Skill score | "Best skill proficiency match" | 70% best proficiency + 30% share of required skills held | DEC-29 |
 | Team lead visibility | "Team lead sees their team" | Team leads see all incidents (the schema has no team) | DEC-26 |
 | SLA calendars | Listed as a Tier 3 extra | Built: a policy is ALWAYS or BUSINESS_HOURS; one company calendar in `app_config` (`sla.business.*`) | DEC-39 |
-| Settings | 27 keys in Appendix A.5 | 60 keys (35, plus six `notification.*` with M9, three `report.*` and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with M12); defaults live in the code, so seed rows are optional | DEC-18 |
+| Settings | 27 keys in Appendix A.5 | 63 keys (35, plus six `notification.*` with M9, six report and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with M12); defaults live in the code, so seed rows are optional | DEC-18 |
 | Demo | Docker Compose | Unchanged: the recorded demo runs locally with Docker Compose. Cloud deployment is the last priority | DEC-45 |
 | Grading | Summary table in section 1.2 | Use the rubric in the course brief; our plan against it is `ROADMAP.md` section 8 | DEC-43 |
 
