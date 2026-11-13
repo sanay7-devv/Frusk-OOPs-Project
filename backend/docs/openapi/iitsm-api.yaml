@@ -23,7 +23,7 @@ info:
     **Real-time** (module M13, planned): STOMP over WebSocket at `/ws` with the access token; topics
     `/user/queue/notifications` (Notification) and `/topic/dashboard` (DashboardEvent and counters).
   title: I-ITSM API
-  version: 1.0.0-m8
+  version: 1.0.0-m9
 servers:
 - description: Local backend
   url: http://localhost:8080
@@ -5843,9 +5843,7 @@ paths:
       x-status: planned
   /api/v1/notifications:
     get:
-      description: "**Planned for M9; not implemented yet.** Who: any. Agreed in the\
-        \ API contract (Appendix B/C)."
-      operationId: planned_get_notifications
+      operationId: list_1
       parameters:
       - in: query
         name: unread
@@ -5853,10 +5851,22 @@ paths:
         schema:
           type: boolean
       - in: query
+        name: channel
+        required: false
+        schema:
+          type: string
+          enum:
+          - IN_APP
+          - EMAIL
+          - WEBSOCKET
+          - SMS_SIM
+          - CHAT
+      - in: query
         name: page
         required: false
         schema:
           type: integer
+          format: int32
           default: 0
           minimum: 0
       - in: query
@@ -5864,6 +5874,7 @@ paths:
         required: false
         schema:
           type: integer
+          format: int32
           default: 20
           maximum: 100
           minimum: 1
@@ -5872,18 +5883,60 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageNotification"
-          description: Success
-      summary: My notifications
+                $ref: "#/components/schemas/PageResponseNotificationView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "My notifications, newest first (the inbox unless channel=SMS_SIM is\
+        \ asked for)"
       tags:
-      - Planned
-      x-module: M9
-      x-status: planned
+      - Notifications
   /api/v1/notifications/preferences:
     get:
-      description: "**Planned for M9; not implemented yet.** Who: any. Agreed in the\
-        \ API contract (Appendix B/C)."
-      operationId: planned_get_notifications_preferences
+      operationId: preferences
       responses:
         "200":
           content:
@@ -5891,24 +5944,51 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/NotificationPreference"
-          description: Success
-      summary: My notification preferences
+                  $ref: "#/components/schemas/PreferenceView"
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "My notification switches: every event type on every personal channel,\
+        \ with locked ones marked"
       tags:
-      - Planned
-      x-module: M9
-      x-status: planned
+      - Notifications
     put:
-      description: "**Planned for M9; not implemented yet.** Who: any. Agreed in the\
-        \ API contract (Appendix B/C)."
-      operationId: planned_put_notifications_preferences
+      operationId: replacePreferences
       requestBody:
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: "#/components/schemas/NotificationPreference"
+                $ref: "#/components/schemas/PreferenceRequest"
         required: true
       responses:
         "200":
@@ -5917,48 +5997,142 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/NotificationPreference"
-          description: Success
-      summary: Replace my notification preferences
+                  $ref: "#/components/schemas/PreferenceView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Replace my notification switches; the inbox and critical alerts cannot
+        be turned off
       tags:
-      - Planned
-      x-module: M9
-      x-status: planned
+      - Notifications
   /api/v1/notifications/read-all:
     post:
-      description: "**Planned for M9; not implemented yet.** Who: any. Agreed in the\
-        \ API contract (Appendix B/C)."
-      operationId: planned_post_notifications_read_all
+      operationId: markAllRead
       responses:
         "204":
-          description: No content
-      summary: Mark all my notifications read
+          description: No Content
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Mark all my inbox notifications read
       tags:
-      - Planned
-      x-module: M9
-      x-status: planned
+      - Notifications
   /api/v1/notifications/unread-count:
     get:
-      description: "**Planned for M9; not implemented yet.** Who: any. Agreed in the\
-        \ API contract (Appendix B/C)."
-      operationId: planned_get_notifications_unread_count
+      operationId: unreadCount
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnreadCount"
-          description: Success
-      summary: Number of unread notifications
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Number of unread inbox notifications
       tags:
-      - Planned
-      x-module: M9
-      x-status: planned
+      - Notifications
   /api/v1/notifications/{id}/read:
     post:
-      description: "**Planned for M9; not implemented yet.** Who: any. Agreed in the\
-        \ API contract (Appendix B/C)."
-      operationId: planned_post_notifications_by_id_read
+      operationId: markRead
       parameters:
       - in: path
         name: id
@@ -5968,12 +6142,69 @@ paths:
           format: int64
       responses:
         "204":
-          description: No content
-      summary: Mark one notification read
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "404":
+          content:
+            application/json:
+              example:
+                code: NOT_FOUND
+                fieldErrors: []
+                message: "No such resource (category, skill, policy) or path."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `NOT_FOUND`: No such resource (category, skill, policy)\
+            \ or path"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Mark one of my notifications read
       tags:
-      - Planned
-      x-module: M9
-      x-status: planned
+      - Notifications
   /api/v1/problems:
     get:
       description: "**Planned for M12; not implemented yet.** Who: admin, team lead.\
@@ -7754,7 +7985,7 @@ components:
           description: "An existing, different incident"
       required:
       - duplicateOfId
-    Notification:
+    NotificationView:
       type: object
       properties:
         channel:
@@ -7764,6 +7995,7 @@ components:
           - EMAIL
           - WEBSOCKET
           - SMS_SIM
+          - CHAT
         createdAt:
           type: string
           format: date-time
@@ -7789,47 +8021,14 @@ components:
           type: integer
           format: int64
         incidentId:
-          oneOf:
-          - type: integer
-            format: int64
-          - type: "null"
+          type: integer
+          format: int64
         message:
           type: string
         read:
           type: boolean
         title:
           type: string
-          maxLength: 60
-    NotificationPreference:
-      type: object
-      properties:
-        channel:
-          type: string
-          enum:
-          - IN_APP
-          - EMAIL
-          - WEBSOCKET
-          - SMS_SIM
-        enabled:
-          type: boolean
-        eventType:
-          type: string
-          enum:
-          - INCIDENT_CREATED
-          - INCIDENT_ASSIGNED
-          - INCIDENT_ACKNOWLEDGED
-          - PRIORITY_CHANGED
-          - INFO_REQUESTED
-          - INFO_PROVIDED
-          - SLA_WARNING
-          - SLA_VIOLATED
-          - INCIDENT_ESCALATED
-          - INCIDENT_RESOLVED
-          - INCIDENT_VERIFIED
-          - INCIDENT_CLOSED
-          - INCIDENT_REOPENED
-          - DUPLICATE_SUSPECTED
-          - TRIAGE_NEEDED
     OverridePriorityRequest:
       type: object
       properties:
@@ -7847,26 +8046,6 @@ components:
       required:
       - priority
       - reason
-    PageNotification:
-      type: object
-      description: One page of Notification (API contract B.1 paging)
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Notification"
-        page:
-          type: integer
-          format: int32
-        size:
-          type: integer
-          format: int32
-        totalItems:
-          type: integer
-          format: int64
-        totalPages:
-          type: integer
-          format: int32
     PageResponseAuditEntryView:
       type: object
       properties:
@@ -7905,6 +8084,25 @@ components:
         totalPages:
           type: integer
           format: int32
+    PageResponseNotificationView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationView"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     PageResponseSlaViolationView:
       type: object
       properties:
@@ -7924,6 +8122,74 @@ components:
         totalPages:
           type: integer
           format: int32
+    PreferenceRequest:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum:
+          - IN_APP
+          - EMAIL
+          - WEBSOCKET
+          - SMS_SIM
+          - CHAT
+        enabled:
+          type: boolean
+        eventType:
+          type: string
+          enum:
+          - INCIDENT_CREATED
+          - INCIDENT_ASSIGNED
+          - INCIDENT_ACKNOWLEDGED
+          - PRIORITY_CHANGED
+          - INFO_REQUESTED
+          - INFO_PROVIDED
+          - SLA_WARNING
+          - SLA_VIOLATED
+          - INCIDENT_ESCALATED
+          - INCIDENT_RESOLVED
+          - INCIDENT_VERIFIED
+          - INCIDENT_CLOSED
+          - INCIDENT_REOPENED
+          - DUPLICATE_SUSPECTED
+          - TRIAGE_NEEDED
+      required:
+      - channel
+      - enabled
+      - eventType
+    PreferenceView:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum:
+          - IN_APP
+          - EMAIL
+          - WEBSOCKET
+          - SMS_SIM
+          - CHAT
+        enabled:
+          type: boolean
+        eventType:
+          type: string
+          enum:
+          - INCIDENT_CREATED
+          - INCIDENT_ASSIGNED
+          - INCIDENT_ACKNOWLEDGED
+          - PRIORITY_CHANGED
+          - INFO_REQUESTED
+          - INFO_PROVIDED
+          - SLA_WARNING
+          - SLA_VIOLATED
+          - INCIDENT_ESCALATED
+          - INCIDENT_RESOLVED
+          - INCIDENT_VERIFIED
+          - INCIDENT_CLOSED
+          - INCIDENT_REOPENED
+          - DUPLICATE_SUSPECTED
+          - TRIAGE_NEEDED
+        locked:
+          type: boolean
     PriorityBreakdown:
       type: object
       properties:

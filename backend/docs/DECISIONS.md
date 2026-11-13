@@ -63,6 +63,7 @@
 | [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
 | [DEC-48](#dec-48-an-unassigned-p1-or-p2-in-triage-escalates-from-level-0) | An unassigned P1 or P2 in triage escalates from level 0 | 2026-11-13 | M11 | ✅ user decision |
 | [DEC-49](#dec-49-one-final-alert-when-escalation-is-exhausted) | One final alert when escalation is exhausted | 2026-11-13 | M11 | ✅ user decision |
+| [DEC-54](#dec-54-m9-notifications-mapping-delivery-storm-control-and-the-websocket-seam) | M9 notifications: mapping, delivery, storm control and the WebSocket seam | 2026-11-13 | M9 | ✅ |
 
 ---
 
@@ -1088,3 +1089,55 @@ Smaller rules the handbook left open:
 **Trade-off.** "Once per incident" needs a remembered fact; the incident already stores `escalation_level` (0 to 3), so the monitor can tell level 3 from "exhausted" with the audit trail (one exhausted entry exists) and needs no new column.
 
 **Cross-questions.** *"Why not keep alerting?"* A repeating alert to people who already ignored three of them adds noise, not action; the SLA violation alerts are the continuing signal. *"Who counts as all administrators?"* Every user with the administrator role, as in the SLA violation notification.
+
+---
+
+### DEC-54: M9 notifications: mapping, delivery, storm control and the WebSocket seam
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13 | M9 | ✅ taken inside the frame fixed by DEC-40 and DEC-42; any line can be vetoed |
+
+**Decision.** The listener turns events into notifications **after commit, on its own single worker thread**; every channel is an adapter behind `NotificationChannel`; people and wording are decided by plain classes in the domain (`NotificationEventType`, `NotificationRules`, `NotificationFactory`) so they can be tested without Spring.
+
+**1. Mapping the single `IncidentChanged` action onto the 15 event types** (closes the open question of DEC-42)
+
+| Audit action | Event type | Recipients (actor never told, except the receipt) |
+|---|---|---|
+| INCIDENT_CREATED | INCIDENT_CREATED | reporter (receipt, also when they are the actor) |
+| ASSIGNED, REASSIGNED | INCIDENT_ASSIGNED | reporter, new assignee |
+| ACKNOWLEDGED | INCIDENT_ACKNOWLEDGED | reporter |
+| PRIORITY_CHANGED | PRIORITY_CHANGED | assignee, reporter |
+| INFO_REQUESTED, INFO_PROVIDED | same names | reporter, assignee |
+| RESOLVED, CLOSED | INCIDENT_RESOLVED, INCIDENT_CLOSED | reporter |
+| VERIFIED, REOPENED | INCIDENT_VERIFIED, INCIDENT_REOPENED | assignee |
+| ESCALATED | INCIDENT_ESCALATED | holders of the new level (critical), assignee |
+| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (used by M12) |
+| CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody: a pipeline step, or too chatty |
+
+`TriageNeeded` gives TRIAGE_NEEDED to every team lead; `SlaWarning` gives SLA_WARNING to the assignee (team leads when unassigned); `SlaViolated` gives SLA_VIOLATED to every administrator (critical) and the assignee.
+
+**2. Delivery.**
+
+| Topic | Choice | Options not taken | Reason |
+|---|---|---|---|
+| Timing | `@TransactionalEventListener(AFTER_COMMIT)` plus `@Async` on a **single-thread** executor | Synchronous in the transaction (a mail failure would roll back the incident); an outbox table (needs columns the agreed schema lacks); a thread pool (the digest needs events in order) | Handbook: mail failure never rolls back an incident. One thread keeps the order of events, so the warnings of a monitor run arrive before the run-finished event |
+| Email | Handed to a small scheduler: one try plus 3 retries, wait 2 s doubling (`notification.email.*`), then dropped and logged without the address | Retrying on the worker thread (a dead mail server would stall every notification) | DEC-42; the inbox row is the durable record |
+| What is stored | Rows only for IN_APP and SMS_SIM; EMAIL, WEBSOCKET and CHAT leave no row | A row per channel | The table has no status or retry columns (DEC-42); one row per notification keeps the inbox free of duplicates. The CHECK of Appendix A.4 still lists all four channel names |
+| Chat webhook | A room, not a person: one post per event for SLA violations and escalations, and for P1 assignment, triage and SLA warning; the URL is a live setting, empty means only logged | One post per recipient | A shared room must not see the same line five times |
+| Order inside a delivery | Inbox first (the push carries the id of the inbox row), then WebSocket, SMS, email | | The browser can mark a pushed message read through the API |
+
+**3. Preferences.** Per user, event type and channel; no row means on; `PUT` replaces the whole set. Locked: the inbox always; SLA_VIOLATED for administrators; INCIDENT_ESCALATED for team leads and administrators (`NotificationRules.isCritical`, decided per person, so the settings screen and the delivery use the same rule). `GET` returns all 60 switches with `locked`; `PUT` refuses a locked switch, `CHAT` and unknown values with 400. SMS_SIM is for P1 only whatever the switch says.
+
+**4. Storm control.** `SlaMonitor` publishes `SlaRunCompleted` at the end of a run; warnings are held until then. A person with more than `notification.digest.threshold` (default 5) warnings gets one digest (no incident id), the others get single messages. P1 incidents and SLA violations are never held. A hold older than 10 minutes is flushed anyway, so a run that never finishes cannot swallow warnings. The hold is in memory: a restart in the middle of a run loses at most that run's pending warnings, which the inbox of the next violation covers (single instance, as DEC-42).
+
+**5. WebSocket seam (module M13 owns the rest).** Assumed: the STOMP session is named after the user id; `WebSocketConfig` sets that from the access token on CONNECT (header `Authorization: Bearer`), refuses CONNECT without a valid token, allows SUBSCRIBE only to `/user/queue/notifications`, and refuses client SEND. `/ws` is a public HTTP path because a browser cannot add headers to the handshake. Not done here: closing the session at token expiry, the dashboard topic and per-destination permissions (M13, DEC-42).
+
+**Trade-off.** In-memory holds and an in-memory broker mean one instance; a mail that fails four times is gone (the inbox still has the message); a person who is offline misses the push but not the inbox row.
+
+**Cross-questions.**
+- *"How do you know a mail failure cannot roll back an incident?"* The listener only starts after the commit, on another thread; the smoke test stops the mail server and the incident, inbox rows and push still work.
+- *"Why is the channel interface an Adapter?"* Five technologies (SQL, SMTP, STOMP, a log with a table, HTTP) hide behind one `send`; the dispatcher never knows which.
+- *"Why not one row per channel, as the table allows?"* The inbox would show the same message several times and the table cannot say whether a mail was delivered.
+- *"What stops an administrator from muting violation alerts?"* `PUT` answers 400 for those switches and delivery ignores preferences for them.
+- *"What happens with 200 warnings in one run?"* Each person gets one digest; P1 warnings still arrive one by one.

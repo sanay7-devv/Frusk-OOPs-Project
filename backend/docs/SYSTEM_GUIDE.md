@@ -28,6 +28,7 @@
 10. [M6 Technician assignment](#10-m6-technician-assignment)
 11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
 12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
+    - [12a. M9 Notifications](#12a-m9-notifications)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -47,9 +48,10 @@
 | **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ escalate (M11), duplicates (M12) |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
-| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
+| **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar; its events become notifications (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
-| M9 to M14, M2b | Notifications, reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
+| **M9** Notifications | Five channels (inbox, WebSocket push, mail, simulated SMS for P1, chat webhook), after-commit async listener, per-user preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints | ✅ Done and smoke-tested (72 checks, needs Mailpit) |
+| M10 to M14, M2b | Reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
 | Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
@@ -120,7 +122,7 @@ com.iitsm
 ├── web
 │   ├── controller                   AuthController, CatalogController, IncidentController, TechnicianController,
 │   │                                AdminUserController, AdminCatalogController, AdminSlaController,
-│   │                                AdminConfigController, SlaController, AuditController
+│   │                                AdminConfigController, SlaController, AuditController, NotificationController
 │   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/admin, dto/catalog, dto/incident)
 │   ├── filter                       RequestIdFilter
 │   ├── handler                      GlobalExceptionHandler
@@ -133,6 +135,8 @@ com.iitsm
 │   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews
 │   ├── sla                          SlaMonitor (the monitor run), SlaViolationService
 │   ├── audit                        AuditListener (Observer), AuditService
+│   ├── notification                 NotificationListener (Observer), NotificationPlanner, NotificationDispatcher,
+│   │                                DigestCollector, NotificationService, NotificationRequest
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
 │   ├── assignment                   AssignmentStrategy + 5 strategies, FactorStrategy, AssignmentEngine,
@@ -141,7 +145,10 @@ com.iitsm
 │   ├── config                       ConfigKey, AppSettings, AppConfigEntry
 │   ├── audit                        AuditRecord (immutable), AuditAction, AuditQuery
 │   ├── event                        IncidentEvent, IncidentChanged, TriageNeeded, SlaWarning, SlaViolated,
-│   │                                SecurityAuditEvent (Observer pattern events)
+│   │                                SlaRunCompleted, SecurityAuditEvent (Observer pattern events)
+│   ├── notification                 Notification, NotificationPreference, NotificationEventType, ChannelType, Audience,
+│   │                                NotificationChannel (Adapter port), NotificationFactory, NotificationRules,
+│   │                                NotificationMessage, TeamResolver
 │   ├── exception                    ItsmException + 18 business exceptions
 │   ├── incident                     Incident, IncidentState + 10 states, StateFactory, IncidentFactory,
 │   │                                SlaTracker, SlaAlert, Resolution, IncidentComment, enums
@@ -154,6 +161,8 @@ com.iitsm
 └── infrastructure
     ├── config                       ClockConfig, CorsConfig, DomainConfig
     ├── persistence                  Spring Data implementations of the domain repositories
+    ├── notification                 InAppChannel, EmailChannel, WebSocketChannel, SmsSimulatedChannel,
+    │                                ChatWebhookChannel, GlobalTeamResolver, NotificationAsyncConfig, WebSocketConfig
     ├── scheduler                    SchedulingConfig, SlaMonitorJob (interval from app_config)
     └── security                     SecurityConfig, JwtService, JwtAuthenticationFilter, ApiErrorWriter, ApiErrorCorsProcessor
 ```
@@ -1308,6 +1317,104 @@ Smoke test `m8_smoke.py` against the running app.
 
 ---
 
+## 12a. M9 Notifications
+
+Every incident event that matters to a person becomes a **notification**: a row in their inbox, a live push, a mail, for P1 a simulated text message, and for team-wide alerts a post to a chat room. The listener runs **after the action's transaction commits and on its own thread**, so a broken mail server can never roll back or slow down an incident (decisions DEC-40, DEC-42, DEC-54).
+
+### 12a.1 From event to delivery
+
+```mermaid
+flowchart LR
+    E[IncidentChanged / TriageNeeded / SlaWarning / SlaViolated / SlaRunCompleted] -->|after commit, async| NL[NotificationListener]
+    NL --> NP[NotificationPlanner: who? values?]
+    NP -->|TeamResolver| TR[GlobalTeamResolver]
+    NL --> ND[NotificationDispatcher: which channels?]
+    ND --> NF[NotificationFactory: words from templates]
+    ND --> C1[InAppChannel: row]
+    ND --> C2[WebSocketChannel: push]
+    ND --> C3[SmsSimulatedChannel: log + row, P1]
+    ND --> C4[EmailChannel: SMTP, 3 retries]
+    ND --> C5[ChatWebhookChannel: HTTP POST]
+    ND -. SLA warnings .-> DC[DigestCollector]
+    C1 --> N[(notifications)]
+    C3 --> N
+```
+
+Patterns: **Observer** (`NotificationListener`), **Adapter** (`NotificationChannel` and its five adapters), **Factory** (`NotificationFactory`), a small seam for later teams (`TeamResolver`), **Repository**.
+
+### 12a.2 Who hears what
+
+The single `IncidentChanged` event carries an action; it is mapped onto the 15 notification types of Appendix A.4 (DEC-54). Actions with no type send nothing. The person who did the action is not told, except the reporter of a new incident, who gets a receipt.
+
+| Action (audit) | Notification type | Who |
+|---|---|---|
+| INCIDENT_CREATED | INCIDENT_CREATED | reporter |
+| ASSIGNED, REASSIGNED | INCIDENT_ASSIGNED | reporter, new assignee |
+| ACKNOWLEDGED | INCIDENT_ACKNOWLEDGED | reporter |
+| PRIORITY_CHANGED | PRIORITY_CHANGED | assignee, reporter |
+| INFO_REQUESTED / INFO_PROVIDED | INFO_REQUESTED / INFO_PROVIDED | reporter / assignee |
+| RESOLVED, VERIFIED, CLOSED, REOPENED | INCIDENT_RESOLVED, _VERIFIED, _CLOSED, _REOPENED | reporter, assignee, reporter, assignee |
+| ESCALATED | INCIDENT_ESCALATED | holders of the new level (critical), assignee |
+| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (for M12) |
+| CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody |
+| `TriageNeeded` event | TRIAGE_NEEDED | every team lead |
+| `SlaWarning` event | SLA_WARNING | assignee; team leads if nobody is assigned |
+| `SlaViolated` event | SLA_VIOLATED | every administrator (critical), assignee |
+
+A **team lead** is a technician with escalation level 1; one global pool behind the `TeamResolver` interface (DEC-42). Escalation targets: level 1 team leads, 2 `SYSTEM_ADMIN`, 3 `IT_MANAGER`; if nobody holds the level, every administrator.
+
+### 12a.3 Channels
+
+| Channel | What it does | Stored? | When |
+|---|---|---|---|
+| `IN_APP` | inserts the inbox row | row, channel IN_APP | always |
+| `WEBSOCKET` | pushes the same Notification object (with the inbox row id) to `/user/queue/notifications` | no | unless switched off |
+| `SMS_SIM` | log line and a row (channel SMS_SIM, 160 characters) | row | P1 only, staff only (assigned, triage, SLA warning and violation, escalation) |
+| `EMAIL` | HTML mail through SMTP (Mailpit on 1025); first try plus `notification.email.retries` retries, wait `notification.email.backoff.seconds` doubling; then dropped and logged | no | unless switched off |
+| `CHAT` | one JSON POST (`text`, `content`) to `notification.chat.webhook.url`; empty URL means only logged | no | SLA violations and escalations always; assigned, triage and SLA warning for P1 |
+
+Each channel is tried alone; a failure is logged and the others still run. The wording lives in `notification-templates.properties` (`<EVENT>.<audience>.title|message`, placeholders such as `{code}` and `{priority}`), the mail shell in `notification-email.html`.
+
+### 12a.4 Preferences and alert storm control
+
+- **Preferences** (`notification_preferences`, one row per user, event type and channel; no row means on). The inbox is always on. **Critical alerts cannot be switched off**: SLA violation for an administrator, escalation for a team lead or administrator. `PUT` replaces the caller's switches and answers 400 for a locked switch, `CHAT` or an unknown value.
+- **Digest.** The SLA monitor publishes `SlaRunCompleted` at the end of each run. Warnings of a run are held; if one person has more than `notification.digest.threshold` (default 5) they get **one** digest, otherwise single messages. **P1 incidents and SLA violations are never held back.**
+
+### 12a.5 Endpoints (any logged-in user, always the caller's own data)
+
+| Endpoint | Result |
+|---|---|
+| `GET /api/v1/notifications?unread&channel&page&size` | page of `{id, eventType, title, message, incidentId, channel, read, createdAt}`, newest first; `channel` defaults to IN_APP, `SMS_SIM` is allowed |
+| `GET /api/v1/notifications/unread-count` | `{count}` |
+| `POST /api/v1/notifications/{id}/read` | 204; someone else's id is 404 |
+| `POST /api/v1/notifications/read-all` | 204 |
+| `GET /api/v1/notifications/preferences` | 60 switches `{eventType, channel, enabled, locked}` (15 types x IN_APP, EMAIL, WEBSOCKET, SMS_SIM) |
+| `PUT /api/v1/notifications/preferences` | body: list of `{eventType, channel, enabled}`; returns the 60 switches |
+
+WebSocket: connect to `/ws`, send the access token as the STOMP `Authorization: Bearer ...` header on CONNECT, subscribe to `/user/queue/notifications`. Assumptions and what M13 will extend: DEC-54.
+
+### 12a.6 Settings (live, `app_config`) and tables
+
+`notification.digest.threshold` (5), `notification.email.retries` (3), `notification.email.backoff.seconds` (2), `notification.email.from` (`no-reply@iitsm.local`), `notification.link.base.url` (`http://localhost:5173`), `notification.chat.webhook.url` (empty).
+Tables `notifications` and `notification_preferences` as in Appendix A.4 (column `read` is `seen` in the entity). Under `schema-auto` Hibernate adds a CHECK that also allows `CHAT`; the migration should keep the four values of the appendix.
+
+### 12a.7 Verified behavior (2026-11-13)
+
+Smoke test `m9_smoke.py` (needs Mailpit): 72 checks, all passed against the running app.
+
+| Area | Checked |
+|---|---|
+| **M9 done-when** | One P1 assignment: reporter gets created + assigned (inbox and mail), technician gets assigned (inbox, mail, SMS row, WebSocket push with the inbox row id), the chat room gets one post; admin and team lead get nothing |
+| Lifecycle | Acknowledge, resolve, verify, close notify the right person and never the actor; work started sends nothing |
+| Triage | Team lead gets TRIAGE_NEEDED, SMS and chat only for P1 |
+| Inbox API | unread count, mark one and all, other user's id 404, paging, `channel=WEBSOCKET` 400 |
+| Preferences | 60 switches, locked ones per role, 400 for inbox, critical, CHAT and unknown values; a switched-off mail is not sent; empty `PUT` resets |
+| Failing channels | Mail server stopped: incident still created, inbox and push still delivered, mail arrives after a retry; dead webhook and empty webhook handled and logged |
+| Storm control | Threshold 1: two P4 warnings in one run become one digest, two P1 warnings stay single (with SMS); below the threshold single messages; violations single even at threshold 1 |
+| WebSocket | CONNECT without token and other destinations refused |
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
@@ -1535,12 +1642,12 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 
 | Pattern | Status | Where |
 |---|---|---|
-| **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` follows in M9. |
+| **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` (M9) builds notification wording from templates. |
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
-| **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. Notification channels and the LLM client follow in M9 / M12. |
+| **Adapter** | 🟡 started | `AccessTokenIssuer` port with the JWT adapter `JwtService`. `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); the LLM client follows in M12. |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
 | **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. |
-| **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them. Notification (M9) and dashboard (M13) listeners subscribe to the same events. |
+| **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them in the action's transaction; `NotificationListener` (M9) reacts after commit, asynchronously. The dashboard listener (M13) follows. |
 | **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
 
 ### 14.3 Further patterns in the code
@@ -1643,6 +1750,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | Decisions only, no code: M11 escalation behavior fixed by the user (DEC-48 triage incidents escalate from level 0, DEC-49 one final exhausted alert after level 3); listed in section 18. |
+| 2026-11-13 | M9 notifications built and smoke-tested (section 12a, DEC-54): five channels, after-commit async listener, preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints, six new settings, minimal STOMP endpoint `/ws`. `SlaMonitor` publishes `SlaRunCompleted`. |
 
 ---
 
