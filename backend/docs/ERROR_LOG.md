@@ -15,6 +15,8 @@ Entry template:
 - Status: open | fixed
 ```
 
+
+> **Numbering note (2026-11-14).** Modules M9 to M12 were built in parallel sessions that could not see each other's numbers, so some entries are `E-M11-n` and `E-M12-n` and the plain numbers jump from E-024 to E-030. Nothing was removed. Three entries describe the same Windows console arrow problem (E-M12-5, E-032, E-M11-4) and two the hard-coded settings count (E-024, E-M12-4); they are kept because each was hit independently. Newest entries are at the bottom.
 ---
 
 ### E-001: Generated project used Spring Boot 4.1.1, handbook locks 3.x
@@ -366,4 +368,40 @@ Entry template:
 - Cause: (1) a conflicted merge was committed without removing the markers; (2) parallel sessions picked the next free number independently; (3) a textual merge of one JSON file cannot tell "deleted because built" from "changed"; (4) the m11 checks matched any log line holding the incident code and the word "Escalated", which M9's SMS and chat channels now also log; the setting counts were hard-coded (41).
 - Fix: M12's feature commit `5d993b3` was merged instead of the broken merge commit; ids were renumbered (M9 is DEC-54 and D-028, M12 D-029, M11 D-030 and section 12d, M10 section 12b); `planned-endpoints.json` was merged as JSON (a three-way merge by key); `m11_smoke.py` counts only `EscalationMonitor` log lines; the settings count is 63 (35 plus 6 M9, 6 M10, 2 M11, 14 M12) in the two older suites and in `TEAM_UPDATES.md`.
 - Prevention: before merging parallel branches, grep each one for `<<<<<<<`; give parallel sessions disjoint id ranges up front; regenerate `planned-endpoints.json` from `gen_planned.py` rather than merging it; count settings from `ConfigKey.values().length`, not a literal (Testing teammate).
+- Status: fixed
+
+### E-034: IntelliJ showed `record` as an error and Java 5 after the repository was reorganised
+- Date: 2026-11-14
+- Area: tooling
+- Symptom: red marks on valid code such as `AssignRequest`; Problems panel: "Cannot resolve symbol 'record'" and "Compact source files are not supported at language level '5'". `./mvnw compile` still passed.
+- Cause: moving the project into `backend/` made IntelliJ create a new `backend/.idea` with no language level and a JDK 25 SDK; the Maven project had never been imported, so it fell back to Java 5.
+- Fix: `backend/.idea/misc.xml` set to language level JDK_21 with SDK 21, then Reload All Maven Projects. `.idea` is git-ignored, so nothing was committed.
+- Prevention: after a folder move, re-import the Maven project and check Project Structure (SDK 21, language level 21) before trusting IDE errors; the command line build is the reference.
+- Status: fixed
+
+### E-035: IntelliJ's Maven sync failed with "Unable to create injector" (Guice, ArtifactHandlerManager)
+- Date: 2026-11-14
+- Area: tooling
+- Symptom: Build window: "Sync: 1 error. Unable to create injector, see the following errors: [Guice/MissingImplementation] ... ArtifactHandlerManager, DefaultArtifactFactory, DefaultPlexusContainer".
+- Cause: IntelliJ was set to use the Maven wrapper, and `backend/.mvn/wrapper/maven-wrapper.properties` points to Maven 3.10.0, which the importer of IntelliJ 2025.3 cannot load. The command line works with the same version.
+- Fix: Settings, Build Tools, Maven: Maven home path set to "Bundled (Maven 3)" (a local 3.9.16 under `~/.m2/wrapper/dists` also works). The wrapper version was left alone.
+- Prevention: if the wrapper moves to a Maven version newer than the IDE supports, point the IDE at the bundled Maven.
+- Status: fixed
+
+### E-036: Parallel module sessions stopped on a TLS error and then on the usage limit
+- Date: 2026-11-13
+- Area: process
+- Symptom: module sessions ended with `SELF_SIGNED_CERT_IN_CHAIN` (one after 45 turns), later with the five-hour usage limit.
+- Cause: a network or proxy certificate problem, then four sessions working at once against one account limit. Neither is a code problem.
+- Fix: each session was resumed by message after the error cleared or the window reset; work already on disk and in commits was kept.
+- Prevention: ask long-running sessions to make work-in-progress commits early; do not start more parallel sessions than the limit can carry.
+- Status: fixed (procedure)
+
+### E-037: Coding could not start because Docker Desktop was not running
+- Date: 2026-11-13
+- Area: environment
+- Symptom: the database container `iitsm-db` was unreachable; the smoke suites and the app could not connect.
+- Cause: Docker Desktop was not started after the machine booted.
+- Fix: start Docker Desktop and the `iitsm-db` container, then retry.
+- Prevention: check `docker ps` for `iitsm-db` and `iitsm-mail` before any session that needs the database.
 - Status: fixed
