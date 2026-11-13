@@ -816,7 +816,7 @@ Smaller rules the handbook left open:
 | Attachments | Disk volume plus the `incident_attachments` row; type checked from the first bytes | Matches Appendix A |
 | Outage behaviour | `SERVICE_UNAVAILABLE` in the standard error body | The brief lists database and network failure |
 | Google sign-in | Link only to an existing account with a verified email; auto-registration behind a setting | Safest default |
-| Tests | Backend lead writes domain unit tests; Testing teammate writes integration and boundary tests | One test in the repository is not defensible |
+| Tests | Everything under `src/test` stays with the Testing teammate (handbook 1.4): unit, integration and boundary tests. The backend lead hands over class names, expected values and the smoke scripts, and verifies each module with the smoke suites | Handbook ownership. Corrected the same day: the first version of this line gave domain unit tests to the backend lead, which the team never agreed |
 
 **Risks found in earlier decisions (to fix inside the named module).**
 
@@ -851,7 +851,7 @@ Smaller rules the handbook left open:
 | A6 | Chat-webhook channel (Google Chat or Slack incoming webhook) as a sixth channel | Technical depth ("use of APIs (Google API, any other)") | M9 | Backend |
 | A7 | Scalability evidence: a load test with numbers, an index review, and a written scale-out path | Technical depth | M14 | Backend + Testing |
 | A8 | Observability: Actuator health, Micrometer counters (incidents, SLA violations, LLM fallbacks), Prometheus and Grafana in Compose | Technical depth | M14 | Backend + Testing/DevOps |
-| A9 | Architecture rule tests (ArchUnit): `domain` imports no Spring or web code; controllers never touch repositories | Testing, System design | Tests | Backend |
+| A9 | Architecture rule tests (ArchUnit): `domain` imports no Spring or web code; controllers never touch repositories | Testing, System design | Tests | Testing teammate (suggested by the backend lead) |
 | A10 | Quality gate in CI: build, tests, coverage report, static analysis | Technical depth, Testing | CI | Testing/DevOps |
 | A11 | Explain-this-priority what-if, escalation preview, strategy replay (replay is now S1 in DEC-44) | UX, Innovation | M10, M11 | Backend + Frontend |
 | A12 | Security extras: password reset by email; optional TOTP second factor for administrators | UX (security), Technical depth | M2 | Backend + Frontend |
@@ -987,7 +987,7 @@ Smaller rules the handbook left open:
 | G3 | `ClosureReason.WITHDRAWN` is unused | New reporter action `withdraw` (reason required), legal until work has started (CLASSIFIED, ASSIGNED, ACKNOWLEDGED); closes with WITHDRAWN and frees the technician's load. An addition to the contract | M10 |
 | G4 | A reporter can raise their own priority by editing impact and urgency | Once an incident is ASSIGNED, only a team lead or administrator may change impact, urgency and affected users; the reporter can still edit the description. Before assignment the reporter may edit everything. Check the documented test cases before changing behavior | M14 |
 | G5 | `major` already means "is P1" | The stored meaning stays. Major Incident Mode (DEC-44 S2) is modelled by the problem record (`problem_id`); the lead incident is the highest-priority, earliest linked one | M12 |
-| C1 | `IncidentService`: 16 dependencies, about 500 lines, the same five steps in every lifecycle method | One command object per action behind a shared runner (Command pattern). Done only after the domain unit tests exist, so the refactor is checked | Before M9 |
+| C1 | `IncidentService`: 16 dependencies, about 500 lines, the same five steps in every lifecycle method | One command object per action behind a shared runner (Command pattern). Checked by running the smoke suites (auth, M3, M4, M6, M7, M8, calendar, endpoint sweep) before and after | Before M9 |
 | C2 | Events are published by hand in each method | `Incident` records its own events in a transient list; the service publishes them after saving. No action can then skip its audit entry | Before M9 |
 | C3 | Rules that depend on text: category name "security"; audit prefix "Internal note" | The security category name becomes an `app_config` setting; internal audit entries are created only through one factory method on `AuditRecord`, with a test | M14 |
 | C4 | Template Method (`FactorStrategy`), the third Strategy (`WorkCalendar`) and the access policy are in the code but missing from the pattern table | Added to SYSTEM_GUIDE section 14.3 now | Done (docs) |
@@ -1002,7 +1002,7 @@ Smaller rules the handbook left open:
 | C1 | Keep the service as it is | Rejected: every new action (escalate, withdraw, mark duplicate, feedback) would add another copy of the same five steps |
 | C2 | Publish from the entity through Spring Data's `AbstractAggregateRoot` | Rejected: it puts a Spring type in the domain (DEC-01) |
 
-**Trade-off.** C1 and C2 change code that is already smoke-tested; that is why the domain unit tests come first.
+**Trade-off.** C1 and C2 change code that is already smoke-tested, so the smoke suites are run before and after as the regression check. Unit tests from the Testing teammate add a second net when they arrive.
 
 **Cross-questions.** *"Is Command not over-engineering?"* Twelve lifecycle actions share the same five steps today and four more are coming; the runner removes the repetition and gives the chatbot and the simulator one way to invoke an action. *"Why does the aggregate hold events if the domain must not know Spring?"* It only keeps a plain list of event records; publishing stays in the application layer.
 
