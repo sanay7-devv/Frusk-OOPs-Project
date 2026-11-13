@@ -2,7 +2,9 @@ package com.iitsm.application.incident;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.config.ConfigService;
+import com.iitsm.application.feedback.FeedbackView;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
 import com.iitsm.application.incident.IncidentViews.IncidentSummary;
@@ -18,7 +21,9 @@ import com.iitsm.application.incident.IncidentViews.ResolutionView;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.SlaNotConfiguredException;
+import com.iitsm.domain.repository.FeedbackRepository;
 import com.iitsm.domain.incident.Incident;
+import com.iitsm.domain.incident.IncidentAction;
 import com.iitsm.domain.incident.IncidentComment;
 import com.iitsm.domain.incident.Resolution;
 import com.iitsm.domain.incident.SlaState;
@@ -37,9 +42,11 @@ public class IncidentViewMapper {
     private final ConfigService config;
     private final IncidentAccessPolicy access;
     private final Clock clock;
+    private final FeedbackRepository feedbackRepository;
 
     public IncidentViewMapper(SlaPolicyResolver slaPolicies, ConfigService config, IncidentAccessPolicy access,
-                              Clock clock) {
+                              Clock clock, FeedbackRepository feedbackRepository) {
+        this.feedbackRepository = feedbackRepository;
         this.slaPolicies = slaPolicies;
         this.config = config;
         this.access = access;
@@ -74,6 +81,14 @@ public class IncidentViewMapper {
         Resolution r = incident.getResolution();
         ResolutionView resolution = r == null ? null : new ResolutionView(r.getRootCause(), r.getNotes(),
                 r.getSteps(), r.getTimeSpentMinutes(), r.isReusable(), Ref.of(incident.getAssignee()));
+        FeedbackView feedback = feedbackRepository.findByIncidentId(incident.getId()).map(FeedbackView::of).orElse(null);
+        List<IncidentAction> allowed = new ArrayList<>(
+                access.allowedActions(caller, incident, now, settings.reopenWindow()));
+        // feedback: the reporter, once the work is resolved or later, and only until a rating exists (module M10)
+        if (feedback == null && incident.getStatus().isResolvedOrLater()
+                && access.permits(caller, incident, IncidentAction.GIVE_FEEDBACK)) {
+            allowed.add(IncidentAction.GIVE_FEEDBACK);
+        }
         return new IncidentDetail(incident.getId(), incident.getCode(), incident.getTitle(), incident.getStatus(),
                 incident.getPriority(), Ref.of(incident.getCategory()), Ref.of(incident.getService()),
                 Ref.of(incident.getReporter()), Ref.of(incident.getAssignee()), incident.getCreatedAt(),
@@ -83,9 +98,8 @@ public class IncidentViewMapper {
                 incident.getPriorityBreakdown(), incident.getAcknowledgedAt(), incident.getResolvedAt(),
                 incident.getClosedAt(), incident.getClosureReason(), incident.getProblemId(),
                 incident.getDuplicateOf() == null ? null : incident.getDuplicateOf().getId(),
-                incident.getReopenCount(), incident.getSla().getPausedAt(), resolution, null,
-                access.allowedActions(caller, incident, now, settings.reopenWindow()).stream().sorted().toList(),
-                incident.getVersion());
+                incident.getReopenCount(), incident.getSla().getPausedAt(), resolution, feedback,
+                allowed.stream().sorted().toList(), incident.getVersion());
     }
 
     public CommentView comment(IncidentComment comment) {

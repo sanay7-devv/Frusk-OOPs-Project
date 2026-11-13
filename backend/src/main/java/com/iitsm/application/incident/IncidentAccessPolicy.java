@@ -52,8 +52,10 @@ public class IncidentAccessPolicy {
             case CLOSE -> admin;
             case REOPEN -> reporter || admin;
             case OVERRIDE_PRIORITY -> caller.can(PermissionKey.INCIDENT_OVERRIDE_PRIORITY);
-            // escalation (M11), duplicates (M12) and feedback come with their modules
-            case ESCALATE, MARK_DUPLICATE, GIVE_FEEDBACK -> false;
+            // only the reporter rates the work; "once it is resolved" is the status rule, checked by FeedbackService
+            case GIVE_FEEDBACK -> reporter;
+            // escalation (M11) and duplicates (M12) come with their modules
+            case ESCALATE, MARK_DUPLICATE -> false;
         };
     }
 
