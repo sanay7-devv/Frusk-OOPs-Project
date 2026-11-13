@@ -7397,8 +7397,7 @@
     },
     "/api/v1/incidents/{id}/similar": {
       "get": {
-        "description": "**Planned for M12; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_incidents_by_id_similar",
+        "operationId": "similar",
         "parameters": [
           {
             "in": "path",
@@ -7417,26 +7416,118 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SimilarIncident"
+                    "$ref": "#/components/schemas/SimilarIncidentView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Similar incidents for an existing incident",
+        "summary": "Similar open incidents for an existing incident",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/incidents/{id}/sla-risk": {
       "get": {
-        "description": "**Planned for M12; not implemented yet.** Who: assignee, admin. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_incidents_by_id_sla_risk",
+        "operationId": "slaRisk",
         "parameters": [
           {
             "in": "path",
@@ -7453,19 +7544,112 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SlaRisk"
+                  "$ref": "#/components/schemas/SlaRiskView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "SLA risk score with factors",
+        "summary": "SLA risk score 0 to 1 with the contribution of each factor (assignee, team lead, admin)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/incidents/{id}/start": {
@@ -7614,8 +7798,7 @@
     },
     "/api/v1/incidents/{id}/suggested-resolutions": {
       "get": {
-        "description": "**Planned for M12; not implemented yet.** Who: assignee, admin. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_incidents_by_id_suggested_resolutions",
+        "operationId": "suggestedResolutions",
         "parameters": [
           {
             "in": "path",
@@ -7634,26 +7817,118 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SuggestedResolution"
+                    "$ref": "#/components/schemas/SuggestedResolutionView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Fixes used on similar resolved incidents",
+        "summary": "Fixes used on similar resolved incidents, reusable ones preferred (assignee, team lead, admin)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/incidents/{id}/summary": {
       "post": {
-        "description": "**Planned for M12; not implemented yet.** Who: assignee, admin. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_incidents_by_id_summary",
+        "operationId": "summary",
         "parameters": [
           {
             "in": "path",
@@ -7670,19 +7945,130 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ThreadSummary"
+                  "$ref": "#/components/schemas/ThreadSummaryView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "RATE_LIMITED",
+                  "fieldErrors": [],
+                  "message": "Too many requests.",
+                  "path": "/api/v1/...",
+                  "status": 429,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `RATE_LIMITED`: Too many requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "AI summary and handover notes of the thread",
+        "summary": "Summary and handover notes of the comments and audit entries (assignee, team lead, admin)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/incidents/{id}/verify": {
@@ -7832,8 +8218,7 @@
     },
     "/api/v1/intelligence/similar": {
       "post": {
-        "description": "**Planned for M12; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_intelligence_similar",
+        "operationId": "similarToDraft",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7851,26 +8236,136 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SimilarIncident"
+                    "$ref": "#/components/schemas/SimilarIncidentView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such IT service.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_NOT_FOUND`: No such IT service"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "RATE_LIMITED",
+                  "fieldErrors": [],
+                  "message": "Too many requests.",
+                  "path": "/api/v1/...",
+                  "status": 429,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `RATE_LIMITED`: Too many requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Similar open incidents for a draft report",
+        "summary": "Similar open incidents on the same service inside the look-back window (TF-IDF)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/intelligence/suggest-category": {
       "post": {
-        "description": "**Planned for M12; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_intelligence_suggest_category",
+        "operationId": "suggestCategory",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7886,25 +8381,135 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CategorySuggestion"
+                  "$ref": "#/components/schemas/CategorySuggestionView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such IT service.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_NOT_FOUND`: No such IT service"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "RATE_LIMITED",
+                  "fieldErrors": [],
+                  "message": "Too many requests.",
+                  "path": "/api/v1/...",
+                  "status": 429,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `RATE_LIMITED`: Too many requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "AI category suggestion (LLM, keyword fallback)",
+        "summary": "Category suggestion (LLM with keyword fallback); null category below autocat.min.confidence",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/intelligence/suggest-intake": {
       "post": {
-        "description": "**Planned for M12; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_intelligence_suggest_intake",
+        "operationId": "suggestIntake",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7920,19 +8525,112 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IntakeSuggestion"
+                  "$ref": "#/components/schemas/IntakeSuggestionView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "RATE_LIMITED",
+                  "fieldErrors": [],
+                  "message": "Too many requests.",
+                  "path": "/api/v1/...",
+                  "status": 429,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `RATE_LIMITED`: Too many requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "AI suggestion of category, impact and urgency",
+        "summary": "Category, impact and urgency suggested from a free-text description",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Intelligence"
+        ]
       }
     },
     "/api/v1/notifications": {
@@ -9898,35 +10596,19 @@
           "name"
         ]
       },
-      "CategorySuggestion": {
+      "CategorySuggestionView": {
         "type": "object",
-        "description": "Null category and empty reason when confidence is below autocat.min.confidence (0.60)",
         "properties": {
           "categoryId": {
-            "oneOf": [
-              {
-                "type": "integer",
-                "format": "int64"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "format": "int64"
           },
           "categoryName": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string"
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0
+            "format": "double"
           },
           "reason": {
             "type": "string"
@@ -10813,37 +11495,23 @@
           }
         }
       },
-      "IntakeSuggestion": {
+      "IntakeSuggestionView": {
         "type": "object",
         "properties": {
           "categoryId": {
-            "oneOf": [
-              {
-                "type": "integer",
-                "format": "int64"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "format": "int64"
           },
           "categoryName": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string"
           },
           "confidence": {
-            "type": "number"
+            "type": "number",
+            "format": "double"
           },
           "impact": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1
+            "format": "int32"
           },
           "reason": {
             "type": "string"
@@ -10857,8 +11525,7 @@
           },
           "urgency": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1
+            "format": "int32"
           }
         }
       },
@@ -11516,6 +12183,21 @@
           "timeSpentMinutes"
         ]
       },
+      "RiskFactorView": {
+        "type": "object",
+        "properties": {
+          "contribution": {
+            "type": "number",
+            "format": "double"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "ServiceGraph": {
         "type": "object",
         "properties": {
@@ -11702,41 +12384,6 @@
           }
         }
       },
-      "SimilarIncident": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "incidentId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "similarity": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "NEW",
-              "CLASSIFIED",
-              "ASSIGNED",
-              "ACKNOWLEDGED",
-              "IN_PROGRESS",
-              "PENDING_USER_INFO",
-              "RESOLVED",
-              "VERIFIED",
-              "CLOSED",
-              "REOPENED"
-            ]
-          },
-          "title": {
-            "type": "string"
-          }
-        }
-      },
       "SimilarIncidentRef": {
         "properties": {
           "code": {
@@ -11758,18 +12405,63 @@
           }
         }
       },
+      "SimilarIncidentView": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "match": {
+            "type": "string",
+            "enum": [
+              "DUPLICATE",
+              "RELATED"
+            ]
+          },
+          "similarity": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "CLASSIFIED",
+              "ASSIGNED",
+              "ACKNOWLEDGED",
+              "IN_PROGRESS",
+              "PENDING_USER_INFO",
+              "RESOLVED",
+              "VERIFIED",
+              "CLOSED",
+              "REOPENED"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "SimilarRequest": {
         "type": "object",
         "properties": {
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 0
           },
           "serviceId": {
             "type": "integer",
             "format": "int64"
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
           }
         },
         "required": [
@@ -11943,25 +12635,16 @@
           }
         }
       },
-      "SlaRisk": {
+      "SlaRiskView": {
         "type": "object",
-        "description": "LOW under 0.40, MEDIUM 0.40-0.69, HIGH 0.70 or more",
         "properties": {
+          "atRisk": {
+            "type": "boolean"
+          },
           "factors": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "contribution": {
-                  "type": "number"
-                },
-                "detail": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/components/schemas/RiskFactorView"
             }
           },
           "level": {
@@ -11974,8 +12657,11 @@
           },
           "score": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0
+            "format": "double"
+          },
+          "threshold": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -12017,21 +12703,18 @@
         "type": "object",
         "properties": {
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 0
           },
           "serviceId": {
-            "oneOf": [
-              {
-                "type": "integer",
-                "format": "int64"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "format": "int64"
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
           }
         },
         "required": [
@@ -12043,14 +12726,16 @@
         "type": "object",
         "properties": {
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 0
           }
         },
         "required": [
           "description"
         ]
       },
-      "SuggestedResolution": {
+      "SuggestedResolutionView": {
         "type": "object",
         "properties": {
           "code": {
@@ -12070,17 +12755,11 @@
             "type": "string"
           },
           "similarity": {
-            "type": "number"
+            "type": "number",
+            "format": "double"
           },
           "steps": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string"
           },
           "title": {
             "type": "string"
@@ -12197,7 +12876,7 @@
           }
         }
       },
-      "ThreadSummary": {
+      "ThreadSummaryView": {
         "type": "object",
         "properties": {
           "handoverNotes": {
@@ -12205,6 +12884,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LLM",
+              "KEYWORD"
+            ]
           },
           "summary": {
             "type": "string"

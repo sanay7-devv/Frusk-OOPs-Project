@@ -1,0 +1,82 @@
+{
+  "_help": "Dictionary of the offline (keyword) engine. A category is linked to every topic whose 'names' appear in the category's own name; its terms then count toward that category. Term weight 1.0 is a normal clue, 1.5 a strong one; one 1.5 term alone reaches confidence 0.65, two weight-1.0 terms 0.75. Phrase cues: the longest matching phrase wins, so 'not urgent' beats 'urgent'.",
+  "topics": {
+    "network": {
+      "names": ["network", "connectivity", "internet", "lan"],
+      "terms": {"network": 1.0, "internet": 1.0, "dns": 1.5, "router": 1.5, "gateway": 1.0, "firewall": 1.0,
+        "ethernet": 1.5, "dhcp": 1.5, "proxy": 1.0, "packet": 1.0, "ping": 1.0, "vpn": 1.5, "connectivity": 1.0, "lan": 1.0}
+    },
+    "vpn": {
+      "names": ["vpn", "remote"],
+      "terms": {"vpn": 1.5, "tunnel": 1.0, "anyconnect": 1.5, "openvpn": 1.5, "globalprotect": 1.5, "handshake": 1.0}
+    },
+    "wifi": {
+      "names": ["wifi", "wi-fi", "wireless", "wlan"],
+      "terms": {"wifi": 1.5, "wi-fi": 1.5, "wireless": 1.5, "ssid": 1.5, "access point": 1.0, "signal": 1.0}
+    },
+    "authentication": {
+      "names": ["authentication", "access", "identity", "login", "account", "sso"],
+      "terms": {"login": 1.0, "log in": 1.0, "password": 1.0, "sso": 1.5, "okta": 1.5, "saml": 1.5, "mfa": 1.5,
+        "two factor": 1.5, "locked out": 1.5, "lockout": 1.5, "credential": 1.0, "authentication": 1.5,
+        "permission": 1.0, "access denied": 1.5, "unauthorized": 1.0, "oauth": 1.5, "ldap": 1.5, "kerberos": 1.5}
+    },
+    "email": {
+      "names": ["email", "mail", "messaging", "outlook"],
+      "terms": {"email": 1.5, "mail": 1.0, "outlook": 1.5, "inbox": 1.0, "smtp": 1.5, "imap": 1.5, "mailbox": 1.5,
+        "calendar": 0.5, "attachment": 0.5}
+    },
+    "database": {
+      "names": ["database", "data", "sql", "integrity"],
+      "terms": {"database": 1.5, "sql": 1.5, "postgres": 1.5, "mysql": 1.5, "oracle": 1.0, "query": 1.0,
+        "deadlock": 1.5, "replication": 1.0, "corrupt": 1.0, "integrity": 1.0, "backup": 1.0, "restore": 1.0, "table": 0.5}
+    },
+    "performance": {
+      "names": ["performance", "latency", "slow", "degradation"],
+      "terms": {"slow": 1.0, "latency": 1.5, "timeout": 1.0, "lag": 1.0, "sluggish": 1.5, "cpu": 1.0,
+        "memory": 0.5, "response time": 1.0, "degraded": 1.0, "performance": 1.0}
+    },
+    "hardware": {
+      "names": ["hardware", "device", "laptop", "desktop", "equipment", "peripheral"],
+      "terms": {"laptop": 1.5, "desktop": 1.0, "monitor": 1.0, "keyboard": 1.5, "mouse": 1.0, "battery": 1.5,
+        "screen": 1.0, "docking": 1.5, "hardware": 1.5, "disk": 1.0, "usb": 1.0}
+    },
+    "printer": {
+      "names": ["printer", "printing", "print"],
+      "terms": {"printer": 1.5, "print": 1.0, "toner": 1.5, "paper": 1.0, "jam": 1.0, "scanner": 1.0}
+    },
+    "software": {
+      "names": ["application", "software", "app", "program"],
+      "terms": {"application": 1.0, "app": 0.5, "software": 1.5, "install": 1.5, "crash": 1.5, "not responding": 1.0,
+        "license": 1.0, "upgrade": 1.0, "bug": 1.0, "freeze": 1.0, "excel": 1.0, "teams": 1.0, "zoom": 1.0}
+    },
+    "security": {
+      "names": ["security", "malware"],
+      "terms": {"phishing": 1.5, "malware": 1.5, "virus": 1.5, "ransomware": 2.0, "suspicious": 1.0, "breach": 1.5,
+        "hack": 1.5, "compromised": 1.5, "spam": 1.0, "leak": 1.0, "security": 1.0}
+    },
+    "storage": {
+      "names": ["storage", "file", "share", "drive"],
+      "terms": {"shared drive": 1.5, "file share": 1.5, "onedrive": 1.5, "sharepoint": 1.5, "quota": 1.5,
+        "network drive": 1.5, "storage": 1.0, "disk space": 1.5}
+    }
+  },
+  "impact": {
+    "5": ["company-wide", "company wide", "entire company", "whole company", "entire office", "everyone", "all users",
+      "all employees", "all customers", "complete outage", "total outage", "production down", "data loss", "nobody can",
+      "no one can"],
+    "4": ["outage", "multiple users", "many users", "several users", "whole team", "entire team", "whole department",
+      "department", "production", "unable to process"],
+    "3": ["my team", "a few users", "some users"],
+    "2": ["only me", "just me", "one user", "single user", "my laptop", "my computer"],
+    "1": ["cosmetic", "typo", "minor", "suggestion"]
+  },
+  "urgency": {
+    "5": ["urgent", "urgently", "asap", "immediately", "right now", "emergency", "critical", "cannot work at all",
+      "can't work at all"],
+    "4": ["cannot work", "can't work", "unable to work", "blocked", "blocking", "deadline", "by end of day",
+      "cannot access", "can't access", "cannot login", "cannot log in", "can't login", "can't log in"],
+    "3": ["soon", "this week"],
+    "2": ["when possible", "when you can", "no rush", "not urgent", "low priority", "whenever"],
+    "1": ["no rush at all", "someday", "eventually", "nice to have"]
+  }
+}

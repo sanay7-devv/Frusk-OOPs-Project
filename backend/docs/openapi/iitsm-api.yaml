@@ -5455,9 +5455,7 @@ paths:
       - Incidents
   /api/v1/incidents/{id}/similar:
     get:
-      description: "**Planned for M12; not implemented yet.** Who: participant. Agreed\
-        \ in the API contract (Appendix B/C)."
-      operationId: planned_get_incidents_by_id_similar
+      operationId: similar
       parameters:
       - in: path
         name: id
@@ -5472,18 +5470,88 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/SimilarIncident"
-          description: Success
-      summary: Similar incidents for an existing incident
+                  $ref: "#/components/schemas/SimilarIncidentView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: INCIDENT_NOT_FOUND
+                fieldErrors: []
+                message: "No such incident, or the caller may not see it."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may\
+            \ not see it"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Similar open incidents for an existing incident
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/incidents/{id}/sla-risk:
     get:
-      description: "**Planned for M12; not implemented yet.** Who: assignee, admin.\
-        \ Agreed in the API contract (Appendix B/C)."
-      operationId: planned_get_incidents_by_id_sla_risk
+      operationId: slaRisk
       parameters:
       - in: path
         name: id
@@ -5496,13 +5564,86 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SlaRisk"
-          description: Success
-      summary: SLA risk score with factors
+                $ref: "#/components/schemas/SlaRiskView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: INCIDENT_NOT_FOUND
+                fieldErrors: []
+                message: "No such incident, or the caller may not see it."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may\
+            \ not see it"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "SLA risk score 0 to 1 with the contribution of each factor (assignee,\
+        \ team lead, admin)"
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/incidents/{id}/start:
     post:
       operationId: start
@@ -5613,9 +5754,7 @@ paths:
       - Incidents
   /api/v1/incidents/{id}/suggested-resolutions:
     get:
-      description: "**Planned for M12; not implemented yet.** Who: assignee, admin.\
-        \ Agreed in the API contract (Appendix B/C)."
-      operationId: planned_get_incidents_by_id_suggested_resolutions
+      operationId: suggestedResolutions
       parameters:
       - in: path
         name: id
@@ -5630,18 +5769,89 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/SuggestedResolution"
-          description: Success
-      summary: Fixes used on similar resolved incidents
+                  $ref: "#/components/schemas/SuggestedResolutionView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: INCIDENT_NOT_FOUND
+                fieldErrors: []
+                message: "No such incident, or the caller may not see it."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may\
+            \ not see it"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "Fixes used on similar resolved incidents, reusable ones preferred\
+        \ (assignee, team lead, admin)"
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/incidents/{id}/summary:
     post:
-      description: "**Planned for M12; not implemented yet.** Who: assignee, admin.\
-        \ Agreed in the API contract (Appendix B/C)."
-      operationId: planned_post_incidents_by_id_summary
+      operationId: summary
       parameters:
       - in: path
         name: id
@@ -5654,13 +5864,99 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ThreadSummary"
-          description: Success
-      summary: AI summary and handover notes of the thread
+                $ref: "#/components/schemas/ThreadSummaryView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: INCIDENT_NOT_FOUND
+                fieldErrors: []
+                message: "No such incident, or the caller may not see it."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may\
+            \ not see it"
+        "429":
+          content:
+            application/json:
+              example:
+                code: RATE_LIMITED
+                fieldErrors: []
+                message: Too many requests.
+                path: /api/v1/...
+                status: 429
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `RATE_LIMITED`: Too many requests"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "Summary and handover notes of the comments and audit entries (assignee,\
+        \ team lead, admin)"
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/incidents/{id}/verify:
     post:
       operationId: verify
@@ -5772,9 +6068,7 @@ paths:
       - Incidents
   /api/v1/intelligence/similar:
     post:
-      description: "**Planned for M12; not implemented yet.** Who: any. Agreed in\
-        \ the API contract (Appendix B/C)."
-      operationId: planned_post_intelligence_similar
+      operationId: similarToDraft
       requestBody:
         content:
           application/json:
@@ -5788,18 +6082,101 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/SimilarIncident"
-          description: Success
-      summary: Similar open incidents for a draft report
+                  $ref: "#/components/schemas/SimilarIncidentView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: SERVICE_NOT_FOUND
+                fieldErrors: []
+                message: No such IT service.
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_NOT_FOUND`: No such IT service"
+        "429":
+          content:
+            application/json:
+              example:
+                code: RATE_LIMITED
+                fieldErrors: []
+                message: Too many requests.
+                path: /api/v1/...
+                status: 429
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `RATE_LIMITED`: Too many requests"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Similar open incidents on the same service inside the look-back window
+        (TF-IDF)
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/intelligence/suggest-category:
     post:
-      description: "**Planned for M12; not implemented yet.** Who: any. Agreed in\
-        \ the API contract (Appendix B/C)."
-      operationId: planned_post_intelligence_suggest_category
+      operationId: suggestCategory
       requestBody:
         content:
           application/json:
@@ -5811,18 +6188,101 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CategorySuggestion"
-          description: Success
-      summary: "AI category suggestion (LLM, keyword fallback)"
+                $ref: "#/components/schemas/CategorySuggestionView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "404":
+          content:
+            application/json:
+              example:
+                code: SERVICE_NOT_FOUND
+                fieldErrors: []
+                message: No such IT service.
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_NOT_FOUND`: No such IT service"
+        "429":
+          content:
+            application/json:
+              example:
+                code: RATE_LIMITED
+                fieldErrors: []
+                message: Too many requests.
+                path: /api/v1/...
+                status: 429
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `RATE_LIMITED`: Too many requests"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: Category suggestion (LLM with keyword fallback); null category below
+        autocat.min.confidence
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/intelligence/suggest-intake:
     post:
-      description: "**Planned for M12; not implemented yet.** Who: any. Agreed in\
-        \ the API contract (Appendix B/C)."
-      operationId: planned_post_intelligence_suggest_intake
+      operationId: suggestIntake
       requestBody:
         content:
           application/json:
@@ -5834,13 +6294,84 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IntakeSuggestion"
-          description: Success
-      summary: "AI suggestion of category, impact and urgency"
+                $ref: "#/components/schemas/IntakeSuggestionView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "429":
+          content:
+            application/json:
+              example:
+                code: RATE_LIMITED
+                fieldErrors: []
+                message: Too many requests.
+                path: /api/v1/...
+                status: 429
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `RATE_LIMITED`: Too many requests"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+      summary: "Category, impact and urgency suggested from a free-text description"
       tags:
-      - Planned
-      x-module: M12
-      x-status: planned
+      - Intelligence
   /api/v1/notifications:
     get:
       operationId: list_1
@@ -7262,24 +7793,17 @@ components:
             format: int64
       required:
       - name
-    CategorySuggestion:
+    CategorySuggestionView:
       type: object
-      description: Null category and empty reason when confidence is below autocat.min.confidence
-        (0.60)
       properties:
         categoryId:
-          oneOf:
-          - type: integer
-            format: int64
-          - type: "null"
+          type: integer
+          format: int64
         categoryName:
-          oneOf:
-          - type: string
-          - type: "null"
+          type: string
         confidence:
           type: number
-          maximum: 1
-          minimum: 0
+          format: double
         reason:
           type: string
         source:
@@ -7927,24 +8451,20 @@ components:
           - REOPENED
         title:
           type: string
-    IntakeSuggestion:
+    IntakeSuggestionView:
       type: object
       properties:
         categoryId:
-          oneOf:
-          - type: integer
-            format: int64
-          - type: "null"
+          type: integer
+          format: int64
         categoryName:
-          oneOf:
-          - type: string
-          - type: "null"
+          type: string
         confidence:
           type: number
+          format: double
         impact:
           type: integer
-          maximum: 5
-          minimum: 1
+          format: int32
         reason:
           type: string
         source:
@@ -7954,8 +8474,7 @@ components:
           - KEYWORD
         urgency:
           type: integer
-          maximum: 5
-          minimum: 1
+          format: int32
     LabelCount:
       type: object
       properties:
@@ -8430,6 +8949,16 @@ components:
       - notes
       - rootCause
       - timeSpentMinutes
+    RiskFactorView:
+      type: object
+      properties:
+        contribution:
+          type: number
+          format: double
+        detail:
+          type: string
+        name:
+          type: string
     ServiceGraph:
       type: object
       properties:
@@ -8560,7 +9089,21 @@ components:
           type: string
         owner:
           type: string
-    SimilarIncident:
+    SimilarIncidentRef:
+      properties:
+        code:
+          type: string
+        id:
+          type: integer
+          format: int64
+        similarity:
+          type: number
+          format: double
+        status:
+          type: string
+        title:
+          type: string
+    SimilarIncidentView:
       type: object
       properties:
         code:
@@ -8568,10 +9111,14 @@ components:
         incidentId:
           type: integer
           format: int64
+        match:
+          type: string
+          enum:
+          - DUPLICATE
+          - RELATED
         similarity:
           type: number
-          maximum: 1
-          minimum: 0
+          format: double
         status:
           type: string
           enum:
@@ -8587,30 +9134,20 @@ components:
           - REOPENED
         title:
           type: string
-    SimilarIncidentRef:
-      properties:
-        code:
-          type: string
-        id:
-          type: integer
-          format: int64
-        similarity:
-          type: number
-          format: double
-        status:
-          type: string
-        title:
-          type: string
     SimilarRequest:
       type: object
       properties:
         description:
           type: string
+          maxLength: 5000
+          minLength: 0
         serviceId:
           type: integer
           format: int64
         title:
           type: string
+          maxLength: 200
+          minLength: 0
       required:
       - description
       - serviceId
@@ -8734,21 +9271,15 @@ components:
           format: int64
         serviceName:
           type: string
-    SlaRisk:
+    SlaRiskView:
       type: object
-      description: "LOW under 0.40, MEDIUM 0.40-0.69, HIGH 0.70 or more"
       properties:
+        atRisk:
+          type: boolean
         factors:
           type: array
           items:
-            type: object
-            properties:
-              contribution:
-                type: number
-              detail:
-                type: string
-              name:
-                type: string
+            $ref: "#/components/schemas/RiskFactorView"
         level:
           type: string
           enum:
@@ -8757,8 +9288,10 @@ components:
           - HIGH
         score:
           type: number
-          maximum: 1
-          minimum: 0
+          format: double
+        threshold:
+          type: number
+          format: double
     SlaViolationView:
       type: object
       properties:
@@ -8788,13 +9321,15 @@ components:
       properties:
         description:
           type: string
+          maxLength: 5000
+          minLength: 0
         serviceId:
-          oneOf:
-          - type: integer
-            format: int64
-          - type: "null"
+          type: integer
+          format: int64
         title:
           type: string
+          maxLength: 200
+          minLength: 0
       required:
       - description
       - title
@@ -8803,9 +9338,11 @@ components:
       properties:
         description:
           type: string
+          maxLength: 5000
+          minLength: 0
       required:
       - description
-    SuggestedResolution:
+    SuggestedResolutionView:
       type: object
       properties:
         code:
@@ -8821,10 +9358,9 @@ components:
           type: string
         similarity:
           type: number
+          format: double
         steps:
-          oneOf:
-          - type: string
-          - type: "null"
+          type: string
         title:
           type: string
     TechnicianInfo:
@@ -8908,13 +9444,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SkillLevel"
-    ThreadSummary:
+    ThreadSummaryView:
       type: object
       properties:
         handoverNotes:
           type: array
           items:
             type: string
+        source:
+          type: string
+          enum:
+          - LLM
+          - KEYWORD
         summary:
           type: string
     TrendPoint:

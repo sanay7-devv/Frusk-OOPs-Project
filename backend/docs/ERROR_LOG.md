@@ -235,6 +235,50 @@ Entry template:
 - Cause: M9 added six settings (`notification.*`). On Windows, Python writes redirected output in cp1252.
 - Fix: both counts are 41 now; run the suites with `PYTHONIOENCODING=utf-8` when redirecting.
 - Prevention: Testing teammate: count the settings from `ConfigKey.values().length`, not from a literal.
+
+### E-M12-1: Summary of an unresolved incident returned 500 (null embedded Resolution)
+- Date: 2026-11-14
+- Area: domain
+- Symptom: `POST /incidents/{id}/summary` returned 500 INTERNAL_ERROR; log: `NullPointerException: Cannot invoke "Resolution.isPresent()" because the return value of "Incident.getResolution()" is null`. Found by `m12_smoke.py`.
+- Cause: `Resolution` is an embedded value whose columns are all NULL until the incident is resolved. When Hibernate loads such a row it leaves the embedded field null, although the entity initialises it with `Resolution.none()` for new objects. `Resolution.isPresent()` never gets called on a null.
+- Fix: `IntelligenceReader.threadFor` checks `getResolution() != null` before `isPresent()`.
+- Prevention: treat every embedded value of a loaded entity as nullable. The queries for suggested resolutions only select incidents with a root cause, so they never see the null.
+- Status: fixed
+
+### E-M12-2: The scheduled risk scan did not run for five minutes after a start
+- Date: 2026-11-14
+- Area: config
+- Symptom: after setting `sla.risk.scan.interval.seconds` to 5 in the smoke run, the first scan still came 300 seconds after the application started, so a freshly started demo showed nothing for five minutes.
+- Cause: the trigger computes the first execution as start time plus the interval stored at that moment (the default 300); a changed interval is only read after a run has completed.
+- Fix: `SlaRiskScanJob` runs the first scan at most 30 seconds after start and later ones every interval. The smoke test checks the scan in a second phase after a restart (`M12_MODE=scan`).
+- Prevention: for any scheduled job, decide the first-run delay explicitly. `SlaMonitorJob` has the same shape (first run one interval after start); left unchanged.
+- Status: fixed
+
+### E-M12-3: The smoke suite gave different answers on a reused database
+- Date: 2026-11-14
+- Area: other
+- Symptom: on the second run of `m12_smoke.py` against the same database, category suggestions returned categories of the first run and similarity scores dropped below their thresholds.
+- Cause: categories and incidents of earlier runs are still active and still count: an old "Network xxxxxx" category wins ties by name, and old printer incidents lower the TF-IDF weight of the words "printer" and "floor".
+- Fix: the script retires every existing category and moves older incidents 400 days back at the start, so only its own data counts. It stays re-runnable on the shared dev database.
+- Prevention: any suite that depends on text statistics must isolate its data. Related: the category names carry a random run suffix, so texts must not contain it (it matched the category name words).
+- Status: fixed
+
+### E-M12-4: Hard-coded settings count and a wrong claim about "all suites green"
+- Date: 2026-11-14
+- Area: other
+- Symptom: `m3_smoke.py` and `endpoint_sweep.py` check that `GET /admin/config` lists exactly N settings; with 14 new keys they fail until N is raised (35 to 49 for this branch). The shared `m4_smoke.py` and `endpoint_sweep.py` also expect M10 features (`GIVE_FEEDBACK`, `/reports/*`) that are not in this branch.
+- Cause: the checks pin an exact number and the shared scripts follow the newest branch, not this one.
+- Fix: for this branch the copies used for the run carry 49 and without the M10 checks; the endpoint sweep gained a section for the seven new operations in the shared copy.
+- Prevention: when branches are merged, add up the new keys (35 + M9/M10/M11 keys + 14) and update the two numbers once; consider checking `>=` and the presence of the keys.
+- Status: fixed (merge task)
+
+### E-M12-5: Smoke output redirected to a file crashed on an arrow character
+- Date: 2026-11-14
+- Area: other
+- Symptom: `m8_smoke.py > file` ended with `UnicodeEncodeError: 'charmap' codec can't encode character '→'` and no summary line.
+- Cause: on Windows, Python writes to a redirected stdout with the console code page (cp1252); the audit text contains `→`.
+- Fix: run with `PYTHONIOENCODING=utf-8`.
+- Prevention: set it in the shell profile or the CI job that runs the smoke scripts.
 - Status: fixed
 
 ---
