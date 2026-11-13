@@ -51,7 +51,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 12. [x] M6 assignment strategies (Skill, Load, RoundRobin, ExperiencePriority, Composite) and automatic assignment on creation; triage queue + TRIAGE_NEEDED; recommendations endpoint. Done 2026-11-06. Done-when (handbook 2.5): changing assignment.strategy changes who receives the next incident with no restart (T04 verified), ineligible technicians are never chosen (excluded list verified).
 14. [x] M7 SLA monitor (2026-11-07, D-014, smoke-tested `m7_smoke.py`, T23 included): scheduled job, 75 / 90 percent warnings, violations, `sla_violations`, fire-once flags, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`. Business-hours calendar done too (2026-11-07, D-016, user decision DEC-39, `calendar_smoke.py` 11/11): `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`, settings `sla.business.*` in `app_config`, policies may use BUSINESS_HOURS (stored as BUSINESS_HRS, E-022). Audit rows and notifications for the SLA events come with M8 and M9.
 15. [x] M8 events and audit (2026-11-07, D-015, smoke-tested `m8_smoke.py`): `IncidentChanged` for every incident action, `TriageNeeded`, `SecurityAuditEvent`; `AuditListener` writes `audit_records` in the action's transaction (refusals and failed logins in their own); `GET /incidents/{id}/history`, `GET /audit`. Finishes the M2 audit (LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED) and the M4 history.
-16. [~] Refactor, checked by the smoke suites before and after (DEC-46). **C2 done 2026-11-13 (D-025):** `Incident` records an `IncidentFact` for every state and priority change and `IncidentService` publishes its audit events from them; all eight suites identical before and after (auth 27, M3 42, M4 54, M6 33, M7 35, M8 24, calendar 11, sweep 65/65). **C1 next:** one command object per lifecycle action.
+16. [x] Refactor, checked by the smoke suites before and after (DEC-46). **C2 done 2026-11-13 (D-025):** `Incident` records an `IncidentFact` for every state and priority change and `IncidentService` publishes its audit events from them; all eight suites identical before and after (auth 27, M3 42, M4 54, M6 33, M7 35, M8 24, calendar 11, sweep 65/65). **C1 done 2026-11-13 (D-026):** eight command objects (acknowledge, start work, request info, provide info, resolve, verify, close, reopen) run by one `IncidentCommandRunner`; same eight suites, identical results.
 17. [ ] M9 notifications, then section 5 in order.
 13. [ ] M4 leftovers: `POST /incidents/{id}/escalate` (M11), `mark-duplicate` and duplicate check on create (M12), feedback, attachments (M14 checks). The audit history endpoint is done (M8, 2026-11-07).
 8. [ ] M2b Google sign-in (after M2 login passes its done-when check): add `POST /auth/google`, Google ID token verification, account linking by email, tests. See D-001 for the design.
@@ -99,7 +99,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | G2 | `AutoVerifyJob` | DEC-46 | M11 | [ ] |
 | G3 | Reporter withdraw action | DEC-46 | M10 | [ ] |
 | G4 | Lock impact and urgency for the reporter once assigned | DEC-46 | M14 | [ ] |
-| C1, C2 | Command objects; aggregate-recorded events | DEC-46 | before M9 | [ ] |
+| C1, C2 | Command objects; aggregate-recorded events | DEC-46 | before M9 | [x] done 2026-11-13 |
 | C3 | Security category as a setting; factory for internal audit entries | DEC-46 | M14 | [ ] |
 | Last | A4 mobile push, A8 Prometheus and Grafana, A12 password reset and TOTP, A5 cloud deployment | DEC-45 | after everything else | [ ] |
 
@@ -116,7 +116,7 @@ The handbook's week-by-week plan, freeze dates, scope tiers and cut order are no
 | 5 | M6 Assignment | [x] | M4 auto-assign |
 | 6 | M7 SLA monitor | [x] | business-hours calendar (`BusinessHoursCalendar`) |
 | 7 | M8 Events and audit | [x] | M2 auth audit, M4 history, audit of SLA warnings and violations |
-| 8a | Refactor, checked by the smoke suites | [ ] next | aggregate-recorded events (C2), command objects (C1) |
+| 8a | Refactor, checked by the smoke suites | [x] 2026-11-13 | aggregate-recorded events (C2), command objects (C1) |
 | 8 | M9 Notifications | [ ] | M6 TRIAGE_NEEDED notice, notification preferences, chat-webhook channel (A6) |
 | 9 | M10 Search and reports | [ ] | slaState filter, PDF export, saved views, feedback after resolution, withdraw (G3), coverage risk report (E3), post-incident report (E4), priority what-if (A11) |
 | 10 | M11 Escalation | [ ] | M4 escalate, `AutoVerifyJob` (G2), escalation preview (A11), adjustable demo clock (D1) |
@@ -158,6 +158,7 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 | D-023 | 2026-11-13 | Five features answering the brief's named challenges (DECISIONS.md DEC-47): E1 service status board, E2 recurring-problem detector, E3 coverage risk report, E4 post-incident report, E5 reporter tracking view. |
 | D-024 | 2026-11-13 | Correction to D-018 and D-022: tests stay with the Testing teammate as the handbook says (the review had given domain unit tests to the backend lead). The C1 and C2 refactors are checked with the smoke suites; architecture rule tests (A9) are a suggestion to the Testing teammate. |
 | D-025 | 2026-11-13 | C2 built (DECISIONS.md DEC-46, option A chosen by the user): the aggregate records plain facts (action, status before, status after); the service adds actor and wording; an action that records no fact fails loudly instead of skipping its audit entry. Comments stay published by the service. No change of behavior or audit text. |
+| D-026 | 2026-11-13 | C1 built (DECISIONS.md DEC-46): `IncidentCommand` objects for the eight plain lifecycle actions and one `IncidentCommandRunner` for the steps they share; `IncidentEventPublisher` turns facts into events for the runner and the service. Creation, edits, assignment, priority override and comments stay in `IncidentService`. No change of behavior; the eight suites are identical before and after. |
 
 ## 7. Open questions / blockers
 

@@ -17,22 +17,28 @@ import com.iitsm.application.config.ConfigService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
 import com.iitsm.application.incident.IncidentViews.IncidentSummary;
+import com.iitsm.application.incident.command.AcknowledgeCommand;
+import com.iitsm.application.incident.command.CloseCommand;
+import com.iitsm.application.incident.command.IncidentCommandRunner;
+import com.iitsm.application.incident.command.ProvideInfoCommand;
+import com.iitsm.application.incident.command.ReopenCommand;
+import com.iitsm.application.incident.command.RequestInfoCommand;
+import com.iitsm.application.incident.command.ResolveCommand;
+import com.iitsm.application.incident.command.StartWorkCommand;
+import com.iitsm.application.incident.command.VerifyCommand;
 import com.iitsm.domain.assignment.EligibilityFilter;
 import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.audit.AuditRecord;
-import com.iitsm.domain.event.IncidentChanged;
 import com.iitsm.domain.event.TriageNeeded;
 import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.assignment.WorkloadTracker;
 import com.iitsm.domain.category.Category;
-import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.exception.IncidentNotFoundException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.OptimisticLockConflictException;
 import com.iitsm.domain.exception.ServiceNotFoundException;
 import com.iitsm.domain.exception.TechnicianUnavailableException;
 import com.iitsm.domain.exception.UserNotFoundException;
-import com.iitsm.domain.incident.ClosureReason;
 import com.iitsm.domain.incident.CommentVisibility;
 import com.iitsm.domain.incident.Incident;
 import com.iitsm.domain.incident.IncidentAction;
@@ -41,7 +47,6 @@ import com.iitsm.domain.incident.IncidentFact;
 import com.iitsm.domain.incident.IncidentFactory;
 import com.iitsm.domain.incident.IncidentQuery;
 import com.iitsm.domain.incident.IncidentStatus;
-import com.iitsm.domain.incident.Resolution;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.priority.PriorityBreakdown;
 import com.iitsm.domain.priority.PriorityEngine;
@@ -63,7 +68,8 @@ import com.iitsm.domain.user.User;
  * Incident use cases (module M4 with the M5 priority engine). Every action follows the same steps: load, check that
  * the caller may do it (403 UNAUTHORIZED_OPERATION), let the State pattern decide whether the move is legal in the
  * current status (409 INVALID_STATE_TRANSITION), save, return the detail view. One transaction per call, so a
- * failed step changes nothing.
+ * failed step changes nothing. The plain lifecycle actions are command objects run by {@link IncidentCommandRunner}
+ * (Command pattern, decision DEC-46); creation, edits, assignment, priority override and comments stay here.
  * <p>
  * Every successful action publishes an {@link IncidentChanged} event (Observer, module M8); the audit listener
  * writes it in the same transaction, so an action never commits without its audit record and a refused one leaves
@@ -87,6 +93,8 @@ public class IncidentService {
     private final AssignmentService assignment;
     private final AuditRepository audit;
     private final ApplicationEventPublisher events;
+    private final IncidentEventPublisher publisher;
+    private final IncidentCommandRunner commands;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
@@ -94,7 +102,7 @@ public class IncidentService {
                            IncidentFactory factory, PriorityEngine priorityEngine, SlaPolicyResolver slaPolicies,
                            ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
                            AssignmentService assignment, AuditRepository audit, ApplicationEventPublisher events,
-                           Clock clock) {
+                           IncidentEventPublisher publisher, IncidentCommandRunner commands, Clock clock) {
         this.incidents = incidents;
         this.search = search;
         this.comments = comments;
@@ -110,6 +118,8 @@ public class IncidentService {
         this.assignment = assignment;
         this.audit = audit;
         this.events = events;
+        this.publisher = publisher;
+        this.commands = commands;
         this.clock = clock;
     }
 
@@ -300,92 +310,52 @@ public class IncidentService {
         return views.detail(incident, caller);
     }
 
-    // ------------------------------------------------------------------ lifecycle
+    // ------------------------------------------------------------------ lifecycle (Command pattern)
+
+    // Each action is a small command object; the runner does the steps they all share (see IncidentCommandRunner).
 
     @Transactional
     public IncidentDetail acknowledge(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.ACKNOWLEDGE);
-        incident.acknowledge(clock.instant());
-        published(caller, incident, "Acknowledged by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new AcknowledgeCommand());
     }
 
     @Transactional
     public IncidentDetail startWork(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.START_WORK);
-        incident.startWork(clock.instant());
-        published(caller, incident, "Work started by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new StartWorkCommand());
     }
 
     /** The question is saved as a public note so the reporter sees it. */
     @Transactional
     public IncidentDetail requestInfo(AuthenticatedUser caller, Long id, String message) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.REQUEST_INFO);
-        Instant now = clock.instant();
-        incident.requestInfo(message, now);
-        addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
-        published(caller, incident, "Information requested by %s; resolution clock paused");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new RequestInfoCommand(message));
     }
 
     @Transactional
     public IncidentDetail provideInfo(AuthenticatedUser caller, Long id, String message) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.PROVIDE_INFO);
-        Instant now = clock.instant();
-        incident.provideInfo(message, now, slaPolicies.resolve(incident.getService(), incident.getPriority())
-                .targets(config.current()).calendar());
-        addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, message, now);
-        published(caller, incident, "Information provided by %s; resolution clock resumed, due " + incident.getSla().getResolutionDue());
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new ProvideInfoCommand(message));
     }
 
     @Transactional
     public IncidentDetail resolve(AuthenticatedUser caller, Long id, String rootCause, String notes, String steps,
                                   Integer timeSpentMinutes, boolean reusableSolution) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.RESOLVE);
-        Resolution resolution = new Resolution(rootCause, notes, steps,
-                timeSpentMinutes == null ? 0 : timeSpentMinutes, reusableSolution);
-        incident.resolve(resolution, clock.instant());
-        published(caller, incident, "Resolved by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id,
+                new ResolveCommand(rootCause, notes, steps, timeSpentMinutes, reusableSolution));
     }
 
     @Transactional
     public IncidentDetail verify(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.VERIFY);
-        incident.verify(clock.instant());
-        published(caller, incident, "Fix confirmed by %s");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new VerifyCommand());
     }
 
     @Transactional
     public IncidentDetail close(AuthenticatedUser caller, Long id) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.CLOSE);
-        incident.close(ClosureReason.VERIFIED, clock.instant());
-        published(caller, incident, "Closed by %s (reason VERIFIED)");
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new CloseCommand());
     }
 
     /** Restarts the resolution clock with the full target of the incident's SLA; the reason is a public note. */
     @Transactional
     public IncidentDetail reopen(AuthenticatedUser caller, Long id, String reason) {
-        Incident incident = load(id);
-        access.require(caller, incident, IncidentAction.REOPEN);
-        AppSettings settings = config.current();
-        SlaPolicy policy = slaPolicies.resolve(incident.getService(), incident.getPriority());
-        Instant now = clock.instant();
-        incident.reopen(reason, now, settings.reopenWindow(), policy.targets(settings));
-        addNote(incident, loadUser(caller.id()), CommentVisibility.PUBLIC, "Reopened: " + reason, now);
-        published(caller, incident, "Reopened by %s; resolution clock restarted, due " + incident.getSla().getResolutionDue());
-        return views.detail(incident, caller);
+        return commands.run(caller, id, new ReopenCommand(reason));
     }
 
     // ------------------------------------------------------------------ comments
@@ -413,28 +383,12 @@ public class IncidentService {
 
     // ------------------------------------------------------------------ helpers
 
-    /** Publishes the event of an action the caller just performed; {@code template} has one %s for the name. */
-    private void published(AuthenticatedUser caller, Incident incident, String template) {
-        User actor = loadUser(caller.id());
-        publishFact(incident, actor, template.formatted(actor.getName()));
-    }
-
-    /**
-     * Publishes the one fact the incident recorded for the action just performed. Failing here when the incident
-     * recorded nothing (or more than one fact) turns a forgotten audit entry into an error instead of a silent gap.
-     */
     private void publishFact(Incident incident, User actor, String description) {
-        List<IncidentFact> facts = incident.drainFacts();
-        if (facts.size() != 1) {
-            throw new IllegalStateException("Expected one recorded fact for " + incident.getCode() + " but found "
-                    + facts.size() + ": " + facts);
-        }
-        publish(incident, facts.get(0), actor, description);
+        publisher.publishFact(incident, actor, description);
     }
 
     private void publish(Incident incident, IncidentFact fact, User actor, String description) {
-        events.publishEvent(new IncidentChanged(incident.getId(), incident.getCode(), fact.action(),
-                actor == null ? null : actor.getId(), fact.before(), fact.after(), description, clock.instant()));
+        publisher.publish(incident, fact, actor, description);
     }
 
     private static String priorityText(Incident incident) {
