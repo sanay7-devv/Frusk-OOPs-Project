@@ -91,7 +91,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- PDF export of the post-incident report (decision DEC-48) -->
+        <!-- PDF export of the post-incident report (decision DEC-64) -->
         <dependency>
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>

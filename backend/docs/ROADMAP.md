@@ -2,7 +2,7 @@
 
 Living document. Update after every working session. Source of truth for scope: the team handbooks (Backend Lead Handbook, section 2.5 modules M1 to M14).
 
-Last updated: 2026-11-13 (review and plan day: DEC-42 to DEC-47; test ownership corrected, D-024; no code change)
+Last updated: 2026-11-14 (M10 search and reports built and smoke-tested, all of it except the reporter withdraw action; DEC-60 to DEC-66)
 
 Scope rule (D-012): every feature in the handbook is built in full; there are no scope tiers, no cut order and no timeline. Work follows module dependencies only.
 
@@ -70,7 +70,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | M7 | SLA engine and monitor | [x] 2026-11-07 monitor, warnings, violations, endpoint (smoke-tested incl. T23), business-hours calendar |
 | M8 | Events and audit trail | [x] 2026-11-07, smoke-tested; M2 auth audit and M4 history done |
 | M9 | Notifications (4 channels) | [ ] |
-| M10 | Search and reports | [ ] |
+| M10 | Search and reports | [x] 2026-11-14, smoke-tested (m10_smoke 135 checks); withdraw (G3) still open, see section 7 |
 | M11 | Escalation (Chain of Responsibility) | [ ] |
 | M12 | Intelligence and AI (with keyword fallback) | [ ] |
 | M13 | Real-time layer, dashboard, service graph | [ ] |
@@ -87,17 +87,17 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | D2 | Outage drill, demo profile only | DEC-45 | M12 | [ ] |
 | E1 | Service status board | DEC-47 | M13 | [ ] |
 | E2 | Recurring-problem detector | DEC-47 | M12 | [ ] |
-| E3 | Coverage risk report | DEC-47 | M10 | [ ] |
-| E4 | Post-incident report | DEC-47 | M10 | [ ] |
+| E3 | Coverage risk report | DEC-47 | M10 | [x] 2026-11-14 |
+| E4 | Post-incident report | DEC-47 | M10 | [x] 2026-11-14 |
 | E5 | Reporter tracking view | DEC-47 | Frontend | [ ] |
 | A1, A2 | Chatbot and voice incident reporting | DEC-43 | M12, Frontend | [ ] |
 | A6 | Chat-webhook notification channel | DEC-43 | M9 | [ ] |
 | A9, A10 | Architecture rule tests; CI quality gate | DEC-43 | Testing teammate (both) | [ ] |
-| A11 | Priority what-if, escalation preview | DEC-43 | M10, M11 | [ ] |
+| A11 | Priority what-if, escalation preview | DEC-43 | M10, M11 | what-if [x] 2026-11-14; escalation preview [ ] |
 | A13, A14 | Traceability matrix; campus demo data | DEC-43 | Report, seed data | [ ] |
 | A7 | Load test and scale-out path | DEC-43 | M14 | [ ] |
 | G2 | `AutoVerifyJob` | DEC-46 | M11 | [ ] |
-| G3 | Reporter withdraw action | DEC-46 | M10 | [ ] |
+| G3 | Reporter withdraw action | DEC-46 | M10 | [ ] left open on purpose (it changes `Incident` and the state classes) |
 | G4 | Lock impact and urgency for the reporter once assigned | DEC-46 | M14 | [ ] |
 | C1, C2 | Command objects; aggregate-recorded events | DEC-46 | before M9 | [x] done 2026-11-13 |
 | C3 | Security category as a setting; factory for internal audit entries | DEC-46 | M14 | [ ] |
@@ -118,7 +118,7 @@ The handbook's week-by-week plan, freeze dates, scope tiers and cut order are no
 | 7 | M8 Events and audit | [x] | M2 auth audit, M4 history, audit of SLA warnings and violations |
 | 8a | Refactor, checked by the smoke suites | [x] 2026-11-13 | aggregate-recorded events (C2), command objects (C1) |
 | 8 | M9 Notifications | [ ] | M6 TRIAGE_NEEDED notice, notification preferences, chat-webhook channel (A6) |
-| 9 | M10 Search and reports | [ ] | slaState filter, PDF export, saved views, feedback after resolution, withdraw (G3), coverage risk report (E3), post-incident report (E4), priority what-if (A11) |
+| 9 | M10 Search and reports | [x] except withdraw | slaState filter, PDF export, saved views, feedback after resolution, coverage risk report (E3), post-incident report (E4), priority what-if (A11) built 2026-11-14; withdraw (G3) [ ] |
 | 10 | M11 Escalation | [ ] | M4 escalate, `AutoVerifyJob` (G2), escalation preview (A11), adjustable demo clock (D1) |
 | 11 | M12 Intelligence and AI | [ ] | M4 duplicates, mark-duplicate, thread summarizer, chatbot intake (A1), recurring-problem detector (E2), Major Incident Mode grouping and join (S2), outage drill (D2) |
 | 12 | M13 Real-time, dashboard, graph | [ ] | dependency graph and impact, root cause from the graph (S2), service status board (E1) |
@@ -157,6 +157,7 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 | D-022 | 2026-11-13 | Fixes from the code and frontend review (DECISIONS.md DEC-46): G1 frontend wiring order, G2 `AutoVerifyJob` with M11, G3 withdraw action, G4 reporter edit lock, G5 `major` keeps its meaning, C1 command objects, C2 aggregate-recorded events, C3 text rules replaced, C4 patterns named. |
 | D-023 | 2026-11-13 | Five features answering the brief's named challenges (DECISIONS.md DEC-47): E1 service status board, E2 recurring-problem detector, E3 coverage risk report, E4 post-incident report, E5 reporter tracking view. |
 | D-024 | 2026-11-13 | Correction to D-018 and D-022: tests stay with the Testing teammate as the handbook says (the review had given domain unit tests to the backend lead). The C1 and C2 refactors are checked with the smoke suites; architecture rule tests (A9) are a suggestion to the Testing teammate. |
+| D-040 | 2026-11-14 | M10 search and reports (DECISIONS.md DEC-60 to DEC-66): reports are scoped by the caller's visibility and computed by SQL aggregates; `slaState` filter on the stored flags; CSV export written directly, capped, formula-safe; coverage risk from incident history; post-incident report and PDF through an adapter; feedback, saved views and the priority what-if shaped and recorded. | Handbook 2.5 M10, DEC-42, DEC-47, DEC-43 (A11). |
 | D-025 | 2026-11-13 | C2 built (DECISIONS.md DEC-46, option A chosen by the user): the aggregate records plain facts (action, status before, status after); the service adds actor and wording; an action that records no fact fails loudly instead of skipping its audit entry. Comments stay published by the service. No change of behavior or audit text. |
 | D-026 | 2026-11-13 | C1 built (DECISIONS.md DEC-46): `IncidentCommand` objects for the eight plain lifecycle actions and one `IncidentCommandRunner` for the steps they share; `IncidentEventPublisher` turns facts into events for the runner and the service. Creation, edits, assignment, priority override and comments stay in `IncidentService`. No change of behavior; the eight suites are identical before and after. |
 
@@ -164,6 +165,8 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 
 **Teammates: start with `docs/TEAM_UPDATES.md`.** It lists, per role, everything that differs from the handbook PDFs. The bullets below are the full working notes, newest first.
 
+- Testing teammate (M10, 2026-11-14): new classes for tests: `CriteriaIncidentSearch` (`slaState` predicates, `com.iitsm.infrastructure.persistence`), `NativeReportRepository`, `ReportService`, `ReportExportService`, `CsvWriter`, `CoverageRiskService`, `PostIncidentReportService`, `FeedbackService`, `SavedFilterService`, `PriorityWhatIfService` (`com.iitsm.application.*`), `OpenPdfPostIncidentRenderer` (`com.iitsm.infrastructure.report`). Expected values: `CsvWriter.cell("=1+1")` is `'=1+1`, `cell("+x")` is `'+x`, `cell("-x")` is `'-x`, `cell("@x")` is `'@x`, `cell(-5)` (a number) is `-5`, `cell("a,b")` is `"a,b"` (quoted), `cell(null)` is empty; report invariants: open + resolved = total, met + violated = total per compliance row, and the priority distribution, the category distribution and the services report each sum to the overview total; trends fill empty days with zero (30 or 31 points by default); coverage: one available holder on a criticality 4 or 5 service is flagged `SINGLE_HOLDER`, none is `NO_COVERAGE`, two holders is `COVERED`; feedback: stranger 404, viewer who is not the reporter 403, before RESOLVED 409, second rating 409, rating 0 or 6 400; what-if with the same inputs as a real incident gives its priority and score and leaves `version` and the audit rows unchanged. New tables `feedback` and `saved_filters` (Appendix A.4) need migrations; new settings `report.export.max.rows`, `report.trend.max.buckets`, `coverage.window.days`, `coverage.min.criticality`, `coverage.min.holders`, `saved.filters.max`. Smoke script: `smoke-tests/m10_smoke.py` (`SMOKE_PORT`, `SMOKE_DB`).
+- Open after M10: the reporter withdraw action (G3, `ClosureReason.WITHDRAWN`), escalation, the auto-verify job and duplicate handling stay open because they change `Incident` and the state classes.
 - Frontend teammate (D-022, G1): 11 screens are stubs and 6 run on hardcoded data. Wire them in demo order: (1) report form, my incidents, incident detail with `allowedActions`; (2) technician queue, workbench, workload; (3) team queue with assign and recommendations, escalations; (4) admin incidents, audit log, SLA violations, config, catalog screens; (5) dashboard, reports, service graph. A typed client can be generated from `docs/openapi/iitsm-api.json`. On 409 `OPTIMISTIC_LOCK_CONFLICT` reload and retry (DEC-42).
 - Frontend teammate (D-020 to D-023): new screens to plan: Major Incident view with the known-outage banner on the report form (S2), simulator screen (S1), audit Verify button (S3), service status board (E1), post-incident report (E4), tracking view (E5), demo clock and outage drill controls (D1, D2), chatbot and voice intake (A1, A2). Endpoints are added to the planned part of the contract as each is designed.
 - Testing teammate (D-020, D-022): one new table beyond Appendix A, `audit_seals` (S3: id, from_id, to_id, record_count, hash, prev_hash, created_at); the partial unique index for the global SLA default (DEC-17); decide whether V5 gets a visibility column on `audit_records` (DEC-42). Tests: everything under `src/test` stays with the Testing teammate (handbook 1.4; DEC-42 as corrected): unit, integration and boundary tests, plus the suggested architecture rule tests (A9). The backend lead supplies class names, expected values and the smoke scripts. The smoke scripts named in section 3 exist only on the backend lead's machine (`smoke-tests/` beside the repository folder); they are to be shared and turned into automated tests.

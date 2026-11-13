@@ -33,7 +33,7 @@ import com.iitsm.domain.user.TechnicianProfile;
 import com.iitsm.domain.user.User;
 
 /**
- * E3 coverage risk report (decision DEC-47, DEC-48). A service has no category of its own, so the pairs come from
+ * E3 coverage risk report (decision DEC-47, DEC-63). A service has no category of its own, so the pairs come from
  * history: every service and category seen together on incidents in the last N days. For each pair the report counts
  * the technicians the assignment engine would accept (active account, AVAILABLE or BUSY, holding at least one skill
  * the category requires; any technician if it requires none) and flags the pair when the service is critical and

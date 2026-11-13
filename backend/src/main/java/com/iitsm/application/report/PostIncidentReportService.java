@@ -39,7 +39,7 @@ import com.iitsm.domain.sla.SlaViolation;
 import com.iitsm.domain.user.User;
 
 /**
- * E4 post-incident report (decision DEC-47, DEC-48): the whole story of one incident computed from the audit trail
+ * E4 post-incident report (decision DEC-47, DEC-64): the whole story of one incident computed from the audit trail
  * (timeline, wall-clock time in each status, people involved) plus the SLA outcome and the resolution. Visible to
  * whoever may see the incident; a reporter without staff rights does not get internal-note entries, as in the
  * history endpoint. The PDF is drawn by a {@link PostIncidentPdfRenderer} (Adapter, so the library stays outside).
@@ -144,11 +144,8 @@ public class PostIncidentReportService {
         Instant resolutionDue = incident.getSla().getResolutionDue();
         Instant acknowledgedAt = incident.getAcknowledgedAt();
         Instant resolvedAt = incident.getResolvedAt();
-        Boolean responseMet = acknowledgedAt != null && responseDue != null ? !acknowledgedAt.isAfter(responseDue)
-                : responseDue != null && now.isAfter(responseDue) ? Boolean.FALSE : null;
-        Boolean resolutionMet = resolvedAt != null && resolutionDue != null ? !resolvedAt.isAfter(resolutionDue)
-                : resolutionDue != null && now.isAfter(resolutionDue) && !incident.getSla().isPaused()
-                ? Boolean.FALSE : null;
+        Boolean responseMet = outcomeOf(acknowledgedAt, responseDue, now, false);
+        Boolean resolutionMet = outcomeOf(resolvedAt, resolutionDue, now, incident.getSla().isPaused());
         List<SlaViolationEntry> entries = new ArrayList<>();
         for (SlaViolation v : violations.findByIncident_IdOrderByCreatedAtAsc(incident.getId())) {
             entries.add(new SlaViolationEntry(v.getType().name(), v.getOverdueSeconds(), v.getCreatedAt(),
@@ -157,6 +154,17 @@ public class PostIncidentReportService {
         String outcome = state == SlaState.MET || state == SlaState.VIOLATED ? state.name() : state.name() + " (open)";
         return new SlaOutcome(state, outcome, responseDue, acknowledgedAt, responseMet, resolutionDue, resolvedAt,
                 resolutionMet, entries);
+    }
+
+    /** Met if done by the deadline, missed if done late or still open past it, null while still inside the deadline. */
+    private static Boolean outcomeOf(Instant doneAt, Instant due, Instant now, boolean paused) {
+        if (due == null) {
+            return null;
+        }
+        if (doneAt != null) {
+            return !doneAt.isAfter(due);
+        }
+        return now.isAfter(due) && !paused ? Boolean.FALSE : null;
     }
 
     /** The reporter, the current assignee, and everyone who appears as an actor in the trail, with what they did. */

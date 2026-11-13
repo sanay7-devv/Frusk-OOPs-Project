@@ -29,7 +29,7 @@ import com.iitsm.domain.sla.SlaPolicyResolver;
 import com.iitsm.domain.sla.SlaTargets;
 
 /**
- * Priority what-if (addition A11, decision DEC-48): which priority and score the live {@link PriorityEngine} would
+ * Priority what-if (addition A11, decision DEC-66): which priority and score the live {@link PriorityEngine} would
  * give for other impact, urgency and affected-users values, for an existing incident or for raw input. Read-only:
  * nothing is saved, audited or recalculated. The formula is not repeated here; the engine is called with the live
  * settings, so the answer always matches what a real incident would get.

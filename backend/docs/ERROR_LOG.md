@@ -220,6 +220,32 @@ Entry template:
 - Second symptom on the local `schema-auto` database: after the converter, inserts still failed on `sla_policies_calendar_type_check`. Hibernate had generated that CHECK from the old `@Enumerated` mapping, and `ddl-auto=update` never drops constraints. Fixed locally with `alter table sla_policies drop constraint sla_policies_calendar_type_check`; Flyway databases are not affected.
 - Status: fixed (team to confirm the seed value)
 
+### E-030: Post-incident report returned 500 for an open incident (NullPointerException)
+- Date: 2026-11-14
+- Area: app
+- Symptom: `GET /incidents/{id}/post-incident-report` on an incident that was not yet resolved answered 500 `INTERNAL_ERROR`; the log showed `Cannot invoke "java.lang.Boolean.booleanValue()"`.
+- Cause: a nested conditional expression mixed a primitive `boolean` branch with `Boolean.FALSE` and `null`; Java unboxes the whole expression to `boolean`, so the `null` branch threw. Finished incidents took the primitive branch and hid the bug.
+- Fix: the "met / missed / still running" result moved into `PostIncidentReportService.outcomeOf`, written with plain `if` statements returning a `Boolean`.
+- Prevention: never put `null` in one branch of a conditional expression whose other branch is a primitive; the M10 smoke test checks an open, overdue incident as well as a finished one.
+- Status: fixed
+
+### E-031: Smoke expectations that M10 legitimately changed
+- Date: 2026-11-14
+- Area: tests
+- Symptom: `m4_smoke.py` failed one check after M10: a CLOSED incident now offers its reporter `[COMMENT, REOPEN, GIVE_FEEDBACK]`; `endpoint_sweep.py` listed the new endpoints as NOT HIT.
+- Cause: not a bug. Feedback is allowed once an incident is RESOLVED, VERIFIED or CLOSED, so `allowedActions` gains `GIVE_FEEDBACK` until a rating exists; the sweep did not know the new endpoints.
+- Fix: the m4 expectation now includes `GIVE_FEEDBACK`; the sweep calls every M10 endpoint (reports, export, coverage risk, post-incident report and PDF, saved views, what-if, feedback).
+- Prevention: when a module adds an action to `allowedActions`, update the earlier suites that list them.
+- Status: fixed
+
+### E-032: Python 3 cp1252 console cannot print the arrow in audit descriptions
+- Date: 2026-11-14
+- Area: tooling
+- Symptom: `m8_smoke.py` crashed at exit with `UnicodeEncodeError: 'charmap' codec can't encode character '→'` when run from a Windows terminal.
+- Cause: the suite prints audit descriptions that contain an arrow; the default console encoding is cp1252.
+- Fix: run the suites with `PYTHONIOENCODING=utf-8`.
+- Status: workaround (no code change)
+
 ---
 
 ## Known things to watch (not errors yet)

@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Writes RFC 4180 CSV and neutralises formula injection: a text cell that starts with =, +, - or @ (or a tab or
  * carriage return) would be run as a formula by Excel or Sheets, so it gets a leading apostrophe (OWASP CSV
- * injection advice, decision DEC-48). Numbers are written as they are and are never altered.
+ * injection advice, decision DEC-62). Numbers are written as they are and are never altered.
  */
 public final class CsvWriter {
 

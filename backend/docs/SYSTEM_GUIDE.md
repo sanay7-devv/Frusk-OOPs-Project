@@ -28,6 +28,7 @@
 10. [M6 Technician assignment](#10-m6-technician-assignment)
 11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
 12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
+    - 12A. [M10 Search and reports](#12a-m10-search-and-reports)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -49,7 +50,8 @@
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
-| M9 to M14, M2b | Notifications, reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
+| **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV export; E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12A) | ✅ Done and smoke-tested (135 checks); the reporter withdraw action (G3) is still open |
+| M9, M11 to M14, M2b | Notifications, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started (see the changelog for modules built in parallel) |
 | Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
@@ -1308,6 +1310,92 @@ Smoke test `m8_smoke.py` against the running app.
 
 ---
 
+## 12A. M10 Search and reports
+
+Built 2026-11-14 (decisions DEC-60 to DEC-66). The incident list gets its last filter, every report is a database aggregate over the incidents the caller may see, and four small features answer the brief: coverage risk (E3), post-incident report with PDF (E4), feedback after resolution, saved views and the priority what-if (A11). The reporter withdraw action (G3) is not part of this module's first delivery.
+
+```mermaid
+flowchart LR
+    C[Client] --> RC[ReportController]
+    C --> IC[IncidentController GET /incidents]
+    C --> X[Feedback, SavedFilter, Priority, PostIncidentReport controllers]
+    RC --> RS[ReportService]
+    RC --> EX[ReportExportService + CsvWriter]
+    RC --> CV[CoverageRiskService]
+    IC --> IS[IncidentService.list]
+    IS --> CR[CriteriaIncidentSearch<br/>filters + slaState + visibility]
+    RS --> RR[(ReportRepository<br/>NativeReportRepository: COUNT / GROUP BY)]
+    CV --> RR
+    EX --> RS
+    EX --> IS
+    X --> PS[PostIncidentReportService] --> AU[(audit_records)]
+    PS --> PDF[PostIncidentPdfRenderer port<br/>OpenPdfPostIncidentRenderer adapter]
+    X --> FS[FeedbackService] --> FB[(feedback)]
+    X --> SF[SavedFilterService] --> SV[(saved_filters)]
+    X --> WI[PriorityWhatIfService] --> PE[PriorityEngine, live settings]
+```
+
+### 12A.1 Search: all filters of Appendix B
+
+`GET /incidents` takes `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `slaState`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`, `page`, `size` (max 100) and `sort` (`createdAt`, `priority`, `status`, `code`, `resolutionDue`, `,asc|desc`). Everything is one dynamic Criteria query (DEC-24); visibility (own and assigned incidents for everyone except team leads and administrators) is added by `IncidentService` and cannot be chosen by the client.
+
+**`slaState` (DEC-61).** The shown state needs business-hours elapsed time, which SQL cannot compute, so the filter reads the flags the SLA monitor stores plus the status:
+
+| Filter | Matches |
+|---|---|
+| `OK` | no deadline yet, or open, not paused, no violation flag and no warning flag |
+| `WARNING` | open, not paused, not violated, and a first or second warning has fired (response warnings count only until acknowledged) |
+| `VIOLATED` | open, not paused, and a response or resolution violation flag is set; or finished (RESOLVED, VERIFIED, CLOSED) but not met |
+| `PAUSED` | open and the resolution clock is paused (PENDING_USER_INFO) |
+| `MET` | finished, resolved no later than the resolution deadline, and no violation flag |
+| `AT_RISK` | nothing until the SLA risk score exists (M12) |
+
+Consequence: the list can trail the detail view by up to one monitor interval (60 s by default). The detail view computes the state live; the list filter reports what the monitor has recorded.
+
+### 12A.2 Reports
+
+Every report covers the incidents the caller may see (employee: own; technician: own and assigned; team lead and administrator: all), the same rule as the list (DEC-60). Workload and coverage risk show other people's work and need `TEAM_VIEW`. All numbers come from one SQL `COUNT` or `GROUP BY` (`NativeReportRepository`), so a total equals a direct count.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /reports/overview?from&to` | `total, open, critical (open P1), resolved, slaViolations, avgResolutionMinutes, avgSatisfaction (null if no rating)` |
+| `GET /reports/services?from&to` | `[{serviceId, name, count}]`, most first |
+| `GET /reports/trends?from&to&bucket=day\|week` | `[{date, created, resolved}]`, empty buckets filled with zero, UTC, weeks start Monday; default last 30 days or 12 weeks; limit `report.trend.max.buckets` |
+| `GET /reports/priority-distribution?from&to` | `[{label, count}]`, P1 to P4 always listed (then UNSET if any) |
+| `GET /reports/category-distribution?from&to` | `[{label, count}]`, `Uncategorized` for incidents still in triage |
+| `GET /reports/sla-compliance?from&to&groupBy=priority\|service\|technician` | `[{label, total, met, violated, compliancePercent}]` |
+| `GET /reports/workload` (TEAM_VIEW) | `[{technicianId, name, active, load, maxLoad, avgResolutionMinutes}]` |
+| `GET /reports/coverage-risk?onlyFlagged` (TEAM_VIEW) | E3, section 12A.4 |
+| `GET /reports/export?type&from&to&format=csv` | CSV, section 12A.3 |
+
+Definitions shared by all reports (one place, `NativeReportRepository`): **open** = NEW to REOPENED, **resolved** = RESOLVED, VERIFIED or CLOSED, so open + resolved = total. **Violated** = the incident has an `sla_violations` row, or was resolved after its resolution deadline. **Judged** = has a deadline, was not closed as duplicate or withdrawn, and is finished or violated. **Met** = judged and not violated, so met + violated = total in every compliance row, and `overview.slaViolations` equals the sum of `violated`. `from`/`to` limit by creation time (trends: created by creation time, resolved by resolution time); `to` is exclusive and must be after `from`.
+
+### 12A.3 CSV export
+
+`GET /reports/export?type=` with `incidents`, `overview`, `services`, `trends`, `priority-distribution`, `category-distribution`, `sla-compliance` or `workload` (TEAM_VIEW). The rows are written straight to the response (no async dispatch, so the JWT check stays valid), the incident export walks through the list 200 rows at a time, and the number of rows is capped by the setting `report.export.max.rows` (default 10000). **Formula injection (DEC-62):** a text cell starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe; numbers are never altered; cells with commas, quotes or line breaks are quoted (RFC 4180).
+
+### 12A.4 E3 Coverage risk report
+
+A service has no category of its own, so the report ties them through history (DEC-63): every service and category seen together on incidents in the last `coverage.window.days` (90). For each pair it counts the technicians the assignment engine would accept for that category (active account, AVAILABLE or BUSY, holding at least one required skill; anyone if the category needs none) and lists them, with how many hold each required skill. `level` is `NO_COVERAGE` (0), `SINGLE_HOLDER` (1), `THIN` (below `coverage.min.holders`, default 2) or `COVERED`. A pair is **flagged** when the service criticality is at least `coverage.min.criticality` (4) and the count is below the minimum holders. Flagged pairs come first.
+
+### 12A.5 E4 Post-incident report
+
+`GET /incidents/{id}/post-incident-report` (JSON) and `.../pdf`, for whoever may see the incident (others get 404). Computed from the audit trail: `timeline` (every entry; a reporter without staff rights does not get internal-note entries), `timeInStatus` (wall-clock seconds per status over all visits; the current status runs to now, CLOSED is final and has no duration), `sla` (state, response and resolution due and result, violation rows), `people` (reporter, assignee and every actor, with roles and action counts), `resolution`, `satisfaction`, `totalSeconds`. An open incident gives a report so far (`complete: false`). The PDF is drawn by the `PostIncidentPdfRenderer` port; `OpenPdfPostIncidentRenderer` (OpenPDF 3.0.5) is the Adapter (DEC-64).
+
+### 12A.6 Feedback, saved views, what-if
+
+| Endpoint | Rules |
+|---|---|
+| `POST /incidents/{id}/feedback {rating 1-5, comment ≤1000}` | 201 `{rating, comment, createdAt}`. Stranger: 404. Viewer who is not the reporter: 403. Before RESOLVED: 409. Second time: 409 (primary key `incident_id`). `IncidentDetail.feedback` shows it; `allowedActions` has `GIVE_FEEDBACK` for the reporter until a rating exists. |
+| `GET /saved-filters`, `POST /saved-filters {name ≤60, filter}`, `DELETE /saved-filters/{id}` | Private to the owner (another user's id is 404). `filter` may hold only the keys of `GET /incidents`, with valid values (400 with `filter.<key>` field errors otherwise); a name is unique per user; at most `saved.filters.max` (20) per user (DEC-65). |
+| `POST /priority/what-if {incidentId? \| serviceId?+categoryId?, impact, urgency, affectedUsers}` | Any user who can see the incident. Returns `current` (stored priority and score, only for an incident), `whatIf` (the live `PriorityEngine` result with its breakdown and the SLA minutes of the resulting priority), `changed`, `scoreDifference`. Changes nothing: no save, no audit entry, no version change (DEC-66). |
+
+### 12A.7 Verified behavior (2026-11-14)
+
+Smoke test `m10_smoke.py` (135 checks) against the running app: each of the ten filters alone equals a direct database count, combinations and paging and sorting, `slaState` against the stored flags (OK, WARNING, VIOLATED, PAUSED, MET), visibility for employee, technician, team lead and administrator; every report total equals a direct count for five users and open + resolved = total, distributions and services sum to the total, compliance met + violated = total, trends equal creation and resolution counts, employees count only their own incidents; CSV neutralises a `=HYPERLINK` title, is capped by the setting and refuses an unknown type and a non-staff workload export; coverage flags a single holder, gives NO_COVERAGE when that holder goes OFF_DUTY and leaves a two-holder minor service unflagged; the post-incident report and its PDF (text extracted with `pdftotext`) show the timeline, SLA outcome, durations and people; feedback follows reporter-only, once, status rules; saved views are private, validated and limited; the what-if matches a real incident's priority and changes nothing.
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
@@ -1512,6 +1600,15 @@ Plus the four warning flags (`resp_warn75_sent`, `resp_warn90_sent`, `res_warn75
 
 The database also enforces the rules with constraints: unique `(user_id, role_type)`, unique email and `google_sub`, unique service name, unique `(service_id, priority)` and `(priority, level)`, and `CHECK` constraints on every range and enum column.
 
+### 13.x Tables added by M10 (2026-11-14)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `feedback` | `incident_id` BIGINT PK FK, `rating` SMALLINT CHECK 1 to 5, `comment` TEXT, `created_at` | One row per incident (Appendix A.4) |
+| `saved_filters` | `id`, `user_id` FK, `name` VARCHAR(60), `filter_json` JSONB, `created_at` | Private to the user; name unique per user is checked in code (DEC-65) |
+
+New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 10000, `report.trend.max.buckets` 400, `coverage.window.days` 90, `coverage.min.criticality` 4, `coverage.min.holders` 2, `saved.filters.max` 20.
+
 ---
 
 ## 14. OOP and design patterns: where to find them
@@ -1641,6 +1738,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-10 | Repository moved into the shared team repo and the backend placed in `backend/` beside `frontend/` (D-017, DEC-41). No code or behavior change; Maven commands run from `backend/`. |
 | 2026-11-13 | Review and plan day, no code or behavior change: decisions DEC-42 to DEC-47 (D-018 to D-023); section 14.3 names Template Method, the `WorkCalendar` strategy, the access policy and the planned Command pattern; new section 18 lists the accepted work beyond the handbook; new `docs/TEAM_UPDATES.md` tells teammates what differs from the handbook PDFs. |
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
+| 2026-11-14 | M10 search and reports built and smoke-tested (section 12A, DEC-60 to DEC-66): `slaState` filter, seven reports and CSV export with formula-injection protection, E3 coverage risk, E4 post-incident report and PDF (OpenPDF adapter), feedback, saved views, priority what-if; tables `feedback` and `saved_filters`; six new settings. Withdraw (G3) is still open. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
 
 ---
@@ -1656,8 +1754,8 @@ Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/D
 | S3 | Sealed audit trail | A Verify action proves the audit log is intact or names the first altered record | M14 |
 | E1 | Service status board | Every service as Healthy, Degraded or Outage, derived from reported incidents | M13 |
 | E2 | Recurring-problem detector | A team lead is told when the same failure keeps coming back | M12 |
-| E3 | Coverage risk report | Critical services that only one available technician can handle | M10 |
-| E4 | Post-incident report | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
+| E3 | Coverage risk report (built 2026-11-14, section 12A.4) | Critical services that only one available technician can handle | M10 |
+| E4 | Post-incident report (built 2026-11-14, section 12A.5) | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
 | E5 | Reporter tracking view | A progress line with the SLA due time | Frontend |
 | D1, D2 | Demo aids (demo profile only) | Move the clock forward; start a prepared outage | M11, M12 |
 | A1, A2, A6, A11 | Chatbot and voice reporting, chat-webhook channel, priority what-if and escalation preview | | M9 to M12 |

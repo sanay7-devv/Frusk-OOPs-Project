@@ -31,7 +31,7 @@ import com.iitsm.domain.user.User;
 /**
  * Saved views (table saved_filters): a user keeps named sets of incident-list filters and reuses them. Everything
  * is private to the owner; another user's view is "not found". The filter JSON may only hold the keys of
- * GET /incidents, with values of the right kind, so a saved view can always be replayed (decision DEC-48).
+ * GET /incidents, with values of the right kind, so a saved view can always be replayed (decision DEC-65).
  */
 @Service
 public class SavedFilterService {

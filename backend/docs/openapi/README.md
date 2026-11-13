@@ -56,7 +56,7 @@ These features were accepted after the contract was published. Their endpoints a
 | Feature | Expect | Module |
 |---|---|---|
 | Reporter withdraw | `POST /incidents/{id}/withdraw` with a reason | M10 |
-| Coverage risk report, post-incident report | new `/reports/...` operations; PDF | M10 |
+| Coverage risk report, post-incident report, priority what-if, saved views | built 2026-11-14 (M10): `/reports/coverage-risk`, `/incidents/{id}/post-incident-report` (+ `/pdf`), `/priority/what-if`, `/saved-filters` | M10 |
 | Escalation preview | a field on `IncidentDetail` | M11 |
 | Major Incident Mode | known-outage lookup for the report form, join action, root cause on `/problems/{id}` | M12, M13 |
 | Recurring-problem detector | suggestions on `/problems` | M12 |

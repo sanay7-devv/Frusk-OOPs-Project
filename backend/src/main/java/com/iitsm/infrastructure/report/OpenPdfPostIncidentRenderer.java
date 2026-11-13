@@ -24,7 +24,7 @@ import com.iitsm.application.report.PostIncidentPdfRenderer;
 import com.iitsm.application.report.ReportViews.PostIncidentReport;
 import com.iitsm.application.report.ReportViews.SlaOutcome;
 
-/** Draws the post-incident report with OpenPDF (decision DEC-48): a title block, summary tables and the timeline. */
+/** Draws the post-incident report with OpenPDF (decision DEC-64): a title block, summary tables and the timeline. */
 @Component
 public class OpenPdfPostIncidentRenderer implements PostIncidentPdfRenderer {
 

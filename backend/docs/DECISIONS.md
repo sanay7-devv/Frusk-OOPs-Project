@@ -61,6 +61,13 @@
 | [DEC-45](#dec-45-plan-shaped-by-the-recorded-demo) | Plan shaped by the recorded demo | 2026-11-13 | All | ✅ |
 | [DEC-46](#dec-46-fixes-from-the-code-and-frontend-review) | Fixes from the code and frontend review | 2026-11-13 | M9 to M14 | ✅ |
 | [DEC-47](#dec-47-five-features-that-answer-the-briefs-named-challenges) | Five features that answer the brief's named challenges | 2026-11-13 | M10 to M13 | ✅ user approved |
+| [DEC-60](#dec-60-reports-for-everyone-scoped-by-the-callers-visibility) | Reports for everyone, scoped by the caller's visibility | 2026-11-14 | M10 | ✅ user decision |
+| [DEC-61](#dec-61-the-slastate-filter-reads-the-stored-flags) | The `slaState` filter reads the stored flags | 2026-11-14 | M10 | ✅ |
+| [DEC-62](#dec-62-csv-export-written-directly-capped-formula-safe) | CSV export written directly, capped, formula-safe | 2026-11-14 | M10 | ✅ |
+| [DEC-63](#dec-63-coverage-risk-through-incident-history) | Coverage risk through incident history | 2026-11-14 | M10 | ✅ user decision |
+| [DEC-64](#dec-64-post-incident-report-from-the-audit-trail-pdf-through-an-adapter) | Post-incident report from the audit trail, PDF through an adapter | 2026-11-14 | M10 | ✅ |
+| [DEC-65](#dec-65-feedback-and-saved-views) | Feedback and saved views | 2026-11-14 | M10 | ✅ |
+| [DEC-66](#dec-66-priority-what-if) | Priority what-if | 2026-11-14 | M10 | ✅ user decision |
 
 ---
 
@@ -1031,3 +1038,109 @@ Smaller rules the handbook left open:
 **Trade-off.** E1 reflects reported incidents only; a failing service nobody has reported shows Healthy. The board says "based on reported incidents".
 
 **Cross-questions.** *"How is E2 different from duplicate detection?"* Duplicates are the same failure reported several times within 24 hours; a recurring problem is the same kind of failure coming back over weeks after being resolved. *"Why does a dependency make a service Degraded?"* Its upstream is down, so it is likely affected even before anyone reports it; the graph is already there (DEC-16).
+
+---
+
+## M10 Search and reports (2026-11-14)
+
+Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written in parallel for M9, M11 and M12 (DEC-48 onward). The user chose the options of DEC-60, DEC-63 and DEC-66 on 2026-11-14.
+
+### DEC-60: Reports for everyone, scoped by the caller's visibility
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 | ✅ user decision |
+
+**Decision.** Every report except workload and coverage risk may be called by any logged-in user and counts only the incidents that user may see: employees their own, technicians their own and assigned ones, team leads and administrators all (the same rule as the incident list, DEC-26). Workload and coverage risk need `TEAM_VIEW`, because they show other people's work. Every number is one `COUNT` or `GROUP BY` in the database (`NativeReportRepository`); definitions of open, resolved, violated, judged and met are in one place (SYSTEM_GUIDE 12A.2).
+
+**Options considered.** Administrators only, as the API Data Dictionary says (simplest, but then "role visibility in reports" cannot be shown and employees have no view of their own numbers) · administrators and team leads with `REPORT_VIEW` · **everyone, scoped** ✔.
+
+**Why.** Role visibility becomes visible in the demo (the same screen with different numbers per role), and a total can be proven against the list the same user sees. Aggregates are computed in the database so they equal a direct count by construction; a Java loop over entities could drift and would load every incident.
+
+**Trade-offs.** The contract says "Who: Admin" for the reports; the frontend may still show the screen to administrators only. Native SQL ties the reports to PostgreSQL (FILTER aggregates, `date_trunc`), which is the only database we run. The compliance definition (violated = a violation row or resolved late) differs from the live SLA state by up to one monitor interval, as in DEC-61.
+
+**Cross-questions.** *"Why are open + resolved = total?"* The ten statuses split into the seven open ones and RESOLVED, VERIFIED, CLOSED. *"What counts as an SLA violation?"* An incident with a row in `sla_violations`, or resolved after its deadline; duplicates and withdrawn incidents are not judged. *"Why can an employee see the overview?"* It only counts their own incidents.
+
+### DEC-61: The `slaState` filter reads the stored flags
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 | ✅ follows DEC-42 |
+
+**Decision.** `GET /incidents?slaState=` filters on the fire-once warning and violated flags, the paused marker and the status, written as Criteria predicates that follow the branches of `SlaTracker.stateAt` (SYSTEM_GUIDE 12A.1). `AT_RISK` is accepted and matches nothing until M12.
+
+**Why.** With business hours (DEC-39) elapsed time cannot be computed in SQL. The flags are written by the monitor within one interval.
+
+**Trade-off.** A list can say OK while the detail already says WARNING or VIOLATED, for up to one monitor interval. Documented in the guide and in TEAM_UPDATES.
+
+**Cross-question.** *"Why not compute it in Java after the query?"* Paging and totals would be wrong: the filter must run in the database.
+
+### DEC-62: CSV export written directly, capped, formula-safe
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 | ✅ |
+
+**Decision.** `GET /reports/export?type=` writes CSV straight to the response, capped at `report.export.max.rows` (default 10000); the incident export reads the list in pages of 200. Text cells starting with `=`, `+`, `-`, `@`, tab or carriage return get a leading apostrophe; numbers are not touched.
+
+**Options.** `StreamingResponseBody` on another thread (rejected: the JWT is not carried to the async dispatch, so the final authorization check could fail on a stateless API) · build the file in memory (rejected: unbounded) · **write directly in the request thread** ✔.
+
+**Trade-off.** The request thread is busy while writing; the row cap bounds it. A cell such as "-5" given as text becomes "'-5" (safe, slightly different).
+
+**Cross-question.** *"Is the apostrophe enough?"* It is the OWASP advice; Excel and Sheets show the text without the apostrophe and do not run it.
+
+### DEC-63: Coverage risk through incident history
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 (E3) | ✅ user decision |
+
+**Decision.** A service has no category in the schema, so the pairs come from history: services and categories seen together on incidents in the last 90 days (`coverage.window.days`). For each pair, the pool is the technicians the assignment engine would accept for that category: active, AVAILABLE or BUSY, holding at least one required skill (anyone if none is required). Flagged when criticality is at least `coverage.min.criticality` (4) and the pool is smaller than `coverage.min.holders` (2). Per-skill holder counts are shown so a lone holder of one skill is visible.
+
+**Options.** Every category with a list of critical services · every critical service times every category (noisy) · **history pairs** ✔. For the pool: strictly AVAILABLE and all skills (stricter, would flag more) · **same rule as assignment** ✔.
+
+**Why.** The report predicts what assignment will do: a category is "at risk" exactly when the engine would find nobody or one person.
+
+**Trade-off.** A service never used with a category is not listed; a new risky pair appears only after its first incident.
+
+**Cross-question.** *"Why include BUSY?"* BUSY technicians still receive incidents, so excluding them would overstate the risk.
+
+### DEC-64: Post-incident report from the audit trail, PDF through an adapter
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 (E4) | ✅ library chosen in DEC-42 |
+
+**Decision.** One report per incident, computed from `audit_records` (timeline, wall-clock time per status, people), the incident (SLA due times, resolution) and `sla_violations`. Visible to whoever can see the incident; reporters do not get internal-note entries. Open incidents give a report so far. The PDF is made by `OpenPdfPostIncidentRenderer` (OpenPDF 3.0.5, package `org.openpdf`) behind the port `PostIncidentPdfRenderer`.
+
+**Rules.** The current status runs to now; CLOSED is final and has no duration; a reopened incident visits some statuses twice and their times add up.
+
+**Trade-offs.** Wall-clock time, not business hours (the SLA outcome already uses business hours). OpenPDF is permissively licensed and has a table API; the port keeps the library replaceable.
+
+**Cross-question.** *"What if the audit trail is missing entries?"* The report starts from NEW at creation time and follows only entries that change the status.
+
+### DEC-65: Feedback and saved views
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 | ✅ shapes proposed here, the dictionary has none for saved views |
+
+**Feedback.** `POST /incidents/{id}/feedback`, rating 1 to 5, comment up to 1000. Answers follow DEC-20: 404 for a stranger, 403 for a viewer who is not the reporter, 409 before RESOLVED and 409 on a second rating (the primary key on `incident_id` backs this at the database level; a race gives the same 409). `GIVE_FEEDBACK` in `IncidentAccessPolicy` means "reporter"; `IncidentViewMapper` fills `feedback` and adds the action to `allowedActions`. Feedback is not audited (no audit action exists for it and the contract of `AuditAction` is fixed).
+
+**Saved views.** `GET /saved-filters`, `POST /saved-filters {name, filter}` (201), `DELETE /saved-filters/{id}` (204). The filter is a JSON object with the keys of `GET /incidents` only; unknown keys and bad values are 400 with `filter.<key>` field errors. Names are unique per user (checked in code, as DEC-17 does for the SLA default, so the table stays as in Appendix A.4) and the count per user is limited by `saved.filters.max`. Another user's view is 404.
+
+**Cross-question.** *"Why not store the query string?"* JSON can be replayed by any client and validated; a string would break whenever a filter is added.
+
+### DEC-66: Priority what-if
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M10 (A11) | ✅ user decision |
+
+**Decision.** One read-only `POST /priority/what-if` with two modes: `incidentId` (service and category from the incident; the caller must see it; the response also shows the stored priority and score) or `serviceId` with optional `categoryId` for raw input. It builds a `PriorityInput` and calls the live `PriorityEngine` with the current settings, so the answer matches what a real incident would get, and adds the SLA minutes of the resulting priority. Nothing is saved, audited or versioned.
+
+**Options.** `GET /incidents/{id}/priority-preview` only · two endpoints · **one POST with two modes** ✔.
+
+**Trade-off.** The Security-category test is repeated from `IncidentService` (six lines) because that class could not be changed in this module; C3 will replace both with a setting.
+
+**Cross-question.** *"How do you know the what-if is the same as the real calculation?"* It calls the same engine; the smoke test creates an incident with the same inputs and compares priority and score.
