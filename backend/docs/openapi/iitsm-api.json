@@ -7937,8 +7937,7 @@
     },
     "/api/v1/notifications": {
       "get": {
-        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_notifications",
+        "operationId": "list_1",
         "parameters": [
           {
             "in": "query",
@@ -7950,10 +7949,26 @@
           },
           {
             "in": "query",
+            "name": "channel",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_APP",
+                "EMAIL",
+                "WEBSOCKET",
+                "SMS_SIM",
+                "CHAT"
+              ]
+            }
+          },
+          {
+            "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "type": "integer",
+              "format": "int32",
               "default": 0,
               "minimum": 0
             }
@@ -7964,6 +7979,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "format": "int32",
               "default": 20,
               "maximum": 100,
               "minimum": 1
@@ -7975,25 +7991,81 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageNotification"
+                  "$ref": "#/components/schemas/PageResponseNotificationView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "My notifications",
+        "summary": "My notifications, newest first (the inbox unless channel=SMS_SIM is asked for)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M9",
-        "x-status": "planned"
+          "Notifications"
+        ]
       }
     },
     "/api/v1/notifications/preferences": {
       "get": {
-        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_notifications_preferences",
+        "operationId": "preferences",
         "responses": {
           "200": {
             "content": {
@@ -8001,31 +8073,64 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/NotificationPreference"
+                    "$ref": "#/components/schemas/PreferenceView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "My notification preferences",
+        "summary": "My notification switches: every event type on every personal channel, with locked ones marked",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M9",
-        "x-status": "planned"
+          "Notifications"
+        ]
       },
       "put": {
-        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_put_notifications_preferences",
+        "operationId": "replacePreferences",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/NotificationPreference"
+                  "$ref": "#/components/schemas/PreferenceRequest"
                 }
               }
             }
@@ -8039,43 +8144,132 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/NotificationPreference"
+                    "$ref": "#/components/schemas/PreferenceView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Replace my notification preferences",
+        "summary": "Replace my notification switches; the inbox and critical alerts cannot be turned off",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M9",
-        "x-status": "planned"
+          "Notifications"
+        ]
       }
     },
     "/api/v1/notifications/read-all": {
       "post": {
-        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_notifications_read_all",
+        "operationId": "markAllRead",
         "responses": {
           "204": {
-            "description": "No content"
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Mark all my notifications read",
+        "summary": "Mark all my inbox notifications read",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M9",
-        "x-status": "planned"
+          "Notifications"
+        ]
       }
     },
     "/api/v1/notifications/unread-count": {
       "get": {
-        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_notifications_unread_count",
+        "operationId": "unreadCount",
         "responses": {
           "200": {
             "content": {
@@ -8085,21 +8279,54 @@
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Number of unread notifications",
+        "summary": "Number of unread inbox notifications",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M9",
-        "x-status": "planned"
+          "Notifications"
+        ]
       }
     },
     "/api/v1/notifications/{id}/read": {
       "post": {
-        "description": "**Planned for M9; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_notifications_by_id_read",
+        "operationId": "markRead",
         "parameters": [
           {
             "in": "path",
@@ -8113,15 +8340,90 @@
         ],
         "responses": {
           "204": {
-            "description": "No content"
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Mark one notification read",
+        "summary": "Mark one of my notifications read",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M9",
-        "x-status": "planned"
+          "Notifications"
+        ]
       }
     },
     "/api/v1/problems": {
@@ -10602,7 +10904,7 @@
           "duplicateOfId"
         ]
       },
-      "Notification": {
+      "NotificationView": {
         "type": "object",
         "properties": {
           "channel": {
@@ -10611,7 +10913,8 @@
               "IN_APP",
               "EMAIL",
               "WEBSOCKET",
-              "SMS_SIM"
+              "SMS_SIM",
+              "CHAT"
             ]
           },
           "createdAt": {
@@ -10643,15 +10946,8 @@
             "format": "int64"
           },
           "incidentId": {
-            "oneOf": [
-              {
-                "type": "integer",
-                "format": "int64"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "format": "int64"
           },
           "message": {
             "type": "string"
@@ -10660,45 +10956,7 @@
             "type": "boolean"
           },
           "title": {
-            "type": "string",
-            "maxLength": 60
-          }
-        }
-      },
-      "NotificationPreference": {
-        "type": "object",
-        "properties": {
-          "channel": {
-            "type": "string",
-            "enum": [
-              "IN_APP",
-              "EMAIL",
-              "WEBSOCKET",
-              "SMS_SIM"
-            ]
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "eventType": {
-            "type": "string",
-            "enum": [
-              "INCIDENT_CREATED",
-              "INCIDENT_ASSIGNED",
-              "INCIDENT_ACKNOWLEDGED",
-              "PRIORITY_CHANGED",
-              "INFO_REQUESTED",
-              "INFO_PROVIDED",
-              "SLA_WARNING",
-              "SLA_VIOLATED",
-              "INCIDENT_ESCALATED",
-              "INCIDENT_RESOLVED",
-              "INCIDENT_VERIFIED",
-              "INCIDENT_CLOSED",
-              "INCIDENT_REOPENED",
-              "DUPLICATE_SUSPECTED",
-              "TRIAGE_NEEDED"
-            ]
+            "type": "string"
           }
         }
       },
@@ -10724,34 +10982,6 @@
           "priority",
           "reason"
         ]
-      },
-      "PageNotification": {
-        "type": "object",
-        "description": "One page of Notification (API contract B.1 paging)",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Notification"
-            }
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalItems": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
       },
       "PageResponseAuditEntryView": {
         "type": "object",
@@ -10807,6 +11037,33 @@
           }
         }
       },
+      "PageResponseNotificationView": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationView"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PageResponseSlaViolationView": {
         "type": "object",
         "properties": {
@@ -10831,6 +11088,90 @@
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "PreferenceRequest": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "IN_APP",
+              "EMAIL",
+              "WEBSOCKET",
+              "SMS_SIM",
+              "CHAT"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "INCIDENT_CREATED",
+              "INCIDENT_ASSIGNED",
+              "INCIDENT_ACKNOWLEDGED",
+              "PRIORITY_CHANGED",
+              "INFO_REQUESTED",
+              "INFO_PROVIDED",
+              "SLA_WARNING",
+              "SLA_VIOLATED",
+              "INCIDENT_ESCALATED",
+              "INCIDENT_RESOLVED",
+              "INCIDENT_VERIFIED",
+              "INCIDENT_CLOSED",
+              "INCIDENT_REOPENED",
+              "DUPLICATE_SUSPECTED",
+              "TRIAGE_NEEDED"
+            ]
+          }
+        },
+        "required": [
+          "channel",
+          "enabled",
+          "eventType"
+        ]
+      },
+      "PreferenceView": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "IN_APP",
+              "EMAIL",
+              "WEBSOCKET",
+              "SMS_SIM",
+              "CHAT"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "INCIDENT_CREATED",
+              "INCIDENT_ASSIGNED",
+              "INCIDENT_ACKNOWLEDGED",
+              "PRIORITY_CHANGED",
+              "INFO_REQUESTED",
+              "INFO_PROVIDED",
+              "SLA_WARNING",
+              "SLA_VIOLATED",
+              "INCIDENT_ESCALATED",
+              "INCIDENT_RESOLVED",
+              "INCIDENT_VERIFIED",
+              "INCIDENT_CLOSED",
+              "INCIDENT_REOPENED",
+              "DUPLICATE_SUSPECTED",
+              "TRIAGE_NEEDED"
+            ]
+          },
+          "locked": {
+            "type": "boolean"
           }
         }
       },

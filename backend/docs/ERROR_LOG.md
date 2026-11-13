@@ -220,6 +220,23 @@ Entry template:
 - Second symptom on the local `schema-auto` database: after the converter, inserts still failed on `sla_policies_calendar_type_check`. Hibernate had generated that CHECK from the old `@Enumerated` mapping, and `ddl-auto=update` never drops constraints. Fixed locally with `alter table sla_policies drop constraint sla_policies_calendar_type_check`; Flyway databases are not affected.
 - Status: fixed (team to confirm the seed value)
 
+### E-023: Hibernate's CHECK on the notification channel allows CHAT, the appendix does not
+- Date: 2026-11-13
+- Area: db
+- Symptom: under `schema-auto`, `notifications.channel` has two CHECK constraints: ours (`IN_APP, EMAIL, WEBSOCKET, SMS_SIM`, from the entity's `@Table(check=...)`) and one Hibernate generated from the `ChannelType` enum, which also lists `CHAT`.
+- Cause: the enum has a fifth value for the chat webhook (DEC-43 A6) that is never stored; Hibernate 7 always adds a CHECK for `@Enumerated(STRING)` columns.
+- Fix: none needed in code: `Notification` refuses channels that are not stored. Testing teammate: in the real migration write only the four values of Appendix A.4 (and the 15 event types).
+- Status: noted
+
+### E-024: The older smoke scripts counted 35 settings; stdout redirected to a file broke on an arrow
+- Date: 2026-11-13
+- Area: tests
+- Symptom: `m3_smoke.py` and `endpoint_sweep.py` failed one check each ("35 settings", got 41); `m8_smoke.py` crashed with `UnicodeEncodeError` on a character in a check name when its output was redirected to a file.
+- Cause: M9 added six settings (`notification.*`). On Windows, Python writes redirected output in cp1252.
+- Fix: both counts are 41 now; run the suites with `PYTHONIOENCODING=utf-8` when redirecting.
+- Prevention: Testing teammate: count the settings from `ConfigKey.values().length`, not from a literal.
+- Status: fixed
+
 ---
 
 ## Known things to watch (not errors yet)

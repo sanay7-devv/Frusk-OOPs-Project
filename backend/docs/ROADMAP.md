@@ -2,7 +2,7 @@
 
 Living document. Update after every working session. Source of truth for scope: the team handbooks (Backend Lead Handbook, section 2.5 modules M1 to M14).
 
-Last updated: 2026-11-13 (review and plan day: DEC-42 to DEC-47; test ownership corrected, D-024; no code change)
+Last updated: 2026-11-13 (M9 notifications built and smoke-tested, DEC-48, D-027)
 
 Scope rule (D-012): every feature in the handbook is built in full; there are no scope tiers, no cut order and no timeline. Work follows module dependencies only.
 
@@ -52,7 +52,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 14. [x] M7 SLA monitor (2026-11-07, D-014, smoke-tested `m7_smoke.py`, T23 included): scheduled job, 75 / 90 percent warnings, violations, `sla_violations`, fire-once flags, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`. Business-hours calendar done too (2026-11-07, D-016, user decision DEC-39, `calendar_smoke.py` 11/11): `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`, settings `sla.business.*` in `app_config`, policies may use BUSINESS_HOURS (stored as BUSINESS_HRS, E-022). Audit rows and notifications for the SLA events come with M8 and M9.
 15. [x] M8 events and audit (2026-11-07, D-015, smoke-tested `m8_smoke.py`): `IncidentChanged` for every incident action, `TriageNeeded`, `SecurityAuditEvent`; `AuditListener` writes `audit_records` in the action's transaction (refusals and failed logins in their own); `GET /incidents/{id}/history`, `GET /audit`. Finishes the M2 audit (LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED) and the M4 history.
 16. [x] Refactor, checked by the smoke suites before and after (DEC-46). **C2 done 2026-11-13 (D-025):** `Incident` records an `IncidentFact` for every state and priority change and `IncidentService` publishes its audit events from them; all eight suites identical before and after (auth 27, M3 42, M4 54, M6 33, M7 35, M8 24, calendar 11, sweep 65/65). **C1 done 2026-11-13 (D-026):** eight command objects (acknowledge, start work, request info, provide info, resolve, verify, close, reopen) run by one `IncidentCommandRunner`; same eight suites, identical results.
-17. [ ] M9 notifications, then section 5 in order.
+17. [x] M9 notifications (2026-11-13, D-027, DEC-48, smoke-tested `m9_smoke.py` 72 checks; the eight older suites re-run green on the merged `main`): five channels (inbox, WebSocket push, email with retries, simulated SMS for P1, chat webhook), after-commit async listener, preferences with locked critical alerts, digest for SLA warning storms, six `notification.*` settings, `GET/POST /notifications...`, minimal `/ws` STOMP endpoint. Then section 5 in order.
 13. [ ] M4 leftovers: `POST /incidents/{id}/escalate` (M11), `mark-duplicate` and duplicate check on create (M12), feedback, attachments (M14 checks). The audit history endpoint is done (M8, 2026-11-07).
 8. [ ] M2b Google sign-in (after M2 login passes its done-when check): add `POST /auth/google`, Google ID token verification, account linking by email, tests. See D-001 for the design.
 
@@ -69,7 +69,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | M6 | Technician assignment strategies | [x] 2026-11-06, smoke-tested 33/33 (incl. admin users, T04, T13, T26) |
 | M7 | SLA engine and monitor | [x] 2026-11-07 monitor, warnings, violations, endpoint (smoke-tested incl. T23), business-hours calendar |
 | M8 | Events and audit trail | [x] 2026-11-07, smoke-tested; M2 auth audit and M4 history done |
-| M9 | Notifications (4 channels) | [ ] |
+| M9 | Notifications (5 channels) | [x] 2026-11-13, smoke-tested (72 checks) |
 | M10 | Search and reports | [ ] |
 | M11 | Escalation (Chain of Responsibility) | [ ] |
 | M12 | Intelligence and AI (with keyword fallback) | [ ] |
@@ -91,7 +91,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | E4 | Post-incident report | DEC-47 | M10 | [ ] |
 | E5 | Reporter tracking view | DEC-47 | Frontend | [ ] |
 | A1, A2 | Chatbot and voice incident reporting | DEC-43 | M12, Frontend | [ ] |
-| A6 | Chat-webhook notification channel | DEC-43 | M9 | [ ] |
+| A6 | Chat-webhook notification channel | DEC-43 | M9 | [x] |
 | A9, A10 | Architecture rule tests; CI quality gate | DEC-43 | Testing teammate (both) | [ ] |
 | A11 | Priority what-if, escalation preview | DEC-43 | M10, M11 | [ ] |
 | A13, A14 | Traceability matrix; campus demo data | DEC-43 | Report, seed data | [ ] |
@@ -117,7 +117,7 @@ The handbook's week-by-week plan, freeze dates, scope tiers and cut order are no
 | 6 | M7 SLA monitor | [x] | business-hours calendar (`BusinessHoursCalendar`) |
 | 7 | M8 Events and audit | [x] | M2 auth audit, M4 history, audit of SLA warnings and violations |
 | 8a | Refactor, checked by the smoke suites | [x] 2026-11-13 | aggregate-recorded events (C2), command objects (C1) |
-| 8 | M9 Notifications | [ ] | M6 TRIAGE_NEEDED notice, notification preferences, chat-webhook channel (A6) |
+| 8 | M9 Notifications | [x] | M6 TRIAGE_NEEDED notice, notification preferences, chat-webhook channel (A6) |
 | 9 | M10 Search and reports | [ ] | slaState filter, PDF export, saved views, feedback after resolution, withdraw (G3), coverage risk report (E3), post-incident report (E4), priority what-if (A11) |
 | 10 | M11 Escalation | [ ] | M4 escalate, `AutoVerifyJob` (G2), escalation preview (A11), adjustable demo clock (D1) |
 | 11 | M12 Intelligence and AI | [ ] | M4 duplicates, mark-duplicate, thread summarizer, chatbot intake (A1), recurring-problem detector (E2), Major Incident Mode grouping and join (S2), outage drill (D2) |
@@ -159,16 +159,19 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 | D-024 | 2026-11-13 | Correction to D-018 and D-022: tests stay with the Testing teammate as the handbook says (the review had given domain unit tests to the backend lead). The C1 and C2 refactors are checked with the smoke suites; architecture rule tests (A9) are a suggestion to the Testing teammate. |
 | D-025 | 2026-11-13 | C2 built (DECISIONS.md DEC-46, option A chosen by the user): the aggregate records plain facts (action, status before, status after); the service adds actor and wording; an action that records no fact fails loudly instead of skipping its audit entry. Comments stay published by the service. No change of behavior or audit text. |
 | D-026 | 2026-11-13 | C1 built (DECISIONS.md DEC-46): `IncidentCommand` objects for the eight plain lifecycle actions and one `IncidentCommandRunner` for the steps they share; `IncidentEventPublisher` turns facts into events for the runner and the service. Creation, edits, assignment, priority override and comments stay in `IncidentService`. No change of behavior; the eight suites are identical before and after. |
+| D-027 | 2026-11-13 | M9 notifications built (DECISIONS.md DEC-48): mapping of `IncidentChanged` actions to the 15 event types, after-commit async listener on one thread, rows only for IN_APP and SMS_SIM, chat webhook as a room channel, preferences with locked critical alerts, digest through `SlaRunCompleted`, minimal STOMP seam for M13. |
 
 ## 7. Open questions / blockers
 
 **Teammates: start with `docs/TEAM_UPDATES.md`.** It lists, per role, everything that differs from the handbook PDFs. The bullets below are the full working notes, newest first.
 
+- Testing teammate (D-027, M9): suggested unit tests, all without Spring: `NotificationEventType.forAction` (ASSIGNED and REASSIGNED give INCIDENT_ASSIGNED; CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED give empty; every one of the 15 types has at least one audience); `NotificationRules` (`smsApplies`: P1 + ASSIGNED + ASSIGNEE true, P1 + REPORTER false, P2 false; `neverBatched`: P1 true, SLA_VIOLATED true, P3 SLA_WARNING false; `cannotSwitchOff`: IN_APP always true, SLA_VIOLATED EMAIL true for an administrator and false for an employee); `NotificationFactory` (`{code}` and `{priority}` filled, unknown placeholder empty, title cut to 59 characters ending in an ellipsis, `<EVENT>.<audience>` wins over `<EVENT>`); `DigestCollector`; `NotificationDispatcher` with fake channels (a channel that throws does not stop the next; IN_APP first and the inbox id passed on). Integration: run `SlaMonitor.runOnce()` with a fixed `Clock` and threshold 1 as in `m9_smoke.py` (2 P4 warnings give 1 digest, 2 P1 warnings give 2 rows). Class names are in `com.iitsm.application.notification`, `com.iitsm.domain.notification` and `com.iitsm.infrastructure.notification`. Expected values of the end-to-end run are in `m9_smoke.py`.
+- Frontend teammate (D-027, M9): endpoint shapes, the WebSocket handshake and the locked flag are in `TEAM_UPDATES.md` section 2.
 - Frontend teammate (D-022, G1): 11 screens are stubs and 6 run on hardcoded data. Wire them in demo order: (1) report form, my incidents, incident detail with `allowedActions`; (2) technician queue, workbench, workload; (3) team queue with assign and recommendations, escalations; (4) admin incidents, audit log, SLA violations, config, catalog screens; (5) dashboard, reports, service graph. A typed client can be generated from `docs/openapi/iitsm-api.json`. On 409 `OPTIMISTIC_LOCK_CONFLICT` reload and retry (DEC-42).
 - Frontend teammate (D-020 to D-023): new screens to plan: Major Incident view with the known-outage banner on the report form (S2), simulator screen (S1), audit Verify button (S3), service status board (E1), post-incident report (E4), tracking view (E5), demo clock and outage drill controls (D1, D2), chatbot and voice intake (A1, A2). Endpoints are added to the planned part of the contract as each is designed.
 - Testing teammate (D-020, D-022): one new table beyond Appendix A, `audit_seals` (S3: id, from_id, to_id, record_count, hash, prev_hash, created_at); the partial unique index for the global SLA default (DEC-17); decide whether V5 gets a visibility column on `audit_records` (DEC-42). Tests: everything under `src/test` stays with the Testing teammate (handbook 1.4; DEC-42 as corrected): unit, integration and boundary tests, plus the suggested architecture rule tests (A9). The backend lead supplies class names, expected values and the smoke scripts. The smoke scripts named in section 3 exist only on the backend lead's machine (`smoke-tests/` beside the repository folder); they are to be shared and turned into automated tests.
 - Report teammate (D-019 to D-023): rubric mapping in section 8; challenge-to-feature table (DEC-47); pattern list now includes Template Method and Command (SYSTEM_GUIDE 14.3); video run sheet in DEC-45; cite `ERROR_LOG.md` as bug-resolution evidence; state that deployment is local Docker Compose.
-- Open design questions for later modules (DEC-42): an unassigned P1 in triage never escalates; what happens after escalation level 3; whether a confident AI category is applied automatically; mapping `IncidentChanged` actions to the 15 notification event types; CSV formula injection.
+- Open design questions for later modules (DEC-42): an unassigned P1 in triage never escalates; what happens after escalation level 3; whether a confident AI category is applied automatically; CSV formula injection.
 
 - Testing teammate (D-015): the V5 trigger that rejects UPDATE and DELETE on `audit_records` is still wanted (the app side is append-only already). Test idea for the M8 done-when: count `audit_records` for the incident before and after one transition (exactly +1) and after a refused one (+0). Frontend: `GET /incidents/{id}/history` for the timeline, `GET /audit` for the admin log.
 - Frontend (E-021): `reusableSolution` on resolve and `alwaysP1` on services may now be omitted (default false).
