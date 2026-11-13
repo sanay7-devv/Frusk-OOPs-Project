@@ -2,12 +2,14 @@ package com.iitsm.domain.incident;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.category.Category;
 import com.iitsm.domain.exception.InvalidStateTransitionException;
 import com.iitsm.domain.priority.Priority;
@@ -31,6 +33,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
 /**
@@ -167,6 +170,10 @@ public class Incident {
     @Column(name = "version", nullable = false)
     private long version;
 
+    /** What has happened to this incident since the application layer last drained it (not persisted). */
+    @Transient
+    private List<IncidentFact> facts = new ArrayList<>();
+
     protected Incident() {
     }
 
@@ -184,50 +191,71 @@ public class Incident {
         this.status = IncidentStatus.NEW;
         this.createdAt = now;
         this.updatedAt = now;
+        facts.add(new IncidentFact(AuditAction.INCIDENT_CREATED, null, IncidentStatus.NEW));
     }
 
     private IncidentState state() {
         return StateFactory.of(status);
     }
 
+    /**
+     * Runs a lifecycle move and records the fact that it happened. If the state refuses the move (it throws), no
+     * fact is recorded, so a refused action leaves no trace, exactly as it leaves no audit entry.
+     */
+    private void recorded(AuditAction action, Runnable move) {
+        IncidentStatus before = status;
+        move.run();
+        facts.add(new IncidentFact(action, before, status));
+    }
+
+    /**
+     * Hands over what has happened since the last call and forgets it. The application layer publishes one audit
+     * event per fact after every action.
+     */
+    public List<IncidentFact> drainFacts() {
+        List<IncidentFact> drained = List.copyOf(facts);
+        facts.clear();
+        return drained;
+    }
+
     // ------------------------------------------------------------------ lifecycle (State pattern)
 
     /** NEW to CLASSIFIED. {@code category} may be null: the incident then waits in triage. */
     public void classify(Category newCategory, Instant now) {
-        state().classify(this, newCategory, now);
+        recorded(AuditAction.CLASSIFIED, () -> state().classify(this, newCategory, now));
     }
 
     public void assign(User technician, Instant now) {
-        state().assign(this, technician, now);
+        recorded(AuditAction.ASSIGNED, () -> state().assign(this, technician, now));
     }
 
     public void acknowledge(Instant now) {
-        state().acknowledge(this, now);
+        recorded(AuditAction.ACKNOWLEDGED, () -> state().acknowledge(this, now));
     }
 
     public void startWork(Instant now) {
-        state().startWork(this, now);
+        recorded(AuditAction.WORK_STARTED, () -> state().startWork(this, now));
     }
 
     public void requestInfo(String message, Instant now) {
-        state().requestInfo(this, message, now);
+        recorded(AuditAction.INFO_REQUESTED, () -> state().requestInfo(this, message, now));
     }
 
     /** @param calendar the calendar of the incident's SLA, to move the deadline by the paused counted time */
     public void provideInfo(String message, Instant now, WorkCalendar calendar) {
-        state().provideInfo(this, message, now, calendar);
+        recorded(AuditAction.INFO_PROVIDED, () -> state().provideInfo(this, message, now, calendar));
     }
 
     public void resolve(Resolution newResolution, Instant now) {
-        state().resolve(this, newResolution, now);
+        recorded(AuditAction.RESOLVED, () -> state().resolve(this, newResolution, now));
     }
 
     public void verify(Instant now) {
-        state().verify(this, now);
+        recorded(AuditAction.VERIFIED, () -> state().verify(this, now));
     }
 
     public void close(ClosureReason reason, Instant now) {
-        state().close(this, reason, now);
+        recorded(AuditAction.CLOSED, () -> state().close(this, reason, now));
     }
 
     /**
@@ -235,11 +263,11 @@ public class Incident {
      * @param targets          the incident's SLA targets, for the restarted resolution clock
      */
     public void reopen(String reason, Instant now, Duration reopenWindow, SlaTargets targets) {
-        state().reopen(this, reason, now, reopenWindow, targets);
+        recorded(AuditAction.REOPENED, () -> state().reopen(this, reason, now, reopenWindow, targets));
     }
 
     public void reassign(User technician, Instant now) {
-        state().reassign(this, technician, now);
+        recorded(AuditAction.REASSIGNED, () -> state().reassign(this, technician, now));
     }
 
     /** The transitions legal in the current status (who may perform them is checked separately). */
@@ -275,6 +303,16 @@ public class Incident {
      * from the creation time; afterwards they are recalculated from the creation time (handbook 2.5 M5).
      */
     public void applyPriority(PriorityBreakdown breakdown, SlaTargets targets, Instant now) {
+        boolean changed = priority != null && priority != breakdown.band();
+        setPriority(breakdown, targets, now, changed ? AuditAction.PRIORITY_CHANGED : AuditAction.PRIORITY_CALCULATED);
+    }
+
+    /** An administrator or team lead sets the priority by hand: always recorded as a change. */
+    public void overridePriority(PriorityBreakdown breakdown, SlaTargets targets, Instant now) {
+        setPriority(breakdown, targets, now, AuditAction.PRIORITY_CHANGED);
+    }
+
+    private void setPriority(PriorityBreakdown breakdown, SlaTargets targets, Instant now, AuditAction action) {
         if (status.isResolvedOrLater()) {
             throw new InvalidStateTransitionException(status.name(), IncidentAction.OVERRIDE_PRIORITY.name(),
                     "the priority of a resolved incident cannot change");
@@ -290,6 +328,7 @@ public class Incident {
             sla.retarget(createdAt, targets, acknowledgedAt != null);
         }
         touch(now);
+        facts.add(new IncidentFact(action, status, status));
     }
 
     /**
