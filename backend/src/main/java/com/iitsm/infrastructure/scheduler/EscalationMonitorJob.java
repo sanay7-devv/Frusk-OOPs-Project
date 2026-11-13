@@ -22,6 +22,7 @@ import com.iitsm.domain.config.ConfigKey;
 @ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 public class EscalationMonitorJob implements SchedulingConfigurer {
 
+    private static final int FIRST_RUN_DELAY_SECONDS = 10;
     private static final Logger log = LoggerFactory.getLogger(EscalationMonitorJob.class);
 
     private final EscalationMonitor monitor;
@@ -36,8 +37,11 @@ public class EscalationMonitorJob implements SchedulingConfigurer {
     public void configureTasks(ScheduledTaskRegistrar registrar) {
         registrar.addTriggerTask(this::run, context -> {
             Instant last = context.lastCompletion();
-            Instant base = last != null ? last : context.getClock().instant();
-            return base.plusSeconds(config.current().intValue(ConfigKey.ESCALATION_MONITOR_INTERVAL_SECONDS));
+            // the first run comes shortly after start, so a fresh start does not wait a whole interval
+            if (last == null) {
+                return context.getClock().instant().plusSeconds(FIRST_RUN_DELAY_SECONDS);
+            }
+            return last.plusSeconds(config.current().intValue(ConfigKey.ESCALATION_MONITOR_INTERVAL_SECONDS));
         });
     }
 

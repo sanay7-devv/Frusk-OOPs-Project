@@ -28,6 +28,7 @@
 10. [M6 Technician assignment](#10-m6-technician-assignment)
 11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
 12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
+    - [12A. M11 Escalation, auto-verify and the demo clock](#12a-m11-escalation-auto-verify-and-the-demo-clock)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -44,12 +45,13 @@
 | **M1** Foundations | Exception hierarchy, one global error handler, request IDs, CORS, security headers, OpenAPI | ✅ Done, verified over HTTP |
 | **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, admin user / role / skill management | ✅ Done and smoke-tested (failed logins and refusals audited since M8) |
 | **M3** Catalog and configuration | Services (with dependency graph), category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` | ✅ Done and smoke-tested (42/42) |
-| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ escalate (M11), duplicates (M12) |
+| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ duplicates (M12); escalate done with M11 |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar · ⏳ notifications of these events (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
-| M9 to M14, M2b | Notifications, reports, escalation, AI, real-time, hardening, Google sign-in | ⬜ Not started |
+| **M11** Escalation (section 12A) | Chain of Responsibility (technician, team lead, system admin, IT manager), escalation monitor with triage escalation and one final exhausted alert, manual `POST /incidents/{id}/escalate`, escalation preview, auto-verify job, demo-only adjustable clock | ✅ Done and smoke-tested (`m11_smoke.py`) · ⏳ notifications of the events (M9) |
+| M9, M10, M12 to M14, M2b | Notifications, reports, AI, real-time, hardening, Google sign-in | ⬜ Not started (M9, M10, M12 core in progress elsewhere) |
 | Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
@@ -1308,6 +1310,88 @@ Smoke test `m8_smoke.py` against the running app.
 
 ---
 
+## 12A. M11 Escalation, auto-verify and the demo clock
+
+Built 2026-11-14 (decisions DEC-48 to DEC-53). A critical incident nobody acknowledges climbs a chain of people; a resolved incident nobody confirms closes itself; and for the recorded demo the clock can be moved forward so both happen on camera in seconds.
+
+### 12A.1 The chain (Chain of Responsibility)
+
+```mermaid
+flowchart LR
+    T["Level 0<br/>TechnicianHandler<br/>(assigned technician, or nobody in triage)"] -->|"timeout of level 1<br/>P1 10 min, P2 30 min"| TL["Level 1<br/>TeamLeadHandler<br/>(technicians with escalation level 1)"]
+    TL -->|"timeout of level 2"| SA["Level 2<br/>SystemAdminHandler<br/>(administrators, scope SYSTEM_ADMIN)"]
+    SA -->|"timeout of level 3"| IM["Level 3<br/>ItManagerHandler<br/>(administrators, scope IT_MANAGER)"]
+    IM -->|"escalation.exhausted.minutes"| EX(["One final 'escalation exhausted' alert<br/>to all administrators, then nothing more"])
+```
+
+- `EscalationHandler` (domain, no Spring) is the abstract link. An incident at another level is passed on; at its own level a handler returns the step to perform once the time its level may take has passed (`EscalationStep`: `RAISE` to the next level, or `EXHAUSTED` at the top). `EscalationChain` links the four handlers once.
+- The waiting times are the rows of `escalation_policies` (per priority and level, wall-clock minutes, DEC-42) and the setting `escalation.exhausted.minutes`. Only P1 and P2 have rows, so only they climb.
+- `EscalationPlanner` (application) turns an incident and the live policies into the chain's input. The monitor and the preview both ask it, so they cannot disagree. The moment the incident came to its level is read from the audit trail (DEC-50): the newest of creation, ASSIGNED, REASSIGNED, ESCALATED, PRIORITY_CHANGED.
+- `EscalationRecipients` finds the people at a level: team lead = active technician with escalation level 1; system administrator and IT manager = active administrators by `AdminScope`. Every holder is notified; a level nobody holds is passed over in the same run.
+
+### 12A.2 What the monitor does
+
+```mermaid
+sequenceDiagram
+    participant J as EscalationMonitorJob
+    participant M as EscalationMonitor
+    participant P as EscalationPlanner
+    participant I as Incident
+    participant B as Event bus
+    J->>M: runOnce() every escalation.monitor.interval.seconds
+    M->>M: candidates: P1/P2, ASSIGNED, or CLASSIFIED with no assignee
+    loop one transaction per incident
+        M->>P: due(incident, now)?
+        P-->>M: step (RAISE or EXHAUSTED) or nothing
+        M->>I: escalateUnattended(now) records an ESCALATED fact
+        M->>B: IncidentChanged (the audit entry) + IncidentEscalated (recipients)
+    end
+```
+
+- Same shape as the SLA monitor (DEC-37): one transaction per incident, a failed row is logged and retried next run, the interval is read again after every run, scheduling is off in the test profile.
+- **Stops at acknowledgement:** an acknowledged incident is no longer ASSIGNED, so it is not a candidate any more.
+- **Triage (DEC-48):** a P1 or P2 in CLASSIFIED with no assignee starts at level 0 and climbs after the same timeout; the first ESCALATED entry says "no technician was assigned within N min". Assigning it ends the triage climb: the timer restarts, the level is kept, and it is then an ordinary unacknowledged incident.
+- **Exhausted (DEC-49):** at level 3, after `escalation.exhausted.minutes`, one ESCALATED entry "Escalation exhausted at level 3 ..." and an `EscalationExhausted` event for all administrators. The audit trail is the memory of "already raised"; nothing more follows.
+- **Events for M9:** `IncidentEscalated(incidentId, code, priority, fromLevel, toLevel, target, recipientIds, assigneeId, manual)` and `EscalationExhausted(incidentId, code, priority, recipientIds)`. M9's listener sends notification type INCIDENT_ESCALATED to `recipientIds` (SMS also for P1 on the exhausted alert); the audit entries already exist without it.
+
+### 12A.3 Manual escalation and the preview
+
+| Endpoint | Who | Rules |
+|---|---|---|
+| `POST /incidents/{id}/escalate` `{reason}` (10 to 1000 characters) | the assignee, a team lead, an administrator | allowed from ASSIGNED, ACKNOWLEDGED, IN_PROGRESS; raises the level by one, status unchanged; 403 for anybody else, 409 from other statuses and at level 3, 400 for a short reason; the reason is an internal note; audit entry "Escalated to level N (role) by name"; `IncidentEscalated` with `manual = true` |
+
+It is an `IncidentCommand` (`EscalateCommand`) run by `IncidentCommandRunner`; `IncidentAccessPolicy` answers who (403), the State pattern answers when (409, `ESCALATE` is in the legal actions of ASSIGNED, ACKNOWLEDGED and IN_PROGRESS below level 3).
+
+The incident detail carries `escalationPreview` for staff (DEC-51): `{kind, fromLevel, toLevel, targetRole, dueAt, secondsRemaining, recipients}`, or null.
+
+### 12A.4 Auto-verify (G2)
+
+`AutoVerifyMonitor` + `AutoVerifyJob`: a RESOLVED incident older than `verify.auto.hours` (default 48, demo 0.033) is moved to VERIFIED and closed with `AUTO_VERIFIED`, two audit entries without an actor, one transaction per incident, idempotent. The interval is the setting `verify.monitor.interval.seconds` (default 300; the demo seed should set 30). DEC-53.
+
+### 12A.5 The demo clock (D1), demo profile only
+
+| Endpoint | Who | Rules |
+|---|---|---|
+| `GET /admin/demo/clock` | administrators (CONFIG_MANAGE) | `{now, offsetMinutes}` |
+| `POST /admin/demo/clock/advance` `{minutes}` | administrators | 1 to 1440 minutes per call, forward only; audited as CONFIG_CHANGED |
+
+In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forward-only offset); in every other profile it is the system clock and these two routes do not exist (404). SLA warnings and violations, escalation hops and auto-verify all read the injected clock, so one advance triggers them within one monitor interval. **For the recorded demo only.** After a large advance the access token (15 minutes) may be expired; refresh it. DEC-52.
+
+### 12A.6 Settings added
+
+| Key | Default | Range | Meaning |
+|---|---|---|---|
+| `escalation.exhausted.minutes` | 15 | 1 to 1440 | Minutes at level 3 before the one final exhausted alert |
+| `verify.monitor.interval.seconds` | 300 | 5 to 3600 | How often the auto-verify job runs |
+
+(`escalation.monitor.interval.seconds` and `verify.auto.hours` already existed.) `app_config` now has 37 keys.
+
+### 12A.7 Verified behavior
+
+`m11_smoke.py` (78 checks in the dev profile, 88 in the demo profile, which adds the demo-clock checks): the chain climbs one level per timeout with one audit entry and one logged event per hop; acknowledging stops it; an unassigned P1 starts at level 0 and says "no technician was assigned"; one exhausted alert and nothing after it; a level nobody holds is passed over; manual escalate gives 403 for the wrong person and 409 for the wrong status or level 3; P3 and P4 never escalate; auto-verify closes only the old unconfirmed incident, once.
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
@@ -1541,7 +1625,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
 | **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. |
 | **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them. Notification (M9) and dashboard (M13) listeners subscribe to the same events. |
-| **Chain of Responsibility** | ⬜ M11 | Escalation: Technician → Team Lead → System Admin → IT Manager. |
+| **Chain of Responsibility** | ✅ in use (M11) | `EscalationHandler` with `TechnicianHandler`, `TeamLeadHandler`, `SystemAdminHandler`, `ItManagerHandler`, linked by `EscalationChain` (section 12A.1). |
 
 ### 14.3 Further patterns in the code
 
@@ -1550,7 +1634,7 @@ The database also enforces the rules with constraints: unique `(user_id, role_ty
 | **Template Method** | ✅ in use | `FactorStrategy.rank` is final: it scores every candidate, sorts best first and applies the tie-break; subclasses (`CompositeStrategy`, `SkillBasedStrategy`, `LoadBasedStrategy`, `ExperiencePriorityStrategy`) only supply `score` (section 10.3). |
 | **Strategy** (third use) | ✅ in use | `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`: an SLA policy chooses how time is counted (section 11.3). |
 | **Policy object** | ✅ in use | `IncidentAccessPolicy` holds every "who may do what" rule in one class, separate from the State pattern's "is it legal now" (section 8.4). |
-| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with eight implementations (`AcknowledgeCommand` ... `ReopenCommand`) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
+| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with nine implementations (`EscalateCommand` joined with M11) (`AcknowledgeCommand` ... `ReopenCommand`) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
 
 ---
 
@@ -1643,6 +1727,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-13 | C2 refactor (D-025, DEC-46): `Incident` records `IncidentFact`s and `IncidentService` publishes audit events from them (section 12.1). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | C1 refactor (D-026, DEC-46): the eight plain lifecycle actions are command objects run by `IncidentCommandRunner`; `IncidentEventPublisher` is shared with `IncidentService` (section 14.3). No change of behavior or audit text; all eight smoke suites identical before and after. |
 | 2026-11-13 | Decisions only, no code: M11 escalation behavior fixed by the user (DEC-48 triage incidents escalate from level 0, DEC-49 one final exhausted alert after level 3); listed in section 18. |
+| 2026-11-14 | M11 built and smoke-tested (section 12A, D-028, DEC-50 to DEC-53): escalation chain and monitor, triage escalation, exhausted alert, `POST /incidents/{id}/escalate`, `escalationPreview`, `AutoVerifyJob` (G2), adjustable demo clock (D1, demo profile only). New settings `escalation.exhausted.minutes` and `verify.monitor.interval.seconds` (37 keys). `m11_smoke.py` 78/78 (dev) and 88/88 (demo); auth 27, M6 33, M7 35, M8 24, calendar 11 unchanged. Jobs now first run 10 s after start. |
 
 ---
 
@@ -1660,7 +1745,7 @@ Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/D
 | E3 | Coverage risk report | Critical services that only one available technician can handle | M10 |
 | E4 | Post-incident report | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
 | E5 | Reporter tracking view | A progress line with the SLA due time | Frontend |
-| D1, D2 | Demo aids (demo profile only) | Move the clock forward; start a prepared outage | M11, M12 |
+| D2 | Demo aid (demo profile only) | Start a prepared outage (the clock control D1 is built, section 12A.5) | M12 |
 | A1, A2, A6, A11 | Chatbot and voice reporting, chat-webhook channel, priority what-if and escalation preview | | M9 to M12 |
 
 Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned only a team lead or administrator can change impact, urgency and affected users; resolved incidents nobody confirms are verified and closed automatically. Escalation (DEC-48, DEC-49): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to all administrators.
