@@ -6,7 +6,7 @@
 >
 > **Rule.** A new decision gets an entry in the same change as the code. Decisions on innovative features are taken together with the team, after comparing options.
 
-**Status values:** ✅ Accepted · 🔁 Superseded · ⏳ Temporary (will be removed) · 📌 Deferred
+**Status values:** ✅ Accepted · 🔁 Superseded · ⏳ Temporary (will be removed) · 📌 Deferred · 🕓 Proposed (waiting for the user's choice)
 
 ---
 
@@ -55,6 +55,10 @@
 | [DEC-39](#dec-39-one-company-business-hours-calendar-in-app_config) | One company business-hours calendar in app_config | 2026-11-07 | M7 | ✅ user decision |
 | [DEC-40](#dec-40-notification-preferences-and-templates) | Notification preferences and templates | 2026-11-07 | M9 | ✅ user decision, to build |
 | [DEC-41](#dec-41-shared-repository-layout-backend-and-frontend-folders) | Shared repository layout: backend/ and frontend/ folders | 2026-11-10 | Repo | ✅ |
+| [DEC-42](#dec-42-design-review-of-the-open-questions-for-m9-to-m14) | Design review of the open questions for M9 to M14 | 2026-11-13 | M9 to M14 | ✅ review, user may veto |
+| [DEC-43](#dec-43-rubric-driven-additions-for-full-marks) | Rubric-driven additions for full marks | 2026-11-13 | All | 🕓 Proposed |
+| [DEC-44](#dec-44-three-signature-features) | Three signature features | 2026-11-13 | M10 to M13 | ✅ user approved, shaped for the demo video (DEC-45) |
+| [DEC-45](#dec-45-plan-shaped-by-the-recorded-demo) | Plan shaped by the recorded demo | 2026-11-13 | All | ✅ |
 
 ---
 
@@ -402,6 +406,8 @@
 **Decision.** `OK / WARNING / PAUSED / VIOLATED / MET` is calculated by `SlaTracker.stateAt(now, ...)` whenever an incident is shown; only deadlines, pause time and fire-once flags are stored.
 
 **Why.** A stored state would be stale a second later; computing it is cheap and always correct. The monitor job (M7) still stores the flags so warnings fire exactly once.
+
+**Clarified 2026-11-13 (DEC-42).** "Not stored" means the *display* state. The fire-once warning flags and the violated flags are stored by the monitor (DEC-37), so for up to one monitor interval a detail view can show VIOLATED before the violation row exists. List filters on `slaState` use the stored flags and the status, because with business hours (DEC-39) elapsed time cannot be computed in SQL.
 
 ### DEC-24: Incident search with the Criteria API and fetch joins
 
@@ -768,3 +774,195 @@ Smaller rules the handbook left open:
 **Trade-offs.** Maven commands now run from `backend/`; IDE projects must be re-imported from `backend/pom.xml`. The Vercel check fails for the author `Vishh-t` until that account is added to the Vercel team (not a code issue).
 
 **Cross-questions.** *Why not push to main?* Protected branch plus review, per the handbook. *Why a merge, not a copy?* It keeps the backend commit history and authorship. *Are secrets in the repo?* No: `.env`, `credentials/` and `target/` are ignored and untracked.
+
+
+---
+
+## Review and score plan (2026-11-13)
+
+### DEC-42: Design review of the open questions for M9 to M14
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13, before M9 | M9 to M14, M2b | ✅ taken in a design review the user asked for; any line can be vetoed before its module is built |
+
+**Decision.** The open questions were reviewed against this file, the handbook (Appendix A, sections 2.5 M9 to M14) and the code. Chosen options:
+
+| Question | Choice | Reason |
+|---|---|---|
+| Delivery of notifications | After-commit, asynchronous listener; email gets up to 3 in-process retries with backoff; failures logged | The `notifications` table (Appendix A.4) has no status or retry columns, and the in-app row is always kept (DEC-40), so nothing is lost |
+| Who is a team lead's team | One global pool behind a `TeamResolver` interface | Already implied by DEC-26 (no team concept in the schema) |
+| Alert storms | One digest per recipient per monitor run above a threshold in `app_config`; P1 and violations are never batched | Quiet without hiding critical alerts |
+| Email format | Placeholder text (DEC-40) inside one shared HTML shell | Cheap and looks finished |
+| `slaState` list filter | Stored fire-once and violated flags plus the status | Business-hours elapsed time (DEC-39) cannot be computed in SQL; flags may lag the detail view by one monitor interval |
+| Report numbers | GROUP BY in the database, same visibility rules as lists | Totals equal a direct count by construction |
+| PDF library | OpenPDF | Direct table API, permissive licence |
+| Saved views | `saved_filters` table | Already in Appendix A.4 |
+| Escalation targets at levels 2 and 3 | `AdminScope` (`SYSTEM_ADMIN` = 2, `IT_MANAGER` = 3), already in code; several holders are all notified; an empty level is skipped | No new setting needed |
+| Escalation timeouts | Wall-clock, read from `escalation_policies` | P1 and P2 are urgent around the clock |
+| Reassign during escalation | Level kept, timer restarted | The new owner gets a fair window |
+| LLM and similarity | LLM for suggestions and summaries; TF-IDF cosine as default similarity, embeddings behind the same interface | One provider; the no-key path stays strong. TF-IDF needs its own calibrated thresholds: 0.80 and 0.65 were written for embeddings |
+| Text sent to the LLM | Redact emails, IPs and tokens first | Privacy, and a testable rule |
+| LLM outage | Circuit breaker with a cool-off (settings in `app_config`) | Avoids an 8-second wait on every call |
+| Embedding storage | Java cosine over `incident_embeddings` | Enough at this size |
+| Problem records | Automatic grouping, admin ungroup, every grouping audited | Matches the handbook |
+| AI accuracy | Repeatable evaluation on the labelled set, both paths | Numbers for the report |
+| WebSocket tokens | Checked on connect and subscribe; session closed at token expiry | Closes the DEC-10 window for sockets |
+| WebSocket destinations | Permission check per destination with `PermissionKey` | Same rules as REST |
+| Impact traversal | Java traversal with a visited set | Easy to test |
+| Broker, rate limits | In-memory, single instance | Same limit as the config cache (DEC-18); stated openly |
+| Attachments | Disk volume plus the `incident_attachments` row; type checked from the first bytes | Matches Appendix A |
+| Outage behaviour | `SERVICE_UNAVAILABLE` in the standard error body | The brief lists database and network failure |
+| Google sign-in | Link only to an existing account with a verified email; auto-registration behind a setting | Safest default |
+| Tests | Backend lead writes domain unit tests; Testing teammate writes integration and boundary tests | One test in the repository is not defensible |
+
+**Risks found in earlier decisions (to fix inside the named module).**
+
+| Decision | Risk | Fix |
+|---|---|---|
+| DEC-38 | Audit visibility depends on the text prefix "Internal note" | Create internal entries only through one factory method, with a test (M14); ask for a visibility column in V5 |
+| DEC-38 | Auditing every 403 lets a looping client flood `audit_records` | Rate-limit ACCESS_DENIED audit entries per user (M14) |
+| DEC-21 | Actions answer 403 to people who cannot even see the incident, which reveals it exists | 404 on actions for non-viewers, 403 only for viewers who may not act (M14, check T18 first) |
+| DEC-37 | Escalation and risk scans add background writers, so more 409s for users | Frontend reloads and retries on `OPTIMISTIC_LOCK_CONFLICT` |
+| DEC-17 | Code check alone can race | Partial unique index in V1 (Testing teammate) |
+| DEC-28 | Weights differ from the handbook's locked constants | Tests and report use the five-factor weights |
+
+**Questions still open (decide when their module starts).** An unassigned P1 waiting in triage never escalates (the monitor reads ASSIGNED only); what happens after level 3; whether a confident AI category is applied when the reporter gives none (DEC-33); mapping the single `IncidentChanged` action to the 15 notification event types; CSV formula injection in exports.
+
+**Cross-questions.** *"Why not an outbox table for notifications?"* The agreed schema has no delivery columns; the in-app row is the durable record and email is retried in process. *"Why can a list and a detail view disagree on SLA state?"* The list filters on flags written by the monitor; the detail computes live; the gap is at most one monitor interval.
+
+### DEC-43: Rubric-driven additions for full marks
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13 | All | 🕓 Proposed; each line needs the user's yes before it is built |
+
+**Context.** The course rubric (brief, last page): Functionality 60 (mandatory modules), Technical depth 15 (code quality, use of APIs, third-party integration, scalability), System design 10, User experience 10 (value-added features: SLA, security, new features, intelligent features), Innovation 10 (the brief's Innovation Challenge list), Testing 5 (unit, integration, bug resolution, edge cases), Documentation and presentation 10. The handbook scope already covers 10 of the 16 innovation items. The additions below close what is left.
+
+| # | Addition | Rubric line | Lives in | Owner |
+|---|---|---|---|---|
+| A1 | Chatbot incident reporting: a conversational intake that asks follow-up questions and files the incident; guided question flow when no LLM key | Innovation, UX | M12 | Backend + Frontend |
+| A2 | Voice incident reporting: browser speech-to-text feeding the same intake | Innovation | Frontend (no backend change) | Frontend |
+| A3 | Automated root-cause analysis: for a problem record, find the common upstream service of the affected services in the dependency graph, plus an LLM draft note a human approves (now part of S2 in DEC-44) | Innovation, Technical depth | M12 + M13 | Backend |
+| A4 | Mobile push: Web Push as a fifth `NotificationChannel` | Innovation, Technical depth | M9 | Backend + Frontend |
+| A5 | Cloud deployment: backend and PostgreSQL hosted, frontend on Vercel, HTTPS. **Last priority (user decision 2026-11-13):** it is one of 16 optional innovation items and ten are already covered, so nothing depends on it; the recorded demo runs locally with Docker Compose | Innovation, Technical depth | Deploy | Testing/DevOps + Backend |
+| A6 | Chat-webhook channel (Google Chat or Slack incoming webhook) as a sixth channel | Technical depth ("use of APIs (Google API, any other)") | M9 | Backend |
+| A7 | Scalability evidence: a load test with numbers, an index review, and a written scale-out path | Technical depth | M14 | Backend + Testing |
+| A8 | Observability: Actuator health, Micrometer counters (incidents, SLA violations, LLM fallbacks), Prometheus and Grafana in Compose | Technical depth | M14 | Backend + Testing/DevOps |
+| A9 | Architecture rule tests (ArchUnit): `domain` imports no Spring or web code; controllers never touch repositories | Testing, System design | Tests | Backend |
+| A10 | Quality gate in CI: build, tests, coverage report, static analysis | Technical depth, Testing | CI | Testing/DevOps |
+| A11 | Explain-this-priority what-if, escalation preview, strategy replay (replay is now S1 in DEC-44) | UX, Innovation | M10, M11 | Backend + Frontend |
+| A12 | Security extras: password reset by email; optional TOTP second factor for administrators | UX (security), Technical depth | M2 | Backend + Frontend |
+| A13 | Requirement traceability matrix: brief requirement to module, class, endpoint, screen and test | System design, Documentation | Report | Backend + Report |
+| A14 | Campus-flavoured demo data (the institute's own IT services) | System design (problem understanding) | Seed data | Report + Testing |
+
+**Not proposed.** Microservices and Kubernetes: the brief says innovation must not compromise the OOP design, and DEC-01 stands.
+
+**Already required, not additions.** Notifications on at least two channels (M9), reports and dashboards (M10), feedback after resolution (a listed employee capability; build it with M10, not at the end), typed handling of database and network failure (M14), the Flyway cut-over, and automated tests.
+
+**Trade-off.** A1 to A6 widen the surface the Frontend and DevOps teammates must cover; each stays behind an interface so the core lifecycle never depends on it.
+
+
+### DEC-44: Three signature features
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13 | M10 to M13 | ✅ Approved by the user on condition that they suit the demo video; they do, with the changes in DEC-45 (S1 is one screen with one chart; the weight search is dropped) |
+
+**Context.** Most teams will show an LLM that suggests a category or chats. These three are deterministic, explainable, and each one only works because of design decisions already taken, so they double as proof of the architecture in the viva. None depends on an API key.
+
+#### S1. Service Desk Simulator (the desk in fast-forward)
+
+**What.** An admin picks a workload (the last N real incidents, or a generated outage storm) and a set of configurations (assignment strategy, weights, SLA policy, number of technicians). The system replays the workload in memory on a virtual clock and reports, per configuration: SLA violations, mean time to resolve, and how evenly work was spread. The admin can apply the winning configuration live. Optional extra: search the weight space and recommend the best weights with the evidence.
+
+**Why only we can do it.** `AssignmentEngine.recommend(incident, candidates, settings)` is a pure domain call with no Spring or database (DEC-01); every time rule reads an injected `Clock` (DEC-13); settings are an immutable snapshot (DEC-18); the lifecycle is a domain State machine (DEC-19). The simulator is therefore a discrete-event loop over the real production classes, not a copy of the rules.
+
+| Option | For | Against |
+|---|---|---|
+| **In-memory discrete-event simulation over the real domain classes** (proposed) | Results come from the same code that runs live; no test data written to the database | Needs a handling-time model (historical resolution times per priority and category) |
+| Replay by writing sandbox incidents to the database | Simple | Pollutes real data and the audit trail; slow |
+| Static report of past assignments only | Trivial | Shows nothing about the alternatives |
+
+**OOP shown.** Strategy (configurations compared side by side), State, Factory (`IncidentFactory` builds the simulated incidents), a priority queue of timed events (the brief's "appropriate data structures"), and a `SimulationClock` that is simply another `Clock`.
+
+**Trade-off.** It is a model: technicians are assumed to work their queue in priority order at historical speeds. The report says so next to the numbers.
+
+**Cross-questions.** *"How do you know the simulation matches reality?"* Replaying the real history under the configuration that was actually active must reproduce the real assignments; that is the built-in check. *"Why not machine learning?"* A simulation is explainable and needs no training data.
+
+#### S2. Major Incident Mode (root cause from the graph, known-outage deflection, crowd-driven priority)
+
+**What.** (1) When related incidents arrive on several services, the system walks the service dependency graph and names the common upstream service as the probable root cause, with the path as evidence. (2) It opens one major incident (`incidents.major`, `problem_records`) and links the others. (3) An employee who starts a report on an affected service sees "Known outage, being worked on" and joins with one click; no new form. (4) Every join raises `affected_users` on the major incident, so the handbook's own multiplier (1.0, 1.25, 1.5) re-runs and the priority climbs by itself as reports pile up. (5) Resolving the major incident resolves the linked ones and notifies everyone once.
+
+**Why it fits.** The schema already has `major`, `problem_id`, `duplicate_of_id`, `affected_users` and `root_cause` (Appendix A.3); the graph is cycle-free (DEC-16); priority is recalculated by the existing engine (DEC-25). No schema change. It is the brief's demo workflow 3 ("multiple incidents reported, duplicates identified, correlated, escalated") and covers two innovation items: automated root-cause analysis and the service dependency graph.
+
+| Option | For | Against |
+|---|---|---|
+| **Graph analysis first, LLM note optional** (proposed) | Deterministic, explainable, works offline | Only finds causes that are services in the graph |
+| LLM-written root cause only | Reads well | Not reproducible; fails without a key |
+| Manual linking by an admin | Simple | Not intelligent |
+
+**Trade-off.** A wrong grouping hides a separate problem; an admin can unlink, and every grouping is audited (DEC-42).
+
+**Cross-questions.** *"What is the algorithm?"* For each affected service collect its upstream set by graph traversal; the candidates are the services present in every set; the one closest to the affected services wins. *"Why does the priority change with no human action?"* The affected-users factor is part of the handbook's priority formula; joining a known outage changes that input.
+
+#### S3. Sealed audit trail (tamper-evident)
+
+**What.** A scheduled job seals the audit records written since the last seal: it hashes them together with the previous seal's hash and stores the result. `GET /audit/verify` recomputes the chain and reports the first record that no longer matches. Demo: change one row directly in the database, press Verify, and the system names the altered record.
+
+| Option | For | Against |
+|---|---|---|
+| **Seals over batches in a new `audit_seals` table** (proposed) | No change to `audit_records`; no locking on the write path | The newest records are unsealed for one interval; one new table beyond Appendix A |
+| Hash columns on every audit record, chained at insert | Every record protected at once | Concurrent writers must be serialised; changes the agreed table |
+| Database trigger only (already planned for V5) | Prevents changes | Prevents but cannot prove; a database administrator can disable it |
+
+**Why.** The brief asks for a complete audit trail and lists security under value-added features. Prevention (trigger) plus detection (seals) is the difference between "we log" and "we can prove the log is intact".
+
+**Cross-questions.** *"Is this a blockchain?"* No: a hash chain kept by one party; it proves integrity, not consensus. *"What if the attacker recomputes the seals?"* They would need to rewrite every later seal; publishing the latest seal hash outside the database (log line, email to the IT manager) closes that gap.
+
+
+### DEC-45: Plan shaped by the recorded demo
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-13 | All | ✅ |
+
+**Context.** The project is graded from a PDF report and a 15 to 20 minute recorded video in which every member introduces themselves, explains a module, and at least three complete workflows are shown. A feature earns marks in the video only if it can be shown working in under two minutes; everything else earns its marks in the report.
+
+**Decision.**
+
+| Item | Verdict for the video | Change |
+|---|---|---|
+| S2 Major Incident Mode | Best fit: it is the brief's workflow 3 and it is visual (graph lights up, priority climbs) | Build as proposed |
+| S3 Sealed audit trail | Strong: a 30-second segment (edit a row, press Verify) | Build as proposed |
+| S1 Service Desk Simulator | Fits only if short | One screen: choose a workload and up to three configurations, one bar chart, an Apply button. The weight search is dropped |
+| A2 voice, A1 chatbot, A6 chat webhook | Good: each shows in 15 to 45 seconds | Keep |
+| A11 priority what-if, escalation preview | Good, a few seconds each inside workflows 1 and 2 | Keep |
+| A9 architecture tests, A10 quality gate, A7 load test | Not visible; they earn Testing and Technical depth marks in the report, plus a few seconds of a green test run | Keep, report-first |
+| A4 mobile push, A8 Prometheus and Grafana, A12 password reset and TOTP, A5 cloud deployment | Hard to film or low return | Last priority, after everything above |
+
+**Two additions that exist for the demo (demo profile only).**
+
+| # | Addition | Why |
+|---|---|---|
+| D1 | Adjustable clock: in the `demo` profile the `Clock` bean (`ClockConfig`) can be moved forward by an administrator ("+10 minutes") | SLA warnings, violations, escalation and auto-verify can be shown on camera in seconds, without cuts. Possible because all time rules read one injected `Clock` (DEC-13). Forward only; the default and test profiles keep the system clock |
+| D2 | Outage drill: one admin action files a prepared set of related incidents from several employees across dependent services | Workflow 3 starts in seconds and is identical in every take |
+
+**Options considered.** Short real timeouts only (the handbook's demo profile: 1-minute escalation, 30-second monitor) still means minutes of waiting or video cuts for a 30-minute SLA; editing the video hides the wait but the viewer cannot tell the timing is real. An adjustable clock shows the real rules at real durations.
+
+**Run sheet (about 19 minutes).**
+
+| Time | Segment | Shows |
+|---|---|---|
+| 0:00 | Problem, team, roles | Each member introduces themselves |
+| 1:00 | Architecture and patterns | Layer diagram, class diagram, the seven patterns |
+| 2:30 | Workflow 1: report to assignment | Voice or chat intake, category suggestion, priority with its explanation and what-if, explainable assignment, notifications on in-app, email and chat webhook |
+| 6:00 | Workflow 2: investigate to close | Acknowledge, request info (SLA pauses), clock forward to an SLA warning, resolve, verify, feedback, audit timeline; an unacknowledged P1 climbs the escalation chain |
+| 9:30 | Workflow 3: Major Incident Mode | Outage drill, root cause from the graph, known-outage join, priority climbing, one resolution for all |
+| 13:00 | Administrator | Live dashboard, reports, strategy switched with no restart, Service Desk Simulator |
+| 15:00 | Security | Lockout, different screens per role, a refused action, sealed audit verify |
+| 16:00 | Code and tests | State, Strategy, Observer, Chain of Responsibility in code; tests and architecture rules running green |
+| 18:30 | Limits and scale-out path | Close |
+
+**Trade-off.** D1 and D2 are code that exists for the demonstration; both are confined to the `demo` profile and to administrators, and the report says so.
+
+**Cross-questions.** *"Is the SLA real if you can move the clock?"* The rules and durations are the production ones; only the clock source differs, in one profile. The same seam is what makes the time rules testable. *"Can a user move the clock in production?"* No: the adjustable clock bean is only created in the `demo` profile.

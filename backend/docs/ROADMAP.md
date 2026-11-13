@@ -2,7 +2,7 @@
 
 Living document. Update after every working session. Source of truth for scope: the team handbooks (Backend Lead Handbook, section 2.5 modules M1 to M14).
 
-Last updated: 2026-11-10 (repo moved into the shared repo; backend now in `backend/`)
+Last updated: 2026-11-13 (DEC-42 review, DEC-43 score plan, DEC-44 signature features approved, DEC-45 demo-shaped plan; no code change)
 
 Scope rule (D-012): every feature in the handbook is built in full; there are no scope tiers, no cut order and no timeline. Work follows module dependencies only.
 
@@ -117,6 +117,10 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 | D-015 | 2026-11-07 | M8 events and audit (full reasoning in DECISIONS.md DEC-38): one `IncidentChanged` event (action, actor, previous/new status, description) per incident action, published by `IncidentService`; `AuditListener` writes it in the action's transaction (no commit without a record, a refused action leaves none); `SecurityAuditEvent` (LOGIN_FAILED, ACCESS_DENIED for every 403, USER_ROLE_CHANGED, CONFIG_CHANGED) written in its own transaction; creation is four entries; reporters do not see internal-note entries (description prefix, no schema change); `AuditRecord` is `@Immutable` and the repository only inserts and reads. Contract: `PUT /admin/config` and role changes now record the caller. | Handbook 2.5 M8, M2 (audit LOGIN_FAILED, ACCESS_DENIED), 2.6, 2.10. |
 | D-016 | 2026-11-07 | Business-hours SLA calendar (user decision, DEC-39): one company calendar in `app_config` (`sla.business.zone`, `open`, `close`, `days`, `holidays`), validated and live; `WorkCalendar` strategy (`AlwaysCalendar`, `BusinessHoursCalendar`) used for every deadline, pause shift and elapsed percentage; policies choose ALWAYS or BUSINESS_HOURS; `CalendarTypeConverter` stores BUSINESS_HRS (E-022). | Handbook 2.5 M7 (WorkCalendar), D-012 full scope. |
 | D-017 | 2026-11-10 | Shared repo layout (full reasoning in DECISIONS.md DEC-41): backend merged into `sanay7-devv/Frusk-OOPs-Project` by PR #1, then moved into `backend/` beside `frontend/` by PR #2. Run Maven from `backend/`. Vercel's check fails for `Vishh-t` until that account joins the Vercel team, and its Root Directory should be `frontend`. |
+| D-018 | 2026-11-13 | Design review of the open questions for M9 to M14 (DECISIONS.md DEC-42): one choice per question, risks found in DEC-17, 21, 37, 38, and a clarification of DEC-23. |
+| D-019 | 2026-11-13 | Rubric-driven additions A1 to A14 (DECISIONS.md DEC-43), **proposed, waiting for the user's choice**. |
+| D-020 | 2026-11-13 | Cloud deployment (A5) is last priority (user decision). Three signature features proposed in DECISIONS.md DEC-44: S1 Service Desk Simulator, S2 Major Incident Mode, S3 sealed audit trail; approved the same day (D-021). |
+| D-021 | 2026-11-13 | Plan shaped by the recorded demo (DECISIONS.md DEC-45): S1 to S3 approved, S1 cut to one screen; demo-only adjustable clock (D1) and outage drill (D2) added; mobile push, Grafana, password reset, TOTP and cloud deployment are last priority; run sheet for the video recorded there. |
 
 ## 7. Open questions / blockers
 
@@ -149,3 +153,20 @@ Short index. The full, interview-ready reasoning for every decision (when, optio
 - Boot 4 things to remember while coding: Jackson 3 package is `tools.jackson.*` (not `com.fasterxml.jackson.*`, except annotations); use `spring-boot-starter-*-test` slices; Spring Security 7 (lambda DSL `SecurityFilterChain` only); Hibernate 7. Search for Boot 4 specific answers, many tutorials are still Boot 3.
 - Report teammate: mention Google sign-in in the security section (implemented) and keep SSO/MFA listed as documented-only.
 - Decide how to test `POST /auth/google` without real Google: put token verification behind an interface so tests can fake it (fits the Adapter pattern).
+
+
+## 8. Score plan against the course rubric (2026-11-13)
+
+Rubric from the brief: Functionality 60, Technical depth 15, System design 10, User experience 10, Innovation 10, Testing 5, Documentation and presentation 10. Proposed additions are A1 to A14 in DECISIONS.md DEC-43; none is built until the user says yes.
+
+| Rubric line | Marks | Built | Planned in the handbook scope | Proposed additions |
+|---|---|---|---|---|
+| Functionality | 60 | Users, incidents and lifecycle, priority, five assignment strategies, SLA, audit, 12 search filters | [ ] M9 notifications · [ ] M10 reports · [ ] feedback after resolution (moved from M14 to M10) · [ ] M12 duplicates · [ ] M14 database and network failure handling | [ ] A13 traceability matrix proves every listed capability |
+| Technical depth | 15 | Layered design, JWT, live config, generated OpenAPI | [ ] M2b Google sign-in · [ ] LLM API · [ ] Docker, CI (Testing teammate) | [ ] A6 chat webhook · [ ] A7 load test and scale-out path · [ ] A8 observability · [ ] A10 quality gate |
+| System design | 10 | DECISIONS.md, SYSTEM_GUIDE.md with diagrams | [ ] report diagrams (Report teammate) | [ ] A9 architecture rule tests · [ ] A13 · [ ] A14 campus data |
+| User experience | 10 | `allowedActions`, priority explanation, explainable recommendations | [ ] M13 live dashboard · [ ] notification preferences | [ ] A11 what-if, preview, replay · [ ] A12 password reset, TOTP |
+| Innovation | 10 | Explainable assignment, business-hours SLA, event-driven core | [ ] M11 escalation · [ ] M12 classification, similarity, resolutions, SLA risk · [ ] M13 graph, real-time | [ ] **S1 simulator · S2 major incident mode · S3 sealed audit (DEC-44, approved)** · [ ] A1 chatbot · [ ] A2 voice · [ ] D1 adjustable demo clock · [ ] D2 outage drill (DEC-45) · last priority: A4 mobile push, A5 cloud deployment |
+| Testing | 5 | One context test; smoke runs recorded here | [ ] 26 documented cases (Testing teammate) | [ ] domain unit tests (DEC-42) · [ ] A9 · [ ] smoke scripts into the repository · [ ] ERROR_LOG.md cited as bug-resolution evidence |
+| Documentation and presentation | 10 | This roadmap, guide, decision record | [ ] PDF report, 15 to 20 minute video | [ ] A13 · [ ] three workflows mapped to the brief's examples |
+
+Gaps found on 2026-11-13: the smoke scripts named in section 3 (`m7_smoke.py`, `m8_smoke.py`, `calendar_smoke.py`) are not in the repository; the frontend already reads `VITE_API_BASE_URL` (default `http://localhost:8080/api/v1`).
