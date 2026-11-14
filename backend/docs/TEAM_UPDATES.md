@@ -151,3 +151,21 @@ Seven endpoints moved from Planned to built (contract: 72 operations built, 26 p
 - **Keyword dictionary:** `backend/src/main/resources/ai/keywords.json` (topics, weighted words, impact and urgency phrases); edit it when the real category names are known.
 - **Labelled evaluation set:** `m12_calibrate.py` holds a first set of 20 labelled pairs and prints the scores; add your pairs there and rerun to update the table in `SYSTEM_GUIDE.md` 12c.6 (DEC-42 asks for a repeatable evaluation of both paths).
 - Patterns to cite: Strategy (`TextAnalysisService` with three implementations), Adapter (`LlmClient`, `LlmTextAnalysisService`), plus a circuit breaker (DEC-M12-5).
+
+---
+
+## M2b Google sign-in (2026-11-14, DEC-100 to DEC-103)
+
+**Frontend**
+- New endpoint `POST /api/v1/auth/google` with body `{ "idToken": "<Google ID token>" }`; the answer is the same `AuthResponse` as `/auth/login`, so reuse your login success handler (store tokens, load the user).
+- Add the Google Sign-In button (Google Identity Services, `https://accounts.google.com/gsi/client`) to the login screen. Its callback gives a `credential`: that string is the `idToken`. The **client id** you give the button must be the same one the backend has in `GOOGLE_CLIENT_ID` (still needed from the team: create the OAuth web client in the Google Cloud console and add the frontend origin, for example `http://localhost:5173`, as an authorized JavaScript origin).
+- Errors to show: 401 `INVALID_CREDENTIALS` (use one message such as "This Google account cannot sign in here; ask an administrator or use your password"), 401 `TOKEN_INVALID` (try again), 423 `ACCOUNT_LOCKED`, 503 (Google could not be reached; use the password form). A first-time Google user only gets an account when an administrator has set `auth.google.autoregister` to `true`; otherwise the person must already have an account with the same email.
+- Password login stays. A Google-only account has no password, so its password login answers `INVALID_CREDENTIALS`.
+
+**Testing and DevOps**
+- New `app_config` key `auth.google.autoregister` (default `false`; the default lives in code, no seed row needed). No schema change.
+- Environment: `GOOGLE_CLIENT_ID` (empty = every Google sign-in refused) and `GOOGLE_VERIFIER` (`google` or `fake`). With `fake` (profiles dev, demo and test only) tokens are HS256 JWTs signed with the key in `FakeGoogleIdTokenVerifier`, audience equal to `GOOGLE_CLIENT_ID`, issuer `https://accounts.google.com`, claims `sub`, `email`, `email_verified`, `name`, `exp`. Never set `fake` in production: the app refuses to start.
+- Class names and expected values for unit tests: `ROADMAP.md` section 7 (M2b note). Smoke script on the backend lead's machine: `m2b_smoke.py` (32 checks).
+
+**Report and content**
+- Security section: Google sign-in is implemented through a port with a real and a fake adapter (Adapter pattern); the backend verifies signature (Google's published RSA keys), expiry, issuer, audience and `email_verified`; accounts link only by a verified email; failures are audited and answered identically so emails cannot be probed. SSO and MFA stay documented-only.
