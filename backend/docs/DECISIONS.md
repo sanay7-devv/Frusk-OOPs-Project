@@ -84,6 +84,15 @@
 | [DEC-64](#dec-64-post-incident-report-from-the-audit-trail-pdf-through-an-adapter) | Post-incident report from the audit trail, PDF through an adapter | 2026-11-14 | M10 | ✅ |
 | [DEC-65](#dec-65-feedback-and-saved-views) | Feedback and saved views | 2026-11-14 | M10 | ✅ |
 | [DEC-66](#dec-66-priority-what-if) | Priority what-if | 2026-11-14 | M10 | ✅ user decision |
+| [DEC-70](#dec-70-a-confident-ai-category-is-applied-when-the-reporter-gives-none) | A confident AI category is applied when the reporter gives none | 2026-11-14 | M4, M12 | ✅ user decision |
+| [DEC-71](#dec-71-duplicate-check-on-create-and-correlation-into-problem-records) | Duplicate check on create and correlation into problem records | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-72](#dec-72-problem-record-lifecycle) | Problem-record lifecycle | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-73](#dec-73-major-incident-mode-known-outage-one-click-join-climbing-priority-root-cause) | Major Incident Mode: known outage, one-click join, climbing priority, root cause | 2026-11-14 | M12 (S2) | ✅ user decision |
+| [DEC-74](#dec-74-e2-recurring-problem-detector) | E2 recurring-problem detector | 2026-11-14 | M12 (E2) | ✅ user decision |
+| [DEC-75](#dec-75-a1-chatbot-intake-without-a-key) | A1 chatbot intake without a key | 2026-11-14 | M12 (A1) | ✅ user decision |
+| [DEC-76](#dec-76-d2-outage-drill) | D2 outage drill | 2026-11-14 | M12 (D2) | ✅ user decision |
+| [DEC-77](#dec-77-basic-parts-withdraw-mark-duplicate-reporter-edit-lock-security-setting) | Basic parts: withdraw, mark-duplicate, reporter edit lock, security setting | 2026-11-14 | M4, M10, M12, M14 | ✅ user decision |
+| [DEC-78](#dec-78-actions-keep-answering-403-to-people-who-cannot-see-the-incident-t18) | Actions keep answering 403 to people who cannot see the incident (T18) | 2026-11-14 | M14 risk of DEC-42 | ✅ user decision |
 
 ---
 
@@ -1464,3 +1473,149 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 **Decision.** `AutoVerifyMonitor` finds incidents RESOLVED at least `verify.auto.hours` ago (existing key, default 48, demo 0.033), re-checks each inside its own transaction, moves it to VERIFIED and then CLOSED with `ClosureReason.AUTO_VERIFIED`; both steps are audit entries with no actor. Idempotent (a closed incident is no longer RESOLVED). The interval is a new setting `verify.monitor.interval.seconds` (default 300, demo 30), read again after every run, like the other monitors, instead of the property `app.autoverify.monitor-interval-seconds` that only existed in the demo properties file (that property is now unused; the demo seed should set the new key to 30).
 
 **Cross-questions.** *"What if the reporter replies at the same moment?"* The transaction re-reads the incident; the version column makes one of the two writers lose, and the loser is retried or refused cleanly.
+
+
+---
+
+## M12 rest: duplicates, problem records, Major Incident Mode (session A, 2026-11-14)
+
+> Numbered DEC-70 to DEC-78 (session A's range). Every choice below was one of nine questions put to the user with options, a worked example and a recommendation (`A-m12-options.md` in the session notes); the user answered "Approve all", so every recommended option stands. Basic parts (G3, mark-duplicate, G4, C3) were approved with the same message.
+
+### DEC-70: A confident AI category is applied when the reporter gives none
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M4, M12 | ✅ user decision (closes the open question of DEC-33 and DEC-42) |
+
+**Decision.** `IncidentCreationService` asks the intelligence engine for a category when the request has none. At `autocat.apply.confidence` (new setting, default 0.60, the same as the show threshold) or more it is applied, the incident is classified with it and the normal assignment follows; the audit says "Classified as Network by the AI suggestion (confidence 0.65, keyword)". Below it the incident waits in triage as before. The call is not rate-limited (it is part of creating the incident) and runs before the transaction opens, so no database connection is held during a model call (DEC-M12-9).
+
+| Option | Example: "VPN drops every few minutes", no category | Verdict |
+|---|---|---|
+| **A: apply at 0.60 (setting)** ✔ | Network applied, assigned at once | The handbook pipeline ("given category, else AI suggestion, else triage"); the threshold is live |
+| B: apply only at 0.80 | stays in triage (the keyword engine rarely reaches 0.80) | Safer, but the keyword path would never help |
+| C: never apply | stays in triage | Suggestions stay advice only |
+
+**Trade-off.** A wrong category sends the incident to a technician with the wrong skills; the audit entry names the source and confidence, and a team lead can still reassign. **Effect on old scripts:** incidents created without a category in the shared smoke suites may now be classified and assigned (`autocat.apply.confidence = 1` restores the old triage behaviour).
+
+**Cross-questions.** *"Is it not risky to let a model route tickets?"* The category only chooses among our own active categories and is validated; the threshold is a setting; the audit trail shows who decided.
+
+### DEC-71: Duplicate check on create and correlation into problem records
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision (questions 2 and 3) |
+
+**Decision.** *Duplicate check.* Before the transaction, the draft is compared (TF-IDF, DEC-M12-1) with the open incidents of the same service inside `dup.window.hours`. A match at `dup.tfidf.threshold.duplicate` (0.55) or more is **409 `DUPLICATE_INCIDENT`** with every match at 0.35 or more in `similar` (`id, code, title, similarity, status`), unless the request has `confirmNotDuplicate: true`. *Correlation.* After the incident is saved, `ProblemCorrelator` groups it under a problem record when (a) an open incident of the same service resembles it at the related threshold (0.35), confirmed or not, or (b) it is P1 to P3 and an open P1 or P2 sits on a service it depends on, or that depends on it, created no longer ago than `problem.correlation.window.minutes` (60). The anchor's record is joined, or a new record is opened with the anchor's title and service. Every grouping is audited on each incident that changed (`DUPLICATE_LINKED`, no actor).
+
+| Option for correlation | Example (Payment depends on Database) | Verdict |
+|---|---|---|
+| **A: same service with similar text, or a neighbour service with an open P1/P2 in the window, new incident P1 to P3** ✔ | 10:00 P1 "Database timeouts"; 10:10 "Checkout fails" on Payment: grouped. A P4 "printer jam" on Payment: not grouped | Explainable, hard to fool with noise |
+| B: graph and window only, any priority | the P4 printer jam would be grouped too | Too many false groups |
+| C: same service and text only | Payment and Database incidents stay apart | Misses the handbook's "service and one that depends on it" |
+
+**Trade-offs.** A wrong group hides a separate problem: an administrator can ungroup (DEC-72) and every grouping is in the audit trail. The handbook's "when a P1 opens, flag dependants" is covered from the other side: the dependants' later incidents join the P1's record. The two thresholds are the TF-IDF ones, not the handbook's 0.80 and 0.65 (DEC-M12-1). A failure while grouping never undoes the incident (logged, ungrouped).
+
+**Cross-questions.** *"What if two people report the same thing at once?"* Both pass the check (neither exists yet); the second is then grouped with the first by the related rule. *"Why 409 and not just a warning?"* The reporter confirms with one click and the 409 carries the matches, which is the handbook contract.
+
+### DEC-72: Problem-record lifecycle
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision (question 4) |
+
+**Decision.** The lead of a record is derived, never stored: the highest priority, then the earliest created (DEC-46, G5); incidents that only joined an outage never lead. Resolving the **lead** resolves every other open linked incident with the same root cause and steps (notes get "Resolved together with INC-x"), through a new domain move `Incident.resolveWithProblem` that is legal from every open status (the normal resolve needs IN_PROGRESS), and the record becomes RESOLVED. Resolving a non-lead changes nothing for the others. An administrator can also `POST /problems/{id}/resolve` with a resolution (every open incident including the lead), `DELETE /problems/{id}/incidents/{incidentId}` to take one incident out (audited), and a team lead or administrator can open a record by hand with `POST /problems {title?, incidentIds}` (used for the recurring proposals, DEC-74). A RESOLVED record accepts no more joins or groupings.
+
+| Option | Verdict |
+|---|---|
+| **A: lead resolved resolves the rest; admin resolve and ungroup** ✔ | One fix for one problem, which is the point of the record |
+| B: the record is resolved only by an administrator action | Technicians would resolve the same outage ten times |
+| C: the record closes by itself when every incident is resolved, no cascade | No saving of work |
+
+**Trade-off.** A text-related group (similarity 0.35 and up) can contain incidents that need different fixes, and the cascade resolves them all; the reporter can reopen their own incident, and the administrator can ungroup first. This is the price of the handbook's "possibly related: group under a problem record".
+
+**Cross-questions.** *"Why a new move and not the normal resolve?"* An incident that nobody has started cannot go through ACKNOWLEDGED and IN_PROGRESS just to be closed with someone else's fix; the move is one method on `OpenState`, the shared parent of the six open states.
+
+### DEC-73: Major Incident Mode: known outage, one-click join, climbing priority, root cause
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (S2, builds on DEC-44) | ✅ user decision (question 5) |
+
+**Decision.** `GET /problems/known-outages?serviceId=` (any user) lists the open records on the service or on any service it depends on (graph traversal), as `{problemId, title, service, leadCode, leadPriority, affectedUsers, since, alreadyJoined}`: no reporter, no description. `POST /problems/{id}/join` (any user) creates a small incident for the joiner: same service, category, impact and urgency as the lead, one user, linked to the record and to the lead, **closed at once as DUPLICATE** (no triage, no SLA clock, no escalation). The lead's affected users go up by one and its priority is calculated again by the same engine, so the handbook's own multiplier (x1.25 from 10 users, x1.5 from 101) lifts the priority by itself: a lead with impact 4, urgency 3, criticality 2 and 9 users is P3; the tenth person makes it P2. Joining twice returns the first joiner incident; joining a resolved outage is 409. When the lead is resolved each joiner gets one in-app notice (`INCIDENT_RESOLVED`, sent through `NotificationDispatcher` after the commit, because their own incident is already closed and the normal events never reach them). `GET /problems/{id}/root-cause` names the probable root cause: for every affected service the set of everything it depends on, the services in every set (an affected service counts as its own upstream at distance 0), ranked by the farthest then the total distance; the dependency paths from each affected service are returned as evidence (`ServiceGraph.commonUpstream`, written by the M13 session). Example: Payment and Portal both depend on Auth, Auth on Database: Auth first, Database second.
+
+| Option for the join | Verdict |
+|---|---|
+| A: only a note and a counter on the lead, no incident for the joiner | The joiner has nothing to follow and no notice target |
+| **B: a small linked incident closed as DUPLICATE** ✔ | Visible in "my incidents", notified on resolution, no change to triage, escalation or the SLA monitor |
+| C: the joiner's incident stays open and is resolved by the cascade | Triage, escalation and SLA monitors would have to learn to skip it |
+
+**Trade-offs.** Joiner incidents appear in reports as duplicates (that is what they are). The root cause is only as good as the graph: a cause that is not a service in it is not found, and a single affected service names itself first (the explanation says so). The notice reuses the "resolved" wording; a joiner-specific text is a task for the Report teammate (the template key per audience is in `notification-templates.properties`).
+
+**Cross-questions.** *"Why does the priority change with no human action?"* The affected-users factor is part of the handbook formula and joining changes that input. *"Could someone inflate the count?"* One join per person per record (a second call returns the first), and an administrator sees every join in the audit trail of the lead.
+
+### DEC-74: E2 recurring-problem detector
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (E2, builds on DEC-47) | ✅ user decision (question 6) |
+
+**Decision.** `GET /problems/recurring` (team lead, administrator) is computed on each call, nothing is stored. REPEATED_FIX: the same service and category resolved at least `recurring.min.count` (3) times in `recurring.window.days` (30), among incidents with no problem record. REPEATED_REOPEN: an incident reopened at least `recurring.min.reopens` (2) times. A team lead turns a proposal into a record with `POST /problems`; the proposal then disappears.
+
+| Option | Verdict |
+|---|---|
+| **A: computed on read, accepted by a person** ✔ | Never stale; a human decides |
+| B: a job creates records itself | Records appear nobody asked for |
+| C: A plus a daily notice | More noise before the list is proven useful; can be added later |
+
+**Cross-questions.** *"How is this different from duplicates?"* Duplicates are the same failure reported several times within a day; a recurring problem comes back over weeks after being fixed.
+
+### DEC-75: A1 chatbot intake without a key
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (A1, builds on DEC-43) | ✅ user decision (question 7) |
+
+**Decision.** `POST /intelligence/chat {draft, expecting, answer}` is one turn of a **stateless** guided conversation. Slots in order: DESCRIPTION (at least 20 characters, the incident minimum), SERVICE (matched by name or by a distinctive word in the text, else the bot lists the services), AFFECTED_USERS (a number, "just me", "a few", "everyone"), then CONFIRM with a summary and `readyToFile: true`. Category, impact and urgency are never asked: they come from `suggest-intake`, which already falls back to the keyword engine, so the flow works without a key and an LLM key only improves those three fields. Filing is the normal `POST /incidents`, so the duplicate check, the known-outage banner, priority and assignment apply unchanged.
+
+| Option | Verdict |
+|---|---|
+| **A: stateless draft passed back and forth** ✔ | No server memory, works behind a restart, easy to test |
+| B: server-side sessions with an id | State to expire and share across instances |
+| C: frontend wizard only | The "chatbot" would not be an intelligence feature |
+
+**Cross-questions.** *"Is it a real chatbot?"* It is a slot-filling dialogue (the usual shape of an enterprise help-desk bot) whose language understanding is the existing intake engine; free-form conversation is not claimed.
+
+### DEC-76: D2 outage drill
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (D2, builds on DEC-45) | ✅ user decision (question 8) |
+
+**Decision.** `POST /admin/demo/outage-drill {rootServiceId}` exists only in the `demo` profile (no bean and no route elsewhere, like the demo clock, DEC-52) and needs CONFIG_MANAGE. It files, through the normal creation pipeline, two incidents on the failing service and one on each service that depends on it (up to four), from ordinary employees in turn, with `confirmNotDuplicate`. Correlation, priorities, assignment and audit are the real ones; the texts are `resources/demo/outage-drill.json` (`{root}` and `{service}` placeholders, editable by the Report teammate). The answer lists the codes, the dependants and the problem record. A second run adds to the same open record.
+
+| Option | Verdict |
+|---|---|
+| **A: use the services and employees that exist** ✔ | Nothing is invented; the demo data decides the story |
+| B: create its own demo services and employees | Pollutes the catalog |
+
+**Cross-questions.** *"Is the demo not faked?"* The incidents are filed by the same code a user triggers; only the texts and the button are prepared.
+
+### DEC-77: Basic parts: withdraw, mark-duplicate, reporter edit lock, security setting
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M4, M10, M12, M14 (G3, G4, C3 from DEC-46) | ✅ user decision (rules stand as written) |
+
+**Decision.** *G3 withdraw.* `POST /incidents/{id}/withdraw {reason 10 to 1000}`, the reporter only, legal in CLASSIFIED, ASSIGNED and ACKNOWLEDGED; the incident closes with `WITHDRAWN`, the reason becomes a public note, the technician's load drops at once (load counts only active statuses). `WITHDRAW` is a new `IncidentAction` (an addition to the contract). A withdrawn or duplicate-closed incident cannot be reopened (only VERIFIED and AUTO_VERIFIED closures can). *Mark-duplicate.* `POST /incidents/{id}/mark-duplicate {duplicateOfId}`, administrator or team lead, from any open status; the target must be a different, existing incident that is not itself a duplicate (400 names the original); closes as DUPLICATE, sets `duplicate_of_id`, audits `DUPLICATE_LINKED`, leaves a public note naming the original. Both moves live in one new parent class `OpenState` (six open states share them). *G4.* From ASSIGNED on, only a team lead or administrator may change impact, urgency or affected users; the reporter keeps editing the description; sending an unchanged value is not a change; before assignment the reporter edits everything. Wrong person is 403, but a closed incident is still 409 (E-M12B-1). *C3.* `priority.security.category` (default "Security", text, 100 characters) replaces the hard-coded name in `PriorityRecalculator` and `PriorityWhatIfService`; the category and everything under it trigger rule 1. Internal audit entries are created only through `AuditRecord.internal(...)`; the prefix constant is private and `AuditRecord.of` refuses a public text that starts with it.
+
+**Trade-off.** G4 changes the documented edit of T24 (two simultaneous PUTs of impact by the reporter): the Testing teammate edits the description or sends the PUTs as an administrator.
+
+### DEC-78: Actions keep answering 403 to people who cannot see the incident (T18)
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M14 risk of DEC-42 | ✅ user decision (question 9, option A) |
+
+**Decision.** The DEC-42 risk "404 on actions for non-viewers" is **not** changed. T18 in the Testing handbook ("technician 2 acknowledges an incident assigned to technician 1: 403") stays as documented; reads still answer 404 (DEC-21). The cost is stated openly: an authenticated user can learn that an incident id exists by trying an action on it.
+
+**Cross-questions.** *"Is that not an information leak?"* Yes, of the existence of an id to a logged-in user, which the incident code format already makes guessable; the codes are sequential and carry no content.

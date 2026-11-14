@@ -367,3 +367,24 @@ Entry template:
 - Fix: M12's feature commit `5d993b3` was merged instead of the broken merge commit; ids were renumbered (M9 is DEC-54 and D-028, M12 D-029, M11 D-030 and section 12d, M10 section 12b); `planned-endpoints.json` was merged as JSON (a three-way merge by key); `m11_smoke.py` counts only `EscalationMonitor` log lines; the settings count is 63 (35 plus 6 M9, 6 M10, 2 M11, 14 M12) in the two older suites and in `TEAM_UPDATES.md`.
 - Prevention: before merging parallel branches, grep each one for `<<<<<<<`; give parallel sessions disjoint id ranges up front; regenerate `planned-endpoints.json` from `gen_planned.py` rather than merging it; count settings from `ConfigKey.values().length`, not a literal (Testing teammate).
 - Status: fixed
+
+
+### E-M12B-1: The reporter edit lock answered 403 for a closed incident
+
+- Date: 2026-11-14
+- Area: M4 incidents, G4 (DEC-77)
+- Symptom: `m4_smoke.py` check "edit after resolution -> 409 INVALID_STATE_TRANSITION" returned 403 `UNAUTHORIZED_OPERATION` after the edit lock was added.
+- Cause: the lock ran before the status was considered, so a reporter changing `impact` on a CLOSED incident was told "wrong person" instead of "wrong moment" (the E-018 rule: 403 is the wrong person, 409 the wrong status).
+- Fix: `IncidentService.update` applies the lock only while `status.isEditable()`; for a resolved or closed incident the state machine answers 409 as before.
+- Prevention: any new permission check on an action must run after the status check when both can refuse; the smoke suite already covers the closed case.
+- Status: fixed
+
+### E-M12B-2: Older smoke scripts see 409 and cascades after the duplicate check
+
+- Date: 2026-11-14
+- Area: M12 (DEC-70, DEC-71, DEC-72), test scripts
+- Symptom: `m4_smoke.py`, `m6_smoke.py` and `m10_smoke.py` failed on the first run against the new build: `POST /incidents` answered 409 `DUPLICATE_INCIDENT` for the many incidents they file with the same title ("Something is broken") on one service; incidents created without a category were suddenly classified and assigned; in `m10_smoke.py` resolving one incident also resolved a second one filed with almost the same text.
+- Cause: not defects. The duplicate check (409 at TF-IDF 0.55 on the same service), the applied AI category (a confident suggestion at 0.60) and the cascade (resolving the lead of a text-related group resolves the rest) are the approved behaviour; the scripts were written when none of them existed.
+- Fix: the scripts are not edited by this session. Patched copies were used to prove nothing else changed: `confirmNotDuplicate: true` in their create helper, and `autocat.apply.confidence = 1` to keep triage cases in triage. Result: `m4` 52/54 (the two expected differences below), `m6` 33/33, `m8` 24/24, `m12` 55/55, `m11` 78/78 on a database of its own. Expected differences left in `m4_smoke.py`: the reporter's `allowedActions` now ends with `WITHDRAW` (G3), and T24 edits `impact` as the reporter on an assigned incident, which G4 now refuses with 403 (edit the description, or send the PUTs as an administrator).
+- Prevention: list of places in `TEAM_UPDATES.md`; run `m11_smoke.py` on a database that no other suite has used (it counts recipients: every extra administrator or team lead from another suite changes the counts).
+- Status: fixed (documented; scripts to be updated by their owner)

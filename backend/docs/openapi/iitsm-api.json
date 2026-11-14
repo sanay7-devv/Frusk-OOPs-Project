@@ -4633,7 +4633,7 @@
     },
     "/api/v1/incidents": {
       "get": {
-        "operationId": "list_1",
+        "operationId": "list_2",
         "parameters": [
           {
             "in": "query",
@@ -4889,7 +4889,7 @@
         ]
       },
       "post": {
-        "operationId": "create_1",
+        "operationId": "create_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4969,6 +4969,24 @@
               }
             },
             "description": "- `SERVICE_NOT_FOUND`: No such IT service"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "DUPLICATE_INCIDENT",
+                  "fieldErrors": [],
+                  "message": "Likely duplicate; the response lists the similar incidents.",
+                  "path": "/api/v1/...",
+                  "status": 409,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `DUPLICATE_INCIDENT`: Likely duplicate; the response lists the similar incidents"
           },
           "422": {
             "content": {
@@ -6497,8 +6515,7 @@
     },
     "/api/v1/incidents/{id}/mark-duplicate": {
       "post": {
-        "description": "**Planned for M12; not implemented yet.** Who: admin, team lead. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_incidents_by_id_mark_duplicate",
+        "operationId": "markDuplicate",
         "parameters": [
           {
             "in": "path",
@@ -6529,15 +6546,126 @@
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INVALID_STATE_TRANSITION",
+                  "fieldErrors": [],
+                  "message": "Action not allowed in the incident's current status.",
+                  "path": "/api/v1/...",
+                  "status": 409,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INVALID_STATE_TRANSITION`: Action not allowed in the incident's current status\n- `OPTIMISTIC_LOCK_CONFLICT`: Someone else changed the incident meanwhile; reload and retry"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Close as a duplicate of another incident",
+        "summary": "Close as a duplicate of another incident (admin, team lead); audited as DUPLICATE_LINKED",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M12",
-        "x-status": "planned"
+          "Incidents"
+        ]
       }
     },
     "/api/v1/incidents/{id}/override-priority": {
@@ -7734,7 +7862,7 @@
     },
     "/api/v1/incidents/{id}/resolve": {
       "post": {
-        "operationId": "resolve",
+        "operationId": "resolve_1",
         "parameters": [
           {
             "in": "path",
@@ -8707,6 +8835,287 @@
         ]
       }
     },
+    "/api/v1/incidents/{id}/withdraw": {
+      "post": {
+        "operationId": "withdraw",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INVALID_STATE_TRANSITION",
+                  "fieldErrors": [],
+                  "message": "Action not allowed in the incident's current status.",
+                  "path": "/api/v1/...",
+                  "status": 409,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INVALID_STATE_TRANSITION`: Action not allowed in the incident's current status\n- `OPTIMISTIC_LOCK_CONFLICT`: Someone else changed the incident meanwhile; reload and retry"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Withdraw the report before work starts (reporter; CLASSIFIED, ASSIGNED or ACKNOWLEDGED); closes as WITHDRAWN",
+        "tags": [
+          "Incidents"
+        ]
+      }
+    },
+    "/api/v1/intelligence/chat": {
+      "post": {
+        "operationId": "chat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reply"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "RATE_LIMITED",
+                  "fieldErrors": [],
+                  "message": "Too many requests.",
+                  "path": "/api/v1/...",
+                  "status": 429,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `RATE_LIMITED`: Too many requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Chatbot incident reporting: one turn of a guided conversation that fills the report form (works without an LLM key); file the finished draft with POST /incidents",
+        "tags": [
+          "Intelligence"
+        ]
+      }
+    },
     "/api/v1/intelligence/similar": {
       "post": {
         "operationId": "similarToDraft",
@@ -9126,7 +9535,7 @@
     },
     "/api/v1/notifications": {
       "get": {
-        "operationId": "list_2",
+        "operationId": "list_3",
         "parameters": [
           {
             "in": "query",
@@ -9743,8 +10152,21 @@
     },
     "/api/v1/problems": {
       "get": {
-        "description": "**Planned for M12; not implemented yet.** Who: admin, team lead. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_problems",
+        "operationId": "list_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "RESOLVED"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -9752,26 +10174,414 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ProblemRecord"
+                    "$ref": "#/components/schemas/ProblemView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "Problem records grouping correlated incidents",
+        "summary": "Problem records, newest first, optionally only OPEN or RESOLVED (admin, team lead)",
         "tags": [
-          "Planned"
+          "Problems"
+        ]
+      },
+      "post": {
+        "operationId": "create_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProblemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemView"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Open a problem record from chosen incidents, for example a recurring-problem proposal (admin, team lead)",
+        "tags": [
+          "Problems"
+        ]
+      }
+    },
+    "/api/v1/problems/known-outages": {
+      "get": {
+        "operationId": "knownOutages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "serviceId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
-        "x-module": "M12",
-        "x-status": "planned"
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnownOutageView"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such IT service.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_NOT_FOUND`: No such IT service"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Open outages on a service or on a service it depends on, for the report form banner (any user)",
+        "tags": [
+          "Problems"
+        ]
+      }
+    },
+    "/api/v1/problems/recurring": {
+      "get": {
+        "operationId": "recurring",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecurringView"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Recurring-problem proposals: the same service and category fixed again and again, or incidents reopened repeatedly (admin, team lead)",
+        "tags": [
+          "Problems"
+        ]
       }
     },
     "/api/v1/problems/{id}": {
       "get": {
-        "description": "**Planned for M12; not implemented yet.** Who: admin, team lead. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_problems_by_id",
+        "operationId": "get",
         "parameters": [
           {
             "in": "path",
@@ -9788,19 +10598,675 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemRecord"
+                  "$ref": "#/components/schemas/ProblemView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
           }
         },
-        "summary": "One problem record with its incidents",
+        "summary": "One problem record with its lead incident and every linked incident",
         "tags": [
-          "Planned"
+          "Problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{id}/incidents/{incidentId}": {
+      "delete": {
+        "operationId": "ungroup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "in": "path",
+            "name": "incidentId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
-        "x-module": "M12",
-        "x-status": "planned"
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Take one incident out of the record (administrator); audited",
+        "tags": [
+          "Problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{id}/join": {
+      "post": {
+        "operationId": "join",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentDetail"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INVALID_STATE_TRANSITION",
+                  "fieldErrors": [],
+                  "message": "Action not allowed in the incident's current status.",
+                  "path": "/api/v1/...",
+                  "status": 409,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INVALID_STATE_TRANSITION`: Action not allowed in the incident's current status"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Join a known outage with one click: raises the affected users of the lead incident and re-runs its priority; returns the caller's own (duplicate-closed) incident",
+        "tags": [
+          "Problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{id}/resolve": {
+      "post": {
+        "operationId": "resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INVALID_STATE_TRANSITION",
+                  "fieldErrors": [],
+                  "message": "Action not allowed in the incident's current status.",
+                  "path": "/api/v1/...",
+                  "status": 409,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INVALID_STATE_TRANSITION`: Action not allowed in the incident's current status"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Resolve every open incident of the record with one fix (administrator)",
+        "tags": [
+          "Problems"
+        ]
+      }
+    },
+    "/api/v1/problems/{id}/root-cause": {
+      "get": {
+        "operationId": "rootCause",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootCauseView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          }
+        },
+        "summary": "Probable root cause from the service dependency graph, with the paths as evidence",
+        "tags": [
+          "Problems"
+        ]
       }
     },
     "/api/v1/reports/category-distribution": {
@@ -12236,6 +13702,56 @@
           }
         }
       },
+      "CauseView": {
+        "type": "object",
+        "properties": {
+          "affected": {
+            "type": "boolean"
+          },
+          "maxDistance": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Ref"
+              }
+            }
+          },
+          "service": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "totalDistance": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 0
+          },
+          "draft": {
+            "$ref": "#/components/schemas/Draft"
+          },
+          "expecting": {
+            "type": "string",
+            "enum": [
+              "DESCRIPTION",
+              "SERVICE",
+              "AFFECTED_USERS",
+              "CONFIRM"
+            ]
+          }
+        }
+      },
       "CommentRequest": {
         "type": "object",
         "properties": {
@@ -12454,6 +13970,28 @@
           "serviceId",
           "title",
           "urgency"
+        ]
+      },
+      "CreateProblemRequest": {
+        "type": "object",
+        "properties": {
+          "incidentIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "maxItems": 50,
+            "minItems": 0
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "incidentIds"
         ]
       },
       "CreateUserRequest": {
@@ -12735,6 +14273,43 @@
           "dependencyIds"
         ]
       },
+      "Draft": {
+        "type": "object",
+        "properties": {
+          "affectedUsers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serviceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "serviceName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ErrorResponse": {
         "properties": {
           "code": {
@@ -12988,7 +14563,8 @@
                 "ESCALATE",
                 "OVERRIDE_PRIORITY",
                 "MARK_DUPLICATE",
-                "GIVE_FEEDBACK"
+                "GIVE_FEEDBACK",
+                "WITHDRAW"
               ]
             }
           },
@@ -13247,6 +14823,44 @@
           }
         }
       },
+      "KnownOutageView": {
+        "type": "object",
+        "properties": {
+          "affectedUsers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alreadyJoined": {
+            "type": "boolean"
+          },
+          "leadCode": {
+            "type": "string"
+          },
+          "leadPriority": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4"
+            ]
+          },
+          "problemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "service": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "LabelCount": {
         "type": "object",
         "properties": {
@@ -13281,8 +14895,7 @@
         "properties": {
           "duplicateOfId": {
             "type": "integer",
-            "format": "int64",
-            "description": "An existing, different incident"
+            "format": "int64"
           }
         },
         "required": [
@@ -13341,6 +14954,18 @@
             "type": "boolean"
           },
           "title": {
+            "type": "string"
+          }
+        }
+      },
+      "Option": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
             "type": "string"
           }
         }
@@ -13790,6 +15415,49 @@
           }
         }
       },
+      "ProblemView": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incidentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            }
+          },
+          "joined": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/IncidentSummary"
+          },
+          "service": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "ProvideInfoRequest": {
         "type": "object",
         "properties": {
@@ -13891,6 +15559,37 @@
           }
         }
       },
+      "RecurringView": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            }
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "REPEATED_FIX",
+              "REPEATED_REOPEN"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "service": {
+            "$ref": "#/components/schemas/Ref"
+          }
+        }
+      },
       "Ref": {
         "type": "object",
         "properties": {
@@ -13946,6 +15645,42 @@
           "name",
           "password"
         ]
+      },
+      "Reply": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/Draft"
+          },
+          "expecting": {
+            "type": "string",
+            "enum": [
+              "DESCRIPTION",
+              "SERVICE",
+              "AFFECTED_USERS",
+              "CONFIRM"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "readyToFile": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LLM",
+              "KEYWORD"
+            ]
+          }
+        }
       },
       "ReportOverview": {
         "type": "object",
@@ -14081,6 +15816,33 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "RootCauseView": {
+        "type": "object",
+        "properties": {
+          "affectedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ref"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CauseView"
+            }
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "probable": {
+            "$ref": "#/components/schemas/CauseView"
+          },
+          "problemId": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
