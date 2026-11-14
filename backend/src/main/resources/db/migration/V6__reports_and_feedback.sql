@@ -17,3 +17,4 @@ CREATE TABLE saved_filters (
     CONSTRAINT fk_saved_filters_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX idx_saved_filters_user ON saved_filters (user_id);
+

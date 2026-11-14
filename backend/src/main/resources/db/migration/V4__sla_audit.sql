@@ -31,3 +31,4 @@ CREATE TABLE audit_records (
 );
 CREATE INDEX idx_audit_records_incident_created ON audit_records (incident_id, created_at);
 CREATE INDEX idx_audit_records_actor ON audit_records (actor_id);
+

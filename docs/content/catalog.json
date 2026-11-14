@@ -1,0 +1,145 @@
+{
+  "services": {
+    "Payment": 5,
+    "Database": 5,
+    "Authentication": 5,
+    "Network": 4,
+    "Cloud Storage": 3,
+    "Email": 3,
+    "Intranet Portal": 2,
+    "Printing": 1
+  },
+  "categories": [
+    "Hardware",
+    "Software",
+    "Network",
+    "VPN",
+    "Wi-Fi",
+    "Database",
+    "Cloud",
+    "Application",
+    "Security",
+    "Phishing",
+    "Authentication",
+    "Storage"
+  ],
+  "categorySkills": {
+    "Hardware": [
+      "Hardware"
+    ],
+    "Software": [
+      "Application Support"
+    ],
+    "Network": [
+      "Networking"
+    ],
+    "VPN": [
+      "Networking"
+    ],
+    "Wi-Fi": [
+      "Networking"
+    ],
+    "Database": [
+      "SQL"
+    ],
+    "Cloud": [
+      "Cloud"
+    ],
+    "Application": [
+      "Application Support",
+      "Payments"
+    ],
+    "Security": [
+      "Security"
+    ],
+    "Phishing": [
+      "Security"
+    ],
+    "Authentication": [
+      "Authentication",
+      "Security"
+    ],
+    "Storage": [
+      "Cloud",
+      "Linux"
+    ]
+  },
+  "technicians": {
+    "priya.nair": [
+      5,
+      1,
+      "AVAILABLE",
+      {
+        "Networking": 5,
+        "Security": 4,
+        "Cloud": 3
+      }
+    ],
+    "tech1": [
+      3,
+      0,
+      "AVAILABLE",
+      {
+        "Networking": 4,
+        "Linux": 3
+      }
+    ],
+    "tech2": [
+      5,
+      0,
+      "AVAILABLE",
+      {
+        "SQL": 5,
+        "Linux": 4
+      }
+    ],
+    "tech3": [
+      2,
+      0,
+      "AVAILABLE",
+      {
+        "Cloud": 4,
+        "Linux": 3
+      }
+    ],
+    "tech4": [
+      4,
+      0,
+      "AWAY",
+      {
+        "Security": 5,
+        "Authentication": 4
+      }
+    ],
+    "tech5": [
+      1,
+      0,
+      "BUSY",
+      {
+        "Hardware": 4,
+        "Application Support": 3,
+        "Payments": 2
+      }
+    ],
+    "karthik": [
+      3,
+      0,
+      "AVAILABLE",
+      {
+        "Networking": 4,
+        "SQL": 3
+      }
+    ],
+    "neha": [
+      4,
+      0,
+      "AVAILABLE",
+      {
+        "Application Support": 4,
+        "Payments": 3,
+        "Authentication": 3,
+        "Security": 3
+      }
+    ]
+  }
+}

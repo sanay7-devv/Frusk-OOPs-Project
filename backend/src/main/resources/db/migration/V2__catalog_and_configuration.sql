@@ -68,3 +68,4 @@ CREATE TABLE app_config (
     value VARCHAR(200) NOT NULL,
     description VARCHAR(200)
 );
+

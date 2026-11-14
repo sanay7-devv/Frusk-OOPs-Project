@@ -1,0 +1,19 @@
+email,name,roles
+asha.rao@iitsm.demo,Asha Rao,EMPLOYEE;ADMINISTRATOR
+rahul.mehta@iitsm.demo,Rahul Mehta,EMPLOYEE;ADMINISTRATOR
+priya.nair@iitsm.demo,Priya Nair,EMPLOYEE;TECHNICIAN
+tech1@iitsm.demo,tech1,EMPLOYEE;TECHNICIAN
+tech2@iitsm.demo,tech2,EMPLOYEE;TECHNICIAN
+tech3@iitsm.demo,tech3,EMPLOYEE;TECHNICIAN
+tech4@iitsm.demo,tech4,EMPLOYEE;TECHNICIAN
+tech5@iitsm.demo,tech5,EMPLOYEE;TECHNICIAN
+employee1@iitsm.demo,employee1,EMPLOYEE
+employee2@iitsm.demo,employee2,EMPLOYEE
+employee3@iitsm.demo,employee3,EMPLOYEE
+employee4@iitsm.demo,employee4,EMPLOYEE
+employee5@iitsm.demo,employee5,EMPLOYEE
+employee6@iitsm.demo,employee6,EMPLOYEE
+employee7@iitsm.demo,employee7,EMPLOYEE
+employee8@iitsm.demo,employee8,EMPLOYEE
+karthik@iitsm.demo,Karthik Demo,EMPLOYEE;TECHNICIAN
+neha@iitsm.demo,Neha Demo,EMPLOYEE;TECHNICIAN;ADMINISTRATOR

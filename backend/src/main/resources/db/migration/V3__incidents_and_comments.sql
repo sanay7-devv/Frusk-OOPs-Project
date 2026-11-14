@@ -85,3 +85,4 @@ CREATE TABLE incident_comments (
 );
 
 CREATE INDEX idx_incident_comments_incident ON incident_comments (incident_id);
+
