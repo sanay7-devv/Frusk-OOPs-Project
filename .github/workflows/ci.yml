@@ -187,7 +187,9 @@ jobs:
         run: python3 deploy/handbook_contract_checks.py
       - name: Save stack logs
         if: always()
-        run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color > /tmp/iitsm-stack.log
+        run: |
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color > /tmp/iitsm-stack.log
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color --tail 120 backend
       - name: Upload stack evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -52,6 +52,9 @@ def main():
         # A missing route (404) does not demonstrate validation; require a useful validation response.
         results.append({'case': 'T10', 'check': filename, 'expected': '400/413/415 validation rejection',
                         'status': status, 'response': raw[:1000], 'passed': status in (400, 413, 415)})
+    attachments = request(f'/incidents/{incident_id}/attachments', token=token)
+    results.append({'case': 'T10', 'check': 'nothing stored', 'expected': [],
+                    'actual': attachments, 'status': 200, 'passed': attachments == []})
     Path('/tmp/iitsm-handbook-contracts.json').write_text(json.dumps(results, indent=2))
     for result in results:
         print(f"{result['case']} {result['check']}: {'PASS' if result['passed'] else 'FAIL'} (HTTP {result['status']})")

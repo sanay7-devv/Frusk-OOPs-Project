@@ -76,8 +76,10 @@ class HandbookIntegrationTest {
     private final Map<Long,String> emails=new HashMap<>();
 
     @BeforeEach void fresh_independent_fixture() throws Exception {
-        clock.set(Instant.parse("2026-01-01T00:00:00Z"));
-        suffix="-test"+SERIAL.incrementAndGet();
+        int sequence=SERIAL.incrementAndGet();
+        // Keep time monotonic between cases: rate-limit windows also share this clock.
+        clock.set(Instant.parse("2026-01-01T00:00:00Z").plus(Duration.ofDays(sequence*10L)));
+        suffix="-test"+sequence;
         // Existing rows remain for their audit FKs, but can never win this test's assignments.
         jdbc.update("update users set active=false");
         employee=user("employee",null,null); otherEmployee=user("other-employee",null,null);

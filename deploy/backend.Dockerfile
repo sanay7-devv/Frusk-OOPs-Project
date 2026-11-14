@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 app
 WORKDIR /app
+RUN mkdir -p /app/data/attachments && chown -R app:app /app/data
 COPY --from=build /build/target/iitsm-backend-0.0.1-SNAPSHOT.jar app.jar
 USER app
 EXPOSE 8080
