@@ -9,7 +9,7 @@
 | **Project** | I-ITSM: Intelligent IT Service Management and Incident Resolution System (CS F213 OOP, BITS Pilani Hyderabad, Sem I 2026-27) |
 | **Component** | Backend (Spring Boot REST API) |
 | **Owner** | Backend Lead |
-| **Last updated** | 2026-11-06 |
+| **Last updated** | 2026-11-14 (M9 to M11 and the M12 core merged) |
 | **Source of truth for scope** | Backend Lead Handbook (modules M1 to M14) and the API Data Dictionary |
 
 ---
@@ -56,9 +56,9 @@
 | **M9** Notifications | Five channels (inbox, WebSocket push, mail, simulated SMS for P1, chat webhook), after-commit async listener, per-user preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints | ✅ Done and smoke-tested (72 checks, needs Mailpit) |
 | **M12** Intelligence (core) | Category and intake suggestions, TF-IDF similar incidents, suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Done and smoke-tested (55 + scan + no-key) · ⏳ duplicate check on create, mark-duplicate, problem records, Major Incident Mode, chatbot, recurring-problem detector |
 | **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV export; E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12b) | ✅ Done and smoke-tested (135 checks); the reporter withdraw action (G3) is still open |
-| **M11** Escalation (section 12d) | Chain of Responsibility (technician, team lead, system admin, IT manager), escalation monitor with triage escalation and one final exhausted alert, manual `POST /incidents/{id}/escalate`, escalation preview, auto-verify job, demo-only adjustable clock | ✅ Done and smoke-tested (`m11_smoke.py`) · ⏳ notifications of the events (M9) |
+| **M11** Escalation (section 12d) | Chain of Responsibility (technician, team lead, system admin, IT manager), escalation monitor with triage escalation and one final exhausted alert, manual `POST /incidents/{id}/escalate`, escalation preview, auto-verify job, demo-only adjustable clock | ✅ Done and smoke-tested (`m11_smoke.py`); its events are notified by M9 since the E-034 fix (each hop to the holders of the level it reached, the exhausted alert to every administrator, `e034_check.py`) |
 | M13, M14, M2b | Real-time and graph, hardening, Google sign-in | ⬜ Not started |
-| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | ⬜ Not started |
+| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | 🟡 Partly built: D1, E3, E4, A6, A11, G2, C1, C2, C4 done; the rest not started |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -128,8 +128,12 @@ com.iitsm
 ├── web
 │   ├── controller                   AuthController, CatalogController, IncidentController, TechnicianController,
 │   │                                AdminUserController, AdminCatalogController, AdminSlaController,
-│   │                                AdminConfigController, SlaController, AuditController, NotificationController
-│   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, dto/admin, dto/catalog, dto/incident)
+│   │                                AdminConfigController, SlaController, AuditController, NotificationController,
+│   │                                ReportController, PostIncidentReportController, FeedbackController,
+│   │                                SavedFilterController, PriorityController, IntelligenceController,
+│   │                                AdminDemoController (demo profile only)
+│   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, admin, catalog, incident,
+│   │                                intelligence, notification, report)
 │   ├── filter                       RequestIdFilter
 │   ├── handler                      GlobalExceptionHandler
 │   └── openapi                      OpenApiConfig, ApiErrors, ErrorCode, contract customizers
@@ -138,11 +142,23 @@ com.iitsm
 │   ├── assignment                   AssignmentService, WorkloadService, TechnicianWorkService
 │   ├── auth                         AuthService, AuthenticatedUser, UserView, AccessTokenIssuer (port)
 │   ├── catalog                      CatalogService, SlaAdminService, CatalogViews
-│   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews
+│   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews,
+│   │                                IncidentEventPublisher, AutoVerifyMonitor (G2)
+│   ├── incident/command             IncidentCommand + 9 commands (Acknowledge ... Reopen, Escalate),
+│   │                                IncidentCommandRunner, CommandContext (Command pattern, C1)
 │   ├── sla                          SlaMonitor (the monitor run), SlaViolationService
 │   ├── audit                        AuditListener (Observer), AuditService
 │   ├── notification                 NotificationListener (Observer), NotificationPlanner, NotificationDispatcher,
 │   │                                DigestCollector, NotificationService, NotificationRequest
+│   ├── report                       ReportService, ReportExportService, CsvWriter, CoverageRiskService (E3),
+│   │                                PostIncidentReportService (E4), PostIncidentPdfRenderer (port)
+│   ├── feedback                     FeedbackService
+│   ├── search                       SavedFilterService
+│   ├── priority                     PriorityWhatIfService (A11)
+│   ├── escalation                   EscalationMonitor, EscalationPlanner, EscalationPreviewer,
+│   │                                EscalationRecipients, EscalationService
+│   ├── intelligence                 IntelligenceService, IntelligenceReader, SlaRiskService, AiRateLimiter, AiResultCache
+│   ├── demo                         AdjustableClock (D1, demo profile only)
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
 │   ├── assignment                   AssignmentStrategy + 5 strategies, FactorStrategy, AssignmentEngine,
@@ -155,9 +171,17 @@ com.iitsm
 │   ├── notification                 Notification, NotificationPreference, NotificationEventType, ChannelType, Audience,
 │   │                                NotificationChannel (Adapter port), NotificationFactory, NotificationRules,
 │   │                                NotificationMessage, TeamResolver
+│   ├── escalation                   EscalationChain, EscalationHandler + 4 handlers (Chain of Responsibility),
+│   │                                EscalationRequest, EscalationStep, EscalationTarget, EscalationTimeouts
+│   ├── intelligence                 TextAnalysisService (Strategy port), KeywordTextAnalysisService, Tokenizer,
+│   │                                TfIdfModel, KeywordDictionary, TextRedactor, CircuitBreaker, SlaRiskScorer,
+│   │                                LlmClient (Adapter port), suggestion records
+│   ├── report                       ReportRows, ReportScope
+│   ├── feedback                     Feedback
+│   ├── search                       SavedFilter
 │   ├── exception                    ItsmException + 18 business exceptions
 │   ├── incident                     Incident, IncidentState + 10 states, StateFactory, IncidentFactory,
-│   │                                SlaTracker, SlaAlert, Resolution, IncidentComment, enums
+│   │                                SlaTracker, SlaAlert, Resolution, IncidentComment, IncidentFact, enums
 │   ├── priority                     Priority, PriorityStrategy, WeightedPriorityStrategy,
 │   │                                PriorityOverrideRule, PriorityEngine, PriorityBreakdown
 │   ├── repository                   one repository interface per aggregate
@@ -165,11 +189,16 @@ com.iitsm
 │   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver, SlaViolation
 │   └── user                         User, Role hierarchy, profiles, SkillSet, RefreshToken, UserFactory, enums
 └── infrastructure
-    ├── config                       ClockConfig, CorsConfig, DomainConfig
-    ├── persistence                  Spring Data implementations of the domain repositories
+    ├── config                       ClockConfig (not demo), DemoClockConfig (demo only), CorsConfig, DomainConfig
+    ├── persistence                  Spring Data implementations of the domain repositories, CriteriaIncidentSearch,
+    │                                NativeReportRepository (report SQL), JpaIncidentTextRepository (M12 texts)
     ├── notification                 InAppChannel, EmailChannel, WebSocketChannel, SmsSimulatedChannel,
     │                                ChatWebhookChannel, GlobalTeamResolver, NotificationAsyncConfig, WebSocketConfig
-    ├── scheduler                    SchedulingConfig, SlaMonitorJob (interval from app_config)
+    ├── ai                           AiConfig, FallbackTextAnalysisService (@Primary), LlmTextAnalysisService,
+    │                                AnthropicLlmClient, ScriptedLlmClient, LlmProperties, PromptLibrary
+    ├── report                       OpenPdfPostIncidentRenderer (PDF adapter)
+    ├── scheduler                    SchedulingConfig, SlaMonitorJob, EscalationMonitorJob, AutoVerifyJob,
+    │                                SlaRiskScanJob (intervals from app_config)
     └── security                     SecurityConfig, JwtService, JwtAuthenticationFilter, ApiErrorWriter, ApiErrorCorsProcessor
 ```
 
@@ -1360,14 +1389,14 @@ The single `IncidentChanged` event carries an action; it is mapped onto the 15 n
 | PRIORITY_CHANGED | PRIORITY_CHANGED | assignee, reporter |
 | INFO_REQUESTED / INFO_PROVIDED | INFO_REQUESTED / INFO_PROVIDED | reporter / assignee |
 | RESOLVED, VERIFIED, CLOSED, REOPENED | INCIDENT_RESOLVED, _VERIFIED, _CLOSED, _REOPENED | reporter, assignee, reporter, assignee |
-| ESCALATED | INCIDENT_ESCALATED | holders of the new level (critical), assignee |
+| ESCALATED | none from the audit action; `IncidentEscalated` gives INCIDENT_ESCALATED | holders of the level reached, from the event (critical), assignee; not the person who escalated by hand. `EscalationExhausted`: every administrator, "Escalation exhausted" wording, SMS for P1 (E-034) |
 | DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (for M12) |
 | CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody |
 | `TriageNeeded` event | TRIAGE_NEEDED | every team lead |
 | `SlaWarning` event | SLA_WARNING | assignee; team leads if nobody is assigned |
 | `SlaViolated` event | SLA_VIOLATED | every administrator (critical), assignee |
 
-A **team lead** is a technician with escalation level 1; one global pool behind the `TeamResolver` interface (DEC-42). Escalation targets: level 1 team leads, 2 `SYSTEM_ADMIN`, 3 `IT_MANAGER`; if nobody holds the level, every administrator.
+A **team lead** is a technician with escalation level 1; one global pool behind the `TeamResolver` interface (DEC-42). Escalation targets: level 1 team leads, 2 `SYSTEM_ADMIN`, 3 `IT_MANAGER`, decided by the escalation module (`EscalationRecipients`) and carried in its event; a level nobody holds is passed over and tells nobody (DEC-50, E-034).
 
 ### 12a.3 Channels
 
@@ -1644,7 +1673,7 @@ sequenceDiagram
 - **Stops at acknowledgement:** an acknowledged incident is no longer ASSIGNED, so it is not a candidate any more.
 - **Triage (DEC-48):** a P1 or P2 in CLASSIFIED with no assignee starts at level 0 and climbs after the same timeout; the first ESCALATED entry says "no technician was assigned within N min". Assigning it ends the triage climb: the timer restarts, the level is kept, and it is then an ordinary unacknowledged incident.
 - **Exhausted (DEC-49):** at level 3, after `escalation.exhausted.minutes`, one ESCALATED entry "Escalation exhausted at level 3 ..." and an `EscalationExhausted` event for all administrators. The audit trail is the memory of "already raised"; nothing more follows.
-- **Events for M9:** `IncidentEscalated(incidentId, code, priority, fromLevel, toLevel, target, recipientIds, assigneeId, manual)` and `EscalationExhausted(incidentId, code, priority, recipientIds)`. M9's listener sends notification type INCIDENT_ESCALATED to `recipientIds` (SMS also for P1 on the exhausted alert); the audit entries already exist without it.
+- **Events for M9:** `IncidentEscalated(incidentId, code, priority, fromLevel, toLevel, target, recipientIds, assigneeId, manual)` and `EscalationExhausted(incidentId, code, priority, recipientIds)`. M9's listener sends INCIDENT_ESCALATED to `recipientIds` and the assignee, never to the person who escalated by hand (`actorId`); the exhausted alert goes to every administrator in the event with its own wording ("Escalation exhausted: ...", SMS also for P1). The ESCALATED audit action itself notifies nobody, so each hop is announced once, to the right level (ERROR_LOG E-034, fixed). The audit entries are complete either way.
 
 ### 12d.3 Manual escalation and the preview
 
@@ -1676,7 +1705,7 @@ In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forwar
 | `escalation.exhausted.minutes` | 15 | 1 to 1440 | Minutes at level 3 before the one final exhausted alert |
 | `verify.monitor.interval.seconds` | 300 | 5 to 3600 | How often the auto-verify job runs |
 
-(`escalation.monitor.interval.seconds` and `verify.auto.hours` already existed.) `app_config` now has 37 keys.
+(`escalation.monitor.interval.seconds` and `verify.auto.hours` already existed.) `app_config` had 37 keys on the M11 branch; 63 after the merge with M9, M10 and M12.
 
 ### 12d.7 Verified behavior
 
@@ -2398,12 +2427,14 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-14 | M12 core built and smoke-tested (section 12c, DEC-M12-1 to DEC-M12-9): suggest-category, suggest-intake, TF-IDF similar incidents (own calibrated thresholds), suggested resolutions, thread summary, SLA risk with a 5-minute scan, optional LLM behind a redacting adapter with fallback and circuit breaker; 14 new settings (35 to 49); the seven endpoints moved from Planned to implemented (72 implemented, 26 planned). |
 | 2026-11-14 | M11 built and smoke-tested (section 12d, D-030, DEC-50 to DEC-53): escalation chain and monitor, triage escalation, exhausted alert, `POST /incidents/{id}/escalate`, `escalationPreview`, `AutoVerifyJob` (G2), adjustable demo clock (D1, demo profile only). New settings `escalation.exhausted.minutes` and `verify.monitor.interval.seconds` (37 keys). `m11_smoke.py` 78/78 (dev) and 88/88 (demo); auth 27, M6 33, M7 35, M8 24, calendar 11 unchanged. Jobs now first run 10 s after start. |
 | 2026-11-14 | M9, M10, M11 and M12 core merged into `main` together (ERROR_LOG E-033): decision ids renumbered (M9 DEC-54, M12 DEC-M12-n, M11 DEC-50 to DEC-53, section 12d), `planned-endpoints.json` merged by key, 63 settings. All smoke suites run on the merged build. |
+| 2026-11-14 | Docs brought in line with the merged code, no code change: package map (section 3) lists the M10 to M12 packages; status table and section 18 show what is built; contract count is 95 built and 10 planned operations (plus 2 demo-only); a merge gap between M9 and M11 notifications was found and logged (ERROR_LOG E-034). |
+| 2026-11-14 | E-034 fixed: escalation notices come from `IncidentEscalated` / `EscalationExhausted` (exact recipients per hop, exhausted alert to every administrator with its own wording and SMS for P1, manual escalator not told); `IncidentEscalated` gained `actorId`; the ESCALATED audit action no longer notifies. `m11_smoke.py` 78/78, `e034_check.py` 12/12. |
 
 ---
 
 ## 18. Planned work beyond the handbook
 
-Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
+Accepted on 2026-11-13. Built so far: D1, E3, E4, A6, A11 (marked below); the rest is not built yet. Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
 
 | Id | Feature | What the user will see | Built with |
 |---|---|---|---|
@@ -2415,7 +2446,9 @@ Accepted on 2026-11-13; nothing in this section is built yet. Reasoning: `docs/D
 | E3 | Coverage risk report (built 2026-11-14, section 12b.4) | Critical services that only one available technician can handle | M10 |
 | E4 | Post-incident report (built 2026-11-14, section 12b.5) | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
 | E5 | Reporter tracking view | A progress line with the SLA due time | Frontend |
-| D2 | Demo aid (demo profile only) | Start a prepared outage (the clock control D1 is built, section 12A.5) | M12 |
-| A1, A2, A6, A11 | Chatbot and voice reporting, chat-webhook channel, priority what-if and escalation preview | | M9 to M12 |
+| D2 | Demo aid (demo profile only) | Start a prepared outage (the clock control D1 is built, section 12d.5) | M12 |
+| A1, A2 | Chatbot and voice reporting | A conversational or spoken report that files the incident | M12, Frontend |
+| A6 | Chat-webhook channel (built 2026-11-13, section 12a.3) | Escalations, violations and P1 events posted to a team chat room | M9 |
+| A11 | Priority what-if and escalation preview (built 2026-11-14, sections 12b.6 and 12d.3) | Live priority preview while editing; "escalates to Team Lead in 04:12" on the incident | M10, M11 |
 
-Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts; once an incident is assigned only a team lead or administrator can change impact, urgency and affected users; resolved incidents nobody confirms are verified and closed automatically. Escalation (DEC-48, DEC-49): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to all administrators.
+Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts (G3, not built); once an incident is assigned only a team lead or administrator can change impact, urgency and affected users (G4, M14, not built); resolved incidents nobody confirms are verified and closed automatically (G2, built with M11). Escalation (DEC-48, DEC-49, built with M11): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to every administrator.
