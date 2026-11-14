@@ -116,8 +116,8 @@ public class ProblemController {
     }
 
     @PostMapping("/{id}/resolve")
-    @PreAuthorize("hasAuthority('INCIDENT_VIEW_ALL')")
-    @Operation(summary = "Resolve every open incident of the record with one fix (administrator)")
+    @PreAuthorize("hasAuthority('TEAM_VIEW')")
+    @Operation(summary = "Resolve the whole problem: every open incident of the record gets one fix (admin, team lead)")
     @ApiErrors({ErrorCode.NOT_FOUND, ErrorCode.INVALID_STATE_TRANSITION, ErrorCode.VALIDATION_FAILED})
     public ProblemView resolve(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                @Valid @RequestBody ResolveRequest request) {

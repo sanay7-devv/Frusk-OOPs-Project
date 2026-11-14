@@ -73,7 +73,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | M9 | Notifications (5 channels) | [x] 2026-11-13, smoke-tested (72 checks) |
 | M10 | Search and reports | [x] 2026-11-14, smoke-tested (m10_smoke 135 checks); withdraw (G3) still open, see section 7 |
 | M11 | Escalation (Chain of Responsibility), auto-verify (G2), preview (A11), demo clock (D1) | [x] 2026-11-14, smoke-tested (`m11_smoke.py`) |
-| M12 | Intelligence and AI (with keyword fallback) | [x] 2026-11-14 core and rest (session A): duplicate check on create, problem records and correlation, Major Incident Mode (join, known outages, cascade, root cause from the graph), recurring detector, chatbot, outage drill; smoke-tested (`m12_smoke.py` 55, `m12b_smoke.py` 100, `m12b_drill.py` 9) |
+| M12 | Intelligence and AI (with keyword fallback) | [x] 2026-11-14 core and rest (session A): duplicate check on create, problem records and correlation, Major Incident Mode (join, known outages, Resolve whole problem, root cause from the graph), recurring detector, chatbot, outage drill; smoke-tested (`m12_smoke.py` 55, `m12b_smoke.py` 107, `m12b_drill.py` 9) |
 | M13 | Real-time layer, dashboard, service graph | [ ] |
 | M14 | Hardening | [ ] |
 
@@ -82,7 +82,7 @@ Local run on this machine: port 8080 after `net stop MTAgentService` in an Admin
 | Id | Addition | Decision | Built with | Status |
 |---|---|---|---|---|
 | S1 | Service Desk Simulator (one screen, one chart) | DEC-44, DEC-45 | after M13 | [ ] |
-| S2 | Major Incident Mode: root cause from the graph, known-outage join, crowd-driven priority | DEC-44, DEC-73 | M12 + M13 | [x] backend 2026-11-14 (join, known outages, cascade, root cause via `ServiceGraph`); the graph screen is M13 and the frontend |
+| S2 | Major Incident Mode: root cause from the graph, known-outage join, crowd-driven priority | DEC-44, DEC-73 | M12 + M13 | [x] backend 2026-11-14 (join, known outages, Resolve whole problem, root cause via `ServiceGraph`); the graph screen is M13 and the frontend |
 | S3 | Sealed audit trail and `GET /audit/verify` (needs table `audit_seals`) | DEC-44 | M14 | [ ] |
 | D1 | Adjustable clock, demo profile only | DEC-45, DEC-52 | M11 | [x] 2026-11-14 |
 | D2 | Outage drill, demo profile only | DEC-45, DEC-76 | M12 | [x] 2026-11-14 |

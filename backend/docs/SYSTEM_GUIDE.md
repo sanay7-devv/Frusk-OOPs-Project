@@ -1686,7 +1686,7 @@ In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forwar
 
 ## 12e. M12 rest: duplicates, problem records and Major Incident Mode
 
-Decisions: DEC-70 to DEC-78. Smoke suites: `m12b_smoke.py` (100 checks) and `m12b_drill.py` (9 checks, demo profile).
+Decisions: DEC-70 to DEC-78. Smoke suites: `m12b_smoke.py` (107 checks) and `m12b_drill.py` (9 checks, demo profile).
 
 ### 12e.1 The creation pipeline now (front half in `IncidentCreationService`)
 
@@ -1716,7 +1716,7 @@ The model call and the similarity read happen **before** the transaction, so no 
 | `POST /incidents` (+ `confirmNotDuplicate`) | any user | 409 `DUPLICATE_INCIDENT` with `similar` unless confirmed |
 | `GET /problems?status=` / `GET /problems/{id}` | admin, team lead | record with lead, linked incidents, `joined` count |
 | `POST /problems` `{title?, incidentIds}` | admin, team lead | opens a record by hand |
-| `POST /problems/{id}/resolve` `{rootCause, notes, steps, timeSpentMinutes}` | admin | one fix for every open incident |
+| `POST /problems/{id}/resolve` `{rootCause, notes, steps, timeSpentMinutes}` | admin, team lead | "Resolve whole problem": one fix for every open incident, record RESOLVED |
 | `DELETE /problems/{id}/incidents/{incidentId}` | admin | ungroup, audited |
 | `GET /problems/{id}/root-cause` | admin, team lead | probable root cause and candidates from the service graph, with paths |
 | `GET /problems/known-outages?serviceId=` | any user | open outages on the service or on a service it depends on |
@@ -1739,14 +1739,15 @@ sequenceDiagram
     API->>L: affected users +1, priority recalculated (x1.25 at 10, x1.5 at 101)
     Note over L: technician resolves the lead
     L->>API: resolve
-    API->>API: every other open linked incident resolved with the same fix, record RESOLVED
+    API->>API: internal note on every other open linked incident, record stays OPEN
     API-->>R: one in-app notice (after commit)
+    Note over API: a team lead or admin presses Resolve problem (POST /problems/7/resolve): same fix for the rest, record RESOLVED
 ```
 
 ### 12e.4 Rules worth knowing
 
 - **Lead of a record:** highest priority, then earliest created; joiner incidents never lead. Derived on read, never stored.
-- **Cascade:** only when the *lead* is resolved; the move `Incident.resolveWithProblem` is legal from every open status (`OpenState`).
+- **No automatic cascade (DEC-72, as changed):** resolving the *lead* only leaves an internal note on the other open incidents (staff only); "Resolve problem" (`POST /problems/{id}/resolve`, team lead or admin) resolves them all with one fix through `Incident.resolveWithProblem`, legal from every open status (`OpenState`). Joiners are notified once.
 - **Withdraw and duplicate closures cannot be reopened** (`ClosedState.reopenable`).
 - **G4:** wrong person is 403, but a closed incident is still 409 (the G4 check runs only while the incident is editable).
 - **Internal audit entries** exist only through `AuditRecord.internal(...)`; `IncidentChanged.internal` carries the flag to the audit listener.
@@ -1769,9 +1770,9 @@ Tables: `problem_records` (Appendix A.3, id, title, service_id, status, created_
 
 Domain: `OpenState` (shared parent of CLASSIFIED, ASSIGNED, ACKNOWLEDGED, IN_PROGRESS, PENDING_USER_INFO, REOPENED: mark-duplicate, withdraw, resolve with the problem), `ProblemRecord`, `ProblemStatus`, `ProblemRepository`, `ServiceGraph` (from session B), `IncidentAction.WITHDRAW`, `Category.isWithin`, `AuditRecord.internal` / `of`. Application: `IncidentCreationService`, `PriorityRecalculator`, `WithdrawCommand`, `ProblemCorrelator`, `ProblemService`, `KnownOutageService`, `JoinerNotifier`, `RecurringProblemService`, `ChatIntakeService`, `OutageDrillService` (demo). Web: `ProblemController`, `AdminOutageDrillController` (demo), `ChatRequest`, `CreateProblemRequest`, `MarkDuplicateRequest`. Patterns visible: State (`OpenState` hierarchy), Command (`WithdrawCommand`), Strategy (similarity behind `TextAnalysisService`), Observer (grouping and audit through events), Factory (`IncidentFactory` for joiners).
 
-### 12e.7 Verified behavior (2026-11-14, `m12b_smoke.py` 100/100, `m12b_drill.py` 9/9)
+### 12e.7 Verified behavior (2026-11-14, `m12b_smoke.py` 107/107, `m12b_drill.py` 9/9)
 
-Withdraw (CLASSIFIED, ASSIGNED, ACKNOWLEDGED allowed; IN_PROGRESS 409; stranger 403 or 404; reopen of the result 409; load drops); mark-duplicate (employee refused, self, unknown and already-duplicate targets 400, audit names the original); G4 (reporter 403 on impact after assignment, description still editable, unchanged value allowed, team lead and admin allowed, before assignment allowed); C3 (the setting drives rule 1 for both create and what-if, over-long value 400, internal note hidden from the reporter's history); duplicate check (409 with `similar`, similarity at least 0.55, confirm creates and groups, other service not a duplicate, unrelated text not grouped); auto category (applied and audited, vague text stays in triage); correlation (dependant joins an open P1, unrelated service and a P4 do not); S2 (known-outage view hides reporters, join creates a DUPLICATE incident, lead users +1, priority P3 to P2 at ten users, joining twice idempotent, resolved outage 409); cascade (lead resolved: grouped incident resolved with the same root cause, record RESOLVED, joiner notified); admin resolve and ungroup (permissions and audit); root cause (Auth before Database, one path per affected service); E2 (three fixes proposed, disappear once a record exists, reopen proposal); chatbot (ask, re-ask, service by name, number read, ready to file, filed through POST /incidents); drill (403 for employees, 404 unknown service, 4 incidents in one record, root cause is the failing service, second run joins the same record).
+Withdraw (CLASSIFIED, ASSIGNED, ACKNOWLEDGED allowed; IN_PROGRESS 409; stranger 403 or 404; reopen of the result 409; load drops); mark-duplicate (employee refused, self, unknown and already-duplicate targets 400, audit names the original); G4 (reporter 403 on impact after assignment, description still editable, unchanged value allowed, team lead and admin allowed, before assignment allowed); C3 (the setting drives rule 1 for both create and what-if, over-long value 400, internal note hidden from the reporter's history); duplicate check (409 with `similar`, similarity at least 0.55, confirm creates and groups, other service not a duplicate, unrelated text not grouped); auto category (applied and audited, vague text stays in triage); correlation (dependant joins an open P1, unrelated service and a P4 do not); S2 (known-outage view hides reporters, join creates a DUPLICATE incident, lead users +1, priority P3 to P2 at ten users, joining twice idempotent, resolved outage 409); lead resolved (the related incident is not resolved, staff get an internal note that the reporter does not see, the record stays OPEN, the joiner is notified once); Resolve whole problem (an employee 403, team lead and admin allowed, the open incidents get the same root cause, the joiner is not told twice); ungroup (permissions and audit); root cause (Auth before Database, one path per affected service); E2 (three fixes proposed, disappear once a record exists, reopen proposal); chatbot (ask, re-ask, service by name, number read, ready to file, filed through POST /incidents); drill (403 for employees, 404 unknown service, 4 incidents in one record, root cause is the failing service, second run joins the same record).
 
 ## 13. Data model built so far
 

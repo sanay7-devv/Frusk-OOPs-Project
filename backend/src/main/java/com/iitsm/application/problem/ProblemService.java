@@ -36,13 +36,19 @@ import com.iitsm.domain.exception.ResourceNotFoundException;
 import com.iitsm.domain.exception.ServiceNotFoundException;
 import com.iitsm.domain.exception.UserNotFoundException;
 import com.iitsm.domain.incident.ClosureReason;
+import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.incident.CommentVisibility;
 import com.iitsm.domain.incident.Incident;
+import com.iitsm.domain.incident.IncidentComment;
+import com.iitsm.domain.incident.IncidentFact;
+import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.incident.Resolution;
 import com.iitsm.domain.notification.Audience;
 import com.iitsm.domain.notification.NotificationEventType;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.problem.ProblemRecord;
 import com.iitsm.domain.problem.ProblemStatus;
+import com.iitsm.domain.repository.IncidentCommentRepository;
 import com.iitsm.domain.repository.IncidentRepository;
 import com.iitsm.domain.repository.ItServiceRepository;
 import com.iitsm.domain.repository.ProblemRepository;
@@ -63,18 +69,20 @@ public class ProblemService {
     private final IncidentRepository incidents;
     private final ItServiceRepository services;
     private final UserRepository users;
+    private final IncidentCommentRepository comments;
     private final IncidentViewMapper views;
     private final IncidentEventPublisher publisher;
     private final JoinerNotifier joinerNotifier;
     private final Clock clock;
 
     public ProblemService(ProblemRepository problems, IncidentRepository incidents, ItServiceRepository services,
-                          UserRepository users, IncidentViewMapper views, IncidentEventPublisher publisher,
+                          UserRepository users, IncidentCommentRepository comments, IncidentViewMapper views, IncidentEventPublisher publisher,
                           JoinerNotifier joinerNotifier, Clock clock) {
         this.problems = problems;
         this.incidents = incidents;
         this.services = services;
         this.users = users;
+        this.comments = comments;
         this.views = views;
         this.publisher = publisher;
         this.joinerNotifier = joinerNotifier;
@@ -157,10 +165,13 @@ public class ProblemService {
     // ------------------------------------------------------------------ lifecycle
 
     /**
-     * Called inside the transaction that resolved {@code incidentId}: if it is the lead of an open problem record,
-     * every other open linked incident is resolved with the same fix, the record becomes RESOLVED, and the people
-     * who joined the outage get one notice after the commit (decision DEC-72). A resolved incident that is not the
-     * lead changes nothing for the others.
+     * Called inside the transaction that resolved {@code incidentId} (decision DEC-72, changed by the user on
+     * 2026-11-14): if it is the lead of an open problem record, **nothing is resolved automatically**. Grouping by
+     * related text or by a neighbouring service puts merely related incidents in a record, and fixing the lead must
+     * not close them with someone else's fix. Instead every other open incident of the record gets one internal note
+     * (staff only) pointing a team lead or administrator to "Resolve problem", and the people who joined the outage
+     * get their one notice after the commit. The record stays OPEN. A resolved incident that is not the lead changes
+     * nothing for the others.
      */
     @Transactional
     public void cascadeAfterResolve(Long incidentId, Long actorId) {
@@ -173,23 +184,34 @@ public class ProblemService {
             return;
         }
         List<Incident> linked = incidents.findByProblemIdOrderByCreatedAtAsc(problem.getId());
-        List<Incident> candidates = linked.stream().filter(i -> !isJoiner(i)
-                && !i.getId().equals(resolved.getId()) && i.getStatus().isEditable()).toList();
         boolean leadResolved = lead(linked.stream().filter(i -> i.getId().equals(resolved.getId())
                 || i.getStatus().isEditable()).toList()).map(i -> i.getId().equals(resolved.getId())).orElse(false);
         if (!leadResolved) {
             return;
         }
         User actor = actorId == null ? null : users.findById(actorId).orElseThrow(() -> new UserNotFoundException(actorId));
-        Resolution fix = resolved.getResolution();
-        resolveAll(candidates, fix, resolved.getCode(), actor);
-        problem.resolve();
+        Instant now = clock.instant();
+        String body = "The lead incident " + resolved.getCode() + " of problem record #" + problem.getId()
+                + " was resolved: " + resolved.getResolution().getRootCause() + ". If the cause is the same, a team "
+                + "lead or administrator can close the whole record with Resolve problem.";
+        String text = body.length() > IncidentComment.MAX_LENGTH ? body.substring(0, IncidentComment.MAX_LENGTH) : body;
+        for (Incident other : linked) {
+            if (isJoiner(other) || other.getId().equals(resolved.getId()) || !other.getStatus().isEditable()) {
+                continue;
+            }
+            comments.save(new IncidentComment(other, actor, CommentVisibility.INTERNAL, text, now));
+            IncidentStatus status = other.getStatus();
+            publisher.publishInternal(other, new IncidentFact(AuditAction.COMMENT_ADDED, status, status), actor,
+                    "added by the system: the lead " + resolved.getCode() + " of problem record #" + problem.getId()
+                            + " was resolved");
+        }
         notifyJoiners(linked, resolved);
     }
 
     /**
-     * POST /problems/{id}/resolve (administrator): the same fix for every open incident of the record, the lead
-     * included, for the case where nobody resolved the lead itself.
+     * POST /problems/{id}/resolve (team lead, administrator): "resolve the whole problem" in one click. The same fix
+     * goes to every open incident of the record, the lead included; the record becomes RESOLVED. The people who joined
+     * the outage are notified once: not again if the lead was already resolved (they heard then).
      */
     @Transactional
     public ProblemView resolve(AuthenticatedUser caller, Long id, String rootCause, String notes, String steps,
@@ -203,10 +225,13 @@ public class ProblemService {
         List<Incident> open = linked.stream().filter(i -> !isJoiner(i) && i.getStatus().isEditable()).toList();
         User actor = users.findById(caller.id()).orElseThrow(() -> new UserNotFoundException(caller.id()));
         Resolution fix = new Resolution(rootCause, notes, steps, timeSpentMinutes, false);
-        Incident lead = lead(open).orElse(null);
+        Incident lead = lead(linked).orElse(null);
+        boolean joinersAlreadyTold = lead != null && !lead.getStatus().isEditable();
         resolveAll(open, fix, lead == null ? "problem #" + id : lead.getCode(), actor);
         problem.resolve();
-        notifyJoiners(linked, lead != null ? lead : linked.get(0));
+        if (!joinersAlreadyTold) {
+            notifyJoiners(linked, lead != null ? lead : linked.get(0));
+        }
         return view(problem, views.summaries());
     }
 
