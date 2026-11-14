@@ -233,3 +233,12 @@ New and changed endpoints; reasons: `DECISIONS.md` DEC-70 to DEC-78; description
 - Brief mapping: demo workflow 3 ("multiple incidents reported, duplicates identified, correlated, escalated") is Major Incident Mode; the challenge "difficulty identifying recurring problems" is E2 (`GET /problems/recurring`); "automated root-cause analysis" and "service dependency graph" are `GET /problems/{id}/root-cause`.
 - **Wording you can edit without code:** `backend/src/main/resources/demo/outage-drill.json` (the drill's incident texts); the joiner notice reuses the "resolved" wording of `notification-templates.properties` and would read better with its own text (ask the backend lead to add an audience).
 - Honest limits for the report: grouping by text can put incidents with different fixes in one record (the administrator can ungroup; every grouping is audited); the root cause is only as good as the service dependency graph; the chatbot is a guided slot-filling dialogue, not free conversation.
+
+---
+
+## After the integration merge (2026-11-14)
+
+- **Everyone:** every endpoint of the agreed contract is built: `backend/docs/openapi/iitsm-api.*` lists 117 operations, 0 planned. Settings: 76 `app_config` keys.
+- **Frontend:** "INC-x may be a duplicate" (`DUPLICATE_SUSPECTED`) now arrives only when an incident is closed as a duplicate; being grouped into a problem record sends nothing (show `problemId` on the incident detail instead) (DEC-110).
+- **Testing:** the password policy (M14) refuses passwords that contain a word of the user's name (4+ characters) or the first part of the e-mail; test and seed passwords must avoid them. Creating similar incidents on one service needs `confirmNotDuplicate: true` (M12). Suites that count recipients, mails or settings need a fresh database. The shared smoke scripts now read `SMOKE_PORT` / `SMOKE_DB` (m11: `ITSM_PORT` / `ITSM_DB`); `endpoint_sweep.py` runs the per-module files in `smoke-tests/sweep_parts/`. Details: ERROR_LOG E-035.
+

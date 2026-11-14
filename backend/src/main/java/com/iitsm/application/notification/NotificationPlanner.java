@@ -49,6 +49,9 @@ public class NotificationPlanner {
     /** An audited action of a person or the system; empty if the action has no notification type. */
     @Transactional(readOnly = true)
     public List<NotificationRequest> plan(IncidentChanged event) {
+        if (!NotificationRules.announced(event.action(), event.newState())) {
+            return List.of();
+        }
         NotificationEventType type = NotificationEventType.forAction(event.action()).orElse(null);
         Incident incident = type == null ? null : incidents.findById(event.incidentId()).orElse(null);
         if (incident == null) {

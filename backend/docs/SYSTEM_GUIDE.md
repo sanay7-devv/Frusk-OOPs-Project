@@ -1424,7 +1424,7 @@ The single `IncidentChanged` event carries an action; it is mapped onto the 15 n
 | INFO_REQUESTED / INFO_PROVIDED | INFO_REQUESTED / INFO_PROVIDED | reporter / assignee |
 | RESOLVED, VERIFIED, CLOSED, REOPENED | INCIDENT_RESOLVED, _VERIFIED, _CLOSED, _REOPENED | reporter, assignee, reporter, assignee |
 | ESCALATED | none from the audit action; `IncidentEscalated` gives INCIDENT_ESCALATED | holders of the level reached, from the event (critical), assignee; not the person who escalated by hand. `EscalationExhausted`: every administrator, "Escalation exhausted" wording, SMS for P1 (E-034) |
-| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (for M12) |
+| DUPLICATE_LINKED | DUPLICATE_SUSPECTED, only when the incident is closed as a duplicate | reporter, assignee; grouping into a problem record keeps the status and is not announced (DEC-110) |
 | CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody |
 | `TriageNeeded` event | TRIAGE_NEEDED | every team lead |
 | `SlaWarning` event | SLA_WARNING | assignee; team leads if nobody is assigned |
@@ -2482,6 +2482,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-14 | M14 hardening and S3 (section 12g, DEC-90 to DEC-94, session C): attachments (upload, list, download), 503 `SERVICE_UNAVAILABLE` on database outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, sealed audit trail (`GET /audit/verify`, `POST /audit/seal`). Four settings; new tables `audit_seals`, `audit_seal_entries` (plus `incident_attachments` of Appendix A). `m14_smoke.py` 81/81. |
 | 2026-11-14 | M12 rest (section 12e, DEC-70 to DEC-78, session A): duplicate check on create (409 with `similar`, `confirmNotDuplicate`), applied AI category, `mark-duplicate`, problem records with correlation (text and dependency graph), Major Incident Mode (known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem; resolving the lead only leaves notes, DEC-72 changed by the user), E2 recurring-problem detector, A1 chatbot intake, D2 outage drill (demo); G3 withdraw, G4 reporter edit lock, C3 security-category setting and internal-audit factory. Six settings. `m12b_smoke.py` 107/107, `m10_smoke.py` 135/135. |
 | 2026-11-14 | The four parallel branches and the E-034 fix merged on `backend/integrate-m12-m14` (order M2b, M13, M14, M12, E-034): `ConfigKey` blocks joined (76 settings), `planned-endpoints.json` merged by key (now empty: every agreed endpoint is built), sections 12a to 12h put in order, this guide's sections 1, 3 and 18 updated. |
+| 2026-11-14 | Regression of the merged build (ERROR_LOG E-035): every suite green on fresh databases after test-script fixes; DEC-110 (grouping into a problem record is not announced, `NotificationRules.announced`); endpoint sweep covers all 117 operations, contract re-exported with 0 planned. |
 
 ---
 

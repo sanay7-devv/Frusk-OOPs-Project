@@ -107,6 +107,7 @@
 | [DEC-76](#dec-76-d2-outage-drill) | D2 outage drill | 2026-11-14 | M12 (D2) | ✅ user decision |
 | [DEC-77](#dec-77-basic-parts-withdraw-mark-duplicate-reporter-edit-lock-security-setting) | Basic parts: withdraw, mark-duplicate, reporter edit lock, security setting | 2026-11-14 | M4, M10, M12, M14 | ✅ user decision |
 | [DEC-78](#dec-78-actions-keep-answering-403-to-people-who-cannot-see-the-incident-t18) | Actions keep answering 403 to people who cannot see the incident (T18) | 2026-11-14 | M14 risk of DEC-42 | ✅ user decision |
+| [DEC-110](#dec-110-grouping-into-a-problem-record-is-not-announced) | Grouping into a problem record is not announced | 2026-11-14 | M9 + M12 | ✅ user decision |
 
 ---
 
@@ -1155,7 +1156,7 @@ Smaller rules the handbook left open:
 | RESOLVED, CLOSED | INCIDENT_RESOLVED, INCIDENT_CLOSED | reporter |
 | VERIFIED, REOPENED | INCIDENT_VERIFIED, INCIDENT_REOPENED | assignee |
 | ESCALATED | INCIDENT_ESCALATED | holders of the new level (critical), assignee |
-| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (used by M12) |
+| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (used by M12); since DEC-110 only when the incident is closed as a duplicate, not when it is grouped into a problem record |
 | CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody: a pipeline step, or too chatty |
 
 `TriageNeeded` gives TRIAGE_NEEDED to every team lead; `SlaWarning` gives SLA_WARNING to the assignee (team leads when unassigned); `SlaViolated` gives SLA_VIOLATED to every administrator (critical) and the assignee.
@@ -1886,3 +1887,24 @@ The bytes go through an `AttachmentStorage` port with `DiskAttachmentStorage` as
 **Decision.** The DEC-42 risk "404 on actions for non-viewers" is **not** changed. T18 in the Testing handbook ("technician 2 acknowledges an incident assigned to technician 1: 403") stays as documented; reads still answer 404 (DEC-21). The cost is stated openly: an authenticated user can learn that an incident id exists by trying an action on it.
 
 **Cross-questions.** *"Is that not an information leak?"* Yes, of the existence of an id to a logged-in user, which the incident code format already makes guessable; the codes are sequential and carry no content.
+
+---
+
+## Integration of the parallel modules (2026-11-14)
+
+### DEC-110: Grouping into a problem record is not announced
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14, regression after merging M12 rest, M13, M14 and M2b | M9 + M12 | ✅ user decision | User (option A of three) |
+
+**Context.** M12 records `DUPLICATE_LINKED` for two different moves: closing an incident as a duplicate (`mark-duplicate`, a known-outage join) and grouping an open incident into a problem record (correlation, DEC-71). M9 (DEC-54) maps `DUPLICATE_LINKED` to `DUPLICATE_SUSPECTED`, "INC-x may be a duplicate", for the reporter and the assignee. So a reporter who had just confirmed "not a duplicate" (`confirmNotDuplicate`) was told it may be one, and every grouping sent extra mails. Found by `m9_smoke.py` on the merged build.
+
+**Decision.** `NotificationRules.announced(action, newState)`: `DUPLICATE_LINKED` is announced only when the incident's new status is CLOSED (closed as a duplicate). Grouping keeps the status, so it notifies nobody; staff see it in the incident history and on the problem view. Joiners still get their one "outage resolved" notice (DEC-73), and the person who acts is never told about their own action (DEC-54).
+
+**Options.** A, quiet grouping (chosen); B, a separate, reworded notice for grouping ("linked with related reports, work continues"), more transparent but one more mail per grouping; C, unchanged.
+
+**Why.** The reporter's own confirmation must not be contradicted, and the inbox stays meaningful. The rule needs no new audit action or schema value: the status change already tells the two moves apart.
+
+**Cross-questions.** *"How does a reporter learn their incident is part of a bigger outage?"* The incident detail shows its `problemId`, and the known-outage banner on the report form shows open outages before they file. *"Why not a new audit action GROUPED?"* `AuditAction` values are part of the agreed schema (Appendix A.4); the status distinguishes the two cases without changing it.
+

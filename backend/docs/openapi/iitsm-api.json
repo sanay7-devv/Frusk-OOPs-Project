@@ -133,6 +133,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "All categories, flat, with parent and required skills",
@@ -257,6 +275,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -376,6 +412,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Switch a category off",
@@ -511,6 +565,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -588,6 +660,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Every setting with its current value, default and meaning",
@@ -700,6 +790,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Change one or more settings at once; all are validated together",
@@ -778,6 +886,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -883,6 +1009,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Add an escalation level (P1 or P2, levels added in order without gaps)",
@@ -1003,6 +1147,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Remove the highest escalation level of a priority",
@@ -1138,6 +1300,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Change the timeout of an escalation level",
@@ -1216,6 +1396,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "All services, active and inactive",
@@ -1322,6 +1520,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -1441,6 +1657,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Switch a service off",
@@ -1566,6 +1800,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -1700,6 +1952,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Update a service (dependencyIds omitted = dependencies unchanged)",
@@ -1837,6 +2107,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Replace the services this one depends on (no self-reference, no cycles)",
@@ -1915,6 +2203,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -2020,6 +2326,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -2139,6 +2463,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Delete a skill that no category or technician uses",
@@ -2274,6 +2616,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -2351,6 +2711,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "All SLA policies: global defaults first, then per service",
@@ -2475,6 +2853,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Add an SLA policy (serviceId null = global default; one per service and priority)",
@@ -2595,6 +2991,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -2729,6 +3143,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Change the response and resolution targets",
@@ -2866,6 +3298,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Change experience, escalation level (1 = team lead), max load or availability",
@@ -3006,6 +3456,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Replace a technician's skills",
@@ -3084,6 +3552,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "All users with roles, profiles and technician workload",
@@ -3190,6 +3676,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Create a user; roles must include EMPLOYEE, extra roles need their profile",
@@ -3310,6 +3814,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Deactivate a user (never deleted) and end their sessions",
@@ -3435,6 +3957,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -3569,6 +4109,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -3705,6 +4263,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Add TECHNICIAN (with profile) or ADMINISTRATOR (with scope)",
@@ -3845,6 +4421,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Remove a role (EMPLOYEE stays; TECHNICIAN only without active incidents)",
@@ -3855,8 +4449,7 @@
     },
     "/api/v1/attachments/{id}/download": {
       "get": {
-        "description": "**Planned for M14; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_attachments_by_id_download",
+        "operationId": "download",
         "parameters": [
           {
             "in": "path",
@@ -3871,6 +4464,12 @@
         "responses": {
           "200": {
             "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
               "application/octet-stream": {
                 "schema": {
                   "type": "string",
@@ -3878,15 +4477,126 @@
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such resource (category, skill, policy) or path.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `NOT_FOUND`: No such resource (category, skill, policy) or path"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Download an attachment",
+        "summary": "Download an attachment (participants of its incident)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M14",
-        "x-status": "planned"
+          "Incidents"
+        ]
       }
     },
     "/api/v1/audit": {
@@ -3940,7 +4650,8 @@
                 "LOGIN_FAILED",
                 "ACCESS_DENIED",
                 "USER_ROLE_CHANGED",
-                "CONFIG_CHANGED"
+                "CONFIG_CHANGED",
+                "ATTACHMENT_ADDED"
               ]
             }
           },
@@ -4073,6 +4784,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Search the audit log, newest first (admin)",
@@ -4081,10 +4810,195 @@
         ]
       }
     },
+    "/api/v1/audit/seal": {
+      "post": {
+        "operationId": "sealNow",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SealView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
+          }
+        },
+        "summary": "Seal the audit records written since the last seal now (admin); 204 if there is nothing new",
+        "tags": [
+          "Audit"
+        ]
+      }
+    },
+    "/api/v1/audit/verify": {
+      "get": {
+        "operationId": "verify_1",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
+          }
+        },
+        "summary": "Verify the sealed audit trail; names the first altered record or seal (admin)",
+        "tags": [
+          "Audit"
+        ]
+      }
+    },
     "/api/v1/auth/google": {
       "post": {
-        "description": "**Planned for M2b; not implemented yet.** Who: public. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_auth_google",
+        "operationId": "google",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4104,16 +5018,109 @@
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INVALID_CREDENTIALS",
+                  "fieldErrors": [],
+                  "message": "Wrong email or password (never says which).",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INVALID_CREDENTIALS`: Wrong email or password (never says which)\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "423": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "ACCOUNT_LOCKED",
+                  "fieldErrors": [],
+                  "message": "Too many failed logins; try again later.",
+                  "path": "/api/v1/...",
+                  "status": 423,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `ACCOUNT_LOCKED`: Too many failed logins; try again later"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "security": [],
-        "summary": "Sign in with a Google ID token",
+        "summary": "Sign in with a Google ID token (links an existing account by verified email; new accounts only when auto-registration is on)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M2b",
-        "x-status": "planned"
+          "Auth"
+        ]
       }
     },
     "/api/v1/auth/login": {
@@ -4216,6 +5223,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "security": [],
@@ -4300,6 +5325,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Revoke a refresh token",
@@ -4375,6 +5418,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "The logged-in user with roles and permissions",
@@ -4465,6 +5526,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "security": [],
@@ -4538,6 +5617,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "security": [],
@@ -4599,6 +5696,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Active incident categories as a tree",
@@ -4609,26 +5724,95 @@
     },
     "/api/v1/dashboard/live": {
       "get": {
-        "description": "**Planned for M13; not implemented yet.** Who: admin. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_dashboard_live",
+        "operationId": "live",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DashboardSnapshot"
+                  "$ref": "#/components/schemas/LiveDashboard"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Initial snapshot for the live dashboard",
+        "summary": "Live dashboard snapshot: counters, open incidents by priority, last 20 events, at-risk incidents",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M13",
-        "x-status": "planned"
+          "Dashboard"
+        ]
       }
     },
     "/api/v1/incidents": {
@@ -4881,6 +6065,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Incidents the caller may see, filtered, paged and sorted (sort=field,asc|desc)",
@@ -5023,6 +6225,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Report an incident: classified, prioritized and given SLA deadlines on creation",
@@ -5132,6 +6352,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -5302,6 +6540,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Edit description, impact, urgency or affected users (until resolved); priority is recalculated",
@@ -5447,6 +6703,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Acknowledge (assigned technician); stops the response clock",
@@ -5602,6 +6876,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Assign to a technician, or omit technicianId to use the active strategy (admin, team lead)",
@@ -5612,8 +6904,7 @@
     },
     "/api/v1/incidents/{id}/attachments": {
       "get": {
-        "description": "**Planned for M14; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_incidents_by_id_attachments",
+        "operationId": "list_3",
         "parameters": [
           {
             "in": "path",
@@ -5632,24 +6923,134 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Attachment"
+                    "$ref": "#/components/schemas/AttachmentView"
                   }
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Attachments of an incident",
+        "summary": "Attachments of an incident, oldest first (participants)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M14",
-        "x-status": "planned"
+          "Incidents"
+        ]
       },
       "post": {
-        "description": "**Planned for M14; not implemented yet.** Who: participant. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_post_incidents_by_id_attachments",
+        "operationId": "upload",
         "parameters": [
           {
             "in": "path",
@@ -5677,27 +7078,155 @@
                 ]
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Attachment"
+                  "$ref": "#/components/schemas/AttachmentView"
                 }
               }
             },
-            "description": "Success"
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "UNAUTHORIZED_OPERATION",
+                  "fieldErrors": [],
+                  "message": "Role, permission or relation to the resource does not allow this.",
+                  "path": "/api/v1/...",
+                  "status": 403,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to the resource does not allow this"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INCIDENT_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such incident, or the caller may not see it.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INCIDENT_NOT_FOUND`: No such incident, or the caller may not see it"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "RATE_LIMITED",
+                  "fieldErrors": [],
+                  "message": "Too many requests.",
+                  "path": "/api/v1/...",
+                  "status": 429,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `RATE_LIMITED`: Too many requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Upload a file (type and 5 MB size checked)",
+        "summary": "Upload a file: png, jpg, jpeg, gif, pdf, txt or log by content, at most 5 MB, at most 10 per incident (participants)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M14",
-        "x-status": "planned"
+          "Incidents"
+        ]
       }
     },
     "/api/v1/incidents/{id}/close": {
@@ -5837,6 +7366,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Close a verified incident (admin)",
@@ -5949,6 +7496,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Comments (internal notes are hidden from the reporter)",
@@ -6084,6 +7649,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -6238,6 +7821,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Raise the escalation level by one (assignee, team lead, admin); the status does not change",
@@ -6393,6 +7994,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Rate the resolution, 1 to 5 with an optional comment (reporter, once, from RESOLVED on)",
@@ -6505,6 +8124,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Audit trail of the incident, oldest first (internal notes are hidden from the reporter)",
@@ -6660,6 +8297,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Close as a duplicate of another incident (admin, team lead); audited as DUPLICATE_LINKED",
@@ -6833,6 +8488,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Set the priority by hand with a reason (admin or team lead)",
@@ -6960,6 +8633,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Post-incident report of one incident, computed from its audit trail (whoever may see it)",
@@ -7088,6 +8779,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "The same report as a PDF file",
@@ -7243,6 +8952,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Answer the technician (reporter); resumes the SLA clock",
@@ -7398,6 +9125,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -7524,6 +9269,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Top 3 technicians with reasons and factor scores, plus who is excluded and why",
@@ -7697,6 +9460,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Reopen (reporter or admin; from CLOSED only within the reopen window)",
@@ -7852,6 +9633,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Ask the reporter for information; pauses the SLA clock",
@@ -8007,6 +9806,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -8136,6 +9953,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Similar open incidents for an existing incident",
@@ -8263,6 +10098,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "SLA risk score 0 to 1 with the contribution of each factor (assignee, team lead, admin)",
@@ -8408,6 +10261,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "tags": [
@@ -8537,6 +10408,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Fixes used on similar resolved incidents, reusable ones preferred (assignee, team lead, admin)",
@@ -8682,6 +10571,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Summary and handover notes of the comments and audit entries (assignee, team lead, admin)",
@@ -8827,6 +10734,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Confirm the fix (reporter)",
@@ -8982,6 +10907,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Withdraw the report before work starts (reporter; CLASSIFIED, ASSIGNED or ACKNOWLEDGED); closes as WITHDRAWN",
@@ -9108,6 +11051,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Chatbot incident reporting: one turn of a guided conversation that fills the report form (works without an LLM key); file the finished draft with POST /incidents",
@@ -9255,6 +11216,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Similar open incidents on the same service inside the look-back window (TF-IDF)",
@@ -9399,6 +11378,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Category suggestion (LLM with keyword fallback); null category below autocat.min.confidence",
@@ -9525,6 +11522,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Category, impact and urgency suggested from a free-text description",
@@ -9535,7 +11550,7 @@
     },
     "/api/v1/notifications": {
       "get": {
-        "operationId": "list_3",
+        "operationId": "list_4",
         "parameters": [
           {
             "in": "query",
@@ -9653,6 +11668,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "My notifications, newest first (the inbox unless channel=SMS_SIM is asked for)",
@@ -9713,6 +11746,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "My notification switches: every event type on every personal channel, with locked ones marked",
@@ -9807,6 +11858,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Replace my notification switches; the inbox and critical alerts cannot be turned off",
@@ -9857,6 +11926,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Mark all my inbox notifications read",
@@ -9914,6 +12001,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Number of unread inbox notifications",
@@ -10016,6 +12121,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Mark one of my notifications read",
@@ -10142,6 +12265,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Which priority and score the engine would give for other impact, urgency and affected users, for an existing incident (incidentId) or for raw input (serviceId); changes nothing",
@@ -10257,6 +12398,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Problem records, newest first, optionally only OPEN or RESOLVED (admin, team lead)",
@@ -10363,6 +12522,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Open a problem record from chosen incidents, for example a recurring-problem proposal (admin, team lead)",
@@ -10493,6 +12670,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Open outages on a service or on a service it depends on, for the report form banner (any user)",
@@ -10571,6 +12766,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Recurring-problem proposals: the same service and category fixed again and again, or incidents reopened repeatedly (admin, team lead)",
@@ -10698,6 +12911,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "One problem record with its lead incident and every linked incident",
@@ -10834,6 +13065,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Take one incident out of the record (administrator); audited",
@@ -10979,6 +13228,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Join a known outage with one click: raises the affected users of the lead incident and re-runs its priority; returns the caller's own (duplicate-closed) incident",
@@ -11134,6 +13401,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Resolve the whole problem: every open incident of the record gets one fix (admin, team lead)",
@@ -11261,6 +13546,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Probable root cause from the service dependency graph, with the paths as evidence",
@@ -11382,6 +13685,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Incidents per category (Uncategorized for those still in triage)",
@@ -11491,6 +13812,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Coverage risk (E3): critical services whose categories one or no available technician can take",
@@ -11627,6 +13966,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Download a report as CSV (type: incidents, overview, services, trends, priority-distribution, category-distribution, sla-compliance, workload); formula cells are neutralised and rows are capped",
@@ -11745,6 +14102,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Totals: open, critical, resolved, SLA violations, averages (incidents created in the range)",
@@ -11866,6 +14241,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Incidents per priority (P1 to P4 always listed)",
@@ -11987,6 +14380,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Incidents per service, most first",
@@ -12116,6 +14527,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "SLA met and violated, grouped by priority (default), service or technician",
@@ -12245,6 +14674,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Incidents created and resolved per day or week (UTC; default the last 30 days or 12 weeks)",
@@ -12323,6 +14770,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Current load, capacity and average resolution time of every active technician (staff)",
@@ -12401,6 +14866,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "My saved incident views, by name",
@@ -12507,6 +14990,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Save the filters of GET /incidents under a name (status, priority, slaState, ...)",
@@ -12627,6 +15128,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Delete one of my saved views",
@@ -12687,6 +15206,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Active IT services (id, name, criticality)",
@@ -12697,32 +15234,157 @@
     },
     "/api/v1/services/graph": {
       "get": {
-        "description": "**Planned for M13; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_services_graph",
+        "operationId": "graph",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ServiceGraph"
+                  "$ref": "#/components/schemas/ServiceGraphView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Service dependency graph with open incidents",
+        "summary": "Services with open incident counts, and dependency edges (from depends on to)",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M13",
-        "x-status": "planned"
+          "Service graph"
+        ]
+      }
+    },
+    "/api/v1/services/status": {
+      "get": {
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusBoard"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
+          }
+        },
+        "summary": "Service status board (E1): Healthy, Degraded or Outage, based on reported incidents",
+        "tags": [
+          "Service graph"
+        ]
       }
     },
     "/api/v1/services/{id}/impact": {
       "get": {
-        "description": "**Planned for M13; not implemented yet.** Who: any. Agreed in the API contract (Appendix B/C).",
-        "operationId": "planned_get_services_by_id_impact",
+        "operationId": "impact",
         "parameters": [
           {
             "in": "path",
@@ -12739,19 +15401,112 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ServiceImpact"
+                  "$ref": "#/components/schemas/ImpactView"
                 }
               }
             },
-            "description": "Success"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "VALIDATION_FAILED",
+                  "fieldErrors": [
+                    {
+                      "field": "impact",
+                      "message": "must be between 1 and 5"
+                    }
+                  ],
+                  "message": "Invalid input; see fieldErrors.",
+                  "path": "/api/v1/...",
+                  "status": 400,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "TOKEN_EXPIRED",
+                  "fieldErrors": [],
+                  "message": "Access token expired; refresh or log in again.",
+                  "path": "/api/v1/...",
+                  "status": 401,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `TOKEN_EXPIRED`: Access token expired; refresh or log in again\n- `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_NOT_FOUND",
+                  "fieldErrors": [],
+                  "message": "No such IT service.",
+                  "path": "/api/v1/...",
+                  "status": 404,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_NOT_FOUND`: No such IT service"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "fieldErrors": [],
+                  "message": "Unexpected failure; no details exposed, quote the request ID.",
+                  "path": "/api/v1/...",
+                  "status": 500,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Services affected if this one fails (transitive)",
+        "summary": "Services that depend on this one, directly or through others, with distance",
         "tags": [
-          "Planned"
-        ],
-        "x-module": "M13",
-        "x-status": "planned"
+          "Service graph"
+        ]
       }
     },
     "/api/v1/sla/violations": {
@@ -12887,6 +15642,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "SLA violations recorded in [from, to), newest first (admin, team lead)",
@@ -13013,6 +15786,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Active technicians with load, availability and skills (team lead, admin)",
@@ -13121,6 +15912,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "Set my availability (AWAY and OFF_DUTY stop new assignments)",
@@ -13244,6 +16053,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "My active incidents, most urgent SLA first",
@@ -13337,6 +16164,24 @@
               }
             },
             "description": "- `INTERNAL_ERROR`: Unexpected failure; no details exposed, quote the request ID"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "fieldErrors": [],
+                  "message": "The database or the AI service is down; try again shortly (M14, DEC-42).",
+                  "path": "/api/v1/...",
+                  "status": 503,
+                  "timestamp": "2026-11-06T09:21:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
         "summary": "My load, capacity, resolved this week and next SLA deadlines",
@@ -13490,6 +16335,36 @@
           }
         }
       },
+      "AttachmentView": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uploadedBy": {
+            "$ref": "#/components/schemas/UserRef"
+          }
+        }
+      },
       "AuditEntryView": {
         "type": "object",
         "properties": {
@@ -13518,7 +16393,8 @@
               "LOGIN_FAILED",
               "ACCESS_DENIED",
               "USER_ROLE_CHANGED",
-              "CONFIG_CHANGED"
+              "CONFIG_CHANGED",
+              "ATTACHMENT_ADDED"
             ]
           },
           "actor": {
@@ -13643,7 +16519,9 @@
             "items": {
               "type": "integer",
               "format": "int64"
-            }
+            },
+            "maxItems": 100,
+            "minItems": 0
           }
         },
         "required": [
@@ -13824,16 +16702,44 @@
         "properties": {
           "key": {
             "type": "string",
-            "minLength": 1
+            "maxLength": 100,
+            "minLength": 0
           },
           "value": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 0
           }
         },
         "required": [
           "key",
           "value"
         ]
+      },
+      "Counters": {
+        "type": "object",
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resolved": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "slaViolations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "CoverageItem": {
         "type": "object",
@@ -14110,7 +17016,6 @@
       },
       "DashboardEvent": {
         "type": "object",
-        "description": "Also pushed on the WebSocket topic /topic/dashboard",
         "properties": {
           "at": {
             "type": "string",
@@ -14124,19 +17029,12 @@
             "format": "int64"
           },
           "priority": {
-            "oneOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "P1",
-                  "P2",
-                  "P3",
-                  "P4"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4"
             ]
           },
           "status": {
@@ -14266,7 +17164,9 @@
             "items": {
               "type": "integer",
               "format": "int64"
-            }
+            },
+            "maxItems": 200,
+            "minItems": 0
           }
         },
         "required": [
@@ -14525,12 +17425,64 @@
         "properties": {
           "idToken": {
             "type": "string",
-            "description": "Google ID token from the Sign-In button"
+            "maxLength": 4096,
+            "minLength": 0
           }
         },
         "required": [
           "idToken"
         ]
+      },
+      "GraphEdge": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "to": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "GraphNode": {
+        "type": "object",
+        "properties": {
+          "criticality": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasOpenP1": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "openIncidents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ImpactView": {
+        "type": "object",
+        "properties": {
+          "affected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReachedService"
+            }
+          },
+          "serviceId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "IncidentDetail": {
         "type": "object",
@@ -14873,16 +17825,44 @@
           }
         }
       },
+      "LiveDashboard": {
+        "type": "object",
+        "properties": {
+          "atRisk": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            }
+          },
+          "byPriority": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCount"
+            }
+          },
+          "counters": {
+            "$ref": "#/components/schemas/Counters"
+          },
+          "recentEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardEvent"
+            }
+          }
+        }
+      },
       "LoginRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "minLength": 1
+            "maxLength": 150,
+            "minLength": 0
           },
           "password": {
             "type": "string",
-            "minLength": 1
+            "maxLength": 200,
+            "minLength": 0
           }
         },
         "required": [
@@ -14955,6 +17935,31 @@
           },
           "title": {
             "type": "string"
+          }
+        }
+      },
+      "OpenCounts": {
+        "type": "object",
+        "properties": {
+          "P1": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "P2": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "P3": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "P4": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -15471,6 +18476,22 @@
           "message"
         ]
       },
+      "ReachedService": {
+        "type": "object",
+        "properties": {
+          "distance": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "ReasonRequest": {
         "type": "object",
         "properties": {
@@ -15607,7 +18628,8 @@
         "properties": {
           "refreshToken": {
             "type": "string",
-            "minLength": 1
+            "maxLength": 200,
+            "minLength": 0
           }
         },
         "required": [
@@ -15925,6 +18947,37 @@
           }
         }
       },
+      "SealView": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fromId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "prevHash": {
+            "type": "string"
+          },
+          "recordCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ServiceGraph": {
         "type": "object",
         "properties": {
@@ -15969,6 +19022,23 @@
                   "format": "int64"
                 }
               }
+            }
+          }
+        }
+      },
+      "ServiceGraphView": {
+        "type": "object",
+        "properties": {
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            }
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
             }
           }
         }
@@ -16037,7 +19107,9 @@
             "items": {
               "type": "integer",
               "format": "int64"
-            }
+            },
+            "maxItems": 200,
+            "minItems": 0
           },
           "description": {
             "type": "string",
@@ -16059,6 +19131,50 @@
           "criticality",
           "name"
         ]
+      },
+      "ServiceStatus": {
+        "type": "object",
+        "properties": {
+          "causedBy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReachedService"
+            }
+          },
+          "criticality": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "open": {
+            "$ref": "#/components/schemas/OpenCounts"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaJudged": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OUTAGE",
+              "DEGRADED",
+              "HEALTHY"
+            ]
+          }
+        }
       },
       "ServiceSummary": {
         "type": "object",
@@ -16509,6 +19625,31 @@
           }
         }
       },
+      "StatusBoard": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "label": {
+            "type": "string"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceStatus"
+            }
+          },
+          "windowDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "StatusDuration": {
         "type": "object",
         "properties": {
@@ -16659,7 +19800,9 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SkillLevelRequest"
-            }
+            },
+            "maxItems": 200,
+            "minItems": 0
           }
         },
         "required": [
@@ -16896,6 +20039,58 @@
             "type": "string",
             "maxLength": 100,
             "minLength": 2
+          }
+        }
+      },
+      "UserRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "VerifyView": {
+        "type": "object",
+        "properties": {
+          "firstProblem": {
+            "$ref": "#/components/schemas/ProblemView"
+          },
+          "intact": {
+            "type": "boolean"
+          },
+          "lastSealHash": {
+            "type": "string"
+          },
+          "lastSealId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "problemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProblemView"
+            }
+          },
+          "recordsChecked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sealsChecked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unsealedRecords": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
