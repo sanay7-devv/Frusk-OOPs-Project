@@ -144,7 +144,13 @@ public enum ConfigKey {
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
     SECURITY_LOCKOUT_MINUTES("security.lockout.minutes", "15", "Minutes an account stays locked",
-            Type.INTEGER, "1", "1440");
+            Type.INTEGER, "1", "1440"),
+
+    // ---- session B (M13 real-time, dashboard, service graph, E1 status board)
+    DASHBOARD_COUNTERS_INTERVAL_SECONDS("dashboard.counters.interval.seconds", "30",
+            "How often the live dashboard counters are pushed even when nothing changes", Type.INTEGER, "5", "3600"),
+    STATUS_SLA_WINDOW_DAYS("status.sla.window.days", "30",
+            "Days of incidents behind the SLA compliance shown on the service status board", Type.INTEGER, "1", "365");
 
     /** The kind of value a key holds. */
     public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }

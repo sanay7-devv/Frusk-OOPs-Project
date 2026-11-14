@@ -1684,6 +1684,97 @@ In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forwar
 
 ---
 
+## 12f. M13 Real-time layer, dashboard and service graph
+
+**Built 2026-11-14 (branch `claude/m13-realtime-04c1cb`).** Three things share this module: the live administrator dashboard (an Observer pushing over STOMP), the hardened WebSocket (permission per destination, session closed at token expiry), and the service dependency graph with impact analysis and the E1 status board. Decisions: DEC-80 to DEC-84 in `DECISIONS.md`.
+
+### 12f.1 The live dashboard
+
+```mermaid
+flowchart LR
+    E[IncidentChanged / TriageNeeded / SlaWarning / SlaViolated] -->|after commit, own thread| DL[DashboardListener]
+    DL --> DS[DashboardService: reads code, priority, status]
+    DS -->|DashboardPublisher port| SP[StompDashboardPublisher]
+    SP -->|DashboardEvent| T[/topic/dashboard/]
+    J[DashboardCountersJob, every second] --> DS
+    DS -->|COUNTERS after a change, or every 30 s| SP
+    T --> A[admin browser]
+    A -->|first load| L[GET /dashboard/live]
+```
+
+- **Observer.** `DashboardListener` is the fourth listener on the incident events (audit, notification, SLA, dashboard). It runs after the commit on its own single thread, so a rolled-back change is never shown and a slow socket cannot delay a request.
+- **Two message shapes** on `/topic/dashboard` (API contract B.5, C.8):
+  `{"type":"INCIDENT_CREATED","incidentId":214,"code":"INC-2026-00214","priority":"P1","status":"ASSIGNED","at":"..."}` for each event, and `{"type":"COUNTERS","counters":{"total":..,"open":..,"critical":..,"resolved":..,"slaViolations":..},"byPriority":[{"label":"P1","count":..},..],"at":"..."}` after a change (at most once a second) and every `dashboard.counters.interval.seconds`.
+- Event types are the notification types of DEC-54 plus `SLA_WARNING` and `SLA_VIOLATED`; pipeline steps (classified, priority calculated, work started, comment added) are not pushed.
+- **Counters** are the definitions of `/reports/overview` (open = NEW to REOPENED, critical = open P1, resolved = RESOLVED, VERIFIED, CLOSED) over all incidents, from the same query.
+
+### 12f.2 Endpoints
+
+| Endpoint | Who | Answer |
+|---|---|---|
+| `GET /dashboard/live` | `REPORT_VIEW` (administrators) | `{counters {total, open, critical, resolved, slaViolations}, byPriority [{label, count}] (open incidents, P1 to P4 always), recentEvents [DashboardEvent] (last 20, newest first, from the audit trail), atRisk [IncidentSummary] (up to 10)}`. `atRisk`: open, SLA not violated yet, and a resolution warning sent, or flagged by the risk scan (M12), or a response warning sent before acknowledgement; nearest resolution deadline first |
+| `GET /services/graph` | any logged-in user | `{nodes [{id, name, criticality, openIncidents, hasOpenP1}], edges [{from, to}]}`; an edge means "from depends on to"; active services only |
+| `GET /services/{id}/impact` | any logged-in user | `{serviceId, affected [{id, name, distance}]}`: services that depend on it, directly (1) or through others; unknown id 404 `SERVICE_NOT_FOUND` |
+| `GET /services/status` | any logged-in user | E1 board, see 12f.4 |
+
+### 12f.3 The WebSocket, hardened
+
+```mermaid
+sequenceDiagram
+    participant C as Browser
+    participant I as Interceptor (WebSocketConfig)
+    participant S as WebSocketSessions
+    C->>I: CONNECT Authorization: Bearer token
+    I->>I: verify token, build StompPrincipal(user, permissions, expiry)
+    I->>S: closeAtExpiry(session, expiry)
+    C->>I: SUBSCRIBE /topic/dashboard
+    I->>I: StompDestinationPolicy: REPORT_VIEW?
+    Note over I,C: not allowed: ERROR frame
+    S-->>C: at expiry: close 4001 TOKEN_EXPIRED
+```
+
+| Rule | Detail |
+|---|---|
+| CONNECT | needs `Authorization: Bearer <access token>`; bad or expired token refused with the code (`TOKEN_EXPIRED` or `TOKEN_INVALID`) |
+| SUBSCRIBE | `/user/queue/notifications` any logged-in user; `/topic/dashboard` needs `REPORT_VIEW`; any other destination refused |
+| SEND | refused for clients |
+| Expiry | the server closes the socket at the token's expiry second with close code **4001** `TOKEN_EXPIRED`; any later frame is refused. The client refreshes its token and reconnects, polling `GET /dashboard/live` and `GET /notifications/unread-count` meanwhile |
+
+Classes: `infrastructure/notification/WebSocketConfig` (interceptor), `infrastructure/realtime/StompDestinationPolicy`, `StompPrincipal`, `WebSocketSessions` (Decorator factory plus the timers), `RealtimeConfig` (`dashboardExecutor`, `socketExpiryScheduler`), `StompDashboardPublisher`. `JwtService.verify` returns the user and the expiry.
+
+### 12f.4 Service graph, impact and the E1 status board
+
+`ServiceGraph` (`domain/service`) is a plain class over ids with three breadth-first walks (visited set, shortest distance): `impactOf`, `upstreamOf` and `commonUpstream`. Worked example used by the smoke test: Payment to Auth, Portal to Auth, Auth to Database, Mail to Database.
+
+| Question | Answer |
+|---|---|
+| Impact of Database | Auth 1, Mail 1, Payment 2, Portal 2 |
+| Upstream of Payment | Auth 1, Database 2 |
+| Common upstream of Payment and Portal (S2 root cause) | Auth (largest distance 1), then Database (2) |
+
+**E1 status board** (`GET /services/status`), labelled "Based on reported incidents":
+
+| Status | Rule |
+|---|---|
+| OUTAGE | an open P1 on the service |
+| DEGRADED | an open P2 on the service, or an OUTAGE on any service it depends on (any distance; `causedBy` lists them, nearest first) |
+| HEALTHY | otherwise |
+
+Each row has `open {total, P1, P2, P3, P4}` (P3 and P4 are counted but never change the status), `slaCompliancePercent` and `slaJudged` over incidents created in the last `status.sla.window.days` days (the SLA compliance report's definition, null when nothing was judged). Order: OUTAGE, DEGRADED, HEALTHY, then name. A failing service nobody has reported shows HEALTHY, which is why the label is part of the answer.
+
+### 12f.5 Settings added (live, `app_config`)
+
+| Key | Default | Range | Meaning |
+|---|---|---|---|
+| `dashboard.counters.interval.seconds` | 30 | 5 to 3600 | counters are pushed at least this often, even when nothing changes |
+| `status.sla.window.days` | 30 | 1 to 365 | days of incidents behind the status board's SLA compliance |
+
+No new table, no schema change.
+
+### 12f.6 Verified behavior (2026-11-14)
+
+Smoke test `m13_smoke.py`: 72 checks, all passed against the running app (backend with 1-minute tokens for the expiry check). Done-when: creating a P1 incident reached an open admin subscription as `INCIDENT_CREATED` 1.3 s after the request started (request time included), a `COUNTERS` message followed with total +1; employee and technician sockets are refused on `/topic/dashboard` and receive nothing; the employee's own notification push still works; `GET /dashboard/live` equals `/reports/overview`; an expired token's socket is closed with 4001 and a reconnect with it is refused; graph, impact and the status board give the values of the table above on a staged chain, including `causedBy` distances, P2 and P3/P4 handling, SLA compliance from null to 100.0 to 0.0, and switched-off services left out. `m9_smoke.py` re-run against the same build.
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
