@@ -155,7 +155,19 @@ public enum ConfigKey {
     DASHBOARD_COUNTERS_INTERVAL_SECONDS("dashboard.counters.interval.seconds", "30",
             "How often the live dashboard counters are pushed even when nothing changes", Type.INTEGER, "5", "3600"),
     STATUS_SLA_WINDOW_DAYS("status.sla.window.days", "30",
-            "Days of incidents behind the SLA compliance shown on the service status board", Type.INTEGER, "1", "365");
+            "Days of incidents behind the SLA compliance shown on the service status board", Type.INTEGER, "1", "365"),
+
+    // M14 hardening (session C, DEC-90 to DEC-93)
+    RATELIMIT_LOGIN_PER_MINUTE("ratelimit.login.per.minute", "10",
+            "Login attempts per client address and e-mail (Google sign-in: per address) per minute (429 above)",
+            Type.INTEGER, "1", "1000"),
+    RATELIMIT_INCIDENT_CREATE_PER_MINUTE("ratelimit.incident.create.per.minute", "20",
+            "Incidents one user may create per minute (429 above)", Type.INTEGER, "1", "1000"),
+    RATELIMIT_DENIED_AUDIT_PER_MINUTE("ratelimit.denied.audit.per.minute", "20",
+            "ACCESS_DENIED audit entries written per user (or address) per minute; the rest is summarised in one entry",
+            Type.INTEGER, "1", "1000"),
+    AUDIT_SEAL_INTERVAL_SECONDS("audit.seal.interval.seconds", "300",
+            "How often new audit records are sealed (tamper evidence, S3)", Type.INTEGER, "10", "86400");
 
     /** The kind of value a key holds. */
     public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }

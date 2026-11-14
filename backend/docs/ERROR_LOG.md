@@ -377,3 +377,21 @@ Entry template:
 - Fix: run `m13_smoke.py` against a backend started with `APP_JWT_ACCESS_TOKEN_MINUTES=1` (with the default 15 the expiry check is skipped and says so), and every other script against a backend with the default.
 - Prevention: the header of `m13_smoke.py` states the setting; the script reads the token lifetime from the token itself.
 - Status: fixed
+
+### E-M14-1: A broken multipart upload answered 500
+- Date: 2026-11-14
+- Area: web
+- Symptom: `POST /incidents/{id}/attachments` with a file name containing a double quote (a malformed `Content-Disposition` header) returned 500 INTERNAL_ERROR and logged a stack trace.
+- Cause: Spring throws `MultipartException` ("Failed to parse multipart servlet request") before the controller runs; no handler existed, so the catch-all produced the 500.
+- Fix: `GlobalExceptionHandler.handleBrokenMultipart` answers 400 `VALIDATION_FAILED` with `fieldErrors: [{field: "file", message: "could not be read"}]`; uploads over the multipart limit (6 MB) get the same 400 from `handleMaxUploadSizeExceededException`, and a missing `file` part from `handleMissingServletRequestPart`.
+- Prevention: `m14_smoke.py` sends an 8 MB file, a quote in the file name and a wrong content type, and expects 400 or 415 in the standard body, never 500.
+- Status: fixed
+
+### E-M14-2: auth_smoke.py failed after the password policy
+- Date: 2026-11-14
+- Area: other
+- Symptom: `auth_smoke.py` registers "Smoke User" and got 400 on `password` instead of 201 (7 checks failed).
+- Cause: the script's password starts with "Smoke", a word of the name; the new rule (DEC-92) refuses passwords that contain a name word of 4 or more characters.
+- Fix: none in code (the rule is intended). The script's password prefix has to change (for example `PW = "Ab9-Zq" + secrets.token_hex(4) + "9"`); with that change it passes 27/27. The shared script was not edited by session C (reported to the supervisor).
+- Prevention: test passwords must not contain the test user's name or e-mail part.
+- Status: open until the shared script is changed

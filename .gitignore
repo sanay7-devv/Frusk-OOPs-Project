@@ -29,6 +29,8 @@ Thumbs.db
 # ===== Backend rules =====
 HELP.md
 target/
+# M14 attachment files (app.attachments.dir default)
+backend/data/
 
 ### Secrets ###
 .env

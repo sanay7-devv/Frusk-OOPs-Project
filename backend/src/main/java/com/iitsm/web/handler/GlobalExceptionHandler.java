@@ -1,22 +1,28 @@
 package com.iitsm.web.handler;
 
+import java.sql.SQLTransientConnectionException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.exception.JDBCConnectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,15 +30,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.iitsm.application.auth.AuthenticatedUser;
+import com.iitsm.application.config.ConfigService;
+import com.iitsm.application.ratelimit.RateLimiter;
 import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.event.SecurityAuditEvent;
 import com.iitsm.domain.exception.DuplicateIncidentException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.ItsmException;
 import com.iitsm.domain.exception.OptimisticLockConflictException;
+import com.iitsm.domain.exception.RateLimitedException;
+import com.iitsm.domain.exception.ServiceUnavailableException;
+import com.iitsm.domain.intelligence.LlmClient;
 import com.iitsm.web.dto.ErrorResponse;
 import com.iitsm.web.filter.RequestIdFilter;
 
@@ -53,13 +68,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final String VALIDATION_MESSAGE = "Please correct the highlighted fields.";
+    /** Seconds a client should wait before retrying after a 503. */
+    private static final int RETRY_AFTER_SECONDS = 30;
 
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final RateLimiter rateLimiter;
+    private final ConfigService config;
 
-    public GlobalExceptionHandler(ApplicationEventPublisher events, Clock clock) {
+    public GlobalExceptionHandler(ApplicationEventPublisher events, Clock clock, RateLimiter rateLimiter,
+                                  ConfigService config) {
         this.events = events;
         this.clock = clock;
+        this.rateLimiter = rateLimiter;
+        this.config = config;
     }
 
     /**
@@ -69,12 +91,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     private void auditDenied(HttpServletRequest request, String code, String message) {
         try {
-            Long actorId = SecurityContextHolder.getContext().getAuthentication() != null
-                    && SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-                    instanceof AuthenticatedUser caller ? caller.id() : null;
-            events.publishEvent(new SecurityAuditEvent(AuditAction.ACCESS_DENIED, actorId,
-                    code + " on " + request.getMethod() + " " + request.getRequestURI() + ": " + message,
-                    clock.instant()));
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Long actorId = auth != null && auth.getPrincipal() instanceof AuthenticatedUser caller ? caller.id() : null;
+            // a client looping on a forbidden call must not flood the audit trail (DEC-42 risk, DEC-91)
+            String who = actorId != null ? "user " + actorId : "address " + request.getRemoteAddr();
+            RateLimiter.Outcome outcome = rateLimiter.tryAcquire("DENIED_AUDIT", who,
+                    config.current().intValue(ConfigKey.RATELIMIT_DENIED_AUDIT_PER_MINUTE));
+            if (outcome == RateLimiter.Outcome.REFUSED) {
+                return;
+            }
+            String text = outcome == RateLimiter.Outcome.FIRST_REFUSAL
+                    ? "Further ACCESS_DENIED entries for " + who + " are not written for the next minute "
+                            + "(limit reached; latest: " + code + " on " + request.getMethod() + " "
+                            + request.getRequestURI() + ")"
+                    : code + " on " + request.getMethod() + " " + request.getRequestURI() + ": " + message;
+            events.publishEvent(new SecurityAuditEvent(AuditAction.ACCESS_DENIED, actorId, text, clock.instant()));
         } catch (RuntimeException ex) {
             log.warn("Could not audit a refused request: {}", ex.toString());
         }
@@ -95,6 +126,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleDuplicateIncident(DuplicateIncidentException ex, HttpServletRequest request) {
         return respond(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), request.getRequestURI())
                 .withSimilar(ex.getSimilar()));
+    }
+
+    /** 429: tells the client when to retry (M14). */
+    @ExceptionHandler(RateLimitedException.class)
+    public ResponseEntity<Object> handleRateLimited(RateLimitedException ex, HttpServletRequest request) {
+        return ResponseEntity.status(ex.getStatus())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), request.getRequestURI()));
     }
 
     @ExceptionHandler(ItsmException.class)
@@ -141,6 +181,57 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         return respond(ErrorResponse.of(400, "VALIDATION_FAILED", VALIDATION_MESSAGE, request.getRequestURI())
                 .withFieldErrors(fieldErrors));
+    }
+
+    /** A multipart body that cannot be parsed (broken boundary, bad header) is the client's fault: 400, not 500. */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<Object> handleBrokenMultipart(MultipartException ex, HttpServletRequest request) {
+        log.debug("Unreadable multipart request: {}", ex.getMessage());
+        return respond(ErrorResponse.of(400, "VALIDATION_FAILED", "The upload could not be read. Send one file in "
+                + "the 'file' field.", request.getRequestURI())
+                .withFieldErrors(List.of(new ErrorResponse.FieldError("file", "could not be read"))));
+    }
+
+    // ------------------------------------------------------------------ outages (M14, DEC-42)
+
+    /**
+     * The database is not reachable: no connection from the pool, a broken connection, a transaction that cannot
+     * start. The user gets a friendly 503 in the standard body; the log keeps one line with the cause, not a trace.
+     */
+    @ExceptionHandler({CannotCreateTransactionException.class, DataAccessResourceFailureException.class,
+            JDBCConnectionException.class, SQLTransientConnectionException.class,
+            TransientDataAccessResourceException.class})
+    public ResponseEntity<Object> handleDatabaseDown(Exception ex, HttpServletRequest request) {
+        log.warn("Database unavailable on {} {} (requestId={}): {}", request.getMethod(), request.getRequestURI(),
+                MDC.get(RequestIdFilter.MDC_KEY), rootMessage(ex));
+        return unavailable(new ServiceUnavailableException(ServiceUnavailableException.Dependency.DATABASE), request);
+    }
+
+    /** Safety net: the AI paths fall back to the keyword engine, so an LLM failure should never get this far. */
+    @ExceptionHandler(LlmClient.LlmException.class)
+    public ResponseEntity<Object> handleAiDown(LlmClient.LlmException ex, HttpServletRequest request) {
+        log.warn("AI unavailable on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return unavailable(new ServiceUnavailableException(ServiceUnavailableException.Dependency.AI), request);
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<Object> handleUnavailable(ServiceUnavailableException ex, HttpServletRequest request) {
+        return unavailable(ex, request);
+    }
+
+    private static ResponseEntity<Object> unavailable(ServiceUnavailableException ex, HttpServletRequest request) {
+        return ResponseEntity.status(ex.getStatus())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(RETRY_AFTER_SECONDS))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), request.getRequestURI()));
+    }
+
+    private static String rootMessage(Throwable ex) {
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        return root.getClass().getSimpleName() + ": " + root.getMessage();
     }
 
     // ------------------------------------------------------------------ catch-all
@@ -196,6 +287,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                         HttpStatusCode status, WebRequest request) {
         String field = ex.getPropertyName() != null ? ex.getPropertyName() : "parameter";
         return validationFailed(List.of(new ErrorResponse.FieldError(field, "has an invalid value")), request);
+    }
+
+    /** An upload over the multipart limit never reaches the controller: same 400 as our own 5 MB check (M14). */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
+                                                                          HttpHeaders headers, HttpStatusCode status,
+                                                                          WebRequest request) {
+        return validationFailed(List.of(new ErrorResponse.FieldError("file", "must be at most 5 MB")), request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestPart(MissingServletRequestPartException ex,
+                                                                     HttpHeaders headers, HttpStatusCode status,
+                                                                     WebRequest request) {
+        return validationFailed(List.of(new ErrorResponse.FieldError(ex.getRequestPartName(), "is required")),
+                request);
     }
 
     /** Every other framework exception (404, 405, 415, malformed JSON, ...) ends up here. */
