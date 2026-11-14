@@ -1,6 +1,7 @@
 FROM node:20-bookworm-slim AS build
 WORKDIR /build
 COPY frontend/package*.json ./
+COPY .npmrc ./
 RUN npm ci
 COPY frontend/ .
 ARG VITE_API_BASE_URL=/api/v1
