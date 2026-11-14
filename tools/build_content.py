@@ -79,8 +79,9 @@ def priority(impact, urgency, users, service, category):
     score = int(base * multiplier)
     band = 'P1' if score >= 60 else 'P2' if score >= 30 else 'P3' if score >= 10 else 'P4'
     rule = None
-    if category == 'Security' and SERVICES[service] >= 4 and band in ('P3', 'P4'):
-        band, rule = 'P2', 'Security incident on a critical service is at least P2'
+    if category == 'Security' and SERVICES[service] >= 4:
+        band = 'P2' if band in ('P3', 'P4') else band
+        rule = 'Security incident on a critical service is at least P2'
     if service == 'Payment' and impact >= 4:
         band, rule = 'P1', 'Payment service is always P1'
     return dict(impact=impact, urgency=urgency, criticality=SERVICES[service],
@@ -89,7 +90,7 @@ def priority(impact, urgency, users, service, category):
 def write_csv(path, fields, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('w', newline='', encoding='utf-8') as f:
-        w = csv.DictWriter(f, fieldnames=fields); w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(f, fieldnames=fields, lineterminator='\n'); w.writeheader(); w.writerows(rows)
 
 def sentence_case(text):
     return text[:1].upper()+text[1:]

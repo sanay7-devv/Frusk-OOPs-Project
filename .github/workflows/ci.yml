@@ -113,6 +113,7 @@ jobs:
       DB_URL: jdbc:postgresql://localhost:5432/iitsm
       DB_USER: iitsm
       DB_PASSWORD: iitsm
+      VERIFY_DEMO_SEEDS: "true"
       PGHOST: localhost
       PGPORT: 5432
       PGDATABASE: iitsm
