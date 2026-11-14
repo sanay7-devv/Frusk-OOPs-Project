@@ -1,4 +1,4 @@
-"""Run T10/T16 against the disposable seeded stack; report unmet contracts explicitly."""
+"""Run T10/T16 against the disposable seeded stack; fail on unmet contracts."""
 import json
 from pathlib import Path
 from urllib.error import HTTPError
@@ -35,9 +35,12 @@ def main():
     results = []
     status, raw = send('/incidents', token, json.dumps(body).encode(), 'application/json')
     payload = json.loads(raw)
+    similar = payload.get('similar', [])
+    matching_seed = any(row.get('title') == 'VPN disconnects every few minutes'
+                        and row.get('similarity', 0) >= 0.80 for row in similar)
     results.append({'case': 'T16', 'check': 'duplicate warning', 'expected': '409 DUPLICATE_INCIDENT',
                     'status': status, 'response': payload,
-                    'passed': status == 409 and payload.get('code') == 'DUPLICATE_INCIDENT'})
+                    'passed': status == 409 and payload.get('code') == 'DUPLICATE_INCIDENT' and matching_seed})
     body['confirmNotDuplicate'] = True
     confirmed = request('/incidents', expected=201, method='POST', token=token, body=body)
     incident_id = confirmed['id']

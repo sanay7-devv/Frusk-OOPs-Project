@@ -16,7 +16,13 @@ Final verified implementation commit `af1fa3a699cbfac517d9f88f649a199e55b01b43`,
 
 ## The required functional cases
 
-`test_cases.csv` records the 26 handbook cases and their expected outcomes. The current matrix records seven PASS, nine PARTIAL, and ten NOT_RUN cases after the first automated workflow run. PASS may be a unit-level case where the handbook scenario is a domain boundary. PARTIAL explicitly identifies checks still required. Replace a status only after executing its complete scenario and attach the commit, date and output/screenshot. Smoke checks that overlap part of a case do not count as completion of that case.
+`test_cases.csv` records the 26 handbook cases and their expected outcomes. The matrix records 26 PASS cases, verified against the integrated backend in the implementation commit recorded on Actions run `43624315622` (2026-11-14). All six jobs passed. The run includes 40 backend tests in each seeded job (38 pass and two seed-only checks are intentionally skipped in the schema-only job), three frontend tests, seven Python generator tests, database integrity and audit protection, 40 API smoke requests, 38 Postman requests/83 assertions, and the Docker snapshot/restore round trip.
+
+Twenty-one real-HTTP integration tests cover incident workflows, permissions, lockout/token expiry, live assignment settings, SLA pause/monitor behavior, escalation and concurrent edits. T05-T07 are unit boundary tests. T10/T16 run against the seeded Docker stack: duplicate 409 then confirmed 201; executable and 6MB uploads rejected; no invalid attachments stored; valid text upload succeeds. These checks are required CI steps after their first successful run.
+
+The branch incorporates main commit `d53887fdd6be0f57abba909483ec88af4c780676`. Additive V8/V9 migrations supply its audit seal tables and attachment audit action. Docker grants the application user a writable attachment folder. Earlier migrations retain their checksums.
+
+Vercel collaborator deployment is unavailable for this team and is outside this contribution. Its blocked deployment status is separate from the passing Actions checks. Demonstrate using Docker. Reset timing on the recording laptop, the final screen recording, and repository-owner branch protection settings still require a manual check.
 
 Known integration details: the Java backend uses TF-IDF defaults for similarity rather than the handbook's original embedding thresholds. Confirm expectations for T16 against the actual engine and document the difference. The frontend's predefined demo buttons use mock tokens; type real seeded credentials to test the backend.
 

@@ -4,7 +4,7 @@ My responsibility is Testing and DevOps: make the project reproducible, provide 
 
 ## Database migrations
 
-A migration is a numbered database change. Flyway runs each migration once and records its checksum. This lets another developer start the same database without manually creating tables. V1-V6 establish the original schema; V7 adds the remaining handbook tables, relationships, indexes and append-only audit protection. V8 supplies the audit-sealing tables required by the newer backend. New corrections use new migration files so existing databases can upgrade safely.
+A migration is a numbered database change. Flyway runs each migration once and records its checksum. This lets another developer start the same database without manually creating tables. V1-V6 establish the original schema; V7 adds the remaining handbook tables, relationships, indexes and append-only audit protection. V8 supplies the audit-sealing tables required by the newer backend; V9 admits its attachment audit event. New corrections use new migration files so existing databases can upgrade safely.
 
 ## Seed data
 

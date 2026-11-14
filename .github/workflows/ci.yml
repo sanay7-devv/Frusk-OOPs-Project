@@ -181,9 +181,7 @@ jobs:
           docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo exec -T db psql -U iitsm -d iitsm -v ON_ERROR_STOP=1 < db/checks/verify.sql
       - name: Run Postman Payment lifecycle and negative cases
         run: npx --yes newman run deploy/postman/iitsm.postman_collection.json -e deploy/postman/local.postman_environment.json --reporters cli,json --reporter-json-export /tmp/iitsm-newman.json
-      - name: Report pending backend contracts (T10 and T16)
-        id: pending-contracts
-        continue-on-error: true
+      - name: Check attachment and duplicate contracts (T10 and T16)
         run: python3 deploy/handbook_contract_checks.py
       - name: Save stack logs
         if: always()
