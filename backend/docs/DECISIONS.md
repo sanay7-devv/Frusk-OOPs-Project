@@ -84,6 +84,11 @@
 | [DEC-64](#dec-64-post-incident-report-from-the-audit-trail-pdf-through-an-adapter) | Post-incident report from the audit trail, PDF through an adapter | 2026-11-14 | M10 | ✅ |
 | [DEC-65](#dec-65-feedback-and-saved-views) | Feedback and saved views | 2026-11-14 | M10 | ✅ |
 | [DEC-66](#dec-66-priority-what-if) | Priority what-if | 2026-11-14 | M10 | ✅ user decision |
+| [DEC-90](#dec-90-one-sliding-window-rate-limiter-enforced-at-the-door) | One sliding-window rate limiter, enforced at the door | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-91](#dec-91-sealed-audit-trail-s3-batch-seals-plus-one-digest-per-record) | Sealed audit trail (S3): batch seals plus one digest per record | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-92](#dec-92-password-policy) | Password policy | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-93](#dec-93-attachments) | Attachments | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-94](#dec-94-outages-answer-503-and-the-review-of-input-and-output) | Outages answer 503, and the review of input and output | 2026-11-14 | M14 | ✅ |
 
 ---
 
@@ -1464,3 +1469,125 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 **Decision.** `AutoVerifyMonitor` finds incidents RESOLVED at least `verify.auto.hours` ago (existing key, default 48, demo 0.033), re-checks each inside its own transaction, moves it to VERIFIED and then CLOSED with `ClosureReason.AUTO_VERIFIED`; both steps are audit entries with no actor. Idempotent (a closed incident is no longer RESOLVED). The interval is a new setting `verify.monitor.interval.seconds` (default 300, demo 30), read again after every run, like the other monitors, instead of the property `app.autoverify.monitor-interval-seconds` that only existed in the demo properties file (that property is now unused; the demo seed should set the new key to 30).
 
 **Cross-questions.** *"What if the reporter replies at the same moment?"* The transaction re-reads the incident; the version column makes one of the two writers lose, and the loser is retried or refused cleanly.
+
+---
+
+## M14 Hardening and the sealed audit trail (2026-11-14)
+
+### DEC-90: One sliding-window rate limiter, enforced at the door
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** One class, `RateLimiter` (`application/ratelimit`), keeps for each (bucket, key) the instants of the requests in the last 60 seconds and refuses the request that would exceed the limit: exactly "at most N in any minute", no burst at a window edge. A `RateLimitFilter` (inside the security chain, so the caller is known) enforces three limits before the controllers run, so `AuthService`, `IncidentService` and `IncidentController` know nothing about it:
+
+| Bucket | Applies to | Key | Setting (live, `app_config`) | Default |
+|---|---|---|---|---|
+| LOGIN | `POST /auth/login` | client address + e-mail from the body | `ratelimit.login.per.minute` | 10 |
+| LOGIN_ADDRESS | same call | client address alone (one address trying many e-mails) | 5 x the setting above | 50 |
+| GOOGLE | `POST /auth/google` (module M2b) | client address | the same login setting | 10 |
+| INCIDENT_CREATE | `POST /incidents` | user id | `ratelimit.incident.create.per.minute` | 20 (handbook) |
+| AI | the suggestion endpoints | user id | `ai.ratelimit.per.minute` (existing) | 20 |
+| DENIED_AUDIT | audit entries for refused requests (403) | user id, or address when not logged in | `ratelimit.denied.audit.per.minute` | 20 |
+
+`AiRateLimiter` (module M12) keeps its name and signature and now delegates to the shared limiter; its behaviour is unchanged (the smoke test checks 3 per minute, then 429). A refusal is 429 `RATE_LIMITED` in the standard body with a `Retry-After` header (seconds until the oldest counted request leaves the window).
+
+**The audit flood (DEC-42 risk on DEC-38).** Every 403 is audited, so a client looping on a forbidden call could fill `audit_records`. Per user (or address), the first N refusals of a minute are written; the next one writes a single entry "Further ACCESS_DENIED entries for user 7 are not written for the next minute (limit reached; latest: ...)"; the rest are not written. The 403 itself is always returned, and writing the audit entry never changes the answer.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **Sliding-window log** ✔ | Exact; the algorithm `AiRateLimiter` already used, so no behaviour change; easy to explain with a table of timestamps | Keeps up to N timestamps per key (tiny at this size) |
+| Token bucket | Smooth, standard in gateways | Two numbers per limit; harder to explain; changes the AI behaviour |
+| Fixed one-minute counter | Simplest | 20 requests at 10:00:59 and 20 more at 10:01:00 both pass |
+
+**Where it is enforced.** A filter, not a controller or an `AuthService` edit: the login e-mail is found by reading the first 4 KB of the body (a body over 4 KB is a 400 on login) and the body is handed on unchanged. Because the limit sits outside `AuthService`, the Google sign-in session adds its endpoint to the same rule without touching this code. Memory: login keys contain e-mail addresses, so above 10,000 tracked keys the limiter drops those with an empty window.
+
+**Trade-offs and cross-questions.** *"Is this safe behind two instances or a proxy?"* No: in memory and per instance, as DEC-42 states openly. The client address is the socket address; behind a reverse proxy the proxy must forward the real one (or every user shares one address). *"Does a limit lock a real user out?"* Only for the rest of the minute, and a different e-mail from the same address still works up to the address cap. *"Why 10 logins a minute when the account locks after 5 failures?"* The lockout (DEC-12) protects one account over time; the rate limit protects the server and slows a script that spreads attempts over many accounts.
+
+### DEC-91: Sealed audit trail (S3): batch seals plus one digest per record
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 (S3, DEC-44) | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** A scheduled job (`audit.seal.interval.seconds`, default 300, demo 30) seals the audit records written since the last seal: it takes their digests, adds the previous seal's hash and stores the SHA-256 of the lot in `audit_seals (id, from_id, to_id, record_count, hash, prev_hash, created_at)`. A second table, `audit_seal_entries (record_id, seal_id, digest)`, keeps the digest of every sealed record. `GET /audit/verify` recomputes everything and answers which record, or which seal, no longer matches; `POST /audit/seal` ("seal now", administrators) seals immediately for the demo. Each new seal hash is written to the application log (`AUDIT SEAL #7 covers records 120-161 ... hash=...`), a place outside the database. Neither call is itself audited (a seal run writing audit records would never finish sealing).
+
+**Why a second table.** DEC-44 promised "the system names the altered record". With only the agreed `audit_seals` table, verification can say "seal 7, records 120 to 161, is wrong" but not which of the 42 rows changed. One digest row per record makes the answer exact, at the price of one more table (listed for the Testing teammate). `audit_records` itself is untouched, so the write path takes no lock and the V5 trigger stays optional.
+
+**What is hashed.** Record digest = SHA-256 of `id|createdAt (microseconds)|actorId|action|incidentId|previousState|newState|description` (`-` for a null column; description last, so a `|` in it is harmless). Seal hash = SHA-256 of `prevHash|fromId|toId|count|digest1,digest2,...`. Both rules live in `AuditSealing` (domain), used by sealing and verifying alike, so they cannot drift apart. The first seal's previous hash is 64 zeros.
+
+**What verify reports.** `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem, problems[]}` where a problem is `{recordId, sealId, problem, message}`:
+
+| Problem | Meaning | Example |
+|---|---|---|
+| `RECORD_CHANGED` | a record's content differs from what was sealed | someone edits row 140 in SQL: `firstProblem = {recordId: 140, sealId: 7, problem: RECORD_CHANGED}` |
+| `RECORD_MISSING` | a sealed record was deleted | row 140 deleted |
+| `RECORD_INSERTED` | a record sits inside a sealed id range but was never sealed | a row forged with a low id |
+| `SEAL_ENTRIES_MISSING` | the number of digest rows differs from `record_count` | digest rows removed |
+| `SEAL_ALTERED` | the seal hash does not match its own entries | `audit_seals` edited |
+| `SEAL_CHAIN_BROKEN` | a seal does not continue from the one before | a seal removed or `prev_hash` edited |
+
+Records newer than the last seal are reported as `unsealedRecords` (at most one interval of exposure). The verifier is pure domain code (`AuditChainVerifier`), so it can be tested without a database.
+
+**Settling time.** An audit row gets its id when it is inserted but becomes visible when its transaction commits. A scheduled run therefore seals only records older than 10 seconds, so a slow transaction cannot leave a lower id appearing after a higher one was sealed (which would look like `RECORD_INSERTED`). "Seal now" skips the wait. An advisory lock (`pg_advisory_xact_lock`) lets only one instance seal at a time.
+
+**Options considered.** (a) Seals plus per-record digests (chosen); (b) only `audit_seals`: names a range, not the record; (c) one seal per record: doubles the writes of the busiest table. Hash columns on every record (DEC-44's other option) would serialise concurrent writers.
+
+**Cross-questions.** *"Is this a blockchain?"* No: a hash chain kept by one party; it proves integrity, not consensus. *"What if the attacker recomputes the seals?"* They must rewrite the digest table and every later seal; the seal hashes already written to the log (or mailed to the IT manager) cannot be changed from the database, and the latest one is shown by verify for comparison. *"What does the V5 trigger add?"* Prevention; the seals add proof. *"What about records written in the last five minutes?"* Reported as unsealed, never as intact-by-default.
+
+### DEC-92: Password policy
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** The contract rule stays (8 to 72 characters, one letter, one digit; API Data Dictionary C.3) and three rules are added, in the pure domain class `PasswordPolicy`: at most 72 **bytes** (72 accented letters are 144 bytes, which BCrypt cannot hash); not a common password (about 110 base words such as `password`, `qwerty`, `welcome`, `iloveyou`, `iitsm`, alone or followed by up to four digits or symbols: `Password1`, `Welcome123!`); and not containing the e-mail's part before the `@` (4 or more characters) or a word of the person's name (4 or more characters). A class-level validator `@ValidPassword` on `RegisterRequest` and `CreateUserRequest` reports the broken rule on the `password` field of the usual `fieldErrors`, so there is **no change to `AuthService`**. The login request now limits the password to 200 characters, so a huge body is never hashed.
+
+**Options considered.** (A) contract + blocklist + no personal part (chosen: NIST SP 800-63B favours a blocklist and length over composition rules, and the seed and test passwords keep working); (B) add upper, lower, digit and symbol rules (NIST advises against, and it would break the seeds); (C) A plus a setting for the minimum length (more to explain, no gain here).
+
+**Effect on the existing smoke scripts.** `auth_smoke.py` registers "Smoke User" with a password that starts with "Smoke": the name rule refuses it (400 on `password`). Expected; the script's password needs another prefix (reported to the supervisor, not edited).
+
+**Cross-questions.** *"Why not check against a breach list?"* It needs a large file or an external service; the short blocklist covers the passwords tried first. *"Is a password reset in scope?"* No (A12, last priority).
+
+### DEC-93: Attachments
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** `POST /incidents/{id}/attachments` (multipart field `file`), `GET /incidents/{id}/attachments`, `GET /attachments/{id}/download`, as in the contract. Rules, all checked in `AttachmentService` and the domain classes `AttachmentType` and `AttachmentName`:
+
+| Rule | How |
+|---|---|
+| Who | The people who may see the incident (`IncidentAccessPolicy.canView`, read-only call); anyone else gets 404 `INCIDENT_NOT_FOUND` on the incident routes and 404 `NOT_FOUND` on a download, so nothing reveals that a file exists |
+| Type | png, jpg, jpeg, gif, pdf, txt, log, decided from the **first bytes** (magic numbers; text must be valid UTF-8 without control characters), never from the content type the browser sent; the file name's extension must also belong to the sniffed type (a PDF called `x.png` is refused); the stored content type is the sniffed one |
+| Size | 5 MB (5,242,880 bytes is accepted, one more is not); the multipart limit of Spring is 6 MB so our own message appears; a larger upload is also a 400 in the standard body, never a stack trace |
+| Count | at most 10 per incident |
+| Names | the display name keeps only the last path segment, replaces control characters and `< > : " \| ? * ; %`, drops leading dots and is cut to 200 characters; the file on disk has a random UUID name |
+| Storage | outside the web root, in `app.attachments.dir` (env `ATTACHMENTS_DIR`, default `./data/attachments`, git-ignored): `<dir>/<incidentId>/<uuid>`, no extension, no user text in the path, and every resolved path is checked to stay inside the folder; the row in `incident_attachments` keeps the relative path |
+| Download | `Content-Disposition: attachment`, the sniffed content type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`, so the browser never renders or runs an upload on the API's origin |
+| Audit | every upload is an `ATTACHMENT_ADDED` entry in the same transaction ("Attachment added: name (type, bytes)") |
+| Consistency | the file is written before the row; if the transaction rolls back, an after-completion hook deletes the file. A row whose file vanished from the disk answers 404, not 500 |
+
+The bytes go through an `AttachmentStorage` port with `DiskAttachmentStorage` as the Adapter, so a cloud bucket could replace the disk later without touching the service.
+
+**Options considered.** Disk folder from a property (chosen: Appendix A has `storage_path`, a Docker volume can be mounted there); a folder under the user's home (differs per machine); bytes in the database (the schema has no column for them). **Trade-off.** Files and rows can drift if someone deletes the folder; the download answers 404 and the backup must cover both.
+
+**Cross-questions.** *"A virus scan?"* Out of scope; types are limited to inert formats and are never executed or rendered by the server. *"Why not trust the extension?"* A renamed program passes an extension check; the first bytes do not lie as easily. *"SVG?"* Not allowed: it can carry script.
+
+### DEC-94: Outages answer 503, and the review of input and output
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ | Backend lead (follows DEC-42, "Outage behaviour") |
+
+**Decision.** *Database down:* a connection that cannot be had (`CannotCreateTransactionException`, `DataAccessResourceFailureException`, `JDBCConnectionException`, `SQLTransientConnectionException`, `TransientDataAccessResourceException`) is answered by the global handler with 503 `SERVICE_UNAVAILABLE` in the standard body ("The service is temporarily unavailable (database not reachable)...") plus `Retry-After: 30`; the log gets one WARN line with the root cause, not a trace. The pool's `connection-timeout` is 3 seconds (`DB_CONNECT_TIMEOUT_MS`), so the answer comes in seconds, not 30. The pool recovers by itself when the database returns (verified). *AI down:* the suggestion paths already fall back to the keyword engine (DEC-M12-5), so the user normally never sees an AI failure; as a safety net an `LlmException` that escapes is 503 as well (the AI message). Every operation in the generated contract lists 503.
+
+**Input review.** Every request body was read. Added: `@Size` on the login e-mail and password, refresh token, config key and value, and on the lists (`dependencyIds`, `requiredSkillIds`, technician `skills`, the saved-view filter map); a malformed multipart body is a 400, not a 500. Everything else already had type, range and length rules.
+
+**Output encoding.** The API returns JSON, which encodes text itself; the HTML e-mail escapes user text (`EmailChannel.escape`), the CSV export neutralises formulas (DEC-62), the PDF is built from a typed model, and downloads are always attachments with `nosniff`.
+
+**Cross-questions.** *"Why not 500 for a database error?"* 500 says "our bug"; 503 says "try again", which is what the user should do, and the contract and the frontend can treat it differently. *"Does a request that needs no database (a valid token on a cached setting) still work?"* Yes; only what touches the database fails.

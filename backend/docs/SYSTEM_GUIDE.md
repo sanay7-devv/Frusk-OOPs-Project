@@ -1684,6 +1684,98 @@ In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forwar
 
 ---
 
+## 12g. M14 Hardening and the sealed audit trail
+
+Built 2026-11-14 (decisions DEC-90 to DEC-94). Six protections that make the system safe to demonstrate: it throttles abusers, accepts only safe files, answers politely when a dependency is down, refuses weak passwords, and can prove its audit log has not been tampered with.
+
+### 12g.1 What it adds
+
+| Item | Where | Endpoints and rules |
+|---|---|---|
+| Rate limits | `RateLimiter`, `RateLimitFilter`, `AiRateLimiter` (delegates) | login 10/min per address+e-mail (50/min per address), incident creation 20/min per user, AI 20/min per user, 429 `RATE_LIMITED` with `Retry-After` |
+| Audit flood guard | `GlobalExceptionHandler.auditDenied` | 20 ACCESS_DENIED entries per user per minute, then one summary entry |
+| Attachments | `AttachmentService`, `AttachmentController`, `DiskAttachmentStorage` | `POST /incidents/{id}/attachments`, `GET /incidents/{id}/attachments`, `GET /attachments/{id}/download` |
+| Outages | `GlobalExceptionHandler`, `ServiceUnavailableException` | 503 `SERVICE_UNAVAILABLE`, `Retry-After: 30`, no trace |
+| Password policy | `PasswordPolicy`, `@ValidPassword` | register and admin-created users |
+| Sealed audit trail (S3) | `AuditSealService`, `AuditSealJob`, `AuditChainVerifier`, `AuditSealController` | `GET /audit/verify`, `POST /audit/seal` (permission `AUDIT_VIEW`) |
+
+### 12g.2 Rate limiting
+
+```mermaid
+flowchart LR
+    R[Request] --> F{RateLimitFilter}
+    F -->|"POST /auth/login"| L["LOGIN: address + e-mail<br/>LOGIN_ADDRESS: address"]
+    F -->|"POST /auth/google"| G["GOOGLE: address"]
+    F -->|"POST /incidents"| I["INCIDENT_CREATE: user"]
+    L & G & I --> RL[("RateLimiter<br/>sliding window, 60 s")]
+    RL -->|"over the limit"| E["429 RATE_LIMITED<br/>Retry-After: seconds"]
+    RL -->|"ok"| C[Controller]
+    AI[IntelligenceService] --> AR[AiRateLimiter] --> RL
+    EH[GlobalExceptionHandler, 403] --> RL
+```
+
+Worked example (limit 5 a minute): requests at 10:00:00, :10, :20, :30, :40 pass; the sixth at 10:00:45 is refused with `Retry-After: 16` (the first request leaves the window at 10:01:00); at 10:01:01 one request passes again. The limits are live settings: `ratelimit.login.per.minute` (10), `ratelimit.incident.create.per.minute` (20), `ratelimit.denied.audit.per.minute` (20), and the existing `ai.ratelimit.per.minute` (20). Reads are never limited. In memory and per instance (DEC-42).
+
+### 12g.3 Attachments
+
+```mermaid
+flowchart TD
+    U[multipart upload] --> V{participant of the incident?}
+    V -->|no| N404[404 INCIDENT_NOT_FOUND]
+    V -->|yes| S{"size 1 byte to 5 MB?<br/>fewer than 10 files?"}
+    S -->|no| B400[400 VALIDATION_FAILED on file]
+    S -->|yes| T{"first bytes: png jpg gif pdf or UTF-8 text?<br/>extension matches?"}
+    T -->|no| B400
+    T -->|yes| W["write &lt;dir&gt;/&lt;incidentId&gt;/&lt;uuid&gt;<br/>insert incident_attachments row<br/>audit ATTACHMENT_ADDED"]
+```
+
+The `Attachment` object is `{id, incidentId, filename, contentType, sizeBytes, uploadedBy {id, name}, createdAt}`; the storage path never leaves the server. Table `incident_attachments` is Appendix A (`id, incident_id, filename VARCHAR(200), content_type VARCHAR(80), size_bytes, storage_path VARCHAR(300), uploaded_by, created_at`). Setting: `app.attachments.dir` (env `ATTACHMENTS_DIR`, default `./data/attachments`).
+
+### 12g.4 Outages
+
+| Failure | Answer |
+|---|---|
+| Database not reachable | 503 `SERVICE_UNAVAILABLE`, standard body, `Retry-After: 30`; one WARN line in the log; pool timeout 3 s (`DB_CONNECT_TIMEOUT_MS`); recovers when the database returns |
+| AI service down | the keyword engine answers (M12); an escaping `LlmException` is also 503 |
+
+### 12g.5 Password policy
+
+Contract rule (8 to 72 characters, a letter and a digit) plus: at most 72 bytes; not in the blocklist (about 110 common words, alone or with up to 4 trailing digits or symbols); no e-mail local part (4+ characters) and no name word (4+ characters). Examples: `Password1` 400 "is too common"; `Tr4in-lamp-91ab` accepted; for `asha.rao@x.edu` the password `asha.rao2026` is refused.
+
+### 12g.6 Sealed audit trail (S3)
+
+```mermaid
+flowchart LR
+    subgraph "audit_records (append only)"
+    R1[101] --- R2[102] --- R3[103] --- R4[104] --- R5[105]
+    end
+    R1 & R2 & R3 -->|"digests + prev hash 000...0"| S1["seal #1<br/>records 101-103<br/>hash H1"]
+    R4 & R5 -->|"digests + H1"| S2["seal #2<br/>records 104-105<br/>hash H2"]
+    S1 --> S2
+    S2 -->|"hash written to the log"| LOG[(application log)]
+```
+
+Tables: `audit_seals (id, from_id, to_id, record_count, hash, prev_hash, created_at)` and `audit_seal_entries (record_id, seal_id, digest)`. `AuditSealJob` runs every `audit.seal.interval.seconds` (300; demo 30) and seals records older than 10 seconds; `POST /audit/seal` seals now (200 with the seal, 204 if nothing is new). `GET /audit/verify` returns `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem, problems[]}`.
+
+Demo (two minutes): create an incident, press Seal, edit one audit row in SQL (`update audit_records set description = description || ' x' where id = 140`), press Verify: `firstProblem = {recordId: 140, sealId: 7, problem: "RECORD_CHANGED"}`. Problem kinds: `RECORD_CHANGED`, `RECORD_MISSING`, `RECORD_INSERTED`, `SEAL_ENTRIES_MISSING`, `SEAL_ALTERED`, `SEAL_CHAIN_BROKEN` (DEC-91). Patterns: Observer is unchanged (sealing reads the trail, it does not listen); the verifier is a pure domain function; `AuditSealRepository` is a Repository; the log line is the external witness.
+
+### 12g.7 New settings
+
+| Key | Default | Range | Meaning |
+|---|---|---|---|
+| `ratelimit.login.per.minute` | 10 | 1 to 1000 | Login attempts per address and e-mail (address alone: 5 x); Google sign-in per address |
+| `ratelimit.incident.create.per.minute` | 20 | 1 to 1000 | Incidents one user may create per minute |
+| `ratelimit.denied.audit.per.minute` | 20 | 1 to 1000 | ACCESS_DENIED entries written per user per minute |
+| `audit.seal.interval.seconds` | 300 | 10 to 86400 | How often new audit records are sealed |
+
+`app_config` has four more keys than after M11 (this module only); properties: `app.attachments.dir`, `spring.servlet.multipart.max-file-size=6MB`, `spring.datasource.hikari.connection-timeout=3000`.
+
+### 12g.8 Verified behavior (2026-11-14)
+
+`m14_smoke.py` (81 checks, own database): attachments (good PNG, log, PDF, JPEG, GIF; a program renamed `.png`, a PDF named `.png`, binary named `.txt`, empty, 5 MB + 1 byte, 8 MB, wrong content type refused; exactly 5 MB accepted; path and special characters cleaned; 11th file refused; stranger gets 404 on list, upload and download; bytes and headers equal on download; 10 audit entries; missing file on disk is 404), outage (Postgres container stopped: GET, login and attachments answer 503 in the standard body without trace and with `Retry-After`; the next request after the restart succeeds), password policy (7 refusals, 2 acceptances, including 42 accented letters), input limits, rate limits (login 5 then 429 with `Retry-After`, creation 4 then 429, a second user unaffected, reads unlimited, AI 3 then 429, 30 forbidden calls write 5 + 1 audit entries), and the seal chain (seal, nothing new gives 204, a second seal chains to the first, a tampered row is named `RECORD_CHANGED`, a deleted row `RECORD_MISSING`, an edited seal `SEAL_ALTERED`, an edited link `SEAL_CHAIN_BROKEN`, each restored state is intact again, seal hashes appear in the log). `auth_smoke.py` (27, after changing its password prefix), `m4_smoke.py` (54/54) and `m8_smoke.py` (24/24) pass against the same build.
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
