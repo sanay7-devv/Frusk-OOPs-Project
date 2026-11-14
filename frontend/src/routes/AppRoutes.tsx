@@ -14,7 +14,7 @@ import TechWorkload from '../features/technician/TechWorkload';
 import TeamQueue from '../features/lead/TeamQueue';
 import Escalations from '../features/lead/Escalations';
 import Dashboard from '../features/admin/Dashboard';
-import AllIncidents from '../features/admin/AllIncidents';
+import Tickets from '../features/admin/Tickets';
 import AdminIncidentDetail from '../features/admin/AdminIncidentDetail';
 import Users from '../features/admin/Users';
 import Services from '../features/admin/Services';
@@ -27,8 +27,6 @@ import AuditLog from '../features/admin/AuditLog';
 import Reports from '../features/admin/Reports';
 import Register from '../features/shared/Register';
 import Login from '../features/shared/Login';
-
-import Employes from '../features/admin/Employees';
 
 function RootRedirect() {
   const { user, workspace, workspaces } = useAuth();
@@ -68,13 +66,17 @@ export default function AppRoutes() {
           {/* these are all file paths which routed leads to that file */}
           <Route element={<RequireWorkspace workspace="admin" />}>
             <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/incidents" element={<AllIncidents />} />
+            <Route path="/admin/tickets" element={<Tickets />} />
+            <Route path="/admin/tickets/:id" element={<AdminIncidentDetail />} />
+            <Route path="/admin/incidents" element={<Navigate to="/admin/tickets" replace />} />
             <Route path="/admin/incidents/:id" element={<AdminIncidentDetail />} />
             <Route path="/admin/users" element={<Users />} />
-            <Route path="/admin/employees" element={<Employes />} />
+            <Route path="/admin/employees" element={<Navigate to="/admin/users" replace />} />
             <Route path="/admin/services" element={<Services />} />
             <Route path="/admin/services/graph" element={<ServiceGraph />} />
+            <Route path="/admin/dependency-graph" element={<Navigate to="/admin/services/graph" replace />} />
             <Route path="/admin/sla" element={<SlaPolicies />} />
+            <Route path="/admin/sla-policies" element={<Navigate to="/admin/sla" replace />} />
             <Route path="/admin/categories" element={<Categories />} />
             <Route path="/admin/config" element={<Config />} />
             <Route path="/admin/escalation" element={<EscalationSettings />} />
