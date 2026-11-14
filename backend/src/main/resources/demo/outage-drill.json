@@ -1,0 +1,27 @@
+{
+  "note": "Texts of the outage drill (D2, demo profile only). {root} is the service that fails, {service} the service the incident is filed on. Edit freely; keep every description at 20 characters or more.",
+  "root": [
+    {
+      "title": "{root} is down for everyone",
+      "description": "{root} has stopped responding. Nobody can use it since a few minutes and the error page says the service is unavailable.",
+      "impact": 5, "urgency": 5, "affectedUsers": 120
+    },
+    {
+      "title": "{root} not responding, service unavailable",
+      "description": "{root} stopped responding and shows an error page that the service is unavailable. Nobody on our floor can use {root}.",
+      "impact": 5, "urgency": 5, "affectedUsers": 40
+    }
+  ],
+  "dependent": [
+    {
+      "title": "{service} fails with errors",
+      "description": "Everything in {service} fails with connection errors since a few minutes. Colleagues report the same problem.",
+      "impact": 4, "urgency": 5, "affectedUsers": 25
+    },
+    {
+      "title": "{service} cannot load any data",
+      "description": "{service} opens but cannot load any data, every page times out. It worked fine this morning.",
+      "impact": 4, "urgency": 4, "affectedUsers": 15
+    }
+  ]
+}

@@ -20,5 +20,7 @@ public enum IncidentAction {
     ESCALATE,
     OVERRIDE_PRIORITY,
     MARK_DUPLICATE,
-    GIVE_FEEDBACK
+    GIVE_FEEDBACK,
+    /** The reporter takes the report back before work starts (decision DEC-46, G3; addition to C.2). */
+    WITHDRAW
 }

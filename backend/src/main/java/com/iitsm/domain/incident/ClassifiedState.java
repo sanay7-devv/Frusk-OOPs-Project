@@ -8,7 +8,7 @@ import com.iitsm.domain.exception.InvalidStateTransitionException;
 import com.iitsm.domain.user.User;
 
 /** Status CLASSIFIED. */
-final class ClassifiedState extends IncidentState {
+final class ClassifiedState extends OpenState {
 
     @Override
     public IncidentStatus status() {
@@ -16,8 +16,8 @@ final class ClassifiedState extends IncidentState {
     }
 
     @Override
-    public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
-        return Set.of(IncidentAction.ASSIGN);
+    Set<IncidentAction> ownActions(Incident incident, Instant now, Duration reopenWindow) {
+        return Set.of(IncidentAction.ASSIGN, IncidentAction.WITHDRAW);
     }
 
     /** In triage with nobody to take it: the escalation monitor watches it from level 0 (DEC-48). */
@@ -35,5 +35,11 @@ final class ClassifiedState extends IncidentState {
         }
         giveTo(incident, technician);
         incident.moveTo(IncidentStatus.ASSIGNED, now);
+    }
+
+    /** The reporter withdraws the report before work starts (G3). */
+    @Override
+    void withdraw(Incident incident, String reason, Instant now) {
+        withdrawBeforeWork(incident, reason, now);
     }
 }

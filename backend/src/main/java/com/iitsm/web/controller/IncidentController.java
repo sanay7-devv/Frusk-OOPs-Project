@@ -21,6 +21,7 @@ import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.audit.AuditService.AuditEntryView;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.escalation.EscalationService;
+import com.iitsm.application.incident.IncidentCreationService;
 import com.iitsm.application.incident.IncidentService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
@@ -34,6 +35,7 @@ import com.iitsm.web.dto.PageResponse;
 import com.iitsm.web.dto.incident.AssignRequest;
 import com.iitsm.web.dto.incident.CommentRequest;
 import com.iitsm.web.dto.incident.CreateIncidentRequest;
+import com.iitsm.web.dto.incident.MarkDuplicateRequest;
 import com.iitsm.web.dto.incident.OverridePriorityRequest;
 import com.iitsm.web.dto.incident.ProvideInfoRequest;
 import com.iitsm.web.dto.incident.ReasonRequest;
@@ -63,21 +65,25 @@ public class IncidentController {
     private static final Set<String> SORT_FIELDS = Set.of("createdAt", "priority", "status", "code", "resolutionDue");
 
     private final IncidentService incidents;
+    private final IncidentCreationService creation;
     private final EscalationService escalation;
 
-    public IncidentController(IncidentService incidents, EscalationService escalation) {
+    public IncidentController(IncidentService incidents, IncidentCreationService creation,
+                              EscalationService escalation) {
         this.incidents = incidents;
+        this.creation = creation;
         this.escalation = escalation;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Report an incident: classified, prioritized and given SLA deadlines on creation")
-    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND, ErrorCode.SLA_NOT_CONFIGURED})
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND, ErrorCode.SLA_NOT_CONFIGURED, ErrorCode.DUPLICATE_INCIDENT})
     public IncidentDetail create(@AuthenticationPrincipal AuthenticatedUser caller,
                                  @Valid @RequestBody CreateIncidentRequest request) {
-        return incidents.create(caller, request.title(), request.description(), request.serviceId(),
-                request.categoryId(), request.impact(), request.urgency(), request.affectedUsers());
+        return creation.create(caller, request.title(), request.description(), request.serviceId(),
+                request.categoryId(), request.impact(), request.urgency(), request.affectedUsers(),
+                Boolean.TRUE.equals(request.confirmNotDuplicate()));
     }
 
     @GetMapping
@@ -274,6 +280,33 @@ public class IncidentController {
     public IncidentDetail reopen(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                  @Valid @RequestBody ReasonRequest request) {
         return incidents.reopen(caller, id, request.reason());
+    }
+
+    @PostMapping("/{id}/withdraw")
+    @Operation(summary = "Withdraw the report before work starts (reporter; CLASSIFIED, ASSIGNED or ACKNOWLEDGED); "
+            + "closes as WITHDRAWN")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.VALIDATION_FAILED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
+    public IncidentDetail withdraw(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                   @Valid @RequestBody ReasonRequest request) {
+        return incidents.withdraw(caller, id, request.reason());
+    }
+
+    @PostMapping("/{id}/mark-duplicate")
+    @Operation(summary = "Close as a duplicate of another incident (admin, team lead); audited as DUPLICATE_LINKED")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.VALIDATION_FAILED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
+    public IncidentDetail markDuplicate(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                        @Valid @RequestBody MarkDuplicateRequest request) {
+        return incidents.markDuplicate(caller, id, request.duplicateOfId());
     }
 
     @PostMapping("/{id}/override-priority")

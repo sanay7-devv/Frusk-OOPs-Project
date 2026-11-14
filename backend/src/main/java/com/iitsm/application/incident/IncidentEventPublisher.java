@@ -40,6 +40,15 @@ public class IncidentEventPublisher {
         publish(incident, facts.get(0), actor, description);
     }
 
+    /**
+     * Publishes one fact as an entry hidden from reporters (an internal note); {@code text} is the wording after the
+     * internal marker, for example "added by Ravi".
+     */
+    public void publishInternal(Incident incident, IncidentFact fact, User actor, String text) {
+        events.publishEvent(new IncidentChanged(incident.getId(), incident.getCode(), fact.action(),
+                actor == null ? null : actor.getId(), fact.before(), fact.after(), text, clock.instant(), true));
+    }
+
     /** Publishes one fact; {@code actor} is null for steps the system performs itself. */
     public void publish(Incident incident, IncidentFact fact, User actor, String description) {
         events.publishEvent(new IncidentChanged(incident.getId(), incident.getCode(), fact.action(),
