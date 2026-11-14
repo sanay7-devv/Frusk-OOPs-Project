@@ -8252,7 +8252,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
           description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
             \ quote the request ID"
-      summary: Resolve every open incident of the record with one fix (administrator)
+      summary: "Resolve the whole problem: every open incident of the record gets\
+        \ one fix (admin, team lead)"
       tags:
       - Problems
   /api/v1/problems/{id}/root-cause:
