@@ -435,3 +435,20 @@ Entry template:
 - Verified: `m11_smoke.py` 78/78 on a fresh database, `m9_smoke.py` 72/72 (no regression), then the new `smoke-tests/e034_check.py` 12/12 on the m11 data (three hops tell lead, system admin, IT manager once each; the exhausted alert and its SMS reach every administrator; a passed-over level tells nobody; a manual escalator is not told about their own hop).
 - Prevention: when two parallel branches meet at an event, list the event's publisher and listener in both branches' decision entries and check the pair after the merge.
 - Status: fixed
+
+### E-035: Regression of the merged build (M12 rest, M13, M14, M2b): findings
+- Date: 2026-11-14
+- Area: tests (smoke scripts) and notifications
+- Symptom: on the first runs of the shared suites against `backend/integrate-m12-m14` several suites failed: m9 5 checks, m12b 12 then 5, m2b 0 checks run, m12 not started, m11 4 and `e034_check.py` 3, m14 1, endpoint sweep 3 failures and 6 operations never hit.
+- Cause, one by one (only the first is a behavior issue):
+  1. **Notifications (DEC-110):** M12 records `DUPLICATE_LINKED` both when an incident is closed as a duplicate and when it is merely grouped into a problem record; M9 announced both as "INC-x may be a duplicate". A reporter who had confirmed "not a duplicate" was told it may be one, and every grouping sent extra mails, which broke m9's mail counts.
+  2. **Password policy (M14):** m2b, m12b and auth registered users whose passwords contained a word of the user's name ("Smoke ..."; m12b's joiner password contained the run id, which is part of the name). The policy refused them, so later calls ran without a token (401).
+  3. **Duplicate check (M12):** scripts that create similar incidents on one service got 409 `DUPLICATE_INCIDENT` (m14's create helper among them).
+  4. **Shared database:** m9, m11 and `e034_check.py` count mails, violations or every holder of a level; data of other suites (and one extra administrator created by the regression prep) changed the counts.
+  5. **Fake LLM in m12b:** with `LLM_PROVIDER=fake` the scripted client picks the first category sharing a 4+ letter word with the text; m12b's run id is in every category name and description, so every text matched "Authentication <id>".
+  6. **Sweep:** the M13 part assumed App still depends on Database (the core sweep removes that dependency earlier); the M12 part joined an outage as the employee who had already reported it (the backend correctly returns their own incident); the six `/notifications` operations had never been in the sweep since M9.
+  7. **Runner:** `python -I` drops the script folder from the import path, so `m12_smoke.py` could not import `m12_common`.
+- Fix: (1) `NotificationRules.announced`: `DUPLICATE_LINKED` notifies only when the incident is closed (user decision DEC-110). (2) to (7) in the scripts only (outside git): passwords without name words, `confirmNotDuplicate` on creates, `ai.primary=KEYWORD` in m12b, the sweep parts corrected and an M9 part added, scripts read `SMOKE_PORT` / `SMOKE_DB`, each counting suite on its own fresh database, m12 run without `-I`.
+- Verified (each on a fresh database): auth 27/27, m3 42/42, m4 54/54, m6 33/33, m7 35/35, m8 24/24, calendar 11/11, m9 72/72, m10 135/135, m11 78/78, `e034_check.py` 12/12, m12 55/55, m12b 107/107, outage drill 9/9 (demo profile), m13 72/72 (1-minute tokens), m14 81/81 (incl. the database-outage 503), m2b 32/32; `endpoint_sweep.py` 119/119 with coverage 117/117; `check_contract.py` clean (117 operations, 0 planned).
+- Prevention: Testing teammate: test and seed passwords must not contain the user's name or e-mail part; suites that count anything need their own database; when two modules share an audit action, check what the notification mapping makes of each use.
+- Status: fixed
