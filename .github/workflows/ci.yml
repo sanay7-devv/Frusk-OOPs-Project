@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   backend-build:
-    name: Backend compile
+    name: Backend priority tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -24,12 +24,11 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      # The backend's current Spring context test needs Flyway migrations and a
-      # test database. Those files have not been handed off yet, so this first
-      # CI step verifies compilation without claiming the backend tests pass.
-      - name: Compile backend
+      # Run the independent domain test while the Spring/Flyway integration
+      # suite waits for the backend schema handoff.
+      - name: Run priority unit tests
         working-directory: backend
-        run: bash ./mvnw --batch-mode --no-transfer-progress -DskipTests package
+        run: bash ./mvnw --batch-mode --no-transfer-progress -Dtest=PriorityEngineTest test
 
   frontend-test:
     name: Frontend tests
