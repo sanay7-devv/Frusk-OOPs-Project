@@ -85,10 +85,10 @@
 | [DEC-65](#dec-65-feedback-and-saved-views) | Feedback and saved views | 2026-11-14 | M10 | ✅ |
 | [DEC-66](#dec-66-priority-what-if) | Priority what-if | 2026-11-14 | M10 | ✅ user decision |
 | [DEC-80](#dec-80-who-may-use-the-dashboard-topic-and-how-destinations-are-checked) | Who may use the dashboard topic and how destinations are checked | 2026-11-14 | M13 | ✅ |
-| [DEC-81](#dec-81-what-the-dashboard-pushes-events-then-counters-at-most-once-a-second) | What the dashboard pushes: events, then counters at most once a second | 2026-11-14 | M13 | ✅ recommended option, pending user |
-| [DEC-82](#dec-82-the-socket-closes-at-token-expiry) | The socket closes at token expiry | 2026-11-14 | M13 | ✅ recommended option, pending user |
+| [DEC-81](#dec-81-what-the-dashboard-pushes-events-then-counters-at-most-once-a-second) | What the dashboard pushes: events, then counters at most once a second | 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14) |
+| [DEC-82](#dec-82-the-socket-closes-at-token-expiry) | The socket closes at token expiry | 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14) |
 | [DEC-83](#dec-83-servicegraph-one-plain-class-for-three-walks) | `ServiceGraph`: one plain class for three walks | 2026-11-14 | M13 | ✅ |
-| [DEC-84](#dec-84-e1-service-status-board) | E1 service status board | 2026-11-14 | M13 | ✅ recommended option, pending user |
+| [DEC-84](#dec-84-e1-service-status-board) | E1 service status board | 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14) |
 
 ---
 
@@ -1491,7 +1491,7 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 
 | When | Module | Status |
 |---|---|---|
-| 2026-11-14 | M13 | ✅ built with the recommended option; sent to the user for confirmation (alternatives: counters inside every event, or events only) |
+| 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14, option A) |
 
 **Decision.** Two message shapes on `/topic/dashboard`: (1) `DashboardEvent {type, incidentId, code, priority, status, at}` for each incident event (types are `NotificationEventType` values, plus `SLA_WARNING` and `SLA_VIOLATED`; pipeline steps without a type are not pushed), (2) `{type: "COUNTERS", counters {total, open, critical, resolved, slaViolations}, byPriority, at}` after a change (at most once a second) and every `dashboard.counters.interval.seconds` (30) in silence. Counters use the definitions of `/reports/overview` over all incidents, from the same query, so the two can never disagree. `GET /dashboard/live` returns the same counters, `byPriority` (open incidents per priority, P1 to P4 always listed), the last 20 events (read from the audit trail, newest first, so they survive a restart) and up to 10 `atRisk` incidents: open, no SLA violated yet, and either a resolution warning was sent, the risk scan flagged it (M12), or a response warning was sent before acknowledgement.
 
@@ -1507,7 +1507,7 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 
 | When | Module | Status |
 |---|---|---|
-| 2026-11-14 | M13 | ✅ built with the recommended option; sent to the user for confirmation (alternatives: a sweeper job, or token refresh over the open socket) |
+| 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14, option A) |
 
 **Decision.** On CONNECT the interceptor records the token's expiry; a decorator around Spring's WebSocket handler (`WebSocketSessions`) knows the open sessions, and one scheduled task per session closes it with code 4001 `TOKEN_EXPIRED` at that second. Every frame after the expiry is also refused. The client refreshes its token, reconnects, and polls meanwhile (contract B.5). This closes the DEC-10 window for sockets.
 
@@ -1535,7 +1535,7 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 
 | When | Module | Status |
 |---|---|---|
-| 2026-11-14 | M13 | ✅ built with the recommended option; sent to the user for confirmation (alternatives: P1 and P2 counts only, or a total count only; direct dependencies only) |
+| 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14, option A) |
 
 **Decision.** `GET /api/v1/services/status`, any logged-in user. `{basis: "REPORTED_INCIDENTS", label: "Based on reported incidents", windowDays, generatedAt, services: [{id, name, criticality, status, reason, causedBy [{id, name, distance}], open {total, P1..P4}, slaCompliancePercent, slaJudged}]}`. OUTAGE: an open P1 on the service. DEGRADED: an open P2, or an OUTAGE on any service it depends on, at any distance (`causedBy` names them, nearest first). Otherwise HEALTHY. Open counts include P3 and P4 but only P1, P2 and upstream outages change the status. SLA compliance is the SLA compliance report's definition (`met / judged`) over incidents created in the last `status.sla.window.days` (30) days, null when nothing was judged. Sorted OUTAGE, DEGRADED, HEALTHY, then name; active services only.
 
