@@ -25,7 +25,8 @@ public enum ErrorCode {
     SLA_NOT_CONFIGURED(422, "No SLA policy for that service and priority"),
     ACCOUNT_LOCKED(423, "Too many failed logins; try again later"),
     RATE_LIMITED(429, "Too many requests"),
-    INTERNAL_ERROR(500, "Unexpected failure; no details exposed, quote the request ID");
+    INTERNAL_ERROR(500, "Unexpected failure; no details exposed, quote the request ID"),
+    SERVICE_UNAVAILABLE(503, "The database or the AI service is down; try again shortly (M14, DEC-42)");
 
     private final int status;
     private final String meaning;

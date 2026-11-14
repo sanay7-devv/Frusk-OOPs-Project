@@ -10,5 +10,5 @@ public record CategoryRequest(
         @NotBlank @Size(min = 2, max = 60) String name,
         Long parentId,
         Boolean active,
-        List<Long> requiredSkillIds) {
+        @Size(max = 100) List<Long> requiredSkillIds) {
 }
