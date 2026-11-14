@@ -8,7 +8,7 @@ import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.user.User;
 
 /** Status IN_PROGRESS. */
-final class InProgressState extends IncidentState {
+final class InProgressState extends OpenState {
 
     @Override
     public IncidentStatus status() {
@@ -16,7 +16,7 @@ final class InProgressState extends IncidentState {
     }
 
     @Override
-    public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
+    Set<IncidentAction> ownActions(Incident incident, Instant now, Duration reopenWindow) {
         return withEscalate(incident, IncidentAction.REQUEST_INFO, IncidentAction.RESOLVE, IncidentAction.REASSIGN);
     }
 

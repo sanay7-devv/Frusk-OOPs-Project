@@ -131,7 +131,7 @@ public class EscalationMonitor {
                 + target.getLabel() + "): " + why + "; " + who);
         events.publishEvent(new IncidentEscalated(incident.getId(), incident.getCode(), incident.getPriority(),
                 step.fromLevel(), incident.getEscalationLevel(), target, ids(holders),
-                assignee == null ? null : assignee.getId(), false, now));
+                assignee == null ? null : assignee.getId(), false, null, now));
         log.info("Escalated {} to level {} ({}), {} recipient(s)", incident.getCode(), incident.getEscalationLevel(),
                 target.getLabel(), holders.size());
         return !holders.isEmpty();

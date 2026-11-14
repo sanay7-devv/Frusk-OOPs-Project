@@ -144,10 +144,50 @@ public enum ConfigKey {
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
     SECURITY_LOCKOUT_MINUTES("security.lockout.minutes", "15", "Minutes an account stays locked",
-            Type.INTEGER, "1", "1440");
+            Type.INTEGER, "1", "1440"),
+
+    // Google sign-in (module M2b, session D, DEC-102)
+    AUTH_GOOGLE_AUTOREGISTER("auth.google.autoregister", "false",
+            "Whether an unknown email signing in with Google gets a new EMPLOYEE account (false: only existing accounts link)",
+            Type.CHOICE, "true", "false"),
+
+    // ---- session B (M13 real-time, dashboard, service graph, E1 status board)
+    DASHBOARD_COUNTERS_INTERVAL_SECONDS("dashboard.counters.interval.seconds", "30",
+            "How often the live dashboard counters are pushed even when nothing changes", Type.INTEGER, "5", "3600"),
+    STATUS_SLA_WINDOW_DAYS("status.sla.window.days", "30",
+            "Days of incidents behind the SLA compliance shown on the service status board", Type.INTEGER, "1", "365"),
+
+    // M14 hardening (session C, DEC-90 to DEC-93)
+    RATELIMIT_LOGIN_PER_MINUTE("ratelimit.login.per.minute", "10",
+            "Login attempts per client address and e-mail (Google sign-in: per address) per minute (429 above)",
+            Type.INTEGER, "1", "1000"),
+    RATELIMIT_INCIDENT_CREATE_PER_MINUTE("ratelimit.incident.create.per.minute", "20",
+            "Incidents one user may create per minute (429 above)", Type.INTEGER, "1", "1000"),
+    RATELIMIT_DENIED_AUDIT_PER_MINUTE("ratelimit.denied.audit.per.minute", "20",
+            "ACCESS_DENIED audit entries written per user (or address) per minute; the rest is summarised in one entry",
+            Type.INTEGER, "1", "1000"),
+    AUDIT_SEAL_INTERVAL_SECONDS("audit.seal.interval.seconds", "300",
+            "How often new audit records are sealed (tamper evidence, S3)", Type.INTEGER, "10", "86400"),
+
+    // ---- session A: M12 rest (duplicates, problem records, Major Incident Mode, E2, A1, D2) and C3 ----
+    PRIORITY_SECURITY_CATEGORY("priority.security.category", "Security",
+            "Category (with everything under it) that triggers priority override rule 1", Type.TEXT, "100"),
+    AUTOCAT_APPLY_CONFIDENCE("autocat.apply.confidence", "0.60",
+            "Confidence from which a suggested category is applied when the reporter gave none (DEC-70)",
+            Type.DECIMAL, "0", "1"),
+    PROBLEM_CORRELATION_WINDOW_MINUTES("problem.correlation.window.minutes", "60",
+            "Minutes an open P1 or P2 on a neighbouring service may be old and still pull a new incident into its "
+                    + "problem record", Type.INTEGER, "1", "10080"),
+    RECURRING_MIN_COUNT("recurring.min.count", "3",
+            "Times one service and category must be resolved inside the window to be proposed as a recurring problem",
+            Type.INTEGER, "2", "1000"),
+    RECURRING_WINDOW_DAYS("recurring.window.days", "30", "Look-back window of the recurring-problem detector",
+            Type.INTEGER, "1", "365"),
+    RECURRING_MIN_REOPENS("recurring.min.reopens", "2",
+            "Reopens from which an incident is proposed as a recurring problem", Type.INTEGER, "1", "100");
 
     /** The kind of value a key holds. */
-    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }
+    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL, TEXT }
 
     private final String key;
     private final String defaultValue;
@@ -207,6 +247,10 @@ public enum ConfigKey {
                     ? Optional.empty()
                     : Optional.of("must be an email address like no-reply@iitsm.local");
             case URL, OPTIONAL_URL -> trimmed.isEmpty() ? Optional.empty() : checkHttpUrl(trimmed);
+            // TEXT: one line, at most {max length} characters
+            case TEXT -> trimmed.length() > Integer.parseInt(constraints.get(0)) || trimmed.lines().count() > 1
+                    ? Optional.of("must be one line of at most " + constraints.get(0) + " characters")
+                    : Optional.empty();
         };
     }
 

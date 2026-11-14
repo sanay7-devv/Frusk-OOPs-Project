@@ -367,3 +367,88 @@ Entry template:
 - Fix: M12's feature commit `5d993b3` was merged instead of the broken merge commit; ids were renumbered (M9 is DEC-54 and D-028, M12 D-029, M11 D-030 and section 12d, M10 section 12b); `planned-endpoints.json` was merged as JSON (a three-way merge by key); `m11_smoke.py` counts only `EscalationMonitor` log lines; the settings count is 63 (35 plus 6 M9, 6 M10, 2 M11, 14 M12) in the two older suites and in `TEAM_UPDATES.md`.
 - Prevention: before merging parallel branches, grep each one for `<<<<<<<`; give parallel sessions disjoint id ranges up front; regenerate `planned-endpoints.json` from `gen_planned.py` rather than merging it; count settings from `ConfigKey.values().length`, not a literal (Testing teammate).
 - Status: fixed
+
+### E-M13-1: Long smoke scripts fail with 401 when the backend runs with 1-minute tokens
+
+- Date: 2026-11-14
+- Area: tests (smoke scripts)
+- Symptom: `m9_smoke.py` stopped after 65 checks with `KeyError: 'id'` (an incident request returned an error body).
+- Cause: the token-expiry check of `m13_smoke.py` needs `APP_JWT_ACCESS_TOKEN_MINUTES=1`; with that setting every token in a script that runs longer than a minute expires, so later calls answer 401.
+- Fix: run `m13_smoke.py` against a backend started with `APP_JWT_ACCESS_TOKEN_MINUTES=1` (with the default 15 the expiry check is skipped and says so), and every other script against a backend with the default.
+- Prevention: the header of `m13_smoke.py` states the setting; the script reads the token lifetime from the token itself.
+- Status: fixed
+
+### E-M14-1: A broken multipart upload answered 500
+- Date: 2026-11-14
+- Area: web
+- Symptom: `POST /incidents/{id}/attachments` with a file name containing a double quote (a malformed `Content-Disposition` header) returned 500 INTERNAL_ERROR and logged a stack trace.
+- Cause: Spring throws `MultipartException` ("Failed to parse multipart servlet request") before the controller runs; no handler existed, so the catch-all produced the 500.
+- Fix: `GlobalExceptionHandler.handleBrokenMultipart` answers 400 `VALIDATION_FAILED` with `fieldErrors: [{field: "file", message: "could not be read"}]`; uploads over the multipart limit (6 MB) get the same 400 from `handleMaxUploadSizeExceededException`, and a missing `file` part from `handleMissingServletRequestPart`.
+- Prevention: `m14_smoke.py` sends an 8 MB file, a quote in the file name and a wrong content type, and expects 400 or 415 in the standard body, never 500.
+- Status: fixed
+
+### E-M14-2: auth_smoke.py failed after the password policy
+- Date: 2026-11-14
+- Area: other
+- Symptom: `auth_smoke.py` registers "Smoke User" and got 400 on `password` instead of 201 (7 checks failed).
+- Cause: the script's password starts with "Smoke", a word of the name; the new rule (DEC-92) refuses passwords that contain a name word of 4 or more characters.
+- Fix: none in code (the rule is intended). The script's password prefix has to change (for example `PW = "Ab9-Zq" + secrets.token_hex(4) + "9"`); with that change it passes 27/27. The shared script was not edited by session C (reported to the supervisor).
+- Prevention: test passwords must not contain the test user's name or e-mail part.
+- Status: open until the shared script is changed
+
+### E-M12B-1: The reporter edit lock answered 403 for a closed incident
+
+- Date: 2026-11-14
+- Area: M4 incidents, G4 (DEC-77)
+- Symptom: `m4_smoke.py` check "edit after resolution -> 409 INVALID_STATE_TRANSITION" returned 403 `UNAUTHORIZED_OPERATION` after the edit lock was added.
+- Cause: the lock ran before the status was considered, so a reporter changing `impact` on a CLOSED incident was told "wrong person" instead of "wrong moment" (the E-018 rule: 403 is the wrong person, 409 the wrong status).
+- Fix: `IncidentService.update` applies the lock only while `status.isEditable()`; for a resolved or closed incident the state machine answers 409 as before.
+- Prevention: any new permission check on an action must run after the status check when both can refuse; the smoke suite already covers the closed case.
+- Status: fixed
+
+### E-M12B-2: Older smoke scripts see 409 and applied categories after the duplicate check
+
+- Date: 2026-11-14
+- Area: M12 (DEC-70, DEC-71, DEC-72), test scripts
+- Symptom: `m4_smoke.py`, `m6_smoke.py` and `m10_smoke.py` failed on the first run against the new build: `POST /incidents` answered 409 `DUPLICATE_INCIDENT` for the many incidents they file with the same title ("Something is broken") on one service; incidents created without a category were suddenly classified and assigned; in `m10_smoke.py` resolving one incident also resolved a second one filed with almost the same text (see E-M12B-3).
+- Cause: not defects. The duplicate check (409 at TF-IDF 0.55 on the same service), the applied AI category (a confident suggestion at 0.60) and the problem-record grouping are the approved behaviour; the scripts were written when none of them existed.
+- Fix: the scripts are not edited by this session. Patched copies were used to prove nothing else changed: `confirmNotDuplicate: true` in their create helper, and `autocat.apply.confidence = 1` to keep triage cases in triage. Result: `m4` 52/54 (the two expected differences below), `m6` 33/33, `m8` 24/24, `m12` 55/55, `m11` 74/78 on a database of its own (the 4 failures are the triage cases C and D: a P1 filed without a category is now classified by the AI suggestion and assigned; they pass with `autocat.apply.confidence = 1` or with a category-less title the engine cannot match; the recipient-count failures seen on a shared database disappear on a fresh one). Expected differences left in `m4_smoke.py`: the reporter's `allowedActions` now ends with `WITHDRAW` (G3), and T24 edits `impact` as the reporter on an assigned incident, which G4 now refuses with 403 (edit the description, or send the PUTs as an administrator).
+- Prevention: list of places in `TEAM_UPDATES.md`; run `m11_smoke.py` on a database that no other suite has used (it counts recipients: every extra administrator or team lead from another suite changes the counts).
+- Status: fixed (documented; scripts to be updated by their owner)
+
+### E-M12B-3: Resolving the lead of a problem record closed related incidents (found by `m10_smoke.py`)
+
+- Date: 2026-11-14
+- Area: M12 problem records (DEC-72)
+- Symptom: in `m10_smoke.py` the check "setup: resolve, verify, in progress, request-info worked" failed with 409: the second incident (same service, almost the same text) was already RESOLVED when its technician tried to resolve it.
+- Cause: the first version of DEC-72 resolved every open incident of a record when its lead was resolved. A record also holds *related* incidents (text similarity from 0.35, or a neighbouring service within the window), and those do not necessarily share the fix.
+- Fix: the user changed DEC-72 ("go with A"): resolving the lead resolves nothing; staff get one internal note on each other open incident, and a team lead or administrator closes the whole record with `POST /problems/{id}/resolve`. `m10_smoke.py` passes 135/135 again (with `confirmNotDuplicate` in its create helper).
+- Prevention: grouping by relatedness must never trigger an irreversible action by itself; the smoke suites that file near-identical incidents on one service are the regression net.
+
+### E-034: Escalation notifications after the merge do not follow DEC-49 and DEC-50
+- Date: 2026-11-14
+- Area: app
+- Symptom: found by reading the code while bringing the docs up to date (not yet seen in a run). `NotificationListener` has no handler for `IncidentEscalated` or `EscalationExhausted`; escalations are notified only through the `IncidentChanged` ESCALATED action, whose audience OWNER is resolved by `GlobalTeamResolver.escalationTargets(incident, incident.getEscalationLevel())`.
+- Cause: M9 and M11 were built in parallel. M11 publishes its own events with `recipientIds` and expects M9 to listen (DEC-50 point 7); M9 maps ESCALATED by itself and never saw those events.
+- Consequences: (1) the exhausted alert goes to the IT managers (level 3 holders) with the ordinary escalation wording, not to every administrator with SMS for P1 (DEC-49); (2) the level is read after commit, so when one run passes over an empty level, every hop's notice goes to the holders of the final level; (3) an empty level falls back to all administrators instead of "nobody, passed over" (DEC-50 point 5); (4) nothing listens to `SlaAtRisk` (known, DEC-M12-8).
+- Fix (2026-11-14): `NotificationListener` now handles `IncidentEscalated` and `EscalationExhausted`; `NotificationPlanner.plan(IncidentEscalated)` tells exactly `recipientIds` (audience OWNER, level taken from the event's `toLevel`) plus the assignee, and never the person who escalated by hand (new field `IncidentEscalated.actorId`, null for the monitor); a hop with no recipients posts nothing to the chat room. `plan(EscalationExhausted)` tells every administrator in the event with the new template `INCIDENT_ESCALATED.admin.*` ("Escalation exhausted: ..."); SMS for P1 follows from `NotificationRules`. `NotificationEventType.forAction(ESCALATED)` now returns empty, so the audit action no longer produces a second, wrongly addressed notice. `SlaAtRisk` still has no listener (DEC-M12-8, unchanged).
+- Verified: `m11_smoke.py` 78/78 on a fresh database, `m9_smoke.py` 72/72 (no regression), then the new `smoke-tests/e034_check.py` 12/12 on the m11 data (three hops tell lead, system admin, IT manager once each; the exhausted alert and its SMS reach every administrator; a passed-over level tells nobody; a manual escalator is not told about their own hop).
+- Prevention: when two parallel branches meet at an event, list the event's publisher and listener in both branches' decision entries and check the pair after the merge.
+- Status: fixed
+
+### E-035: Regression of the merged build (M12 rest, M13, M14, M2b): findings
+- Date: 2026-11-14
+- Area: tests (smoke scripts) and notifications
+- Symptom: on the first runs of the shared suites against `backend/integrate-m12-m14` several suites failed: m9 5 checks, m12b 12 then 5, m2b 0 checks run, m12 not started, m11 4 and `e034_check.py` 3, m14 1, endpoint sweep 3 failures and 6 operations never hit.
+- Cause, one by one (only the first is a behavior issue):
+  1. **Notifications (DEC-110):** M12 records `DUPLICATE_LINKED` both when an incident is closed as a duplicate and when it is merely grouped into a problem record; M9 announced both as "INC-x may be a duplicate". A reporter who had confirmed "not a duplicate" was told it may be one, and every grouping sent extra mails, which broke m9's mail counts.
+  2. **Password policy (M14):** m2b, m12b and auth registered users whose passwords contained a word of the user's name ("Smoke ..."; m12b's joiner password contained the run id, which is part of the name). The policy refused them, so later calls ran without a token (401).
+  3. **Duplicate check (M12):** scripts that create similar incidents on one service got 409 `DUPLICATE_INCIDENT` (m14's create helper among them).
+  4. **Shared database:** m9, m11 and `e034_check.py` count mails, violations or every holder of a level; data of other suites (and one extra administrator created by the regression prep) changed the counts.
+  5. **Fake LLM in m12b:** with `LLM_PROVIDER=fake` the scripted client picks the first category sharing a 4+ letter word with the text; m12b's run id is in every category name and description, so every text matched "Authentication <id>".
+  6. **Sweep:** the M13 part assumed App still depends on Database (the core sweep removes that dependency earlier); the M12 part joined an outage as the employee who had already reported it (the backend correctly returns their own incident); the six `/notifications` operations had never been in the sweep since M9.
+  7. **Runner:** `python -I` drops the script folder from the import path, so `m12_smoke.py` could not import `m12_common`.
+- Fix: (1) `NotificationRules.announced`: `DUPLICATE_LINKED` notifies only when the incident is closed (user decision DEC-110). (2) to (7) in the scripts only (outside git): passwords without name words, `confirmNotDuplicate` on creates, `ai.primary=KEYWORD` in m12b, the sweep parts corrected and an M9 part added, scripts read `SMOKE_PORT` / `SMOKE_DB`, each counting suite on its own fresh database, m12 run without `-I`.
+- Verified (each on a fresh database): auth 27/27, m3 42/42, m4 54/54, m6 33/33, m7 35/35, m8 24/24, calendar 11/11, m9 72/72, m10 135/135, m11 78/78, `e034_check.py` 12/12, m12 55/55, m12b 107/107, outage drill 9/9 (demo profile), m13 72/72 (1-minute tokens), m14 81/81 (incl. the database-outage 503), m2b 32/32; `endpoint_sweep.py` 119/119 with coverage 117/117; `check_contract.py` clean (117 operations, 0 planned).
+- Prevention: Testing teammate: test and seed passwords must not contain the user's name or e-mail part; suites that count anything need their own database; when two modules share an audit action, check what the notification mapping makes of each use.
+- Status: fixed

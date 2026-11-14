@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.iitsm.domain.event.EscalationExhausted;
 import com.iitsm.domain.event.IncidentChanged;
+import com.iitsm.domain.event.IncidentEscalated;
 import com.iitsm.domain.event.SlaRunCompleted;
 import com.iitsm.domain.event.SlaViolated;
 import com.iitsm.domain.event.SlaWarning;
@@ -60,6 +62,19 @@ public class NotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void on(SlaViolated event) {
         run("SLA violation on " + event.incidentCode(), () -> planner.plan(event), dispatcher::dispatch);
+    }
+
+    @Async("notificationExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void on(IncidentEscalated event) {
+        run("escalation of " + event.incidentCode() + " to level " + event.toLevel(),
+                () -> planner.plan(event), dispatcher::dispatch);
+    }
+
+    @Async("notificationExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void on(EscalationExhausted event) {
+        run("exhausted escalation of " + event.incidentCode(), () -> planner.plan(event), dispatcher::dispatch);
     }
 
     @Async("notificationExecutor")

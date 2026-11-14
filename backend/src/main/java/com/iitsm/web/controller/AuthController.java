@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.iitsm.application.auth.AuthService;
 import com.iitsm.application.auth.AuthenticatedUser;
+import com.iitsm.application.auth.GoogleSignInService;
 import com.iitsm.web.dto.auth.AuthResponse;
 import com.iitsm.web.dto.auth.CurrentUserResponse;
+import com.iitsm.web.dto.auth.GoogleLoginRequest;
 import com.iitsm.web.dto.auth.LoginRequest;
 import com.iitsm.web.dto.auth.RefreshTokenRequest;
 import com.iitsm.web.dto.auth.RegisterRequest;
@@ -31,9 +33,11 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleSignInService googleSignIn;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GoogleSignInService googleSignIn) {
         this.authService = authService;
+        this.googleSignIn = googleSignIn;
     }
 
     @PostMapping("/register")
@@ -51,6 +55,15 @@ public class AuthController {
     @ApiErrors({ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return AuthResponse.from(authService.login(request.email(), request.password()));
+    }
+
+    @PostMapping("/google")
+    @SecurityRequirements
+    @Operation(summary = "Sign in with a Google ID token (links an existing account by verified email; "
+            + "new accounts only when auto-registration is on)")
+    @ApiErrors({ErrorCode.TOKEN_INVALID, ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
+    public AuthResponse google(@Valid @RequestBody GoogleLoginRequest request) {
+        return AuthResponse.from(googleSignIn.signIn(request.idToken()));
     }
 
     @PostMapping("/refresh")

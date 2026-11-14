@@ -18,7 +18,9 @@ import static com.iitsm.domain.notification.Audience.TEAM_LEAD;
  * <p>
  * The single {@code IncidentChanged} event carries an {@link AuditAction}; {@link #forAction} maps it onto one of
  * these types (decision DEC-54). Actions without a type (classified, priority calculated, work started, comment
- * added) notify nobody.
+ * added) notify nobody. ESCALATED is not mapped either: escalations are announced from the escalation module's own
+ * events ({@code IncidentEscalated}, {@code EscalationExhausted}), which carry the exact recipients of each hop
+ * (ERROR_LOG E-034).
  */
 public enum NotificationEventType {
 
@@ -63,10 +65,9 @@ public enum NotificationEventType {
             case VERIFIED -> INCIDENT_VERIFIED;
             case CLOSED -> INCIDENT_CLOSED;
             case REOPENED -> INCIDENT_REOPENED;
-            case ESCALATED -> INCIDENT_ESCALATED;
             case DUPLICATE_LINKED -> DUPLICATE_SUSPECTED;
-            case CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED, SLA_WARNING, SLA_VIOLATED,
-                 LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED -> null;
+            case ESCALATED, CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED, SLA_WARNING, SLA_VIOLATED,
+                 LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED, ATTACHMENT_ADDED -> null;
         });
     }
 }

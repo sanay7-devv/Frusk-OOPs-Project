@@ -6,6 +6,7 @@ import com.iitsm.domain.user.Availability;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -15,5 +16,5 @@ public record TechnicianRequest(
         @NotNull @Min(0) @Max(1) Integer escalationLevel,
         @Min(1) @Max(50) Integer maxLoad,
         Availability availability,
-        List<@Valid SkillLevelRequest> skills) {
+        @Size(max = 200) List<@Valid SkillLevelRequest> skills) {
 }

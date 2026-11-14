@@ -17,7 +17,7 @@
 | [DEC-01](#dec-01-layered-monolith-with-four-layers) | Layered monolith with four layers | 2026-10-15 | Setup | ✅ |
 | [DEC-02](#dec-02-spring-boot-411-instead-of-3x) | Spring Boot 4.1.1 instead of 3.x | 2026-10-15 | Setup | ✅ (supersedes 3.5) |
 | [DEC-03](#dec-03-postgresql-with-flyway-migrations) | PostgreSQL with Flyway migrations | 2026-10-15 | Setup | ✅ |
-| [DEC-04](#dec-04-google-sign-in-as-an-extra-not-a-replacement) | Google sign-in as an extra, not a replacement | 2026-10-15 | M2b | ✅ (not built yet) |
+| [DEC-04](#dec-04-google-sign-in-as-an-extra-not-a-replacement) | Google sign-in as an extra, not a replacement | 2026-10-15 | M2b | ✅ built 2026-11-14 |
 | [DEC-05](#dec-05-one-global-error-handler-and-one-error-shape) | One global error handler and one error shape | 2026-10-16 | M1 | ✅ |
 | [DEC-06](#dec-06-request-id-in-a-header-not-in-the-error-body) | Request ID in a header, not in the error body | 2026-10-16 | M1 | ✅ |
 | [DEC-07](#dec-07-temporary-schema-auto-profile) | Temporary `schema-auto` profile | 2026-11-06 | M2 | ⏳ |
@@ -84,6 +84,30 @@
 | [DEC-64](#dec-64-post-incident-report-from-the-audit-trail-pdf-through-an-adapter) | Post-incident report from the audit trail, PDF through an adapter | 2026-11-14 | M10 | ✅ |
 | [DEC-65](#dec-65-feedback-and-saved-views) | Feedback and saved views | 2026-11-14 | M10 | ✅ |
 | [DEC-66](#dec-66-priority-what-if) | Priority what-if | 2026-11-14 | M10 | ✅ user decision |
+| [DEC-100](#dec-100-google-id-tokens-verified-with-jjwt-and-googles-published-keys) | Google ID tokens verified with JJWT and Google's published keys | 2026-11-14 | M2b | ✅ user decision |
+| [DEC-101](#dec-101-the-offline-fake-verifier-and-how-it-is-switched-on) | The offline fake verifier and how it is switched on | 2026-11-14 | M2b | ✅ user decision |
+| [DEC-102](#dec-102-google-sign-in-rules-and-which-error-answers-what) | Google sign-in rules and which error answers what | 2026-11-14 | M2b | ✅ user decision |
+| [DEC-103](#dec-103-small-choices-in-google-sign-in) | Small choices in Google sign-in | 2026-11-14 | M2b | ✅ |
+| [DEC-80](#dec-80-who-may-use-the-dashboard-topic-and-how-destinations-are-checked) | Who may use the dashboard topic and how destinations are checked | 2026-11-14 | M13 | ✅ |
+| [DEC-81](#dec-81-what-the-dashboard-pushes-events-then-counters-at-most-once-a-second) | What the dashboard pushes: events, then counters at most once a second | 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14) |
+| [DEC-82](#dec-82-the-socket-closes-at-token-expiry) | The socket closes at token expiry | 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14) |
+| [DEC-83](#dec-83-servicegraph-one-plain-class-for-three-walks) | `ServiceGraph`: one plain class for three walks | 2026-11-14 | M13 | ✅ |
+| [DEC-84](#dec-84-e1-service-status-board) | E1 service status board | 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14) |
+| [DEC-90](#dec-90-one-sliding-window-rate-limiter-enforced-at-the-door) | One sliding-window rate limiter, enforced at the door | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-91](#dec-91-sealed-audit-trail-s3-batch-seals-plus-one-digest-per-record) | Sealed audit trail (S3): batch seals plus one digest per record | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-92](#dec-92-password-policy) | Password policy | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-93](#dec-93-attachments) | Attachments | 2026-11-14 | M14 | ✅ user decision |
+| [DEC-94](#dec-94-outages-answer-503-and-the-review-of-input-and-output) | Outages answer 503, and the review of input and output | 2026-11-14 | M14 | ✅ |
+| [DEC-70](#dec-70-a-confident-ai-category-is-applied-when-the-reporter-gives-none) | A confident AI category is applied when the reporter gives none | 2026-11-14 | M4, M12 | ✅ user decision |
+| [DEC-71](#dec-71-duplicate-check-on-create-and-correlation-into-problem-records) | Duplicate check on create and correlation into problem records | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-72](#dec-72-problem-record-lifecycle) | Problem-record lifecycle | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-73](#dec-73-major-incident-mode-known-outage-one-click-join-climbing-priority-root-cause) | Major Incident Mode: known outage, one-click join, climbing priority, root cause | 2026-11-14 | M12 (S2) | ✅ user decision |
+| [DEC-74](#dec-74-e2-recurring-problem-detector) | E2 recurring-problem detector | 2026-11-14 | M12 (E2) | ✅ user decision |
+| [DEC-75](#dec-75-a1-chatbot-intake-without-a-key) | A1 chatbot intake without a key | 2026-11-14 | M12 (A1) | ✅ user decision |
+| [DEC-76](#dec-76-d2-outage-drill) | D2 outage drill | 2026-11-14 | M12 (D2) | ✅ user decision |
+| [DEC-77](#dec-77-basic-parts-withdraw-mark-duplicate-reporter-edit-lock-security-setting) | Basic parts: withdraw, mark-duplicate, reporter edit lock, security setting | 2026-11-14 | M4, M10, M12, M14 | ✅ user decision |
+| [DEC-78](#dec-78-actions-keep-answering-403-to-people-who-cannot-see-the-incident-t18) | Actions keep answering 403 to people who cannot see the incident (T18) | 2026-11-14 | M14 risk of DEC-42 | ✅ user decision |
+| [DEC-110](#dec-110-grouping-into-a-problem-record-is-not-announced) | Grouping into a problem record is not announced | 2026-11-14 | M9 + M12 | ✅ user decision |
 
 ---
 
@@ -149,7 +173,7 @@
 
 | When | Module | Status | Also in |
 |---|---|---|---|
-| 2026-10-15 | M2b | ✅ approved, not built yet | ROADMAP D-001 |
+| 2026-10-15 | M2b | ✅ approved, built 2026-11-14 (DEC-100 to DEC-103) | ROADMAP D-001 |
 
 **Decision.** Keep email and password login; add `POST /auth/google` that verifies a Google ID token and returns the same JWT tokens. `password_hash` becomes nullable and `google_sub` is added.
 
@@ -1060,7 +1084,7 @@ Smaller rules the handbook left open:
 
 ## M11 Escalation decisions (2026-11-13)
 
-> Two open questions from the design review (DEC-42) were put to the user with options before M11 is built. Nothing is built yet.
+> Two open questions from the design review (DEC-42) were put to the user with options before M11 was built. Both were built with M11 on 2026-11-14 (DEC-50); the exhausted alert reaches every administrator since the E-034 fix the same day.
 
 ### DEC-48: An unassigned P1 or P2 in triage escalates from level 0
 
@@ -1132,7 +1156,7 @@ Smaller rules the handbook left open:
 | RESOLVED, CLOSED | INCIDENT_RESOLVED, INCIDENT_CLOSED | reporter |
 | VERIFIED, REOPENED | INCIDENT_VERIFIED, INCIDENT_REOPENED | assignee |
 | ESCALATED | INCIDENT_ESCALATED | holders of the new level (critical), assignee |
-| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (used by M12) |
+| DUPLICATE_LINKED | DUPLICATE_SUSPECTED | reporter, assignee (used by M12); since DEC-110 only when the incident is closed as a duplicate, not when it is grouped into a problem record |
 | CLASSIFIED, PRIORITY_CALCULATED, WORK_STARTED, COMMENT_ADDED | none | nobody: a pipeline step, or too chatty |
 
 `TriageNeeded` gives TRIAGE_NEEDED to every team lead; `SlaWarning` gives SLA_WARNING to the assignee (team leads when unassigned); `SlaViolated` gives SLA_VIOLATED to every administrator (critical) and the assignee.
@@ -1464,3 +1488,423 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 **Decision.** `AutoVerifyMonitor` finds incidents RESOLVED at least `verify.auto.hours` ago (existing key, default 48, demo 0.033), re-checks each inside its own transaction, moves it to VERIFIED and then CLOSED with `ClosureReason.AUTO_VERIFIED`; both steps are audit entries with no actor. Idempotent (a closed incident is no longer RESOLVED). The interval is a new setting `verify.monitor.interval.seconds` (default 300, demo 30), read again after every run, like the other monitors, instead of the property `app.autoverify.monitor-interval-seconds` that only existed in the demo properties file (that property is now unused; the demo seed should set the new key to 30).
 
 **Cross-questions.** *"What if the reporter replies at the same moment?"* The transaction re-reads the incident; the version column makes one of the two writers lose, and the loser is retried or refused cleanly.
+
+---
+
+## M2b Google sign-in (session D, DEC-100 to DEC-109)
+
+### DEC-100: Google ID tokens verified with JJWT and Google's published keys
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ user decision | User ("Approve all", recommended option) |
+
+**Decision.** `JjwtGoogleIdTokenVerifier` parses the token with JJWT (already in the project). A `GoogleJwksKeyLocator` fetches Google's key set from `https://www.googleapis.com/oauth2/v3/certs` with `java.net.http`, picks the key by the token's `kid` header, accepts only RS256, caches the keys for the `Cache-Control: max-age` Google sends (one hour if missing) and refetches early (at most once a minute) when it sees an unknown `kid`. After the signature and expiry (one minute of clock skew) are good, `GoogleClaimsChecker` checks issuer (`accounts.google.com` or `https://accounts.google.com`), audience (equal to `GOOGLE_CLIENT_ID`), and that subject and email exist. If Google's keys cannot be fetched and nothing is cached, sign-in answers 503 `SERVICE_UNAVAILABLE`; it never accepts an unchecked token.
+
+**Options.** (a) JJWT plus our own key fetch (chosen: no new dependency, every check visible in our own classes); (b) Google's `google-api-client` verifier (least code, but about 3 MB of dependencies and the checks are hidden); (c) Nimbus JOSE+JWT (good key caching, but a second JWT library beside JJWT).
+
+**Why.** The verification is the security-relevant part of the feature, so it should be readable in class. It also keeps the Adapter pattern visible: `GoogleIdTokenVerifier` is the port in `application.auth`, the adapters live in `infrastructure.google`.
+
+**Cross-questions.** *"Why not the oauth2-client starter?"* The frontend already holds the ID token from the Google button; the backend only has to check it, not run the OAuth redirect flow (D-001). *"What if Google rotates keys?"* An unknown `kid` triggers one refetch. *"What if Google is down?"* Cached keys keep working; with an empty cache the answer is 503, not a bypass.
+
+### DEC-101: The offline fake verifier and how it is switched on
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ user decision | User ("Approve all", recommended option) |
+
+**Decision.** Property `app.google.verifier` (env `GOOGLE_VERIFIER`), `google` by default or `fake`. The fake accepts HS256 tokens signed with a fixed key and passes them through the same `GoogleClaimsChecker`, so expiry, issuer and audience are really tested. `GoogleSignInConfig` refuses to start with `fake` unless the `dev`, `demo` or `test` profile is active.
+
+**Options.** (a) Property with a profile guard (chosen); (b) property without the guard (a stray setting in production would let anyone mint a token); (c) a separate `google-fake` Spring profile (more moving parts for the same result).
+
+**Cross-questions.** *"Is the fixed key a back door?"* It exists only when the property says `fake`, and the application will not start that way outside the three non-production profiles (same idea as DEC-52).
+
+### DEC-102: Google sign-in rules and which error answers what
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ user decision | User ("Approve all", recommended option) |
+
+**Decision.** `POST /auth/google {idToken}` returns the normal `AuthResponse`.
+- A bad token (signature, expiry, audience, issuer, missing claims) gives 401 `TOKEN_INVALID`.
+- Account-level problems give 401 `INVALID_CREDENTIALS`, the same answer as a wrong password: `email_verified` false, no account with auto-registration off, deactivated account, or an account already linked to a different Google subject. Nothing is linked in those cases.
+- A locked account gives 423 `ACCOUNT_LOCKED`, even with a valid token.
+- Every failure is audited as `LOGIN_FAILED` ("Failed Google login: ...", user id when known). Google failures do not add to `failed_logins` (a signed token cannot be guessed, and counting them would let anyone lock a victim out). A success resets the counter.
+- The account is found by `google_sub` first (it never changes), then by the verified email, which links it by storing `google_sub`.
+- Auto-registration is the `app_config` key `auth.google.autoregister` (`true` or `false`, default `false`): a new EMPLOYEE-only user, `password_hash` NULL, name from the token or the part before the `@`. A Google-only user's password login answers `INVALID_CREDENTIALS` (D-001).
+
+**Options.** (b) specific codes such as `GOOGLE_EMAIL_UNVERIFIED` (clearer for the login page, but tells strangers whether an email has an account and needs new contract entries); (c) count unverified and deactivated attempts toward lockout (consistent with passwords, but lets anyone with a Google account lock a victim by sending the victim's email).
+
+**Cross-questions.** *"Why link by email at all?"* Only because Google states the email is verified; an unverified email is never trusted. *"What stops account takeover through a recycled email?"* Once linked, the `google_sub` is checked first and a different sub on the same email is refused.
+
+### DEC-103: Small choices in Google sign-in
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ | Backend lead (session D) |
+
+**Decision.** (1) `GoogleSignInService` is a new class; `AuthService` changed in one line only (`issueTokens` is package-visible), so session C's password-policy edits merge cleanly. (2) `POST /auth/google` is in `SecurityConfig.PUBLIC_PATHS`; rate limiting comes from session C's login interceptor, keyed by IP. (3) Failed key fetches answer 503 with the code `SERVICE_UNAVAILABLE`; the shared `ErrorCode` enum was not touched. (4) Rejection reasons (wrong audience, expired, ...) go only to the audit trail, never to the caller. (5) A blank `GOOGLE_CLIENT_ID` makes every Google sign-in fail (logged as a warning at startup) rather than accept any audience.
+
+**Cross-questions.** *"Why a separate service?"* Single responsibility: password flows and the Google flow share only token issuing.
+
+## M13 Real-time layer, dashboard and service graph (2026-11-14)
+
+### DEC-80: Who may use the dashboard topic and how destinations are checked
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M13 | ✅ follows DEC-42 |
+
+**Decision.** One table in code (`StompDestinationPolicy`) maps each STOMP destination to the permission it needs: `/user/queue/notifications` any logged-in user, `/topic/dashboard` `REPORT_VIEW`. Anything else is refused. `REPORT_VIEW` is the permission of `GET /dashboard/live`, held only by administrators, so the socket and the REST call give the same answer. The CONNECT interceptor now stores a `StompPrincipal` (user, permissions, token expiry) instead of a bare name, so SUBSCRIBE can read the permissions without a database call.
+
+**Options considered.** Spring Security's message authorization (`@EnableWebSocketSecurity`): heavier, a second rule language beside `@PreAuthorize`. A role-name check: rejected by DEC-09.
+
+**Trade-off.** Permissions are the ones in the token at connect time; a role change applies at the next connect (at most one token lifetime, the same window as REST, DEC-10).
+
+**Cross-questions.** *"Why can a technician not watch the dashboard?"* The topic carries every incident of the organisation; technicians do not hold `REPORT_VIEW`. *"Is subscribing checked on every message?"* No, once at SUBSCRIBE; the broker then delivers to subscribers.
+
+### DEC-81: What the dashboard pushes: events, then counters at most once a second
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14, option A) |
+
+**Decision.** Two message shapes on `/topic/dashboard`: (1) `DashboardEvent {type, incidentId, code, priority, status, at}` for each incident event (types are `NotificationEventType` values, plus `SLA_WARNING` and `SLA_VIOLATED`; pipeline steps without a type are not pushed), (2) `{type: "COUNTERS", counters {total, open, critical, resolved, slaViolations}, byPriority, at}` after a change (at most once a second) and every `dashboard.counters.interval.seconds` (30) in silence. Counters use the definitions of `/reports/overview` over all incidents, from the same query, so the two can never disagree. `GET /dashboard/live` returns the same counters, `byPriority` (open incidents per priority, P1 to P4 always listed), the last 20 events (read from the audit trail, newest first, so they survive a restart) and up to 10 `atRisk` incidents: open, no SLA violated yet, and either a resolution warning was sent, the risk scan flagged it (M12), or a response warning was sent before acknowledgement.
+
+**Observer.** `DashboardListener` is one more `@TransactionalEventListener(AFTER_COMMIT)` beside audit and notification, on its own single thread (`dashboardExecutor`), so a rolled-back change is never shown, a slow socket never delays the request, and events keep their order. It reads the incident's current code, priority and status after the commit. The STOMP send hides behind the `DashboardPublisher` port (Adapter).
+
+**Options considered.** Counters embedded in every event: one shape, but nothing is pushed while quiet and every event pays the counters query. Events only, the frontend refetches: simplest server, doubles traffic. Chosen: separate shapes, coalesced, because one incident creation publishes several events and should cost one counters query.
+
+**Trade-off.** Counters can trail an event by up to one second; a restart loses nothing (counters come from the database).
+
+**Cross-questions.** *"Is one second guaranteed?"* The event arrived 1.3 s after the HTTP call started in the first smoke run, which includes the whole creation pipeline; counters follow on the next tick. *"Why read the audit trail for recent events?"* They then agree with history and no in-memory buffer is lost on restart.
+
+### DEC-82: The socket closes at token expiry
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14, option A) |
+
+**Decision.** On CONNECT the interceptor records the token's expiry; a decorator around Spring's WebSocket handler (`WebSocketSessions`) knows the open sessions, and one scheduled task per session closes it with code 4001 `TOKEN_EXPIRED` at that second. Every frame after the expiry is also refused. The client refreshes its token, reconnects, and polls meanwhile (contract B.5). This closes the DEC-10 window for sockets.
+
+**Options considered.** A sweeper every N seconds: simpler, up to N seconds late. Handing over a refreshed token on the open socket: nicest for the user, but opens a client SEND path and needs more code.
+
+**Trade-off.** One timer per session in memory (single instance, DEC-42); the demo clock (D1) moving forward does not close sockets by itself, but the next frame is refused.
+
+**Cross-questions.** *"What if the server restarts?"* All sockets drop; clients reconnect. *"Why 4001?"* Codes 4000 to 4999 are reserved for applications (RFC 6455).
+
+### DEC-83: `ServiceGraph`: one plain class for three walks
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M13 | ✅ extends DEC-16 and DEC-42 (Java traversal with a visited set) |
+
+**Decision.** `domain/service/ServiceGraph` is a plain class over service ids, built once per request from the active services. It gives `impactOf(id)` (downstream: who needs this service), `upstreamOf(id)` (what it needs) and `commonUpstream(ids)` (what every given service needs; used by S2 for the probable root cause). All three are breadth-first with a visited set, so distance is the shortest number of edges and a cycle written straight into the database cannot loop. `commonUpstream` ranks candidates by the largest distance from any affected service, then the sum, then the id; each affected service counts as its own upstream at distance 0.
+
+**Why.** Example: Payment and Portal depend on Auth, Auth depends on Database. Common upstream of Payment and Portal is Auth (largest distance 1) then Database (2): the root cause is the closest shared service. `ItService.dependsOnTransitively` stays for the cycle check at write time.
+
+**Options considered.** A recursive query in the database: harder to test, not needed at tens of services. Walking `ItService.getDependencies()` directly: lazy loading and set hashing of entities hide the algorithm.
+
+**Cross-questions.** *"Complexity?"* O(V + E) per walk. *"Why not depth-first?"* Breadth-first gives the shortest distance the contract asks for.
+
+### DEC-84: E1 service status board
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M13 | ✅ user decision (approved 2026-11-14, option A) |
+
+**Decision.** `GET /api/v1/services/status`, any logged-in user. `{basis: "REPORTED_INCIDENTS", label: "Based on reported incidents", windowDays, generatedAt, services: [{id, name, criticality, status, reason, causedBy [{id, name, distance}], open {total, P1..P4}, slaCompliancePercent, slaJudged}]}`. OUTAGE: an open P1 on the service. DEGRADED: an open P2, or an OUTAGE on any service it depends on, at any distance (`causedBy` names them, nearest first). Otherwise HEALTHY. Open counts include P3 and P4 but only P1, P2 and upstream outages change the status. SLA compliance is the SLA compliance report's definition (`met / judged`) over incidents created in the last `status.sla.window.days` (30) days, null when nothing was judged. Sorted OUTAGE, DEGRADED, HEALTHY, then name; active services only.
+
+**Why.** It answers "poor visibility into service health" (DEC-47) from data the system already has, and it is honest about its source.
+
+**Trade-off.** A failing service nobody reported shows HEALTHY, hence the label. Employees see counts and names of services, never an incident.
+
+**Cross-questions.** *"Why transitive?"* If Database is down, Payment is likely down even before anyone reports it. *"Why does a P2 upstream not propagate?"* Only an outage (P1) propagates, so one slow dependency does not light up the whole graph.
+
+## M14 Hardening and the sealed audit trail (2026-11-14)
+
+### DEC-90: One sliding-window rate limiter, enforced at the door
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** One class, `RateLimiter` (`application/ratelimit`), keeps for each (bucket, key) the instants of the requests in the last 60 seconds and refuses the request that would exceed the limit: exactly "at most N in any minute", no burst at a window edge. A `RateLimitFilter` (inside the security chain, so the caller is known) enforces three limits before the controllers run, so `AuthService`, `IncidentService` and `IncidentController` know nothing about it:
+
+| Bucket | Applies to | Key | Setting (live, `app_config`) | Default |
+|---|---|---|---|---|
+| LOGIN | `POST /auth/login` | client address + e-mail from the body | `ratelimit.login.per.minute` | 10 |
+| LOGIN_ADDRESS | same call | client address alone (one address trying many e-mails) | 5 x the setting above | 50 |
+| GOOGLE | `POST /auth/google` (module M2b) | client address | the same login setting | 10 |
+| INCIDENT_CREATE | `POST /incidents` | user id | `ratelimit.incident.create.per.minute` | 20 (handbook) |
+| AI | the suggestion endpoints | user id | `ai.ratelimit.per.minute` (existing) | 20 |
+| DENIED_AUDIT | audit entries for refused requests (403) | user id, or address when not logged in | `ratelimit.denied.audit.per.minute` | 20 |
+
+`AiRateLimiter` (module M12) keeps its name and signature and now delegates to the shared limiter; its behaviour is unchanged (the smoke test checks 3 per minute, then 429). A refusal is 429 `RATE_LIMITED` in the standard body with a `Retry-After` header (seconds until the oldest counted request leaves the window).
+
+**The audit flood (DEC-42 risk on DEC-38).** Every 403 is audited, so a client looping on a forbidden call could fill `audit_records`. Per user (or address), the first N refusals of a minute are written; the next one writes a single entry "Further ACCESS_DENIED entries for user 7 are not written for the next minute (limit reached; latest: ...)"; the rest are not written. The 403 itself is always returned, and writing the audit entry never changes the answer.
+
+**Options considered.**
+
+| Option | For | Against |
+|---|---|---|
+| **Sliding-window log** ✔ | Exact; the algorithm `AiRateLimiter` already used, so no behaviour change; easy to explain with a table of timestamps | Keeps up to N timestamps per key (tiny at this size) |
+| Token bucket | Smooth, standard in gateways | Two numbers per limit; harder to explain; changes the AI behaviour |
+| Fixed one-minute counter | Simplest | 20 requests at 10:00:59 and 20 more at 10:01:00 both pass |
+
+**Where it is enforced.** A filter, not a controller or an `AuthService` edit: the login e-mail is found by reading the first 4 KB of the body (a body over 4 KB is a 400 on login) and the body is handed on unchanged. Because the limit sits outside `AuthService`, the Google sign-in session adds its endpoint to the same rule without touching this code. Memory: login keys contain e-mail addresses, so above 10,000 tracked keys the limiter drops those with an empty window.
+
+**Trade-offs and cross-questions.** *"Is this safe behind two instances or a proxy?"* No: in memory and per instance, as DEC-42 states openly. The client address is the socket address; behind a reverse proxy the proxy must forward the real one (or every user shares one address). *"Does a limit lock a real user out?"* Only for the rest of the minute, and a different e-mail from the same address still works up to the address cap. *"Why 10 logins a minute when the account locks after 5 failures?"* The lockout (DEC-12) protects one account over time; the rate limit protects the server and slows a script that spreads attempts over many accounts.
+
+### DEC-91: Sealed audit trail (S3): batch seals plus one digest per record
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 (S3, DEC-44) | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** A scheduled job (`audit.seal.interval.seconds`, default 300, demo 30) seals the audit records written since the last seal: it takes their digests, adds the previous seal's hash and stores the SHA-256 of the lot in `audit_seals (id, from_id, to_id, record_count, hash, prev_hash, created_at)`. A second table, `audit_seal_entries (record_id, seal_id, digest)`, keeps the digest of every sealed record. `GET /audit/verify` recomputes everything and answers which record, or which seal, no longer matches; `POST /audit/seal` ("seal now", administrators) seals immediately for the demo. Each new seal hash is written to the application log (`AUDIT SEAL #7 covers records 120-161 ... hash=...`), a place outside the database. Neither call is itself audited (a seal run writing audit records would never finish sealing).
+
+**Why a second table.** DEC-44 promised "the system names the altered record". With only the agreed `audit_seals` table, verification can say "seal 7, records 120 to 161, is wrong" but not which of the 42 rows changed. One digest row per record makes the answer exact, at the price of one more table (listed for the Testing teammate). `audit_records` itself is untouched, so the write path takes no lock and the V5 trigger stays optional.
+
+**What is hashed.** Record digest = SHA-256 of `id|createdAt (microseconds)|actorId|action|incidentId|previousState|newState|description` (`-` for a null column; description last, so a `|` in it is harmless). Seal hash = SHA-256 of `prevHash|fromId|toId|count|digest1,digest2,...`. Both rules live in `AuditSealing` (domain), used by sealing and verifying alike, so they cannot drift apart. The first seal's previous hash is 64 zeros.
+
+**What verify reports.** `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem, problems[]}` where a problem is `{recordId, sealId, problem, message}`:
+
+| Problem | Meaning | Example |
+|---|---|---|
+| `RECORD_CHANGED` | a record's content differs from what was sealed | someone edits row 140 in SQL: `firstProblem = {recordId: 140, sealId: 7, problem: RECORD_CHANGED}` |
+| `RECORD_MISSING` | a sealed record was deleted | row 140 deleted |
+| `RECORD_INSERTED` | a record sits inside a sealed id range but was never sealed | a row forged with a low id |
+| `SEAL_ENTRIES_MISSING` | the number of digest rows differs from `record_count` | digest rows removed |
+| `SEAL_ALTERED` | the seal hash does not match its own entries | `audit_seals` edited |
+| `SEAL_CHAIN_BROKEN` | a seal does not continue from the one before | a seal removed or `prev_hash` edited |
+
+Records newer than the last seal are reported as `unsealedRecords` (at most one interval of exposure). The verifier is pure domain code (`AuditChainVerifier`), so it can be tested without a database.
+
+**Settling time.** An audit row gets its id when it is inserted but becomes visible when its transaction commits. A scheduled run therefore seals only records older than 10 seconds, so a slow transaction cannot leave a lower id appearing after a higher one was sealed (which would look like `RECORD_INSERTED`). "Seal now" skips the wait. An advisory lock (`pg_advisory_xact_lock`) lets only one instance seal at a time.
+
+**Options considered.** (a) Seals plus per-record digests (chosen); (b) only `audit_seals`: names a range, not the record; (c) one seal per record: doubles the writes of the busiest table. Hash columns on every record (DEC-44's other option) would serialise concurrent writers.
+
+**Cross-questions.** *"Is this a blockchain?"* No: a hash chain kept by one party; it proves integrity, not consensus. *"What if the attacker recomputes the seals?"* They must rewrite the digest table and every later seal; the seal hashes already written to the log (or mailed to the IT manager) cannot be changed from the database, and the latest one is shown by verify for comparison. *"What does the V5 trigger add?"* Prevention; the seals add proof. *"What about records written in the last five minutes?"* Reported as unsealed, never as intact-by-default.
+
+### DEC-92: Password policy
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** The contract rule stays (8 to 72 characters, one letter, one digit; API Data Dictionary C.3) and three rules are added, in the pure domain class `PasswordPolicy`: at most 72 **bytes** (72 accented letters are 144 bytes, which BCrypt cannot hash); not a common password (about 110 base words such as `password`, `qwerty`, `welcome`, `iloveyou`, `iitsm`, alone or followed by up to four digits or symbols: `Password1`, `Welcome123!`); and not containing the e-mail's part before the `@` (4 or more characters) or a word of the person's name (4 or more characters). A class-level validator `@ValidPassword` on `RegisterRequest` and `CreateUserRequest` reports the broken rule on the `password` field of the usual `fieldErrors`, so there is **no change to `AuthService`**. The login request now limits the password to 200 characters, so a huge body is never hashed.
+
+**Options considered.** (A) contract + blocklist + no personal part (chosen: NIST SP 800-63B favours a blocklist and length over composition rules, and the seed and test passwords keep working); (B) add upper, lower, digit and symbol rules (NIST advises against, and it would break the seeds); (C) A plus a setting for the minimum length (more to explain, no gain here).
+
+**Effect on the existing smoke scripts.** `auth_smoke.py` registers "Smoke User" with a password that starts with "Smoke": the name rule refuses it (400 on `password`). Expected; the script's password needs another prefix (reported to the supervisor, not edited).
+
+**Cross-questions.** *"Why not check against a breach list?"* It needs a large file or an external service; the short blocklist covers the passwords tried first. *"Is a password reset in scope?"* No (A12, last priority).
+
+### DEC-93: Attachments
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ user decision ("Approve all", option A) | User, relayed by the supervisor |
+
+**Decision.** `POST /incidents/{id}/attachments` (multipart field `file`), `GET /incidents/{id}/attachments`, `GET /attachments/{id}/download`, as in the contract. Rules, all checked in `AttachmentService` and the domain classes `AttachmentType` and `AttachmentName`:
+
+| Rule | How |
+|---|---|
+| Who | The people who may see the incident (`IncidentAccessPolicy.canView`, read-only call); anyone else gets 404 `INCIDENT_NOT_FOUND` on the incident routes and 404 `NOT_FOUND` on a download, so nothing reveals that a file exists |
+| Type | png, jpg, jpeg, gif, pdf, txt, log, decided from the **first bytes** (magic numbers; text must be valid UTF-8 without control characters), never from the content type the browser sent; the file name's extension must also belong to the sniffed type (a PDF called `x.png` is refused); the stored content type is the sniffed one |
+| Size | 5 MB (5,242,880 bytes is accepted, one more is not); the multipart limit of Spring is 6 MB so our own message appears; a larger upload is also a 400 in the standard body, never a stack trace |
+| Count | at most 10 per incident |
+| Names | the display name keeps only the last path segment, replaces control characters and `< > : " \| ? * ; %`, drops leading dots and is cut to 200 characters; the file on disk has a random UUID name |
+| Storage | outside the web root, in `app.attachments.dir` (env `ATTACHMENTS_DIR`, default `./data/attachments`, git-ignored): `<dir>/<incidentId>/<uuid>`, no extension, no user text in the path, and every resolved path is checked to stay inside the folder; the row in `incident_attachments` keeps the relative path |
+| Download | `Content-Disposition: attachment`, the sniffed content type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`, so the browser never renders or runs an upload on the API's origin |
+| Audit | every upload is an `ATTACHMENT_ADDED` entry in the same transaction ("Attachment added: name (type, bytes)") |
+| Consistency | the file is written before the row; if the transaction rolls back, an after-completion hook deletes the file. A row whose file vanished from the disk answers 404, not 500 |
+
+The bytes go through an `AttachmentStorage` port with `DiskAttachmentStorage` as the Adapter, so a cloud bucket could replace the disk later without touching the service.
+
+**Options considered.** Disk folder from a property (chosen: Appendix A has `storage_path`, a Docker volume can be mounted there); a folder under the user's home (differs per machine); bytes in the database (the schema has no column for them). **Trade-off.** Files and rows can drift if someone deletes the folder; the download answers 404 and the backup must cover both.
+
+**Cross-questions.** *"A virus scan?"* Out of scope; types are limited to inert formats and are never executed or rendered by the server. *"Why not trust the extension?"* A renamed program passes an extension check; the first bytes do not lie as easily. *"SVG?"* Not allowed: it can carry script.
+
+### DEC-94: Outages answer 503, and the review of input and output
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M14 | ✅ | Backend lead (follows DEC-42, "Outage behaviour") |
+
+**Decision.** *Database down:* a connection that cannot be had (`CannotCreateTransactionException`, `DataAccessResourceFailureException`, `JDBCConnectionException`, `SQLTransientConnectionException`, `TransientDataAccessResourceException`) is answered by the global handler with 503 `SERVICE_UNAVAILABLE` in the standard body ("The service is temporarily unavailable (database not reachable)...") plus `Retry-After: 30`; the log gets one WARN line with the root cause, not a trace. The pool's `connection-timeout` is 3 seconds (`DB_CONNECT_TIMEOUT_MS`), so the answer comes in seconds, not 30. The pool recovers by itself when the database returns (verified). *AI down:* the suggestion paths already fall back to the keyword engine (DEC-M12-5), so the user normally never sees an AI failure; as a safety net an `LlmException` that escapes is 503 as well (the AI message). Every operation in the generated contract lists 503.
+
+**Input review.** Every request body was read. Added: `@Size` on the login e-mail and password, refresh token, config key and value, and on the lists (`dependencyIds`, `requiredSkillIds`, technician `skills`, the saved-view filter map); a malformed multipart body is a 400, not a 500. Everything else already had type, range and length rules.
+
+**Output encoding.** The API returns JSON, which encodes text itself; the HTML e-mail escapes user text (`EmailChannel.escape`), the CSV export neutralises formulas (DEC-62), the PDF is built from a typed model, and downloads are always attachments with `nosniff`.
+
+**Cross-questions.** *"Why not 500 for a database error?"* 500 says "our bug"; 503 says "try again", which is what the user should do, and the contract and the frontend can treat it differently. *"Does a request that needs no database (a valid token on a cached setting) still work?"* Yes; only what touches the database fails.
+
+---
+
+## M12 rest: duplicates, problem records, Major Incident Mode (session A, 2026-11-14)
+
+> Numbered DEC-70 to DEC-78 (session A's range). Every choice below was one of nine questions put to the user with options, a worked example and a recommendation (`A-m12-options.md` in the session notes); the user answered "Approve all", so every recommended option stands. Basic parts (G3, mark-duplicate, G4, C3) were approved with the same message.
+
+### DEC-70: A confident AI category is applied when the reporter gives none
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M4, M12 | ✅ user decision (closes the open question of DEC-33 and DEC-42) |
+
+**Decision.** `IncidentCreationService` asks the intelligence engine for a category when the request has none. At `autocat.apply.confidence` (new setting, default 0.60, the same as the show threshold) or more it is applied, the incident is classified with it and the normal assignment follows; the audit says "Classified as Network by the AI suggestion (confidence 0.65, keyword)". Below it the incident waits in triage as before. The call is not rate-limited (it is part of creating the incident) and runs before the transaction opens, so no database connection is held during a model call (DEC-M12-9).
+
+| Option | Example: "VPN drops every few minutes", no category | Verdict |
+|---|---|---|
+| **A: apply at 0.60 (setting)** ✔ | Network applied, assigned at once | The handbook pipeline ("given category, else AI suggestion, else triage"); the threshold is live |
+| B: apply only at 0.80 | stays in triage (the keyword engine rarely reaches 0.80) | Safer, but the keyword path would never help |
+| C: never apply | stays in triage | Suggestions stay advice only |
+
+**Trade-off.** A wrong category sends the incident to a technician with the wrong skills; the audit entry names the source and confidence, and a team lead can still reassign. **Effect on old scripts:** incidents created without a category in the shared smoke suites may now be classified and assigned (`autocat.apply.confidence = 1` restores the old triage behaviour).
+
+**Cross-questions.** *"Is it not risky to let a model route tickets?"* The category only chooses among our own active categories and is validated; the threshold is a setting; the audit trail shows who decided.
+
+### DEC-71: Duplicate check on create and correlation into problem records
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision (questions 2 and 3) |
+
+**Decision.** *Duplicate check.* Before the transaction, the draft is compared (TF-IDF, DEC-M12-1) with the open incidents of the same service inside `dup.window.hours`. A match at `dup.tfidf.threshold.duplicate` (0.55) or more is **409 `DUPLICATE_INCIDENT`** with every match at 0.35 or more in `similar` (`id, code, title, similarity, status`), unless the request has `confirmNotDuplicate: true`. *Correlation.* After the incident is saved, `ProblemCorrelator` groups it under a problem record when (a) an open incident of the same service resembles it at the related threshold (0.35), confirmed or not, or (b) it is P1 to P3 and an open P1 or P2 sits on a service it depends on, or that depends on it, created no longer ago than `problem.correlation.window.minutes` (60). The anchor's record is joined, or a new record is opened with the anchor's title and service. Every grouping is audited on each incident that changed (`DUPLICATE_LINKED`, no actor).
+
+| Option for correlation | Example (Payment depends on Database) | Verdict |
+|---|---|---|
+| **A: same service with similar text, or a neighbour service with an open P1/P2 in the window, new incident P1 to P3** ✔ | 10:00 P1 "Database timeouts"; 10:10 "Checkout fails" on Payment: grouped. A P4 "printer jam" on Payment: not grouped | Explainable, hard to fool with noise |
+| B: graph and window only, any priority | the P4 printer jam would be grouped too | Too many false groups |
+| C: same service and text only | Payment and Database incidents stay apart | Misses the handbook's "service and one that depends on it" |
+
+**Trade-offs.** A wrong group hides a separate problem: an administrator can ungroup (DEC-72) and every grouping is in the audit trail. The handbook's "when a P1 opens, flag dependants" is covered from the other side: the dependants' later incidents join the P1's record. The two thresholds are the TF-IDF ones, not the handbook's 0.80 and 0.65 (DEC-M12-1). A failure while grouping never undoes the incident (logged, ungrouped).
+
+**Cross-questions.** *"What if two people report the same thing at once?"* Both pass the check (neither exists yet); the second is then grouped with the first by the related rule. *"Why 409 and not just a warning?"* The reporter confirms with one click and the 409 carries the matches, which is the handbook contract.
+
+### DEC-72: Problem-record lifecycle
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 | ✅ user decision (question 4); **changed by the user the same day** ("go with A": no automatic cascade, see below) |
+
+**Decision (as changed).** The lead of a record is derived, never stored: the highest priority, then the earliest created (DEC-46, G5); incidents that only joined an outage never lead. **Resolving the lead resolves nothing else.** When the lead of an open record is resolved, every other open, non-joiner incident of the record gets one **internal note** (staff only, also audited as an internal entry): "The lead incident INC-x of problem record #n was resolved: <root cause>. If the cause is the same, a team lead or administrator can close the whole record with Resolve problem." The record stays OPEN, and the people who joined the outage get their one "resolved" notice (DEC-73). **`POST /problems/{id}/resolve`** (team lead or administrator) is the one-click "resolve whole problem": the given fix goes to every open incident of the record, the lead included, through a new domain move `Incident.resolveWithProblem` that is legal from every open status (the normal resolve needs IN_PROGRESS); the record becomes RESOLVED; the joiners are notified once (not again if the lead was already resolved). An administrator can `DELETE /problems/{id}/incidents/{incidentId}` to take one incident out (audited), and a team lead or administrator can open a record by hand with `POST /problems {title?, incidentIds}` (DEC-74). A RESOLVED record accepts no more joins or groupings.
+
+| Option | Verdict |
+|---|---|
+| **A: no automatic cascade; staff are told and one click resolves the whole problem** ✔ (the user's change) | Grouping puts *related* incidents in a record, and a related incident may need its own fix |
+| B (the first version of this decision): the lead resolved resolves the rest by itself | Rejected by the user after `m10_smoke.py` showed it: two incidents with near-identical text on one service were grouped and resolving one closed the other with someone else's fix |
+| C: the record closes by itself when every incident is resolved, no cascade | No saving of work and nobody decides |
+
+**Example.** "VPN down for everyone" is the lead and "VPN slow on floor 3" is grouped as related. Fixing the VPN server must not close the floor-3 ticket: its technician sees the note, checks, and a team lead presses Resolve problem only if the cause is the same. The handbook also calls resolving linked incidents an administrator action (here widened to team leads).
+
+**Trade-off.** One more step for staff when the cause really is the same; in return nothing is closed with a fix that was never checked against it.
+
+**Cross-questions.** *"Why a new domain move and not the normal resolve?"* An incident that nobody has started cannot go through ACKNOWLEDGED and IN_PROGRESS just to be closed with someone else's fix; the move is one method on `OpenState`, the shared parent of the six open states. *"Why an internal note and not a notification?"* The people who must decide are the technicians and leads on the other incidents, the reporters need no new message about a ticket that is not resolved.
+
+### DEC-73: Major Incident Mode: known outage, one-click join, climbing priority, root cause
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (S2, builds on DEC-44) | ✅ user decision (question 5) |
+
+**Decision.** `GET /problems/known-outages?serviceId=` (any user) lists the open records on the service or on any service it depends on (graph traversal), as `{problemId, title, service, leadCode, leadPriority, affectedUsers, since, alreadyJoined}`: no reporter, no description. `POST /problems/{id}/join` (any user) creates a small incident for the joiner: same service, category, impact and urgency as the lead, one user, linked to the record and to the lead, **closed at once as DUPLICATE** (no triage, no SLA clock, no escalation). The lead's affected users go up by one and its priority is calculated again by the same engine, so the handbook's own multiplier (x1.25 from 10 users, x1.5 from 101) lifts the priority by itself: a lead with impact 4, urgency 3, criticality 2 and 9 users is P3; the tenth person makes it P2. Joining twice returns the first joiner incident; joining a resolved outage is 409. When the lead is resolved (or the whole record is resolved by a team lead or administrator, DEC-72) each joiner gets one in-app notice (`INCIDENT_RESOLVED`, sent through `NotificationDispatcher` after the commit, because their own incident is already closed and the normal events never reach them). `GET /problems/{id}/root-cause` names the probable root cause: for every affected service the set of everything it depends on, the services in every set (an affected service counts as its own upstream at distance 0), ranked by the farthest then the total distance; the dependency paths from each affected service are returned as evidence (`ServiceGraph.commonUpstream`, written by the M13 session). Example: Payment and Portal both depend on Auth, Auth on Database: Auth first, Database second.
+
+| Option for the join | Verdict |
+|---|---|
+| A: only a note and a counter on the lead, no incident for the joiner | The joiner has nothing to follow and no notice target |
+| **B: a small linked incident closed as DUPLICATE** ✔ | Visible in "my incidents", notified on resolution, no change to triage, escalation or the SLA monitor |
+| C: the joiner's incident stays open and is resolved by the cascade | Triage, escalation and SLA monitors would have to learn to skip it |
+
+**Trade-offs.** Joiner incidents appear in reports as duplicates (that is what they are). The root cause is only as good as the graph: a cause that is not a service in it is not found, and a single affected service names itself first (the explanation says so). The notice reuses the "resolved" wording; a joiner-specific text is a task for the Report teammate (the template key per audience is in `notification-templates.properties`).
+
+**Cross-questions.** *"Why does the priority change with no human action?"* The affected-users factor is part of the handbook formula and joining changes that input. *"Could someone inflate the count?"* One join per person per record (a second call returns the first), and an administrator sees every join in the audit trail of the lead.
+
+### DEC-74: E2 recurring-problem detector
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (E2, builds on DEC-47) | ✅ user decision (question 6) |
+
+**Decision.** `GET /problems/recurring` (team lead, administrator) is computed on each call, nothing is stored. REPEATED_FIX: the same service and category resolved at least `recurring.min.count` (3) times in `recurring.window.days` (30), among incidents with no problem record. REPEATED_REOPEN: an incident reopened at least `recurring.min.reopens` (2) times. A team lead turns a proposal into a record with `POST /problems`; the proposal then disappears.
+
+| Option | Verdict |
+|---|---|
+| **A: computed on read, accepted by a person** ✔ | Never stale; a human decides |
+| B: a job creates records itself | Records appear nobody asked for |
+| C: A plus a daily notice | More noise before the list is proven useful; can be added later |
+
+**Cross-questions.** *"How is this different from duplicates?"* Duplicates are the same failure reported several times within a day; a recurring problem comes back over weeks after being fixed.
+
+### DEC-75: A1 chatbot intake without a key
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (A1, builds on DEC-43) | ✅ user decision (question 7) |
+
+**Decision.** `POST /intelligence/chat {draft, expecting, answer}` is one turn of a **stateless** guided conversation. Slots in order: DESCRIPTION (at least 20 characters, the incident minimum), SERVICE (matched by name or by a distinctive word in the text, else the bot lists the services), AFFECTED_USERS (a number, "just me", "a few", "everyone"), then CONFIRM with a summary and `readyToFile: true`. Category, impact and urgency are never asked: they come from `suggest-intake`, which already falls back to the keyword engine, so the flow works without a key and an LLM key only improves those three fields. Filing is the normal `POST /incidents`, so the duplicate check, the known-outage banner, priority and assignment apply unchanged.
+
+| Option | Verdict |
+|---|---|
+| **A: stateless draft passed back and forth** ✔ | No server memory, works behind a restart, easy to test |
+| B: server-side sessions with an id | State to expire and share across instances |
+| C: frontend wizard only | The "chatbot" would not be an intelligence feature |
+
+**Cross-questions.** *"Is it a real chatbot?"* It is a slot-filling dialogue (the usual shape of an enterprise help-desk bot) whose language understanding is the existing intake engine; free-form conversation is not claimed.
+
+### DEC-76: D2 outage drill
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M12 (D2, builds on DEC-45) | ✅ user decision (question 8) |
+
+**Decision.** `POST /admin/demo/outage-drill {rootServiceId}` exists only in the `demo` profile (no bean and no route elsewhere, like the demo clock, DEC-52) and needs CONFIG_MANAGE. It files, through the normal creation pipeline, two incidents on the failing service and one on each service that depends on it (up to four), from ordinary employees in turn, with `confirmNotDuplicate`. Correlation, priorities, assignment and audit are the real ones; the texts are `resources/demo/outage-drill.json` (`{root}` and `{service}` placeholders, editable by the Report teammate). The answer lists the codes, the dependants and the problem record. A second run adds to the same open record.
+
+| Option | Verdict |
+|---|---|
+| **A: use the services and employees that exist** ✔ | Nothing is invented; the demo data decides the story |
+| B: create its own demo services and employees | Pollutes the catalog |
+
+**Cross-questions.** *"Is the demo not faked?"* The incidents are filed by the same code a user triggers; only the texts and the button are prepared.
+
+### DEC-77: Basic parts: withdraw, mark-duplicate, reporter edit lock, security setting
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M4, M10, M12, M14 (G3, G4, C3 from DEC-46) | ✅ user decision (rules stand as written) |
+
+**Decision.** *G3 withdraw.* `POST /incidents/{id}/withdraw {reason 10 to 1000}`, the reporter only, legal in CLASSIFIED, ASSIGNED and ACKNOWLEDGED; the incident closes with `WITHDRAWN`, the reason becomes a public note, the technician's load drops at once (load counts only active statuses). `WITHDRAW` is a new `IncidentAction` (an addition to the contract). A withdrawn or duplicate-closed incident cannot be reopened (only VERIFIED and AUTO_VERIFIED closures can). *Mark-duplicate.* `POST /incidents/{id}/mark-duplicate {duplicateOfId}`, administrator or team lead, from any open status; the target must be a different, existing incident that is not itself a duplicate (400 names the original); closes as DUPLICATE, sets `duplicate_of_id`, audits `DUPLICATE_LINKED`, leaves a public note naming the original. Both moves live in one new parent class `OpenState` (six open states share them). *G4.* From ASSIGNED on, only a team lead or administrator may change impact, urgency or affected users; the reporter keeps editing the description; sending an unchanged value is not a change; before assignment the reporter edits everything. Wrong person is 403, but a closed incident is still 409 (E-M12B-1). *C3.* `priority.security.category` (default "Security", text, 100 characters) replaces the hard-coded name in `PriorityRecalculator` and `PriorityWhatIfService`; the category and everything under it trigger rule 1. Internal audit entries are created only through `AuditRecord.internal(...)`; the prefix constant is private and `AuditRecord.of` refuses a public text that starts with it.
+
+**Trade-off.** G4 changes the documented edit of T24 (two simultaneous PUTs of impact by the reporter): the Testing teammate edits the description or sends the PUTs as an administrator.
+
+### DEC-78: Actions keep answering 403 to people who cannot see the incident (T18)
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-14 | M14 risk of DEC-42 | ✅ user decision (question 9, option A) |
+
+**Decision.** The DEC-42 risk "404 on actions for non-viewers" is **not** changed. T18 in the Testing handbook ("technician 2 acknowledges an incident assigned to technician 1: 403") stays as documented; reads still answer 404 (DEC-21). The cost is stated openly: an authenticated user can learn that an incident id exists by trying an action on it.
+
+**Cross-questions.** *"Is that not an information leak?"* Yes, of the existence of an id to a logged-in user, which the incident code format already makes guessable; the codes are sequential and carry no content.
+
+---
+
+## Integration of the parallel modules (2026-11-14)
+
+### DEC-110: Grouping into a problem record is not announced
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14, regression after merging M12 rest, M13, M14 and M2b | M9 + M12 | ✅ user decision | User (option A of three) |
+
+**Context.** M12 records `DUPLICATE_LINKED` for two different moves: closing an incident as a duplicate (`mark-duplicate`, a known-outage join) and grouping an open incident into a problem record (correlation, DEC-71). M9 (DEC-54) maps `DUPLICATE_LINKED` to `DUPLICATE_SUSPECTED`, "INC-x may be a duplicate", for the reporter and the assignee. So a reporter who had just confirmed "not a duplicate" (`confirmNotDuplicate`) was told it may be one, and every grouping sent extra mails. Found by `m9_smoke.py` on the merged build.
+
+**Decision.** `NotificationRules.announced(action, newState)`: `DUPLICATE_LINKED` is announced only when the incident's new status is CLOSED (closed as a duplicate). Grouping keeps the status, so it notifies nobody; staff see it in the incident history and on the problem view. Joiners still get their one "outage resolved" notice (DEC-73), and the person who acts is never told about their own action (DEC-54).
+
+**Options.** A, quiet grouping (chosen); B, a separate, reworded notice for grouping ("linked with related reports, work continues"), more transparent but one more mail per grouping; C, unchanged.
+
+**Why.** The reporter's own confirmation must not be contradicted, and the inbox stays meaningful. The rule needs no new audit action or schema value: the status change already tells the two moves apart.
+
+**Cross-questions.** *"How does a reporter learn their incident is part of a bigger outage?"* The incident detail shows its `problemId`, and the known-outage banner on the report form shows open outages before they file. *"Why not a new audit action GROUPED?"* `AuditAction` values are part of the agreed schema (Appendix A.4); the status distinguishes the two cases without changing it.
+

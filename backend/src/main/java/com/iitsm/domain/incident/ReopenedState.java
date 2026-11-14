@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.Set;
 
 /** Status REOPENED. */
-final class ReopenedState extends IncidentState {
+final class ReopenedState extends OpenState {
 
     @Override
     public IncidentStatus status() {
@@ -13,7 +13,7 @@ final class ReopenedState extends IncidentState {
     }
 
     @Override
-    public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
+    Set<IncidentAction> ownActions(Incident incident, Instant now, Duration reopenWindow) {
         return Set.of(IncidentAction.START_WORK);
     }
 

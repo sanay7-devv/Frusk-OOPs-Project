@@ -1,46 +1,27 @@
 package com.iitsm.application.intelligence;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.springframework.stereotype.Component;
 
-import com.iitsm.domain.exception.RateLimitedException;
+import com.iitsm.application.ratelimit.RateLimiter;
 
 /**
  * Per-user rate limit on the suggestion endpoints (handbook 2.5 M12): at most {@code ai.ratelimit.per.minute}
- * requests in any sliding minute, then 429 RATE_LIMITED. In memory and per instance (DEC-42); the general rate
- * limiting of module M14 will replace it. The limit is a live setting passed on each call.
+ * requests in any sliding minute, then 429 RATE_LIMITED. Since module M14 (DEC-90) the counting is done by the shared
+ * {@link RateLimiter}; this class keeps its signature and behaviour for the intelligence code.
  */
 @Component
 class AiRateLimiter {
 
-    private static final Duration WINDOW = Duration.ofMinutes(1);
+    private static final String BUCKET = "AI";
 
-    private final Map<Long, Deque<Instant>> requests = new ConcurrentHashMap<>();
-    private final Clock clock;
+    private final RateLimiter limiter;
 
-    AiRateLimiter(Clock clock) {
-        this.clock = clock;
+    AiRateLimiter(RateLimiter limiter) {
+        this.limiter = limiter;
     }
 
-    /** Counts this request, or throws {@link RateLimitedException} if the user is over the limit. */
+    /** Counts this request, or throws {@code RateLimitedException} if the user is over the limit. */
     void check(Long userId, int perMinute) {
-        Instant now = clock.instant();
-        Deque<Instant> window = requests.computeIfAbsent(userId, id -> new ArrayDeque<>());
-        synchronized (window) {
-            while (!window.isEmpty() && !window.peekFirst().isAfter(now.minus(WINDOW))) {
-                window.pollFirst();
-            }
-            if (window.size() >= perMinute) {
-                throw new RateLimitedException();
-            }
-            window.addLast(now);
-        }
+        limiter.check(BUCKET, String.valueOf(userId), perMinute);
     }
 }

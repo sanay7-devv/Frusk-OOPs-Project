@@ -24,5 +24,7 @@ public enum AuditAction {
     LOGIN_FAILED,
     ACCESS_DENIED,
     USER_ROLE_CHANGED,
-    CONFIG_CHANGED
+    CONFIG_CHANGED,
+    // M14 (session C): a file attached to an incident
+    ATTACHMENT_ADDED
 }

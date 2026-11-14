@@ -16,5 +16,5 @@ public record ServiceRequest(
         Boolean alwaysP1,
         @Size(max = 1000) String description,
         Boolean active,
-        List<Long> dependencyIds) {
+        @Size(max = 200) List<Long> dependencyIds) {
 }

@@ -7,7 +7,7 @@ import java.util.Set;
 import com.iitsm.domain.sla.WorkCalendar;
 
 /** Status PENDING_USER_INFO. */
-final class PendingUserInfoState extends IncidentState {
+final class PendingUserInfoState extends OpenState {
 
     @Override
     public IncidentStatus status() {
@@ -15,7 +15,7 @@ final class PendingUserInfoState extends IncidentState {
     }
 
     @Override
-    public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
+    Set<IncidentAction> ownActions(Incident incident, Instant now, Duration reopenWindow) {
         return Set.of(IncidentAction.PROVIDE_INFO);
     }
 

@@ -53,6 +53,7 @@ public class ApiErrorsCustomizer implements OperationCustomizer {
             codes.add(ErrorCode.UNAUTHORIZED_OPERATION);
         }
         codes.add(ErrorCode.INTERNAL_ERROR);
+        codes.add(ErrorCode.SERVICE_UNAVAILABLE); // any operation may meet a database outage (M14)
 
         Map<Integer, List<ErrorCode>> byStatus = new TreeMap<>();
         codes.forEach(code -> byStatus.computeIfAbsent(code.status(), s -> new ArrayList<>()).add(code));
