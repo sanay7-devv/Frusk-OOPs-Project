@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { afterEach, describe, it, expect } from 'vitest';
+import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -29,13 +29,15 @@ function renderApp(initialPath = '/login') {
   );
 }
 
+afterEach(cleanup);
+
 describe('Auth and Navigation Flow', () => {
   it('Admin login routes to Admin Dashboard', async () => {
     localStorage.clear();
     renderApp('/login');
     
     // Quick-select Admin chip
-    const adminChip = screen.getByRole('button', { name: /Admin \(All Workspaces\)/i });
+    const adminChip = screen.getByRole('button', { name: /^Administrator$/i });
     fireEvent.click(adminChip);
 
     const submitBtn = screen.getByRole('button', { name: /Sign In & Validate/i });
@@ -76,3 +78,4 @@ describe('Auth and Navigation Flow', () => {
     });
   });
 });
+
