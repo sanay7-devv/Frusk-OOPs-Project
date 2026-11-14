@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AppRoutes from './routes/AppRoutes';
+import { api } from './api/client';
 
 function LocationProbe() {
   const location = useLocation();
@@ -35,19 +36,30 @@ function renderApp(initialPath = '/login') {
   );
 }
 
-afterEach(cleanup);
+// No backend in these tests: every API call fails like an unreachable server, so the offline accounts answer at once
+// (without this the result would depend on whatever listens on port 8080 of the machine running the tests).
+beforeEach(() => {
+  vi.spyOn(api, 'post').mockRejectedValue(Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK' }));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+/** Opens the seed-account list, fills the form from the row with this email and signs in. */
+function signInWithSeedAccount(email: string) {
+  fireEvent.click(screen.getByRole('button', { name: /View Default Database Credentials/i }));
+  fireEvent.click(screen.getByText(email));
+  fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
+}
 
 describe('Auth and Navigation Flow', () => {
   it('Admin login routes to Admin Dashboard', async () => {
     localStorage.clear();
     renderApp('/login');
-    
-    // Quick-select Admin chip
-    const adminChip = screen.getByRole('button', { name: /^Administrator$/i });
-    fireEvent.click(adminChip);
 
-    const submitBtn = screen.getByRole('button', { name: /Sign In & Validate/i });
-    fireEvent.click(submitBtn);
+    signInWithSeedAccount('admin@iitsm.com');
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/admin/dashboard');
@@ -58,11 +70,7 @@ describe('Auth and Navigation Flow', () => {
     localStorage.clear();
     renderApp('/login');
 
-    const leadChip = screen.getByRole('button', { name: /Team Lead/i });
-    fireEvent.click(leadChip);
-
-    const submitBtn = screen.getByRole('button', { name: /Sign In & Validate/i });
-    fireEvent.click(submitBtn);
+    signInWithSeedAccount('lead@iitsm.com');
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/lead/team-queue');
@@ -73,11 +81,7 @@ describe('Auth and Navigation Flow', () => {
     localStorage.clear();
     renderApp('/login');
 
-    const empChip = screen.getByRole('button', { name: /Employee/i });
-    fireEvent.click(empChip);
-
-    const submitBtn = screen.getByRole('button', { name: /Sign In & Validate/i });
-    fireEvent.click(submitBtn);
+    signInWithSeedAccount('employee@iitsm.com');
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/employee/home');
