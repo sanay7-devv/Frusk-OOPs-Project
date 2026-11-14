@@ -226,7 +226,8 @@ com.iitsm
     ├── realtime                     StompDashboardPublisher (Adapter), StompDestinationPolicy, StompPrincipal,
     │                                WebSocketSessions (closes a socket at token expiry), RealtimeConfig (M13)
     ├── ai                           AiConfig, FallbackTextAnalysisService (@Primary), LlmTextAnalysisService,
-    │                                AnthropicLlmClient, ScriptedLlmClient, LlmProperties, PromptLibrary
+    │                                GeminiLlmClient (default), AnthropicLlmClient, ScriptedLlmClient,
+    │                                LlmProperties, PromptLibrary
     ├── google                       JjwtGoogleIdTokenVerifier, FakeGoogleIdTokenVerifier (Adapters),
     │                                GoogleJwksKeyLocator, GoogleClaimsChecker, GoogleProperties, GoogleSignInConfig (M2b)
     ├── attachment                   DiskAttachmentStorage (M14)
@@ -1585,7 +1586,8 @@ flowchart LR
     S --> F[FallbackTextAnalysisService]
     F -->|ai.primary = LLM and breaker closed| L[LlmTextAnalysisService<br/>redact, strict JSON, validate]
     L --> P[LlmClient port]
-    P --> A[AnthropicLlmClient<br/>HTTP, 8 s timeout]
+    P --> G[GeminiLlmClient<br/>default, HTTP, 8 s timeout]
+    P --> A[AnthropicLlmClient<br/>optional]
     F -->|key missing, KEYWORD primary,<br/>failure, timeout, bad JSON, breaker open| K[KeywordTextAnalysisService<br/>TF-IDF + dictionary]
     L -.->|findSimilar is always TF-IDF| K
 ```
@@ -1618,7 +1620,8 @@ A caller who may not see the incident gets 404 `INCIDENT_NOT_FOUND`; a viewer wh
 
 | Piece | Rule |
 |---|---|
-| Key | `LLM_API_KEY` in the environment only. No key: the LLM path is off and the keyword engine answers. Model `LLM_MODEL` (default `claude-haiku-5-5`) |
+| Provider | `LLM_PROVIDER`: `gemini` (default, Google Gemini API, DEC-111), `anthropic`, or `fake` (below). Gemini: `POST /v1beta/models/{model}:generateContent`, system prompt as `system_instruction`, `responseMimeType: application/json`, key in the `x-goog-api-key` header; a blocked prompt, a SAFETY stop or an empty answer is a failure |
+| Key | `LLM_API_KEY` (or `GEMINI_API_KEY`) in the environment only. No key: the LLM path is off and the keyword engine answers. Model `LLM_MODEL` (default `gemini-3.5-flash-lite` for Gemini, `claude-haiku-5-5` for Anthropic) |
 | Prompts | `src/main/resources/ai/prompts/suggest-category.txt`, `suggest-intake.txt`, `summarize-thread.txt`; the Report teammate edits them, no Java change |
 | What is sent | Title, description and category names (for summaries: comment and audit text without names), after `TextRedactor` replaced emails by `[email]`, IP addresses by `[ip]`, and tokens, keys and `password=...` pairs by `[token]` / `[redacted]` |
 | Untrusted text | Incident text travels as quoted JSON values and the prompts say to treat it as data, never as instructions |
@@ -1650,7 +1653,7 @@ Precision of DUPLICATE is 100 % on this set and recall 87.5 %; lowering the dupl
 | domain `intelligence` (no Spring) | `TextAnalysisService` (port), `KeywordTextAnalysisService`, `KeywordDictionary`, `Tokenizer`, `TfIdfModel`, `TextRedactor`, `SlaRiskScorer`, `CircuitBreaker`, `LlmClient` (port), records `CategorySuggestion`, `IntakeSuggestion`, `SimilarMatch`, `ThreadSummary`, `AnalysisContext` and others; event `SlaAtRisk` |
 | domain `repository` | `IncidentTextRepository` (read-only queries), implemented by `JpaIncidentTextRepository` |
 | application `intelligence` | `IntelligenceService`, `IntelligenceReader`, `SlaRiskService`, `AiResultCache`, `AiRateLimiter`, `IntelligenceViews` |
-| infrastructure | `ai/AnthropicLlmClient`, `ai/ScriptedLlmClient`, `ai/LlmTextAnalysisService`, `ai/FallbackTextAnalysisService`, `ai/AiConfig`, `ai/LlmProperties`, `ai/PromptLibrary`; `scheduler/SlaRiskScanJob` |
+| infrastructure | `ai/GeminiLlmClient`, `ai/AnthropicLlmClient`, `ai/ScriptedLlmClient`, `ai/LlmTextAnalysisService`, `ai/FallbackTextAnalysisService`, `ai/AiConfig`, `ai/LlmProperties`, `ai/PromptLibrary`; `scheduler/SlaRiskScanJob` |
 | web | `IntelligenceController`, `web/dto/intelligence/*` |
 
 ### 12c.8 Verified behavior (2026-11-14)
@@ -2361,7 +2364,7 @@ New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 1
 |---|---|---|
 | **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` (M9) builds notification wording from templates. |
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
-| **Adapter** | ✅ in use | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); `LlmClient` port with `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c); `PostIncidentPdfRenderer` with OpenPDF (M10); `DashboardPublisher` with `StompDashboardPublisher` (M13); `AttachmentStorage` with `DiskAttachmentStorage` (M14); `GoogleIdTokenVerifier` with `JjwtGoogleIdTokenVerifier` and the offline `FakeGoogleIdTokenVerifier` (M2b, section 12h). |
+| **Adapter** | ✅ in use | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); `LlmClient` port with `GeminiLlmClient` (default), `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c); `PostIncidentPdfRenderer` with OpenPDF (M10); `DashboardPublisher` with `StompDashboardPublisher` (M13); `AttachmentStorage` with `DiskAttachmentStorage` (M14); `GoogleIdTokenVerifier` with `JjwtGoogleIdTokenVerifier` and the offline `FakeGoogleIdTokenVerifier` (M2b, section 12h). |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
 | **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. M12: `TextAnalysisService` with `KeywordTextAnalysisService`, `LlmTextAnalysisService` and the `FallbackTextAnalysisService` that chooses by `ai.primary` (section 12c). |
 | **Observer** | ✅ in use | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `IncidentEscalated`, `EscalationExhausted`, `SecurityAuditEvent`, ...); `AuditListener` records them in the action's transaction; `NotificationListener` (M9) and `DashboardListener` (M13) react after commit, asynchronously. |
@@ -2483,6 +2486,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-14 | M12 rest (section 12e, DEC-70 to DEC-78, session A): duplicate check on create (409 with `similar`, `confirmNotDuplicate`), applied AI category, `mark-duplicate`, problem records with correlation (text and dependency graph), Major Incident Mode (known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem; resolving the lead only leaves notes, DEC-72 changed by the user), E2 recurring-problem detector, A1 chatbot intake, D2 outage drill (demo); G3 withdraw, G4 reporter edit lock, C3 security-category setting and internal-audit factory. Six settings. `m12b_smoke.py` 107/107, `m10_smoke.py` 135/135. |
 | 2026-11-14 | The four parallel branches and the E-034 fix merged on `backend/integrate-m12-m14` (order M2b, M13, M14, M12, E-034): `ConfigKey` blocks joined (76 settings), `planned-endpoints.json` merged by key (now empty: every agreed endpoint is built), sections 12a to 12h put in order, this guide's sections 1, 3 and 18 updated. |
 | 2026-11-14 | Regression of the merged build (ERROR_LOG E-035): every suite green on fresh databases after test-script fixes; DEC-110 (grouping into a problem record is not announced, `NotificationRules.announced`); endpoint sweep covers all 117 operations, contract re-exported with 0 planned. |
+| 2026-11-15 | Gemini adapter (DEC-111): `GeminiLlmClient` behind the `LlmClient` port is the default LLM (`LLM_PROVIDER=gemini`, model `gemini-3.5-flash-lite`, key `LLM_API_KEY` or `GEMINI_API_KEY`); Anthropic and the fake client stay selectable. Checked offline against a stub of the Gemini API (`gemini_stub_check.py` 10/10). |
 
 ---
 

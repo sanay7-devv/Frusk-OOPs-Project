@@ -4,8 +4,8 @@ import java.time.Duration;
 
 /**
  * The small port to a language model (Adapter pattern): one system prompt and one user message in, the model's text
- * out. {@code AnthropicLlmClient} talks to the Anthropic Messages API; a scripted client stands in for it in
- * demos and smoke runs. Everything model-specific (URL, headers, JSON envelope) stays behind this interface.
+ * out. {@code GeminiLlmClient} talks to the Google Gemini API, {@code AnthropicLlmClient} to the Anthropic Messages
+ * API; a scripted client stands in for them in demos and smoke runs. Everything model-specific (URL, headers, JSON envelope) stays behind this interface.
  */
 public interface LlmClient {
 
