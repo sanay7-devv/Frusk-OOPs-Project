@@ -26,7 +26,8 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Wires the intelligence module: the keyword dictionary from {@code ai/keywords.json}, the two engines, the LLM
- * client (the real API, or the scripted one when {@code app.llm.provider=fake}), the circuit breaker, and the
+ * client (Gemini by default, Anthropic, or the scripted one when {@code app.llm.provider=fake}), the circuit breaker,
+ * and the
  * {@code @Primary} {@link FallbackTextAnalysisService} that the rest of the application injects.
  */
 @Configuration
@@ -65,11 +66,16 @@ public class AiConfig {
         return new KeywordTextAnalysisService(dictionary);
     }
 
+    /** The adapter chosen by {@code app.llm.provider}: gemini (default), anthropic or fake. */
     @Bean
     LlmClient llmClient(LlmProperties properties, ObjectMapper mapper) {
-        return "fake".equalsIgnoreCase(properties.provider())
-                ? new ScriptedLlmClient(mapper)
-                : new AnthropicLlmClient(properties, mapper);
+        return switch (properties.provider()) {
+            case LlmProperties.FAKE -> new ScriptedLlmClient(mapper);
+            case LlmProperties.ANTHROPIC -> new AnthropicLlmClient(properties, mapper);
+            case LlmProperties.GEMINI -> new GeminiLlmClient(properties, mapper);
+            default -> throw new IllegalStateException("app.llm.provider must be gemini, anthropic or fake, not '"
+                    + properties.provider() + "'");
+        };
     }
 
     @Bean

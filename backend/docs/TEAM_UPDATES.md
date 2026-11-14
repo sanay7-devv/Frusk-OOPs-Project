@@ -143,7 +143,7 @@ Seven endpoints moved from Planned to built (after the 2026-11-14 merges the con
 **Testing and DevOps**
 - 14 new `app_config` keys (63 in total after the merge with M9, M10 and M11); defaults live in the code, so no seed rows are needed: `dup.tfidf.threshold.duplicate` 0.55, `dup.tfidf.threshold.related` 0.35, `resolution.min.similarity` 0.30, `ai.idf.window.days` 90, `ai.timeout.seconds` 8, `ai.breaker.failures` 3, `ai.breaker.cooloff.seconds` 60, `ai.cache.ttl.seconds` 60, `ai.ratelimit.per.minute` 20, `sla.risk.weight.elapsed|load|priority|history` 0.50 / 0.20 / 0.15 / 0.15 (must add up to 1.0), `sla.risk.scan.interval.seconds` 300. Two cross rules: tf-idf duplicate must exceed related; the four risk weights add up to 1.0.
 - No schema change: `incident_embeddings` stays unused (no embeddings in this part).
-- Environment: `LLM_API_KEY` (empty = LLM off), optional `LLM_MODEL`, `LLM_PROVIDER` (`anthropic` or `fake`; `fake` is a scripted client that never calls the network, for tests and demos). In the test profile there is no key, so the keyword engine answers, and scheduling is off; call `SlaRiskService.scanOnce()` directly with a fixed `Clock`.
+- Environment: `LLM_API_KEY` (empty = LLM off), optional `LLM_MODEL`, `LLM_PROVIDER` (`gemini` default since DEC-111, `anthropic`, or `fake`; `fake` is a scripted client that never calls the network, for tests and demos). In the test profile there is no key, so the keyword engine answers, and scheduling is off; call `SlaRiskService.scanOnce()` directly with a fixed `Clock`.
 - Class names and expected values for unit tests: `ROADMAP.md` section 7. New smoke scripts (backend lead's machine): `m12_smoke.py`, `m12_calibrate.py`, `m12_common.py`; the endpoint sweep gained a section for the seven endpoints (72 operations).
 
 **Report and content**
@@ -242,3 +242,10 @@ New and changed endpoints; reasons: `DECISIONS.md` DEC-70 to DEC-78; description
 - **Frontend:** "INC-x may be a duplicate" (`DUPLICATE_SUSPECTED`) now arrives only when an incident is closed as a duplicate; being grouped into a problem record sends nothing (show `problemId` on the incident detail instead) (DEC-110).
 - **Testing:** the password policy (M14) refuses passwords that contain a word of the user's name (4+ characters) or the first part of the e-mail; test and seed passwords must avoid them. Creating similar incidents on one service needs `confirmNotDuplicate: true` (M12). Suites that count recipients, mails or settings need a fresh database. The shared smoke scripts now read `SMOKE_PORT` / `SMOKE_DB` (m11: `ITSM_PORT` / `ITSM_DB`); `endpoint_sweep.py` runs the per-module files in `smoke-tests/sweep_parts/`. Details: ERROR_LOG E-035.
 
+---
+
+## Gemini as the AI provider (2026-11-15, DEC-111)
+
+- **Everyone:** the backend's LLM is now **Google Gemini** by default (`LLM_PROVIDER=gemini`, model `gemini-3.5-flash-lite`). Put a Gemini API key from Google AI Studio in `backend/.env` as `LLM_API_KEY=...` (or `GEMINI_API_KEY=...`); never commit it. With no key everything still works through the keyword engine, and `source` says `KEYWORD`.
+- **Frontend:** nothing changes: the `/intelligence/*` answers keep their shape; `source` is `LLM` when Gemini answered.
+- **Report:** the AI integration is "Google Gemini API through an Adapter (`GeminiLlmClient`) behind the `LlmClient` port; Anthropic and an offline scripted client are other adapters of the same port". Privacy rules are unchanged (only redacted title, description and category names are sent).

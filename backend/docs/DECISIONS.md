@@ -108,6 +108,7 @@
 | [DEC-77](#dec-77-basic-parts-withdraw-mark-duplicate-reporter-edit-lock-security-setting) | Basic parts: withdraw, mark-duplicate, reporter edit lock, security setting | 2026-11-14 | M4, M10, M12, M14 | ✅ user decision |
 | [DEC-78](#dec-78-actions-keep-answering-403-to-people-who-cannot-see-the-incident-t18) | Actions keep answering 403 to people who cannot see the incident (T18) | 2026-11-14 | M14 risk of DEC-42 | ✅ user decision |
 | [DEC-110](#dec-110-grouping-into-a-problem-record-is-not-announced) | Grouping into a problem record is not announced | 2026-11-14 | M9 + M12 | ✅ user decision |
+| [DEC-111](#dec-111-google-gemini-is-the-default-llm-provider) | Google Gemini is the default LLM provider | 2026-11-15 | M12 | ✅ user decision |
 
 ---
 
@@ -1251,7 +1252,7 @@ Smaller rules the handbook left open:
 |---|---|---|
 | 2026-11-14 | M12 | ✅ |
 
-**Decision.** `LlmClient` is a two-method port (`isAvailable`, `complete`). `AnthropicLlmClient` calls `POST /v1/messages` with the JDK `HttpClient`: no SDK dependency, a per-request timeout set from `ai.timeout.seconds`, no retries (a retry would double the wait; the fallback is the retry). Model `LLM_MODEL` (default `claude-haiku-5-5`), `anthropic-version` and base URL are properties; the key is `LLM_API_KEY` and is never logged. No sampling parameters are sent (current models reject them) and effort is `low` (a short classification should not think for long). Prompts are resource files. `LlmTextAnalysisService` sends only the title, description and category names (for summaries: comment and audit text without names), after `TextRedactor` removed emails, IP addresses and tokens; incident text is untrusted and travels as quoted JSON values. The answer must be one JSON object of the exact shape; a category id that is not in the active list, a number out of range or any other shape is a failure.
+**Decision.** (The default provider is Gemini since DEC-111; the Anthropic adapter below remains selectable.) `LlmClient` is a two-method port (`isAvailable`, `complete`). `AnthropicLlmClient` calls `POST /v1/messages` with the JDK `HttpClient`: no SDK dependency, a per-request timeout set from `ai.timeout.seconds`, no retries (a retry would double the wait; the fallback is the retry). Model `LLM_MODEL` (default `claude-haiku-5-5`), `anthropic-version` and base URL are properties; the key is `LLM_API_KEY` and is never logged. No sampling parameters are sent (current models reject them) and effort is `low` (a short classification should not think for long). Prompts are resource files. `LlmTextAnalysisService` sends only the title, description and category names (for summaries: comment and audit text without names), after `TextRedactor` removed emails, IP addresses and tokens; incident text is untrusted and travels as quoted JSON values. The answer must be one JSON object of the exact shape; a category id that is not in the active list, a number out of range or any other shape is a failure.
 
 **Options.** The official Java SDK (typed, but a new dependency tree and its own retry and timeout behaviour that would have to be switched off); **plain HTTP** ✔ (the brief asked for HTTP, full control of the 8-second limit); a provider-neutral framework (more code than the three calls need).
 
@@ -1908,3 +1909,18 @@ The bytes go through an `AttachmentStorage` port with `DiskAttachmentStorage` as
 
 **Cross-questions.** *"How does a reporter learn their incident is part of a bigger outage?"* The incident detail shows its `problemId`, and the known-outage banner on the report form shows open outages before they file. *"Why not a new audit action GROUPED?"* `AuditAction` values are part of the agreed schema (Appendix A.4); the status distinguishes the two cases without changing it.
 
+### DEC-111: Google Gemini is the default LLM provider
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-15 | M12 | ✅ user decision | User ("I would be using a Gemini key") |
+
+**Decision.** A second adapter, `GeminiLlmClient`, implements the existing `LlmClient` port and is the default (`app.llm.provider=gemini`). It calls `POST {base}/v1beta/models/{model}:generateContent` with the JDK `HttpClient` (no SDK, as DEC-M12-4), sends the system prompt as `system_instruction`, the redacted user message as the one turn of `contents`, and `generationConfig {responseMimeType: application/json, maxOutputTokens: 1024}`; it reads the text parts of the first candidate and skips thought summaries. The key goes in the `x-goog-api-key` header, never in the URL. A blocked prompt (`promptFeedback.blockReason`), a candidate stopped for SAFETY, RECITATION or PROHIBITED_CONTENT, a non-200 status or an empty answer throws `LlmException`, which the fallback wrapper turns into the keyword answer (DEC-M12-5). Model and base URL default per provider: `gemini-3.5-flash-lite` (Google's recommended fast model for new projects, minimal thinking by default), `https://generativelanguage.googleapis.com`. The key is read from `LLM_API_KEY`, or `GEMINI_API_KEY` when that is empty. An unknown provider value stops the start with a clear message.
+
+**Options.** (a) Gemini adapter beside Anthropic, Gemini default (chosen: the team has a Gemini key; one more class shows the Adapter pattern with two real providers); (b) replace the Anthropic adapter (less code, but loses a working adapter); (c) Google's Java SDK (typed, but a new dependency tree and its own retry and timeout behaviour, the same reasons as DEC-M12-4).
+
+**What did not change.** Prompts, redaction, strict JSON validation, timeout, circuit breaker, cache, rate limit and the no-key path; TF-IDF similarity never goes to the model.
+
+**Verified.** Offline, against a stub of the Gemini API (`smoke-tests/gemini_stub_check.py`, 10/10): URL and model, key in the header and not the URL, JSON output requested, thought parts skipped, category and intake answered with `source` LLM, a blocked prompt and an HTTP 500 fall back to KEYWORD. **Not yet verified against the real Gemini service** (needs the team's key in `.env`).
+
+**Cross-questions.** *"Why not the Gemini SDK?"* The same reasons as for Anthropic: full control of the 8-second limit and no hidden retries. *"What if Google changes the model?"* The model is a setting (`LLM_MODEL`); the code only knows the request shape. *"Is the key safe?"* It is read from the environment, sent only in a header, and never logged.
