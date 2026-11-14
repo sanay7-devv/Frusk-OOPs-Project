@@ -1,0 +1,5 @@
+services:
+  backend:
+    profiles: [demo]
+    environment:
+      SPRING_PROFILES_ACTIVE: demo

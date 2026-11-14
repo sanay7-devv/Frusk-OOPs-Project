@@ -1,0 +1,57 @@
+name: iitsm-local
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-iitsm}
+      POSTGRES_USER: ${POSTGRES_USER:-iitsm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iitsm}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:${MAIL_WEB_PORT:-8025}:8025"
+      - "127.0.0.1:${MAIL_SMTP_PORT:-1025}:1025"
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-iitsm}
+      DB_USER: ${POSTGRES_USER:-iitsm}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-iitsm}
+      JWT_SECRET: ${JWT_SECRET:-local-demo-only-secret-change-before-any-shared-deployment}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      APP_SCHEDULING_ENABLED: ${APP_SCHEDULING_ENABLED:-true}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
+volumes:
+  database:

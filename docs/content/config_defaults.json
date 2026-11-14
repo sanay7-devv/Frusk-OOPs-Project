@@ -1,0 +1,317 @@
+[
+  {
+    "key": "priority.strategy",
+    "value": "WEIGHTED",
+    "description": "Active priority algorithm"
+  },
+  {
+    "key": "priority.band.p1",
+    "value": "60",
+    "description": "Minimum score for P1"
+  },
+  {
+    "key": "priority.band.p2",
+    "value": "30",
+    "description": "Minimum score for P2"
+  },
+  {
+    "key": "priority.band.p3",
+    "value": "10",
+    "description": "Minimum score for P3"
+  },
+  {
+    "key": "priority.users.mid.threshold",
+    "value": "10",
+    "description": "Affected users from which the mid multiplier applies"
+  },
+  {
+    "key": "priority.users.high.threshold",
+    "value": "101",
+    "description": "Affected users from which the high multiplier applies"
+  },
+  {
+    "key": "priority.users.mid.multiplier",
+    "value": "1.25",
+    "description": "Score multiplier for mid affected users"
+  },
+  {
+    "key": "priority.users.high.multiplier",
+    "value": "1.5",
+    "description": "Score multiplier for many affected users"
+  },
+  {
+    "key": "assignment.strategy",
+    "value": "COMPOSITE",
+    "description": "Active technician assignment strategy"
+  },
+  {
+    "key": "assignment.weight.skill",
+    "value": "0.35",
+    "description": "Composite weight: skill match"
+  },
+  {
+    "key": "assignment.weight.load",
+    "value": "0.25",
+    "description": "Composite weight: current load"
+  },
+  {
+    "key": "assignment.weight.experience",
+    "value": "0.15",
+    "description": "Composite weight: experience"
+  },
+  {
+    "key": "assignment.weight.priority",
+    "value": "0.10",
+    "description": "Composite weight: priority fit"
+  },
+  {
+    "key": "assignment.weight.familiarity",
+    "value": "0.15",
+    "description": "Composite weight: past fixes on the same service"
+  },
+  {
+    "key": "assignment.familiarity.window.days",
+    "value": "90",
+    "description": "How far back resolved incidents count toward service familiarity"
+  },
+  {
+    "key": "assignment.familiarity.target",
+    "value": "5",
+    "description": "Resolved incidents on a service that count as full familiarity"
+  },
+  {
+    "key": "sla.warn.first.percent",
+    "value": "75",
+    "description": "First SLA warning at this percent of the deadline"
+  },
+  {
+    "key": "sla.warn.second.percent",
+    "value": "90",
+    "description": "Second SLA warning at this percent of the deadline"
+  },
+  {
+    "key": "sla.monitor.interval.seconds",
+    "value": "60",
+    "description": "How often the SLA monitor runs"
+  },
+  {
+    "key": "sla.business.zone",
+    "value": "Asia/Kolkata",
+    "description": "Time zone of the business-hours calendar"
+  },
+  {
+    "key": "sla.business.open",
+    "value": "09:00",
+    "description": "Business hours start (HH:mm)"
+  },
+  {
+    "key": "sla.business.close",
+    "value": "18:00",
+    "description": "Business hours end (HH:mm)"
+  },
+  {
+    "key": "sla.business.days",
+    "value": "MON,TUE,WED,THU,FRI",
+    "description": "Working days, comma separated"
+  },
+  {
+    "key": "sla.business.holidays",
+    "value": "",
+    "description": "Holidays, comma separated yyyy-MM-dd (may be empty)"
+  },
+  {
+    "key": "escalation.monitor.interval.seconds",
+    "value": "60",
+    "description": "How often the escalation monitor runs"
+  },
+  {
+    "key": "escalation.exhausted.minutes",
+    "value": "15",
+    "description": "Minutes an unacknowledged P1 or P2 may stay at level 3 before the one final 'escalation exhausted' alert"
+  },
+  {
+    "key": "dup.threshold.duplicate",
+    "value": "0.80",
+    "description": "Similarity from which an incident is a likely duplicate"
+  },
+  {
+    "key": "dup.threshold.related",
+    "value": "0.65",
+    "description": "Similarity from which incidents are possibly related"
+  },
+  {
+    "key": "dup.window.hours",
+    "value": "24",
+    "description": "Look-back window for duplicate detection"
+  },
+  {
+    "key": "autocat.min.confidence",
+    "value": "0.60",
+    "description": "Minimum confidence to show a category suggestion"
+  },
+  {
+    "key": "sla.risk.threshold",
+    "value": "0.70",
+    "description": "Risk score from which an incident is flagged at risk"
+  },
+  {
+    "key": "verify.auto.hours",
+    "value": "48",
+    "description": "Hours after which a resolved incident is verified automatically"
+  },
+  {
+    "key": "verify.monitor.interval.seconds",
+    "value": "300",
+    "description": "How often the auto-verify job looks for resolved incidents nobody confirmed"
+  },
+  {
+    "key": "reopen.window.days",
+    "value": "7",
+    "description": "Days after closure during which an incident can be reopened"
+  },
+  {
+    "key": "ai.primary",
+    "value": "LLM",
+    "description": "Primary text analysis engine (falls back to KEYWORD on failure)"
+  },
+  {
+    "key": "notification.digest.threshold",
+    "value": "5",
+    "description": "SLA warnings one person may get in one monitor run before they are folded into one digest"
+  },
+  {
+    "key": "notification.email.retries",
+    "value": "3",
+    "description": "Retries after a failed email (the first attempt is not counted)"
+  },
+  {
+    "key": "notification.email.backoff.seconds",
+    "value": "2",
+    "description": "Wait before the first email retry; doubles with every retry"
+  },
+  {
+    "key": "notification.email.from",
+    "value": "no-reply@iitsm.local",
+    "description": "Sender address of notification emails"
+  },
+  {
+    "key": "notification.link.base.url",
+    "value": "http://localhost:5173",
+    "description": "Frontend address used for links in emails"
+  },
+  {
+    "key": "notification.chat.webhook.url",
+    "value": "",
+    "description": "Incoming-webhook URL of the chat room; empty means chat messages are only logged"
+  },
+  {
+    "key": "dup.tfidf.threshold.duplicate",
+    "value": "0.55",
+    "description": "TF-IDF similarity from which an incident is a likely duplicate"
+  },
+  {
+    "key": "dup.tfidf.threshold.related",
+    "value": "0.35",
+    "description": "TF-IDF similarity from which incidents are possibly related"
+  },
+  {
+    "key": "resolution.min.similarity",
+    "value": "0.30",
+    "description": "Minimum TF-IDF similarity for a resolved incident to be suggested as a fix"
+  },
+  {
+    "key": "ai.idf.window.days",
+    "value": "90",
+    "description": "How far back incident texts count when TF-IDF weights words by rarity"
+  },
+  {
+    "key": "ai.timeout.seconds",
+    "value": "8",
+    "description": "Seconds to wait for the LLM before using the keyword engine"
+  },
+  {
+    "key": "ai.breaker.failures",
+    "value": "3",
+    "description": "Consecutive LLM failures after which the LLM is skipped"
+  },
+  {
+    "key": "ai.breaker.cooloff.seconds",
+    "value": "60",
+    "description": "Seconds the LLM is skipped after the breaker opens"
+  },
+  {
+    "key": "ai.cache.ttl.seconds",
+    "value": "60",
+    "description": "Seconds an identical suggestion request reuses its answer"
+  },
+  {
+    "key": "ai.ratelimit.per.minute",
+    "value": "20",
+    "description": "Suggestion requests per user per minute (429 above)"
+  },
+  {
+    "key": "sla.risk.weight.elapsed",
+    "value": "0.50",
+    "description": "SLA risk weight: share of resolution time elapsed"
+  },
+  {
+    "key": "sla.risk.weight.load",
+    "value": "0.20",
+    "description": "SLA risk weight: assigned technician's load ratio"
+  },
+  {
+    "key": "sla.risk.weight.priority",
+    "value": "0.15",
+    "description": "SLA risk weight: priority"
+  },
+  {
+    "key": "sla.risk.weight.history",
+    "value": "0.15",
+    "description": "SLA risk weight: how long similar past incidents took against the target"
+  },
+  {
+    "key": "sla.risk.scan.interval.seconds",
+    "value": "300",
+    "description": "How often the SLA risk scan runs"
+  },
+  {
+    "key": "report.export.max.rows",
+    "value": "10000",
+    "description": "Most rows a CSV export writes"
+  },
+  {
+    "key": "report.trend.max.buckets",
+    "value": "400",
+    "description": "Most days or weeks one trend report may span"
+  },
+  {
+    "key": "coverage.window.days",
+    "value": "90",
+    "description": "How far back incidents tie a service to the categories it needs (coverage risk report)"
+  },
+  {
+    "key": "coverage.min.criticality",
+    "value": "4",
+    "description": "Services from this criticality on are flagged when coverage is thin"
+  },
+  {
+    "key": "coverage.min.holders",
+    "value": "2",
+    "description": "Available technicians a flagged service's category needs at least"
+  },
+  {
+    "key": "saved.filters.max",
+    "value": "20",
+    "description": "Most saved incident views one user may keep"
+  },
+  {
+    "key": "security.lockout.attempts",
+    "value": "5",
+    "description": "Failed logins before the account is locked"
+  },
+  {
+    "key": "security.lockout.minutes",
+    "value": "15",
+    "description": "Minutes an account stays locked"
+  }
+]

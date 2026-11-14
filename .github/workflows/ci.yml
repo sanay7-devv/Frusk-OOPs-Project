@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend-test:
+    name: Backend tests with PostgreSQL migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: iitsm
+          POSTGRES_USER: iitsm
+          POSTGRES_PASSWORD: iitsm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iitsm -d iitsm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      DB_URL: jdbc:postgresql://localhost:5432/iitsm
+      DB_USER: iitsm
+      DB_PASSWORD: iitsm
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Run backend tests
+        working-directory: backend
+        run: bash ./mvnw --batch-mode --no-transfer-progress test
+
+  frontend-test:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm run test -- --run
+
+  frontend-build:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+
+  database-seeds:
+    name: Seed integrity (${{ matrix.seed-profile }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        seed-profile: [dev, demo]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: iitsm
+          POSTGRES_USER: iitsm
+          POSTGRES_PASSWORD: iitsm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iitsm -d iitsm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_FLYWAY_LOCATIONS: ${{ matrix.seed-profile == 'demo' && 'classpath:db/migration,classpath:db/seed,classpath:db/demo' || 'classpath:db/migration,classpath:db/seed' }}
+      DB_URL: jdbc:postgresql://localhost:5432/iitsm
+      DB_USER: iitsm
+      DB_PASSWORD: iitsm
+      VERIFY_DEMO_SEEDS: "true"
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: iitsm
+      PGUSER: iitsm
+      PGPASSWORD: iitsm
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Regenerate seeds and check reproducibility
+        run: |
+          python3 db/tools/prepare_seeds.py
+          git diff --exit-code -- db backend/src/main/resources/db docs/content
+      - name: Check generator boundaries and invalid input
+        run: python3 db/tools/test_seed_generator.py
+      - name: Start backend test context with Flyway seeds and validate mappings
+        working-directory: backend
+        run: bash ./mvnw --batch-mode --no-transfer-progress test
+      - name: Check data relationships and audit protection
+        run: psql -v ON_ERROR_STOP=1 -f db/checks/verify.sql
+      - name: Check demo-only timer separation
+        run: |
+          actual=$(psql -Atc "SELECT value FROM app_config WHERE key='verify.auto.hours'")
+          if [ "${{ matrix.seed-profile }}" = "demo" ]; then test "$actual" = "0.033"; else test "$actual" = "48"; fi
+      - name: Upload backend test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seed-tests-${{ matrix.seed-profile }}
+          path: backend/target/surefire-reports/
+
+  demo-stack:
+    name: Demo stack and snapshot round trip
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_SCHEDULING_ENABLED: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Validate Compose configuration
+        run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo config --quiet
+      - name: Build and reset the demo stack
+        run: bash db/tools/reset-demo.sh
+      - name: Check frontend and backend health
+        run: |
+          curl --fail --retry 5 --retry-delay 2 http://localhost:3000/
+          curl --fail http://localhost:8080/actuator/health
+      - name: Check database seed integrity
+        run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo exec -T db psql -U iitsm -d iitsm -v ON_ERROR_STOP=1 < db/checks/verify.sql
+      - name: Check real API logins and authorization
+        run: python3 deploy/api_smoke.py
+      - name: Snapshot and restore round trip
+        run: |
+          bash db/tools/snapshot.sh
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo exec -T db psql -U iitsm -d iitsm -v ON_ERROR_STOP=1 -c "UPDATE users SET name='Snapshot mutation' WHERE email='employee1@iitsm.demo'"
+          bash db/tools/restore.sh
+          name=$(docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo exec -T db psql -U iitsm -d iitsm -Atc "SELECT name FROM users WHERE email='employee1@iitsm.demo'")
+          test "$name" = "Employee 1"
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo exec -T db psql -U iitsm -d iitsm -v ON_ERROR_STOP=1 < db/checks/verify.sql
+      - name: Run Postman Payment lifecycle and negative cases
+        run: npx --yes newman run deploy/postman/iitsm.postman_collection.json -e deploy/postman/local.postman_environment.json --reporters cli,json --reporter-json-export /tmp/iitsm-newman.json
+      - name: Check attachment and duplicate contracts (T10 and T16)
+        run: python3 deploy/handbook_contract_checks.py
+      - name: Save stack logs
+        if: always()
+        run: |
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color > /tmp/iitsm-stack.log
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color --tail 120 backend
+      - name: Upload stack evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-stack-evidence
+          path: |
+            /tmp/iitsm-stack.log
+            /tmp/iitsm-api-smoke.json
+            /tmp/iitsm-newman.json
+            /tmp/iitsm-handbook-contracts.json
+      - name: Shut down disposable stack
+        if: always()
+        run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo down --volumes
