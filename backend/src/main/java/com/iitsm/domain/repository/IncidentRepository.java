@@ -39,5 +39,11 @@ public interface IncidentRepository {
     /** Every incident grouped under a problem record, in creation order. */
     List<Incident> findByProblemIdOrderByCreatedAtAsc(Long problemId);
 
+    /** Recurring-problem detector: incidents resolved since a moment, with a category, not in a problem record. */
+    List<Incident> findResolvedUngroupedSince(Instant since);
+
+    /** Recurring-problem detector: incidents reopened at least {@code reopens} times, updated since a moment, ungrouped. */
+    List<Incident> findReopenedUngrouped(int reopens, Instant since);
+
     Incident save(Incident incident);
 }

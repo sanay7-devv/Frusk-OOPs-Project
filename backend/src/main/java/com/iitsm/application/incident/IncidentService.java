@@ -26,6 +26,7 @@ import com.iitsm.application.incident.command.ResolveCommand;
 import com.iitsm.application.incident.command.StartWorkCommand;
 import com.iitsm.application.incident.command.VerifyCommand;
 import com.iitsm.application.incident.command.WithdrawCommand;
+import com.iitsm.application.problem.ProblemService;
 import com.iitsm.domain.assignment.EligibilityFilter;
 import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.event.TriageNeeded;
@@ -94,6 +95,7 @@ public class IncidentService {
     private final ApplicationEventPublisher events;
     private final IncidentEventPublisher publisher;
     private final IncidentCommandRunner commands;
+    private final ProblemService problems;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
@@ -101,7 +103,8 @@ public class IncidentService {
                            IncidentFactory factory, PriorityRecalculator priorities, SlaPolicyResolver slaPolicies,
                            ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
                            AssignmentService assignment, AuditRepository audit, ApplicationEventPublisher events,
-                           IncidentEventPublisher publisher, IncidentCommandRunner commands, Clock clock) {
+                           IncidentEventPublisher publisher, IncidentCommandRunner commands, ProblemService problems,
+                           Clock clock) {
         this.incidents = incidents;
         this.search = search;
         this.comments = comments;
@@ -119,6 +122,7 @@ public class IncidentService {
         this.events = events;
         this.publisher = publisher;
         this.commands = commands;
+        this.problems = problems;
         this.clock = clock;
     }
 
@@ -359,8 +363,11 @@ public class IncidentService {
     @Transactional
     public IncidentDetail resolve(AuthenticatedUser caller, Long id, String rootCause, String notes, String steps,
                                   Integer timeSpentMinutes, boolean reusableSolution) {
-        return commands.run(caller, id,
+        IncidentDetail resolved = commands.run(caller, id,
                 new ResolveCommand(rootCause, notes, steps, timeSpentMinutes, reusableSolution));
+        // the lead of a problem record resolved: the rest of the record gets the same fix (DEC-72)
+        problems.cascadeAfterResolve(id, caller.id());
+        return resolved;
     }
 
     @Transactional

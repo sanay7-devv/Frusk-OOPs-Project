@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.iitsm.application.auth.AuthenticatedUser;
+import com.iitsm.application.intelligence.ChatIntakeService;
 import com.iitsm.application.intelligence.IntelligenceService;
 import com.iitsm.application.intelligence.IntelligenceViews.CategorySuggestionView;
 import com.iitsm.application.intelligence.IntelligenceViews.IntakeSuggestionView;
@@ -20,6 +21,7 @@ import com.iitsm.application.intelligence.IntelligenceViews.SlaRiskView;
 import com.iitsm.application.intelligence.IntelligenceViews.SuggestedResolutionView;
 import com.iitsm.application.intelligence.IntelligenceViews.ThreadSummaryView;
 import com.iitsm.application.intelligence.SlaRiskService;
+import com.iitsm.web.dto.intelligence.ChatRequest;
 import com.iitsm.web.dto.intelligence.SimilarRequest;
 import com.iitsm.web.dto.intelligence.SuggestCategoryRequest;
 import com.iitsm.web.dto.intelligence.SuggestIntakeRequest;
@@ -46,10 +48,12 @@ public class IntelligenceController {
 
     private final IntelligenceService intelligence;
     private final SlaRiskService risk;
+    private final ChatIntakeService chat;
 
-    public IntelligenceController(IntelligenceService intelligence, SlaRiskService risk) {
+    public IntelligenceController(IntelligenceService intelligence, SlaRiskService risk, ChatIntakeService chat) {
         this.intelligence = intelligence;
         this.risk = risk;
+        this.chat = chat;
     }
 
     @PostMapping("/intelligence/suggest-category")
@@ -68,6 +72,16 @@ public class IntelligenceController {
     public IntakeSuggestionView suggestIntake(@AuthenticationPrincipal AuthenticatedUser caller,
                                               @Valid @RequestBody SuggestIntakeRequest request) {
         return intelligence.suggestIntake(caller, request.description());
+    }
+
+    @PostMapping("/intelligence/chat")
+    @PreAuthorize("hasAuthority('INCIDENT_CREATE')")
+    @Operation(summary = "Chatbot incident reporting: one turn of a guided conversation that fills the report form "
+            + "(works without an LLM key); file the finished draft with POST /incidents")
+    @ApiErrors({ErrorCode.RATE_LIMITED})
+    public ChatIntakeService.Reply chat(@AuthenticationPrincipal AuthenticatedUser caller,
+                                        @Valid @RequestBody ChatRequest request) {
+        return chat.next(caller, request.draft(), request.expecting(), request.answer());
     }
 
     @PostMapping("/intelligence/similar")
