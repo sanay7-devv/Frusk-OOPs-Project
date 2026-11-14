@@ -62,6 +62,8 @@ class HandbookIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired TestClock clock;
     @Autowired ConfigService config;
+    @Autowired com.iitsm.application.sla.SlaMonitor slaMonitor;
+    @Autowired com.iitsm.application.escalation.EscalationMonitor escalationMonitor;
     @LocalServerPort int port;
     private final HttpClient client=HttpClient.newHttpClient();
     private static final AtomicInteger SERIAL=new AtomicInteger();
@@ -98,7 +100,7 @@ class HandbookIntegrationTest {
         for(int level=1;level<=3;level++) for(String priority:List.of("P1","P2"))
             jdbc.update("insert into escalation_policies(priority,level,timeout_minutes) values (?,?,?)",
                     priority,level,priority.equals("P1")?10:30);
-        config.update(admin,Map.of("assignment.strategy","COMPOSITE"));
+        config.update(admin,Map.of("assignment.strategy","COMPOSITE", "notification.email.retries","0"));
         employeeToken=login(employee).path("accessToken").asText();
         techToken=login(technician).path("accessToken").asText();
         otherTechToken=login(otherTechnician).path("accessToken").asText();
@@ -181,7 +183,8 @@ class HandbookIntegrationTest {
             code(wrong,"INVALID_CREDENTIALS"); assertEquals(unknown.path("message").asText(),wrong.path("message").asText());
         }
         code(call("POST","/auth/login",null,Map.of("email",emails.get(employee),"password",PASSWORD),423),"ACCOUNT_LOCKED");
-        assertEquals(5,jdbc.queryForObject("select failed_logins from users where id=?",Integer.class,employee));
+        assertTrue(jdbc.queryForObject("select locked_until=? from users where id=?",Boolean.class,
+                java.sql.Timestamp.from(clock.instant().plus(Duration.ofMinutes(15))),employee));
         clock.advance(Duration.ofMinutes(15)); login(employee);
         assertEquals(0,jdbc.queryForObject("select failed_logins from users where id=?",Integer.class,employee));
         assertNull(jdbc.queryForObject("select locked_until from users where id=?",Object.class,employee));
@@ -243,5 +246,209 @@ class HandbookIntegrationTest {
         jdbc.update("delete from sla_policies where priority='P4'");
         code(call("POST","/incidents",employeeToken,incidentBody(service,1,1,1),422),"SLA_NOT_CONFIGURED");
         assertEquals(0,jdbc.queryForObject("select count(*) from incidents where reporter_id=?",Integer.class,employee));
+    }
+
+    private int count(String table,long incident,String condition) {
+        return jdbc.queryForObject("select count(*) from "+table+" where incident_id=? "+condition,Integer.class,incident);
+    }
+
+    private long fixture(String state,Long assignee,String priority,Instant closedAt) {
+        Instant created=closedAt==null?clock.instant():closedAt.minus(Duration.ofMinutes(10));
+        int magnitude=priority==null?1:priority.equals("P1")?4:priority.equals("P3")?2:1;
+        return id("""
+                insert into incidents(code,title,description,reporter_id,category_id,service_id,assignee_id,
+                    impact,urgency,affected_users,priority_score,priority,status,created_at,updated_at,
+                    acknowledged_at,resolved_at,closed_at,closure_reason,response_due,resolution_due)
+                values ('INC-2026-'||lpad(nextval('incident_code_seq')::text,5,'0'),
+                    'Independent test fixture','Fictional incident prepared in the required starting state.',
+                    ?,?,?,?,?,?,1,?,?,?,?,?,?,?,?,?,?,?) returning id
+                """,employee,state.equals("NEW")?null:category,service,assignee,magnitude,magnitude,
+                priority==null?null:magnitude*magnitude*4,priority,state,
+                java.sql.Timestamp.from(created),java.sql.Timestamp.from(created),
+                closedAt==null?null:java.sql.Timestamp.from(created.plusSeconds(60)),
+                closedAt==null?null:java.sql.Timestamp.from(closedAt.minusSeconds(60)),
+                closedAt==null?null:java.sql.Timestamp.from(closedAt),
+                closedAt==null?null:"VERIFIED",java.sql.Timestamp.from(created.plusSeconds(300)),
+                java.sql.Timestamp.from(created.plusSeconds(1800)));
+    }
+
+    private JsonNode closeThroughApi(JsonNode incident) throws Exception {
+        long id=incident.path("id").asLong();
+        String handler=tokenFor(incident.path("assignee").path("id").asLong());
+        action(id,"acknowledge",handler,null,200); action(id,"start",handler,null,200);
+        action(id,"resolve",handler,Map.of("rootCause","Synthetic test configuration regression",
+                "notes","Restored the approved configuration and verified recovery.","timeSpentMinutes",5,
+                "steps","Reproduced, corrected configuration, verified recovery.","reusableSolution",true),200);
+        action(id,"verify",employeeToken,null,200);
+        return action(id,"close",adminToken,null,200);
+    }
+
+    @Test @DisplayName("T01: Payment creation has priority, SLA, assignment, audit and notifications")
+    void t01_payment_creation() throws Exception {
+        JsonNode incident=call("POST","/incidents",employeeToken,incidentBody(payment,5,5,150),201);
+        long id=incident.path("id").asLong(); long assignee=incident.path("assignee").path("id").asLong();
+        assertEquals(187,incident.path("priorityScore").asInt()); assertEquals("P1",incident.path("priority").asText());
+        assertEquals(category,incident.path("category").path("id").asLong());
+        assertEquals("ASSIGNED",incident.path("status").asText()); assertTrue(assignee>0);
+        Instant created=Instant.parse(incident.path("createdAt").asText());
+        assertEquals(created.plusSeconds(180),Instant.parse(incident.path("responseDue").asText()));
+        assertEquals(created.plusSeconds(1200),Instant.parse(incident.path("resolutionDue").asText()));
+        for(String action:List.of("INCIDENT_CREATED","CLASSIFIED","PRIORITY_CALCULATED","ASSIGNED"))
+            assertEquals(1,count("audit_records",id,"and action='"+action+"'"));
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(()->{
+            assertTrue(jdbc.queryForObject("select count(*) from notifications where incident_id=? and user_id=? and channel='IN_APP'",Integer.class,id,employee)>0);
+            assertTrue(jdbc.queryForObject("select count(*) from notifications where incident_id=? and user_id=? and channel='IN_APP' and event_type='INCIDENT_ASSIGNED'",Integer.class,id,assignee)>0);
+        });
+    }
+
+    @Test @DisplayName("T02: acknowledge/start stop the response clock and audit both transitions")
+    void t02_acknowledge_start() throws Exception {
+        JsonNode incident=create(employeeToken); long id=incident.path("id").asLong();
+        String token=tokenFor(incident.path("assignee").path("id").asLong());
+        JsonNode acknowledged=action(id,"acknowledge",token,null,200);
+        assertEquals("ACKNOWLEDGED",acknowledged.path("status").asText());
+        assertEquals(clock.instant(),Instant.parse(acknowledged.path("acknowledgedAt").asText()));
+        JsonNode started=action(id,"start",token,null,200); assertEquals("IN_PROGRESS",started.path("status").asText());
+        assertEquals(acknowledged.path("acknowledgedAt"),started.path("acknowledgedAt"));
+        assertEquals(1,count("audit_records",id,"and action='ACKNOWLEDGED' and previous_state='ASSIGNED' and new_state='ACKNOWLEDGED'"));
+        assertEquals(1,count("audit_records",id,"and action='WORK_STARTED' and previous_state='ACKNOWLEDGED' and new_state='IN_PROGRESS'"));
+        clock.advance(Duration.ofMinutes(61)); slaMonitor.runOnce();
+        assertEquals(0,count("sla_violations",id,"and type='RESPONSE'"));
+    }
+
+    @Test @DisplayName("T03: full successful lifecycle closes VERIFIED with one audit per action")
+    void t03_full_lifecycle() throws Exception {
+        JsonNode closed=closeThroughApi(create(employeeToken)); long id=closed.path("id").asLong();
+        assertEquals("CLOSED",closed.path("status").asText()); assertEquals("VERIFIED",closed.path("closureReason").asText());
+        for(String action:List.of("INCIDENT_CREATED","CLASSIFIED","PRIORITY_CALCULATED","ASSIGNED",
+                "ACKNOWLEDGED","WORK_STARTED","RESOLVED","VERIFIED","CLOSED"))
+            assertEquals(1,count("audit_records",id,"and action='"+action+"'"));
+    }
+
+    @Test @DisplayName("T04: live LOAD strategy picks the lowest-load eligible technician twice")
+    void t04_live_strategy_change() throws Exception {
+        jdbc.update("update technician_profiles set availability='OFF_DUTY' where user_id in (?,?)",lead,karthik);
+        fixture("ASSIGNED",technician,"P1",null);
+        call("PUT","/admin/config",adminToken,List.of(Map.of("key","assignment.strategy","value","LOAD")),200);
+        assertEquals(otherTechnician,create(employeeToken).path("assignee").path("id").asLong());
+        assertEquals(otherTechnician,create(employeeToken).path("assignee").path("id").asLong());
+    }
+
+    @Test @DisplayName("T08: reopening works just before the seven-day limit and fails after it")
+    void t08_reopen_window() throws Exception {
+        long inside=fixture("CLOSED",technician,"P3",clock.instant().minus(Duration.ofDays(7)).plusSeconds(60));
+        long outside=fixture("CLOSED",technician,"P3",clock.instant().minus(Duration.ofDays(7)).minusSeconds(60));
+        JsonNode reopened=action(inside,"reopen",employeeToken,Map.of("reason","The synthetic issue has returned again."),200);
+        assertEquals("REOPENED",reopened.path("status").asText());
+        code(action(outside,"reopen",employeeToken,Map.of("reason","The synthetic issue has returned again."),409),"INVALID_STATE_TRANSITION");
+        assertEquals("CLOSED",jdbc.queryForObject("select status from incidents where id=?",String.class,outside));
+        assertEquals(0,count("audit_records",outside,"and action='REOPENED'"));
+    }
+
+    @Test @DisplayName("T11: closing NEW is rejected without state or audit mutation")
+    void t11_illegal_close() throws Exception {
+        long id=fixture("NEW",null,null,null);
+        code(action(id,"close",adminToken,null,409),"INVALID_STATE_TRANSITION");
+        assertEquals("NEW",jdbc.queryForObject("select status from incidents where id=?",String.class,id));
+        assertEquals(0,count("audit_records",id,"and action='CLOSED'"));
+    }
+
+    @Test @DisplayName("T12: missing resolution notes leave work IN_PROGRESS")
+    void t12_missing_resolution_notes() throws Exception {
+        JsonNode incident=inProgress(); long id=incident.path("id").asLong();
+        code(action(id,"resolve",tokenFor(incident.path("assignee").path("id").asLong()),
+                Map.of("rootCause","Synthetic test configuration error","notes","","timeSpentMinutes",5),400),"VALIDATION_FAILED");
+        assertEquals("IN_PROGRESS",jdbc.queryForObject("select status from incidents where id=?",String.class,id));
+        assertEquals(0,count("audit_records",id,"and action='RESOLVED'"));
+    }
+
+    @Test @DisplayName("T13: no available skills leaves triage and notifies the lead")
+    void t13_triage_fallback() throws Exception {
+        jdbc.update("update technician_profiles set availability='OFF_DUTY'");
+        JsonNode incident=create(employeeToken); long id=incident.path("id").asLong();
+        assertEquals("CLASSIFIED",incident.path("status").asText()); assertTrue(incident.path("assignee").isNull());
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(()->assertTrue(jdbc.queryForObject(
+                "select count(*) from notifications where incident_id=? and user_id=? and event_type='TRIAGE_NEEDED' and channel='IN_APP'",Integer.class,id,lead)>0));
+    }
+
+    @Test @DisplayName("T14: missing service returns SERVICE_NOT_FOUND")
+    void t14_unknown_service() throws Exception {
+        code(call("POST","/incidents",employeeToken,incidentBody(99999,1,1,1),404),"SERVICE_NOT_FOUND");
+    }
+
+    @Test @DisplayName("T18: another technician cannot acknowledge or mutate the assigned incident")
+    void t18_wrong_technician() throws Exception {
+        JsonNode incident=create(employeeToken); long id=incident.path("id").asLong();
+        long assigned=incident.path("assignee").path("id").asLong();
+        String wrong=assigned==technician?otherTechToken:techToken;
+        code(action(id,"acknowledge",wrong,null,403),"UNAUTHORIZED_OPERATION");
+        assertEquals("ASSIGNED",jdbc.queryForObject("select status from incidents where id=?",String.class,id));
+        assertEquals(0,count("audit_records",id,"and action='ACKNOWLEDGED'"));
+    }
+
+    @Test @DisplayName("T22: escalation climbs 1/2/3 once and stops after acknowledgment")
+    void t22_escalation_and_stop() throws Exception {
+        JsonNode incident=call("POST","/incidents",employeeToken,incidentBody(payment,5,5,150),201);
+        long id=incident.path("id").asLong();
+        long[] recipients={lead,admin,manager};
+        for(int level=1;level<=3;level++) {
+            clock.advance(Duration.ofMinutes(10).plusSeconds(1));
+            escalationMonitor.runOnce(); escalationMonitor.runOnce();
+            assertEquals(level,jdbc.queryForObject("select escalation_level from incidents where id=?",Integer.class,id));
+            assertEquals(level,count("audit_records",id,"and action='ESCALATED'"));
+            long recipient=recipients[level-1];
+            await().atMost(Duration.ofSeconds(5)).untilAsserted(()->assertTrue(jdbc.queryForObject(
+                    "select count(*) from notifications where incident_id=? and user_id=? and event_type='INCIDENT_ESCALATED' and channel='IN_APP'",Integer.class,id,recipient)>0));
+        }
+        action(id,"acknowledge",tokenFor(incident.path("assignee").path("id").asLong()),null,200);
+        clock.advance(Duration.ofHours(1)); escalationMonitor.runOnce();
+        assertEquals(3,count("audit_records",id,"and action='ESCALATED'"));
+    }
+
+    @Test @DisplayName("T23: SLA monitor warnings and violation are durable and fire once")
+    void t23_monitor_deduplication() throws Exception {
+        JsonNode incident=inProgress(); long id=incident.path("id").asLong();
+        Instant created=Instant.parse(incident.path("createdAt").asText());
+        long seconds=Duration.between(created,Instant.parse(incident.path("resolutionDue").asText())).getSeconds();
+        int[] percentages={75,90,100};
+        for(int i=0;i<percentages.length;i++) {
+            clock.set(created.plusSeconds(seconds*percentages[i]/100));
+            slaMonitor.runOnce(); slaMonitor.runOnce();
+            assertEquals(Math.min(i+1,2),count("audit_records",id,"and action='SLA_WARNING'"));
+            assertEquals(i==2?1:0,count("sla_violations",id,"and type='RESOLUTION'"));
+        }
+        assertEquals(1,count("audit_records",id,"and action='SLA_VIOLATED'"));
+    }
+
+    @Test @DisplayName("T24: simultaneous updates allow one winner without a lost update")
+    void t24_concurrent_updates() throws Exception {
+        JsonNode incident=create(employeeToken); long id=incident.path("id").asLong();
+        long version=incident.path("version").asLong();
+        var barrier=new java.util.concurrent.CyclicBarrier(2);
+        try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var tasks=new ArrayList<java.util.concurrent.Future<HttpResponse<String>>>();
+            for(int n=0;n<2;n++) {
+                int index=n;
+                tasks.add(pool.submit(()->{
+                    var body=Map.of("description","Independent simultaneous change number "+index,
+                            "version",version);
+                    var request=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/incidents/"+id))
+                            .timeout(Duration.ofSeconds(15)).header("Content-Type","application/json")
+                            .header("Authorization","Bearer "+employeeToken)
+                            .PUT(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
+                    barrier.await(5,java.util.concurrent.TimeUnit.SECONDS);
+                    return client.send(request,HttpResponse.BodyHandlers.ofString());
+                }));
+            }
+            var responses=new ArrayList<HttpResponse<String>>();
+            for(var task:tasks) responses.add(task.get(20,java.util.concurrent.TimeUnit.SECONDS));
+            assertEquals(List.of(200,409),responses.stream().map(HttpResponse::statusCode).sorted().toList());
+            var loser=responses.stream().filter(r->r.statusCode()==409).findFirst().orElseThrow();
+            code(json.readTree(loser.body()),"OPTIMISTIC_LOCK_CONFLICT");
+            var winner=responses.stream().filter(r->r.statusCode()==200).findFirst().orElseThrow();
+            JsonNode persisted=call("GET","/incidents/"+id,employeeToken,null,200);
+            assertEquals(json.readTree(winner.body()).path("description"),persisted.path("description"));
+            assertEquals(version+1,persisted.path("version").asLong());
+        }
     }
 }
