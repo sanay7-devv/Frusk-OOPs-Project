@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.iitsm.application.notification.NotificationRequest.Person;
+import com.iitsm.domain.event.EscalationExhausted;
 import com.iitsm.domain.event.IncidentChanged;
+import com.iitsm.domain.event.IncidentEscalated;
 import com.iitsm.domain.event.SlaViolated;
 import com.iitsm.domain.event.SlaWarning;
 import com.iitsm.domain.event.TriageNeeded;
@@ -88,17 +90,67 @@ public class NotificationPlanner {
                 .orElse(List.of());
     }
 
+    /**
+     * One hop up the escalation chain (M11). The event names the holders of the level it reached, decided by the
+     * escalation module at that moment, so a hop over a level nobody holds tells nobody, and two hops in one run each
+     * tell their own level (ERROR_LOG E-034). The assignee hears about it too; the person who escalated by hand does
+     * not.
+     */
+    @Transactional(readOnly = true)
+    public List<NotificationRequest> plan(IncidentEscalated event) {
+        return incidents.findById(event.incidentId())
+                .map(incident -> {
+                    Map<Audience, List<User>> people = new LinkedHashMap<>();
+                    people.put(Audience.OWNER, usersOf(event.recipientIds()));
+                    people.put(Audience.ASSIGNEE, event.assigneeId() == null ? List.of()
+                            : usersOf(List.of(event.assigneeId())));
+                    Map<String, String> extra = new HashMap<>();
+                    extra.put("level", String.valueOf(event.toLevel()));
+                    extra.put("detail", (event.manual() ? "Escalated by hand" : "Not acknowledged in time")
+                            + "; now with the " + event.target().getLabel() + ".");
+                    return plan(incident, NotificationEventType.INCIDENT_ESCALATED, people, event.actorId(), extra,
+                            !event.recipientIds().isEmpty());
+                })
+                .orElse(List.of());
+    }
+
+    /**
+     * The one final alert after level 3 (DEC-49): every administrator in the event, worded as "escalation exhausted"
+     * (template audience {@code admin}); SMS for P1 and the chat room follow from {@link NotificationRules}.
+     */
+    @Transactional(readOnly = true)
+    public List<NotificationRequest> plan(EscalationExhausted event) {
+        return incidents.findById(event.incidentId())
+                .map(incident -> plan(incident, NotificationEventType.INCIDENT_ESCALATED,
+                        Map.of(Audience.ADMIN, usersOf(event.recipientIds())), null,
+                        Map.of("level", "3", "detail", "Escalation exhausted: still not acknowledged at level 3."),
+                        true))
+                .orElse(List.of());
+    }
+
     // ------------------------------------------------------------------ shared
 
     private List<NotificationRequest> plan(Incident incident, NotificationEventType type, Long excludeUserId,
                                            Map<String, String> extra) {
+        Map<Audience, List<User>> people = new LinkedHashMap<>();
+        for (Audience audience : audiencesFor(incident, type)) {
+            people.put(audience, resolve(audience, incident));
+        }
+        return plan(incident, type, people, excludeUserId, extra, true);
+    }
+
+    /** Requests for the given people, in the order of the map; someone in two groups is told once. */
+    private List<NotificationRequest> plan(Incident incident, NotificationEventType type,
+                                           Map<Audience, List<User>> people, Long excludeUserId,
+                                           Map<String, String> extra, boolean room) {
         Map<String, String> values = baseValues(incident);
         values.putAll(extra);
         values.putIfAbsent("detail", "");
 
         Map<Long, NotificationRequest> byPerson = new LinkedHashMap<>();
-        for (Audience audience : audiencesFor(incident, type)) {
-            for (User user : resolve(audience, incident)) {
+        for (Map.Entry<Audience, List<User>> group : people.entrySet()) {
+            Audience audience = group.getKey();
+            for (User user : group.getValue()) {
                 if (!user.isActive() || user.getId().equals(excludeUserId) || byPerson.containsKey(user.getId())) {
                     continue;
                 }
@@ -109,7 +161,7 @@ public class NotificationPlanner {
             }
         }
         List<NotificationRequest> requests = new ArrayList<>(byPerson.values());
-        if (NotificationRules.chatApplies(incident.getPriority(), type)) {
+        if (room && NotificationRules.chatApplies(incident.getPriority(), type)) {
             requests.add(new NotificationRequest(null, Audience.ROOM, type, false, incident.getPriority(),
                     incident.getId(), incident.getCode(), values));
         }
@@ -133,6 +185,11 @@ public class NotificationPlanner {
             case OWNER -> teams.escalationTargets(incident, incident.getEscalationLevel());
             case ROOM -> List.of();
         };
+    }
+
+    /** The users with these ids, in the same order; unknown ids are skipped. */
+    private List<User> usersOf(List<Long> ids) {
+        return ids.stream().map(users::findById).flatMap(java.util.Optional::stream).toList();
     }
 
     private static Map<String, String> baseValues(Incident incident) {

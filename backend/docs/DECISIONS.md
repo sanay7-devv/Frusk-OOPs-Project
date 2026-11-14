@@ -1060,7 +1060,7 @@ Smaller rules the handbook left open:
 
 ## M11 Escalation decisions (2026-11-13)
 
-> Two open questions from the design review (DEC-42) were put to the user with options before M11 is built. Nothing is built yet.
+> Two open questions from the design review (DEC-42) were put to the user with options before M11 was built. Both were built with M11 on 2026-11-14 (DEC-50); the exhausted alert reaches every administrator since the E-034 fix the same day.
 
 ### DEC-48: An unassigned P1 or P2 in triage escalates from level 0
 

@@ -14,10 +14,11 @@ import com.iitsm.domain.priority.Priority;
  * @param assigneeId  the technician it was assigned to, or null while in triage (DEC-48)
  * @param recipientIds every active holder of the new level
  * @param manual      true when a person escalated it, false when the monitor did
+ * @param actorId     the person who escalated it by hand (not notified about their own action), null for the monitor
  */
 public record IncidentEscalated(Long incidentId, String incidentCode, Priority priority, int fromLevel, int toLevel,
                                 EscalationTarget target, List<Long> recipientIds, Long assigneeId, boolean manual,
-                                Instant occurredAt) implements IncidentEvent {
+                                Long actorId, Instant occurredAt) implements IncidentEvent {
 
     public IncidentEscalated {
         recipientIds = List.copyOf(recipientIds);
