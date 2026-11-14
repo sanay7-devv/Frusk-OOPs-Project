@@ -13,7 +13,7 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 | Spring Boot | 3.x | **4.1.1** (Spring Security 7, Hibernate 7, Jackson 3) | DEC-02: 3.5 is out of free support with unpatched CVEs |
 | Repository | `iitsm/` with the Spring project at the root and `db/`, `deploy/`, `docs/` folders | `sanay7-devv/Frusk-OOPs-Project` with `backend/` and `frontend/`; backend docs in `backend/docs/`. `db/`, `deploy/` and `.github/workflows/` do not exist yet | DEC-41 |
 | Scope | Tiers 1 to 3, a cut order, a week-by-week plan and freeze dates | Everything is built, including the "Tier 3" extras; work follows module dependencies | DEC-35 |
-| API contract | Hand-edited OpenAPI file, changed first by pull request | Generated from the running code; unbuilt endpoints are listed under the tag **Planned**. Files: `backend/docs/openapi/iitsm-api.yaml` and `.json`. Today 105 operations: 95 built, 10 planned (plus 2 demo-profile-only clock endpoints, not in the export) | DEC-36 |
+| API contract | Hand-edited OpenAPI file, changed first by pull request | Generated from the running code; unbuilt endpoints are listed under the tag **Planned**. Files: `backend/docs/openapi/iitsm-api.yaml` and `.json`. Today 117 operations, all built, none planned (plus the demo-profile-only clock and outage-drill endpoints, not in the export) | DEC-36 |
 | Assignment weights | Skill 0.40, load 0.30, experience 0.20, priority fit 0.10 | Five factors: skill 0.35, load 0.25, experience 0.15, priority fit 0.10, **service familiarity 0.15** | DEC-28 |
 | Skill score | "Best skill proficiency match" | 70% best proficiency + 30% share of required skills held | DEC-29 |
 | Team lead visibility | "Team lead sees their team" | Team leads see all incidents (the schema has no team) | DEC-26 |
@@ -41,7 +41,7 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 | Chatbot and voice reporting, chat-webhook notifications, priority what-if, escalation preview | | DEC-43 |
 | Demo aids (demo profile only) | An administrator moves the clock forward; one action starts a prepared outage | DEC-45 |
 
-**Behavior that will change** (DEC-46): a reporter can withdraw an incident before work starts (not built yet); once an incident is assigned, only a team lead or administrator can change impact, urgency and affected users (not built yet); a resolved incident nobody confirms is verified and closed automatically (built with M11).
+**Behavior that will change** (DEC-46): a reporter can withdraw an incident before work starts (built with M12); once an incident is assigned, only a team lead or administrator can change impact, urgency and affected users (built with M12); a resolved incident nobody confirms is verified and closed automatically (built with M11).
 
 **Escalation (M11, built 2026-11-14, DEC-48 to DEC-53).** An unacknowledged P1 or P2 climbs level by level (team lead, system administrator, IT manager) after the timeouts in `escalation_policies`; one in triage with nobody assigned starts at level 0 and climbs the same way; after level 3 and `escalation.exhausted.minutes` one final "escalation exhausted" alert goes to all administrators (SMS for P1) and the monitor stops. Acknowledging stops everything. The alert reuses the audit action ESCALATED and the notification event type INCIDENT_ESCALATED, so no new schema values are needed. Also built: `POST /incidents/{id}/escalate`, the `escalationPreview` field on the incident detail, the auto-verify job (a resolved incident nobody confirms closes as AUTO_VERIFIED after `verify.auto.hours`) and, in the `demo` profile only, `GET /admin/demo/clock` and `POST /admin/demo/clock/advance`. New settings: `escalation.exhausted.minutes`, `verify.monitor.interval.seconds` (63 settings in total after the merge). **Notifications (ERROR_LOG E-034, fixed 2026-11-14):** each hop notifies only the holders of the level it reached (a level nobody holds notifies nobody) plus the assignee, never the person who escalated by hand; the exhausted alert goes to every administrator, titled "Escalation exhausted: ..." (template key `INCIDENT_ESCALATED.admin.*`, Report teammate may reword), with SMS for P1.
 
@@ -112,7 +112,7 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 
 ## 4. Report and content
 
-- **Technology:** Spring Boot **4.1.1**, not 3.x; give the reason (DEC-02). Google sign-in is planned; SSO and MFA stay "documented only".
+- **Technology:** Spring Boot **4.1.1**, not 3.x; give the reason (DEC-02). Google sign-in is implemented (M2b, verified with the offline fake verifier); SSO and MFA stay "documented only".
 - **Numbers that changed:** the assignment weights and the skill formula (section 1). Use `SYSTEM_GUIDE.md` section 10 for the worked example.
 - **Design patterns:** the seven in the handbook, plus Template Method and Command (both in the code; Command since DEC-46 C1). See `SYSTEM_GUIDE.md` sections 14.2 and 14.3.
 - **Ready-made material:**
@@ -130,7 +130,7 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 
 ## 5. M12 core: intelligence and AI (2026-11-14)
 
-Seven endpoints moved from Planned to built (after the merge of all four modules the contract has 95 operations built and 10 planned). Reasons: `DECISIONS.md` DEC-M12-1 to DEC-M12-9; description and verified behavior: `SYSTEM_GUIDE.md` section 12c. **Still to come in M12:** the duplicate check on creation (409 `DUPLICATE_INCIDENT`), `mark-duplicate`, problem records and Major Incident Mode, recurring-problem detector, chatbot intake.
+Seven endpoints moved from Planned to built (after the 2026-11-14 merges the contract has 117 operations, all built). Reasons: `DECISIONS.md` DEC-M12-1 to DEC-M12-9; description and verified behavior: `SYSTEM_GUIDE.md` section 12c. **Still to come in M12:** the duplicate check on creation (409 `DUPLICATE_INCIDENT`), `mark-duplicate`, problem records and Major Incident Mode, recurring-problem detector, chatbot intake.
 
 **Frontend**
 - `src/api/intelligence.ts` already matches. Calls and answers: `POST /intelligence/suggest-category {title, description, serviceId?}` gives `{categoryId, categoryName, confidence, reason, source}`; `POST /intelligence/suggest-intake {description}` gives the same plus `impact` and `urgency`; `POST /intelligence/similar {title, description, serviceId}` gives `[{incidentId, code, title, similarity, status, match}]`.

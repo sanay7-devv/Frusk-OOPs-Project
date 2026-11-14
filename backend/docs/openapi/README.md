@@ -1,6 +1,6 @@
 # I-ITSM API contract (OpenAPI)
 
-The contract is **generated from the running code**, so it can never drift from what the backend actually does. Endpoints of modules not built yet come from `src/main/resources/openapi/planned-endpoints.json` (written from Appendices B and C of the API Data Dictionary) and carry the tag **Planned**. When a module is built, its controller documents itself and its planned entries are deleted from that file.
+The contract is **generated from the running code**, so it can never drift from what the backend actually does. Endpoints of modules not built yet came from `src/main/resources/openapi/planned-endpoints.json` (written from Appendices B and C of the API Data Dictionary) and carried the tag **Planned**; when a module was built its planned entries were deleted. Since 2026-11-14 every agreed endpoint is built: 117 operations, the planned file is empty.
 
 Files here (exported from the running backend):
 
@@ -47,7 +47,6 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | Generic codes `NOT_FOUND` (category, skill, policy, unknown path) and `REQUEST_REJECTED` (403, CORS) | All | No contract code existed for these | D-005, D-008 |
 | Taken email on register: 400 `VALIDATION_FAILED` with `fieldErrors: [{field: "email", message: "is already registered"}]` | Auth | No dedicated code in B.2 | D-008 (5) |
 | Every response has an `X-Request-Id` header | All | Quote it when reporting a problem | D-005 |
-| `POST /auth/google` (planned, M2b) | Auth | Google sign-in as an extra | D-001 |
 | `GET /notifications` takes an optional `channel` (default `IN_APP`, `SMS_SIM` allowed) | Notifications | List the simulated text messages | DEC-54 |
 | `NotificationPreference` carries `locked`; `GET /notifications/preferences` returns every event type on every personal channel (60); `PUT` replaces the saved set and answers 400 for a locked switch | Notifications | Draw locked toggles disabled; critical alerts cannot be switched off | DEC-40, DEC-54 |
 | The `channel` enum of a notification stays `IN_APP, EMAIL, WEBSOCKET, SMS_SIM` in what is stored; the code also knows `CHAT` (a room, never stored, never a preference) | Notifications | Chat webhook channel | DEC-43 A6, DEC-54 |
@@ -55,23 +54,20 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | `escalationPreview` in `IncidentDetail` (staff only, otherwise null): `{kind, fromLevel, toLevel, targetRole, dueAt, secondsRemaining, recipients}` | Incidents | A team lead sees when the incident will next escalate and to whom (A11) | DEC-51 |
 | `POST /incidents/{id}/escalate` takes `{reason}`; 409 at level 3 and in statuses other than ASSIGNED, ACKNOWLEDGED, IN_PROGRESS | Incidents | Manual escalation, status unchanged | DEC-50 |
 | `GET /admin/demo/clock` and `POST /admin/demo/clock/advance` exist **only in the demo profile**, so they are not in this file; `{minutes: 1..1440}`, administrators only | Admin | Recorded demo (D1): move the clock forward | DEC-52 |
+| `POST /auth/google {idToken}` returns the normal `AuthResponse` | Auth | Google sign-in as an extra (built, M2b) | D-001, DEC-100 to DEC-103 |
+| `POST /incidents/{id}/withdraw {reason}` (reporter; CLASSIFIED, ASSIGNED, ACKNOWLEDGED; closes as WITHDRAWN) | Incidents | G3 | DEC-46, DEC-77 |
+| `match` (`DUPLICATE` or `RELATED`) on similar incidents; the 409 `DUPLICATE_INCIDENT` body carries `similar` | Intelligence | Show likely duplicates apart from related reports | DEC-M12-1, DEC-71 |
+| `POST /problems`, `GET /problems/{id}/root-cause`, `GET /problems/known-outages?serviceId=`, `GET /problems/recurring`, `POST /problems/{id}/join`, `POST /problems/{id}/resolve` (team lead, admin), `DELETE /problems/{id}/incidents/{incidentId}` | Problems | Major Incident Mode (S2), recurring problems (E2); resolving the lead does not close the others (DEC-72) | DEC-71 to DEC-74 |
+| `POST /intelligence/chat {draft, answer}` | Intelligence | Chatbot intake (A1), stateless guided flow | DEC-75 |
+| `GET /services/status` (any logged-in user) | Services | Service status board (E1) | DEC-84 |
+| STOMP `/topic/dashboard` (REPORT_VIEW): `DashboardEvent` per incident event plus `COUNTERS` messages; socket closed with 4001 at token expiry | Real time | Live dashboard (M13) | DEC-80 to DEC-82 |
+| `GET /audit/verify`, `POST /audit/seal` (AUDIT_VIEW) | Audit | Sealed audit trail (S3) | DEC-91 |
+| 429 `RATE_LIMITED` with `Retry-After` on login, Google sign-in, incident creation and AI calls; 503 `SERVICE_UNAVAILABLE` on every operation when the database is down | All | M14 hardening | DEC-90, DEC-94 |
+| `POST /admin/demo/outage-drill {rootServiceId}` exists **only in the demo profile** (not in this file) | Admin | Recorded demo (D2) | DEC-76 |
 
-## Coming additions (accepted 2026-11-13, shapes not designed yet)
+## Still to come
 
-These features were accepted after the contract was published. Their endpoints are added to the Planned part as each one is designed; until then they are not in the files here. Details per role: `../TEAM_UPDATES.md`.
-
-| Feature | Expect | Module |
-|---|---|---|
-| Reporter withdraw | `POST /incidents/{id}/withdraw` with a reason | M10 |
-| Coverage risk report, post-incident report, priority what-if, saved views | built 2026-11-14 (M10): `/reports/coverage-risk`, `/incidents/{id}/post-incident-report` (+ `/pdf`), `/priority/what-if`, `/saved-filters` | M10 |
-| Escalation preview | a field on `IncidentDetail` | M11 |
-| Major Incident Mode | known-outage lookup for the report form, join action, root cause on `/problems/{id}` | M12, M13 |
-| Recurring-problem detector | suggestions on `/problems` | M12 |
-| Service status board | a status per service | M13 |
-| Service Desk Simulator | one operation to run a simulation | after M13 |
-| Sealed audit trail | `GET /audit/verify` | M14 |
-| Demo aids (demo profile only) | start an outage drill (the demo clock is built, see above) | M12 |
-| Chat-webhook channel | a new notification channel value | M9 |
+All features accepted on 2026-11-13 are built (see the table above) except the Service Desk Simulator (S1), which will add one operation to run a simulation. Details per role: `../TEAM_UPDATES.md`.
 
 ## Regenerating the export
 
