@@ -11,7 +11,8 @@ CREATE TABLE notifications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_notifications_incident FOREIGN KEY (incident_id) REFERENCES incidents (id),
-    CONSTRAINT ck_notifications_channel CHECK (channel IN ('IN_APP', 'EMAIL', 'WEBSOCKET', 'SMS_SIM'))
+    CONSTRAINT ck_notifications_channel CHECK (channel IN ('IN_APP', 'EMAIL', 'WEBSOCKET', 'SMS_SIM')),
+    CONSTRAINT ck_notifications_event_type CHECK (event_type IN ('INCIDENT_CREATED', 'INCIDENT_ASSIGNED', 'INCIDENT_ACKNOWLEDGED', 'PRIORITY_CHANGED', 'INFO_REQUESTED', 'INFO_PROVIDED', 'SLA_WARNING', 'SLA_VIOLATED', 'INCIDENT_ESCALATED', 'INCIDENT_RESOLVED', 'INCIDENT_VERIFIED', 'INCIDENT_CLOSED', 'INCIDENT_REOPENED', 'DUPLICATE_SUSPECTED', 'TRIAGE_NEEDED'))
 );
 CREATE INDEX idx_notifications_user_created ON notifications (user_id, created_at);
 CREATE INDEX idx_notifications_user_read ON notifications (user_id, read);
@@ -23,5 +24,6 @@ CREATE TABLE notification_preferences (
     enabled BOOLEAN NOT NULL,
     CONSTRAINT pk_notification_preferences PRIMARY KEY (user_id, event_type, channel),
     CONSTRAINT fk_notification_preferences_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    CONSTRAINT ck_notification_preferences_channel CHECK (channel IN ('IN_APP', 'EMAIL', 'WEBSOCKET', 'SMS_SIM'))
+    CONSTRAINT ck_notification_preferences_channel CHECK (channel IN ('IN_APP', 'EMAIL', 'WEBSOCKET', 'SMS_SIM')),
+    CONSTRAINT ck_notification_preferences_event_type CHECK (event_type IN ('INCIDENT_CREATED', 'INCIDENT_ASSIGNED', 'INCIDENT_ACKNOWLEDGED', 'PRIORITY_CHANGED', 'INFO_REQUESTED', 'INFO_PROVIDED', 'SLA_WARNING', 'SLA_VIOLATED', 'INCIDENT_ESCALATED', 'INCIDENT_RESOLVED', 'INCIDENT_VERIFIED', 'INCIDENT_CLOSED', 'INCIDENT_REOPENED', 'DUPLICATE_SUSPECTED', 'TRIAGE_NEEDED'))
 );
