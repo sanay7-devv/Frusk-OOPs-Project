@@ -13,6 +13,7 @@ import com.iitsm.application.auth.AuthService;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.web.dto.auth.AuthResponse;
 import com.iitsm.web.dto.auth.CurrentUserResponse;
+import com.iitsm.web.dto.auth.GoogleLoginRequest;
 import com.iitsm.web.dto.auth.LoginRequest;
 import com.iitsm.web.dto.auth.RefreshTokenRequest;
 import com.iitsm.web.dto.auth.RegisterRequest;
@@ -51,6 +52,14 @@ public class AuthController {
     @ApiErrors({ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return AuthResponse.from(authService.login(request.email(), request.password()));
+    }
+
+    @PostMapping("/google")
+    @SecurityRequirements
+    @Operation(summary = "Log in or auto-register with a verified Google ID token (Decision D-001)")
+    @ApiErrors({ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
+    public AuthResponse googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        return AuthResponse.from(authService.googleLogin(request.idToken()));
     }
 
     @PostMapping("/refresh")

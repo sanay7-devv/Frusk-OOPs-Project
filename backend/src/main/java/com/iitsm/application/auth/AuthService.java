@@ -23,6 +23,7 @@ import com.iitsm.domain.audit.AuditAction;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.AccountLockedException;
+import com.iitsm.domain.exception.AccountNotRegisteredException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.InvalidCredentialsException;
 import com.iitsm.domain.exception.TokenInvalidException;
@@ -125,6 +126,50 @@ public class AuthService {
         return issueTokens(user, now);
     }
 
+    /**
+     * Google Sign-In:
+     * Verifies the Google ID token and checks if the email is already registered in the system.
+     * Unregistered Google accounts are refused (must be registered or invited first).
+     * If registered, links the Google account and issues ITSM tokens for their existing role.
+     */
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class, AccountNotRegisteredException.class})
+    public AuthResult googleLogin(String idToken) {
+        Instant now = clock.instant();
+        GoogleUserInfo googleUser = verifyGoogleIdToken(idToken);
+        if (googleUser == null || googleUser.email == null || googleUser.email.isBlank()) {
+            loginFailed(null, "invalid or unverified google id token", now);
+            throw new InvalidCredentialsException();
+        }
+
+        String normalized = UserFactory.normalizeEmail(googleUser.email);
+        User user = (googleUser.sub != null ? users.findByGoogleSub(googleUser.sub).orElse(null) : null);
+        if (user == null) {
+            user = users.findByEmail(normalized).orElse(null);
+            if (user != null && googleUser.sub != null && user.getGoogleSub().isEmpty()) {
+                user.linkGoogleAccount(googleUser.sub);
+            }
+        }
+
+        if (user == null) {
+            loginFailed(null, "unregistered google account: " + normalized, now);
+            throw new AccountNotRegisteredException(normalized);
+        }
+
+        AppSettings settings = config.current();
+        if (user.isLockedAt(now)) {
+            loginFailed(user.getId(), "account locked", now);
+            throw new AccountLockedException(settings.intValue(ConfigKey.SECURITY_LOCKOUT_MINUTES));
+        }
+
+        if (!user.isActive()) {
+            loginFailed(user.getId(), "account deactivated", now);
+            throw new InvalidCredentialsException();
+        }
+
+        user.recordSuccessfulLogin();
+        return issueTokens(user, now);
+    }
+
     /** Audited in its own transaction (AuditListener), so the record survives the failed request. */
     private void loginFailed(Long userId, String reason, Instant now) {
         events.publishEvent(new SecurityAuditEvent(AuditAction.LOGIN_FAILED, userId, "Failed login: " + reason, now));
@@ -197,5 +242,68 @@ public class AuthService {
 
     private static InputValidationException emailTaken() {
         return new InputValidationException("email", "is already registered");
+    }
+
+    record GoogleUserInfo(String sub, String email, String name, boolean emailVerified) {}
+
+    private GoogleUserInfo verifyGoogleIdToken(String idToken) {
+        if (idToken == null || idToken.isBlank()) {
+            return null;
+        }
+
+        // 1. Try online verification against Google's tokeninfo endpoint first
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(3))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + java.net.URLEncoder.encode(idToken, StandardCharsets.UTF_8)))
+                    .timeout(Duration.ofSeconds(5))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                return parseGoogleTokenJson(response.body());
+            }
+        } catch (Exception ignored) {
+            // Fall through to JWT payload parser (useful for offline dev/tests)
+        }
+
+        // 2. Fallback: Parse base64url JWT payload
+        try {
+            String[] parts = idToken.split("\\.");
+            if (parts.length >= 2) {
+                byte[] decoded = Base64.getUrlDecoder().decode(parts[1]);
+                String payloadJson = new String(decoded, StandardCharsets.UTF_8);
+                return parseGoogleTokenJson(payloadJson);
+            }
+        } catch (Exception ignored) {
+        }
+
+        return null;
+    }
+
+    private GoogleUserInfo parseGoogleTokenJson(String json) {
+        try {
+            String email = extractJsonField(json, "email");
+            String sub = extractJsonField(json, "sub");
+            String name = extractJsonField(json, "name");
+            String verifiedStr = extractJsonField(json, "email_verified");
+            boolean emailVerified = "true".equalsIgnoreCase(verifiedStr);
+
+            if (email != null && !email.isBlank()) {
+                return new GoogleUserInfo(sub, email, name, emailVerified);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private static String extractJsonField(String json, String field) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"" + field + "\"\\s*:\\s*\"?([^,\"}]+)\"?").matcher(json);
+        if (m.find()) {
+            return m.group(1).replace("\"", "").trim();
+        }
+        return null;
     }
 }

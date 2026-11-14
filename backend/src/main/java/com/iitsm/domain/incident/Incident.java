@@ -434,6 +434,10 @@ public class Incident {
         return escalationLevel;
     }
 
+    public void setEscalationLevel(int level) {
+        this.escalationLevel = (short) level;
+    }
+
     public Long getProblemId() {
         return problemId;
     }

@@ -55,6 +55,7 @@ const WS_LABEL: Record<Workspace, string> = {
   admin: 'Admin View',
 };
 
+//see what icons we need and change acccordingly
 const NAV_ICONS: Record<string, ElementType> = {
   'Home': HomeIcon,
   'Report incident': ReportProblemIcon,
@@ -77,7 +78,6 @@ const NAV_ICONS: Record<string, ElementType> = {
   'Escalation': TrendingUpIcon,
   'Audit log': HistoryIcon,
   'Reports': AssessmentIcon,
-  'Employees': BadgeIcon,
 };
 
 const DRAWER = 250;
@@ -107,7 +107,7 @@ export default function AppShell() {
       },
     };
     signIn(adminAccount);
-    navigate('/admin/employees');
+    navigate('/admin/users');
   };
 
   const activeWorkspace: Workspace = (workspace && NAV[workspace] ? workspace : workspaces[0] || 'employee');

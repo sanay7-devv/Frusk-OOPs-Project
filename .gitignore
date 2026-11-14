@@ -10,6 +10,9 @@
 # Documentation and project spec PDFs
 /DESIGN_BRIEF.md
 /*.pdf
+/DIFFERENCES.md
+/DIFFERNENCES.md
+DESIGN_BRIEF.md
 
 # Dependencies, build output, and local environment files
 node_modules/
