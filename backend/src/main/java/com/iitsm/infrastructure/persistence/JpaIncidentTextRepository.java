@@ -21,6 +21,19 @@ public interface JpaIncidentTextRepository extends Repository<Incident, Long>, I
     List<Incident> openOnService(Long serviceId, java.util.Collection<IncidentStatus> open, Instant from, Instant to,
                                  Long excludeId);
 
+    @Query("select i from Incident i where i.service.id in :serviceIds and i.priority in :priorities "
+            + "and i.status in :open and i.createdAt >= :since order by i.createdAt desc")
+    List<Incident> openOnServicesWith(java.util.Collection<Long> serviceIds,
+                                      java.util.Collection<com.iitsm.domain.priority.Priority> priorities,
+                                      java.util.Collection<IncidentStatus> open, Instant since);
+
+    @Override
+    default List<Incident> findOpenOnServices(java.util.Collection<Long> serviceIds,
+                                              java.util.Collection<com.iitsm.domain.priority.Priority> priorities,
+                                              Instant since) {
+        return serviceIds.isEmpty() ? List.of() : openOnServicesWith(serviceIds, priorities, IncidentStatus.OPEN, since);
+    }
+
     @Query("select i from Incident i where i.resolvedAt is not null and i.resolvedAt >= :since "
             + "and i.resolution.rootCause is not null order by i.resolvedAt desc")
     List<Incident> resolvedAll(Instant since, Pageable page);

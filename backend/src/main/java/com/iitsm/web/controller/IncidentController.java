@@ -21,6 +21,7 @@ import com.iitsm.application.assignment.AssignmentService.RecommendationView;
 import com.iitsm.application.audit.AuditService.AuditEntryView;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.escalation.EscalationService;
+import com.iitsm.application.incident.IncidentCreationService;
 import com.iitsm.application.incident.IncidentService;
 import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
@@ -64,21 +65,25 @@ public class IncidentController {
     private static final Set<String> SORT_FIELDS = Set.of("createdAt", "priority", "status", "code", "resolutionDue");
 
     private final IncidentService incidents;
+    private final IncidentCreationService creation;
     private final EscalationService escalation;
 
-    public IncidentController(IncidentService incidents, EscalationService escalation) {
+    public IncidentController(IncidentService incidents, IncidentCreationService creation,
+                              EscalationService escalation) {
         this.incidents = incidents;
+        this.creation = creation;
         this.escalation = escalation;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Report an incident: classified, prioritized and given SLA deadlines on creation")
-    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND, ErrorCode.SLA_NOT_CONFIGURED})
+    @ApiErrors({ErrorCode.SERVICE_NOT_FOUND, ErrorCode.SLA_NOT_CONFIGURED, ErrorCode.DUPLICATE_INCIDENT})
     public IncidentDetail create(@AuthenticationPrincipal AuthenticatedUser caller,
                                  @Valid @RequestBody CreateIncidentRequest request) {
-        return incidents.create(caller, request.title(), request.description(), request.serviceId(),
-                request.categoryId(), request.impact(), request.urgency(), request.affectedUsers());
+        return creation.create(caller, request.title(), request.description(), request.serviceId(),
+                request.categoryId(), request.impact(), request.urgency(), request.affectedUsers(),
+                Boolean.TRUE.equals(request.confirmNotDuplicate()));
     }
 
     @GetMapping

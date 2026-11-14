@@ -50,8 +50,6 @@ import com.iitsm.domain.incident.IncidentQuery;
 import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.priority.PriorityBreakdown;
-import com.iitsm.domain.priority.PriorityEngine;
-import com.iitsm.domain.priority.PriorityInput;
 import com.iitsm.domain.repository.CategoryRepository;
 import com.iitsm.domain.repository.IncidentCommentRepository;
 import com.iitsm.domain.repository.IncidentRepository;
@@ -86,7 +84,7 @@ public class IncidentService {
     private final CategoryRepository categories;
     private final UserRepository users;
     private final IncidentFactory factory;
-    private final PriorityEngine priorityEngine;
+    private final PriorityRecalculator priorities;
     private final SlaPolicyResolver slaPolicies;
     private final ConfigService config;
     private final IncidentAccessPolicy access;
@@ -100,7 +98,7 @@ public class IncidentService {
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
                            ItServiceRepository services, CategoryRepository categories, UserRepository users,
-                           IncidentFactory factory, PriorityEngine priorityEngine, SlaPolicyResolver slaPolicies,
+                           IncidentFactory factory, PriorityRecalculator priorities, SlaPolicyResolver slaPolicies,
                            ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
                            AssignmentService assignment, AuditRepository audit, ApplicationEventPublisher events,
                            IncidentEventPublisher publisher, IncidentCommandRunner commands, Clock clock) {
@@ -111,7 +109,7 @@ public class IncidentService {
         this.categories = categories;
         this.users = users;
         this.factory = factory;
-        this.priorityEngine = priorityEngine;
+        this.priorities = priorities;
         this.slaPolicies = slaPolicies;
         this.config = config;
         this.access = access;
@@ -134,6 +132,17 @@ public class IncidentService {
     @Transactional
     public IncidentDetail create(AuthenticatedUser caller, String title, String description, Long serviceId,
                                  Long categoryId, int impact, int urgency, int affectedUsers) {
+        return create(caller, title, description, serviceId, categoryId, impact, urgency, affectedUsers, null);
+    }
+
+    /**
+     * @param classificationNote audit wording of the CLASSIFIED step when the category was chosen by the AI
+     *                           suggestion and not by the reporter (decision DEC-70); null otherwise
+     */
+    @Transactional
+    public IncidentDetail create(AuthenticatedUser caller, String title, String description, Long serviceId,
+                                 Long categoryId, int impact, int urgency, int affectedUsers,
+                                 String classificationNote) {
         User reporter = loadUser(caller.id());
         ItService service = services.findById(serviceId).orElseThrow(() -> new ServiceNotFoundException(serviceId));
         Category category = categoryId == null ? null : categories.findById(categoryId)
@@ -144,7 +153,7 @@ public class IncidentService {
         recalculatePriority(incident);
         assignment.autoAssign(incident); // stays CLASSIFIED (triage) without a category or an eligible technician
         incident = incidents.save(incident);
-        publishCreation(incident, reporter);
+        publishCreation(incident, reporter, classificationNote);
         return views.detail(incident, caller);
     }
 
@@ -153,7 +162,7 @@ public class IncidentService {
      * technician was found) assigned; here each fact gets its actor and wording. Without an assignee the incident
      * goes to triage.
      */
-    private void publishCreation(Incident incident, User reporter) {
+    private void publishCreation(Incident incident, User reporter, String classificationNote) {
         Category category = incident.getCategory();
         for (IncidentFact fact : incident.drainFacts()) {
             switch (fact.action()) {
@@ -161,6 +170,7 @@ public class IncidentService {
                         "Reported by " + reporter.getName() + " on " + incident.getService().getName());
                 case CLASSIFIED -> publish(incident, fact, null,
                         category == null ? "No category given: waiting in triage"
+                                : classificationNote != null ? classificationNote
                                 : "Classified as " + category.getName());
                 case PRIORITY_CALCULATED -> publish(incident, fact, null, priorityText(incident));
                 case ASSIGNED -> publish(incident, fact, null,
@@ -442,27 +452,8 @@ public class IncidentService {
                 + ", resolution due " + incident.getSla().getResolutionDue();
     }
 
-    /**
-     * Runs the priority engine with the live settings and applies the result together with the SLA targets of the
-     * resolved policy (service policy, else global default, else SLA_NOT_CONFIGURED).
-     */
     private void recalculatePriority(Incident incident) {
-        ItService service = incident.getService();
-        AppSettings settings = config.current();
-        PriorityInput input = new PriorityInput(incident.getImpact(), incident.getUrgency(),
-                service.getCriticality(), incident.getAffectedUsers(), service.getName(), service.isAlwaysP1(),
-                isSecurity(incident.getCategory(), settings));
-        PriorityBreakdown breakdown = priorityEngine.calculate(input, settings);
-        SlaPolicy policy = slaPolicies.resolve(service, breakdown.band());
-        incident.applyPriority(breakdown, policy.targets(settings), clock.instant());
-    }
-
-    /**
-     * Override rule 1: the category is the security category named in {@code priority.security.category} or sits
-     * under it (for example Phishing under Security). A setting, not a name in the code (decision DEC-46, C3).
-     */
-    private static boolean isSecurity(Category category, AppSettings settings) {
-        return category != null && category.isWithin(settings.raw(ConfigKey.PRIORITY_SECURITY_CATEGORY));
+        priorities.recalculate(incident);
     }
 
     private User loadEligibleTechnician(Long technicianId, Incident incident) {

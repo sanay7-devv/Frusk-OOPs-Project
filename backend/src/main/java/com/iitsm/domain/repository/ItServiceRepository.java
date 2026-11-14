@@ -16,6 +16,9 @@ public interface ItServiceRepository {
 
     List<ItService> findByActiveTrueOrderByNameAsc();
 
+    /** Active services that directly depend on the given one (it is one of their dependencies). */
+    List<ItService> findDependantsOf(Long serviceId);
+
     boolean existsByNameIgnoreCase(String name);
 
     ItService save(ItService service);

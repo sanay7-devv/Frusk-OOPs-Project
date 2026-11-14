@@ -49,6 +49,16 @@ abstract class OpenState extends IncidentState {
     }
 
     /**
+     * Every open status can be resolved together with the lead incident of its problem record, whatever stage the
+     * work had reached: one fix for one problem (Major Incident Mode, DEC-72). The normal resolve needs IN_PROGRESS.
+     */
+    @Override
+    void resolveWithProblem(Incident incident, Resolution resolution, Instant now) {
+        incident.markResolved(resolution, now);
+        incident.moveTo(IncidentStatus.RESOLVED, now);
+    }
+
+    /**
      * The reporter withdraws the report before work has started (decision DEC-46, G3). Only CLASSIFIED, ASSIGNED
      * and ACKNOWLEDGED call this; once work has started the technician resolves it instead.
      */

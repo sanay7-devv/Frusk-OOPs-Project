@@ -3,6 +3,7 @@ package com.iitsm.application.intelligence;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -109,6 +110,31 @@ public class IntelligenceService {
     public List<SimilarIncidentView> similarToDraft(AuthenticatedUser caller, Long serviceId, String title,
                                                     String description) {
         limiter.check(caller.id(), config.current().intValue(ConfigKey.AI_RATE_LIMIT_PER_MINUTE));
+        return similarTo(reader.similarToDraft(serviceId, title, description));
+    }
+
+    // ------------------------------------------------------------------ used by the creation pipeline
+
+    /**
+     * Category for an incident filed without one (decision DEC-70): the engine's suggestion if its confidence is at
+     * least {@code autocat.apply.confidence}, else empty and the incident waits in triage. Not rate-limited: it is
+     * part of creating the incident, not a keystroke-driven suggestion.
+     */
+    public Optional<CategorySuggestion> categoryToApply(String title, String description) {
+        AppSettings settings = config.current();
+        CategorySuggestion suggestion = analysis.suggestCategory(title, description, reader.context());
+        double minimum = settings.decimalValue(ConfigKey.AUTOCAT_APPLY_CONFIDENCE).doubleValue();
+        return suggestion.categoryId() != null && suggestion.confidence() >= minimum
+                ? Optional.of(suggestion) : Optional.empty();
+    }
+
+    /** Open incidents of the service in the look-back window that resemble the draft, best first (not limited). */
+    /** 404 SERVICE_NOT_FOUND unless the service exists. */
+    public void requireService(Long serviceId) {
+        reader.requireService(serviceId);
+    }
+
+    public List<SimilarIncidentView> similarForCreate(Long serviceId, String title, String description) {
         return similarTo(reader.similarToDraft(serviceId, title, description));
     }
 

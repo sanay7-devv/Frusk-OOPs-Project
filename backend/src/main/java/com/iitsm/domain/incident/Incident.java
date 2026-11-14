@@ -272,6 +272,14 @@ public class Incident {
         recorded(AuditAction.REOPENED, () -> state().reopen(this, reason, now, reopenWindow, targets));
     }
 
+    /**
+     * Resolves the incident because the lead of its problem record was resolved (module M12), from any open status.
+     * Audited as RESOLVED like a normal resolution.
+     */
+    public void resolveWithProblem(Resolution resolution, Instant now) {
+        recorded(AuditAction.RESOLVED, () -> state().resolveWithProblem(this, resolution, now));
+    }
+
     /** The reporter takes the report back before work starts (G3): closes as WITHDRAWN, audited as CLOSED. */
     public void withdraw(String reason, Instant now) {
         recorded(AuditAction.CLOSED, () -> state().withdraw(this, reason, now));
