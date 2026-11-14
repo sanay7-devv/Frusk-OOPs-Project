@@ -38,4 +38,4 @@ docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compo
 
 Use `down --volumes` only when intentionally discarding this project's demo data. The ordinary development project is `iitsm-local` and has a separate volume; stop it before starting the demo project if using the same ports.
 
-The database and seed checks run in CI. Compose image build/start and reset/snapshot/restore need their own CI/runtime evidence before being called verified.
+Actions run 43621082128 verifies image build/start, fresh demo reset, both web health endpoints, real seeded API logins, snapshot/mutate/restore, and the Postman Payment lifecycle (38 requests, 83 assertions). Reset time under two minutes on the recording laptop is still unmeasured.

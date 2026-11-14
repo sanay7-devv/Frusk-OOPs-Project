@@ -51,4 +51,4 @@ Synthetic fixtures demonstrate starting states. The seeded problem grouping does
 
 ## Remaining Task 3 deliverables
 
-The 26 functional cases with evidence, complete API collection, Compose stack, reset/snapshot/restore tooling, and full QA report remain separate work. No pass status is claimed for cases not executed. Schema and seed CI evidence is available in PR #12.
+The initial Compose stack, reset/snapshot/restore tools, and Postman Payment lifecycle are now implemented and verified. Remaining work includes completion of the 26-case matrix, wider API/domain/integration coverage, and final QA sign-off. No pass status is claimed for cases not executed. Schema and seed CI evidence is available in PR #12.

@@ -1,27 +1,27 @@
 id,category,scenario,expected,status,actual,evidence
-T01,Normal,"Create Payment incident: impact 5, urgency 5, 150 users",201; score 187; P1; ASSIGNED; SLA 3/20 minutes; audit and notifications,NOT_RUN,,
-T02,Normal,Assigned technician acknowledges and starts work,ACKNOWLEDGED then IN_PROGRESS; response clock stopped; audit events,NOT_RUN,,
-T03,Normal,"Create, acknowledge, start, resolve, verify, close",CLOSED/VERIFIED; one audit entry per transition,NOT_RUN,,
+T01,Normal,"Create Payment incident: impact 5, urgency 5, 150 users",201; score 187; P1; ASSIGNED; SLA 3/20 minutes; audit and notifications,PARTIAL,"Score, P1, assignment and Payment-specific SLA verified; notifications not asserted",https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T02,Normal,Assigned technician acknowledges and starts work,ACKNOWLEDGED then IN_PROGRESS; response clock stopped; audit events,PARTIAL,State transitions and audit actions verified; response-clock assertion still needed,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T03,Normal,"Create, acknowledge, start, resolve, verify, close",CLOSED/VERIFIED; one audit entry per transition,PASS,Postman: full Payment lifecycle and exactly one audit entry per action,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T04,Normal,Change assignment strategy live from COMPOSITE to LOAD,Next incidents assigned to the lowest-load eligible technician,NOT_RUN,,
-T05,Boundary,"Priority band boundary examples: 60,56,30,27,10,9","P1,P2,P2,P3,P3,P4",NOT_RUN,,
-T06,Boundary,"Base 48 with users 9,10,100,101","Scores 48,60,60,72; priorities P2,P1,P1,P1",NOT_RUN,,
-T07,Boundary,Weighted technician load 9 then 10 at capacity 10,Eligible at 9; excluded at 10,NOT_RUN,,
+T05,Boundary,"Priority band boundary examples: 60,56,30,27,10,9","P1,P2,P2,P3,P3,P4",PASS,JUnit PriorityEngineTest: all six specified score bands,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T06,Boundary,"Base 48 with users 9,10,100,101","Scores 48,60,60,72; priorities P2,P1,P1,P1",PASS,JUnit PriorityEngineTest: user counts 9/10/100/101,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T07,Boundary,Weighted technician load 9 then 10 at capacity 10,Eligible at 9; excluded at 10,PASS,"JUnit EligibilityFilterTest: load 9 accepted, load 10 excluded",https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T08,Boundary,Reopen at 6d23h59m then 7d1m after closing,First allowed; second INVALID_STATE_TRANSITION,NOT_RUN,,
-T09,Invalid input,"Empty description, impact 6, affected users 0",400 VALIDATION_FAILED with each field error,NOT_RUN,,
+T09,Invalid input,"Empty description, impact 6, affected users 0",400 VALIDATION_FAILED with each field error,PARTIAL,400 and VALIDATION_FAILED verified; per-field errors still need assertions,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T10,Invalid input,Upload executable and 6MB file,Both rejected; no attachment stored,NOT_RUN,,
 T11,Exception,Close a NEW incident,409 INVALID_STATE_TRANSITION; no close audit; state unchanged,NOT_RUN,,
-T12,Exception,Resolve IN_PROGRESS without notes,400 VALIDATION_FAILED; state unchanged,NOT_RUN,,
+T12,Exception,Resolve IN_PROGRESS without notes,400 VALIDATION_FAILED; state unchanged,PASS,Postman: empty notes rejected with 400; subsequent request-info succeeds from IN_PROGRESS,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T13,Exception,Set all matching technicians OFF_DUTY; create incident,CLASSIFIED triage; TRIAGE_NEEDED notification; no reporter error,NOT_RUN,,
-T14,Exception,Create incident with missing service 99999,404 SERVICE_NOT_FOUND,NOT_RUN,,
+T14,Exception,Create incident with missing service 99999,404 SERVICE_NOT_FOUND,PASS,Postman: service 99999 returns 404 SERVICE_NOT_FOUND,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T15,Exception,Remove matching service/global P4 policies and create P4 incident,422 SLA_NOT_CONFIGURED,NOT_RUN,,
 T16,Exception,Report seeded VPN near duplicate then confirmNotDuplicate,409 DUPLICATE_INCIDENT then 201; threshold per implemented engine,NOT_RUN,,
-T17,Authorization,Employee requests admin users and config write,403 UNAUTHORIZED_OPERATION; ACCESS_DENIED audit,NOT_RUN,,
-T18,Authorization,Other technician acknowledges assigned incident,403 UNAUTHORIZED_OPERATION; state unchanged,NOT_RUN,,
-T19,Authorization,"Expired access token, rotation, revoked token, logout",TOKEN_EXPIRED; rotation succeeds; revoked/logout refreshes rejected,NOT_RUN,,
-T20,Security,Five wrong passwords; correct password; advance clock 15m,401 then 423 ACCOUNT_LOCKED; after timeout login succeeds,NOT_RUN,,
-T21,Business rule,"Request info, advance test clock 20m, provide info",Paused SLA; resolution deadline moved exactly 20m; IN_PROGRESS,NOT_RUN,,
+T17,Authorization,Employee requests admin users and config write,403 UNAUTHORIZED_OPERATION; ACCESS_DENIED audit,PARTIAL,Employee admin-user GET blocked; config write and ACCESS_DENIED audit still needed,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T18,Authorization,Other technician acknowledges assigned incident,403 UNAUTHORIZED_OPERATION; state unchanged,PASS,Postman: unrelated technician gets 403; correct technician then acknowledges successfully; only one acknowledgment audit,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T19,Authorization,"Expired access token, rotation, revoked token, logout",TOKEN_EXPIRED; rotation succeeds; revoked/logout refreshes rejected,PARTIAL,"Rotation, revoked/logout refresh checks passed; expired access-token scenario still needed",https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T20,Security,Five wrong passwords; correct password; advance clock 15m,401 then 423 ACCOUNT_LOCKED; after timeout login succeeds,PARTIAL,One wrong password rejected; five-strike lockout and clock advance still needed,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
+T21,Business rule,"Request info, advance test clock 20m, provide info",Paused SLA; resolution deadline moved exactly 20m; IN_PROGRESS,PARTIAL,Request/provide info API path and exact 20-minute pause math unit test pass; combined clocked integration scenario still needed,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T22,Business rule,Unacknowledged P1; advance through escalation then acknowledge,"Levels 1,2,3 with audit/notification; stops on acknowledge",NOT_RUN,,
-T23,Business rule,"SLA monitor twice each at 75,90,100 percent","One first warning, second warning, violation; no duplicates",NOT_RUN,,
+T23,Business rule,"SLA monitor twice each at 75,90,100 percent","One first warning, second warning, violation; no duplicates",PARTIAL,SlaTracker warning/violation deduplication unit test passes; full monitor and violation-row integration scenario still needed,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128
 T24,Business rule,Two simultaneous incident updates with same version,"One 200, one 409 OPTIMISTIC_LOCK_CONFLICT",NOT_RUN,,
 T25,Business rule,Karthik reports Networking incident; assign him manually,Strategy excludes reporter; manual 403 CONFLICT_OF_INTEREST,NOT_RUN,,
-T26,Authorization,"Karthik queue, create incident, admin user list","200,201,403; union of employee/technician permissions",NOT_RUN,,
+T26,Authorization,"Karthik queue, create incident, admin user list","200,201,403; union of employee/technician permissions",PARTIAL,Queue allowed and admin blocked; create as Karthik still needs explicit test,https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43621082128

@@ -12,11 +12,11 @@ Commit `1979923f27bd643e77bfc032f39098d6e4ab94d6`, GitHub Actions run `436198756
 - Schema-only backend check and frontend production build passed.
 - Existing frontend test failure remains tracked by issue #11.
 
-The Compose/API/reset round-trip job was introduced after this milestone; use the latest run for its result. Do not treat this earlier run as proof of container execution.
+Final verified implementation commit `af1fa3a699cbfac517d9f88f649a199e55b01b43`, Actions run `43621082128`: all six jobs passed. This includes 17 schema-only backend tests (plus the two seed compatibility tests in dev/demo jobs), three frontend tests, 40 real API smoke requests, 38 Postman requests with 83 passing assertions, fresh Docker startup, database integrity, and a snapshot/mutate/restore round trip. Seven Python generator tests run in each seed job. The frontend selector/cleanup issue is fixed in this branch; issue #11 can close when the PR merges.
 
 ## The required functional cases
 
-`test_cases.csv` records the 26 handbook cases and their expected outcomes. Their initial status is NOT_RUN because seed validation does not exercise the full user workflows. Replace a status only after executing its complete scenario and attach the commit, date and output/screenshot. Smoke checks that overlap part of a case do not count as completion of that case.
+`test_cases.csv` records the 26 handbook cases and their expected outcomes. The current matrix records seven PASS, nine PARTIAL, and ten NOT_RUN cases after the first automated workflow run. PASS may be a unit-level case where the handbook scenario is a domain boundary. PARTIAL explicitly identifies checks still required. Replace a status only after executing its complete scenario and attach the commit, date and output/screenshot. Smoke checks that overlap part of a case do not count as completion of that case.
 
 Known integration details: the Java backend uses TF-IDF defaults for similarity rather than the handbook's original embedding thresholds. Confirm expectations for T16 against the actual engine and document the difference. The frontend's predefined demo buttons use mock tokens; type real seeded credentials to test the backend.
 
