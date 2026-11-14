@@ -9,7 +9,7 @@
 | **Project** | I-ITSM: Intelligent IT Service Management and Incident Resolution System (CS F213 OOP, BITS Pilani Hyderabad, Sem I 2026-27) |
 | **Component** | Backend (Spring Boot REST API) |
 | **Owner** | Backend Lead |
-| **Last updated** | 2026-11-14 (M9 to M11 and the M12 core merged) |
+| **Last updated** | 2026-11-14 (M12 rest, M13, M14 core and M2b merged; every agreed endpoint built) |
 | **Source of truth for scope** | Backend Lead Handbook (modules M1 to M14) and the API Data Dictionary |
 
 ---
@@ -29,9 +29,13 @@
 11. [M7 SLA engine and monitor](#11-m7-sla-engine-and-monitor)
 12. [M8 Events and the audit trail](#12-m8-events-and-the-audit-trail)
     - [12a. M9 Notifications](#12a-m9-notifications)
-    - 12b. [M10 Search and reports](#12b-m10-search-and-reports)
-    - 12c. [M12 Intelligence and AI (core)](#12c-m12-intelligence-and-ai-core)
+    - [12b. M10 Search and reports](#12b-m10-search-and-reports)
+    - [12c. M12 Intelligence and AI (core)](#12c-m12-intelligence-and-ai-core)
     - [12d. M11 Escalation, auto-verify and the demo clock](#12d-m11-escalation-auto-verify-and-the-demo-clock)
+    - [12e. M12 rest: duplicates, problem records and Major Incident Mode](#12e-m12-rest-duplicates-problem-records-and-major-incident-mode)
+    - [12f. M13 Real-time layer, dashboard and service graph](#12f-m13-real-time-layer-dashboard-and-service-graph)
+    - [12g. M14 Hardening and the sealed audit trail](#12g-m14-hardening-and-the-sealed-audit-trail)
+    - [12h. M2b Google sign-in](#12h-m2b-google-sign-in)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -48,17 +52,19 @@
 | **M1** Foundations | Exception hierarchy, one global error handler, request IDs, CORS, security headers, OpenAPI | ✅ Done, verified over HTTP |
 | **M2** Users, roles, auth | User and role model, register / login / refresh / logout / me, JWT, lockout, multi-role permissions, admin user / role / skill management | ✅ Done and smoke-tested (failed logins and refusals audited since M8) |
 | **M3** Catalog and configuration | Services (with dependency graph), category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` | ✅ Done and smoke-tested (42/42) |
-| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8 · ⏳ duplicates (M12); escalate done with M11 |
+| **M4** Incidents and lifecycle | Incident aggregate, State pattern (10 states), factory, creation pipeline with auto-assignment, manual assignment with eligibility, SLA clocks and state, comments, role-based lists and filters, optimistic locking | ✅ Done and smoke-tested (54/54), history since M8, escalate with M11; duplicates on create, mark-duplicate and withdraw (G3) with M12 (section 12e) |
 | **M5** Priority engine | Weighted strategy, override rules, explanation, recalculation, manual override | ✅ Done (checked with M4: T01, T05, T06) |
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar; its events become notifications (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
 | **M9** Notifications | Five channels (inbox, WebSocket push, mail, simulated SMS for P1, chat webhook), after-commit async listener, per-user preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints | ✅ Done and smoke-tested (72 checks, needs Mailpit) |
-| **M12** Intelligence (core) | Category and intake suggestions, TF-IDF similar incidents, suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Done and smoke-tested (55 + scan + no-key) · ⏳ duplicate check on create, mark-duplicate, problem records, Major Incident Mode, chatbot, recurring-problem detector |
-| **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV export; E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12b) | ✅ Done and smoke-tested (135 checks); the reporter withdraw action (G3) is still open |
+| **M12** Intelligence (core) | Category and intake suggestions, TF-IDF similar incidents, suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Core done and smoke-tested (55 + scan + no-key); the rest (section 12e) done 2026-11-14: duplicate check on create, applied AI category, mark-duplicate, problem records with correlation, Major Incident Mode (S2: known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem), recurring-problem detector (E2), chatbot intake (A1), outage drill (D2, demo); `m12b_smoke.py` 107 |
+| **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV export; E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12b) | ✅ Done and smoke-tested (135 checks); the reporter withdraw action (G3) followed with M12 |
 | **M11** Escalation (section 12d) | Chain of Responsibility (technician, team lead, system admin, IT manager), escalation monitor with triage escalation and one final exhausted alert, manual `POST /incidents/{id}/escalate`, escalation preview, auto-verify job, demo-only adjustable clock | ✅ Done and smoke-tested (`m11_smoke.py`); its events are notified by M9 since the E-034 fix (each hop to the holders of the level it reached, the exhausted alert to every administrator, `e034_check.py`) |
-| M13, M14, M2b | Real-time and graph, hardening, Google sign-in | ⬜ Not started |
-| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | 🟡 Partly built: D1, E3, E4, A6, A11, G2, C1, C2, C4 done; the rest not started |
+| **M13** Real-time, dashboard, graph (section 12f) | Live admin dashboard (`DashboardListener` after commit, `GET /dashboard/live`, `/topic/dashboard` events and coalesced counters), WebSocket permission per destination and close at token expiry, `GET /services/graph`, `/services/{id}/impact`, E1 status board `GET /services/status`, `ServiceGraph` | ✅ Done and smoke-tested (`m13_smoke.py` 72) |
+| **M14** Hardening (section 12g) | Attachments, 503 `SERVICE_UNAVAILABLE` on database or AI outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, S3 sealed audit trail (`GET /audit/verify`, `POST /audit/seal`); G4 and C3 done with M12 | ✅ Core done and smoke-tested (`m14_smoke.py` 81) · ⏳ A7 load test |
+| **M2b** Google sign-in (section 12h) | `POST /auth/google` behind a verifier port: JJWT adapter with Google's published keys, offline fake (dev, demo, test only); link by verified email, optional auto-registration | ✅ Done and smoke-tested with the fake verifier (`m2b_smoke.py` 32); the real adapter is not yet tried against Google |
+| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | 🟡 Mostly built: S2, S3, D1, D2, E1, E2, E3, E4, A1, A6, A11, G2, G3, G4, C1 to C4 done; S1 simulator, A7 load test and the last-priority items open; E5, A2 are frontend |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -131,25 +137,35 @@ com.iitsm
 │   │                                AdminConfigController, SlaController, AuditController, NotificationController,
 │   │                                ReportController, PostIncidentReportController, FeedbackController,
 │   │                                SavedFilterController, PriorityController, IntelligenceController,
-│   │                                AdminDemoController (demo profile only)
+│   │                                ProblemController (M12), DashboardController, ServiceGraphController (M13),
+│   │                                AttachmentController, AuditSealController (M14),
+│   │                                AdminDemoController, AdminOutageDrillController (demo profile only)
 │   ├── dto                          ErrorResponse, PageResponse, request records (dto/auth, admin, catalog, incident,
-│   │                                intelligence, notification, report)
-│   ├── filter                       RequestIdFilter
-│   ├── handler                      GlobalExceptionHandler
+│   │                                intelligence, notification, problem, report)
+│   ├── filter                       RequestIdFilter, RateLimitFilter (M14: login, Google sign-in, incident creation)
+│   ├── validation                   ValidPassword, ValidPasswordValidator, PasswordSubject (M14 password policy)
+│   ├── handler                      GlobalExceptionHandler (also 503, 429 with Retry-After, denied-audit cap)
 │   └── openapi                      OpenApiConfig, ApiErrors, ErrorCode, contract customizers
 ├── application
 │   ├── admin                        UserAdminService, UserAdminViews
 │   ├── assignment                   AssignmentService, WorkloadService, TechnicianWorkService
-│   ├── auth                         AuthService, AuthenticatedUser, UserView, AccessTokenIssuer (port)
+│   ├── auth                         AuthService, AuthenticatedUser, UserView, AccessTokenIssuer (port),
+│   │                                GoogleSignInService, GoogleIdTokenVerifier (port, M2b)
 │   ├── catalog                      CatalogService, SlaAdminService, CatalogViews
-│   ├── incident                     IncidentService, IncidentAccessPolicy, IncidentViewMapper, IncidentViews,
+│   ├── incident                     IncidentService, IncidentCreationService (creation pipeline, M12),
+│   │                                PriorityRecalculator, IncidentAccessPolicy, IncidentViewMapper, IncidentViews,
 │   │                                IncidentEventPublisher, AutoVerifyMonitor (G2)
-│   ├── incident/command             IncidentCommand + 9 commands (Acknowledge ... Reopen, Escalate),
+│   ├── incident/command             IncidentCommand + 10 commands (Acknowledge ... Reopen, Escalate, Withdraw),
 │   │                                IncidentCommandRunner, CommandContext (Command pattern, C1)
+│   ├── problem                      ProblemService, ProblemCorrelator, KnownOutageService, RecurringProblemService (E2),
+│   │                                JoinerNotifier, ProblemViews (M12: problem records, Major Incident Mode)
 │   ├── sla                          SlaMonitor (the monitor run), SlaViolationService
-│   ├── audit                        AuditListener (Observer), AuditService
+│   ├── audit                        AuditListener (Observer), AuditService, AuditSealService (S3)
 │   ├── notification                 NotificationListener (Observer), NotificationPlanner, NotificationDispatcher,
 │   │                                DigestCollector, NotificationService, NotificationRequest
+│   ├── dashboard                    DashboardService, DashboardListener (Observer), DashboardPublisher (port),
+│   │                                DashboardViews (M13)
+│   ├── graph                        ServiceGraphService, ServiceGraphViews (M13: graph, impact, E1 status board)
 │   ├── report                       ReportService, ReportExportService, CsvWriter, CoverageRiskService (E3),
 │   │                                PostIncidentReportService (E4), PostIncidentPdfRenderer (port)
 │   ├── feedback                     FeedbackService
@@ -157,17 +173,24 @@ com.iitsm
 │   ├── priority                     PriorityWhatIfService (A11)
 │   ├── escalation                   EscalationMonitor, EscalationPlanner, EscalationPreviewer,
 │   │                                EscalationRecipients, EscalationService
-│   ├── intelligence                 IntelligenceService, IntelligenceReader, SlaRiskService, AiRateLimiter, AiResultCache
-│   ├── demo                         AdjustableClock (D1, demo profile only)
+│   ├── intelligence                 IntelligenceService, IntelligenceReader, SlaRiskService, ChatIntakeService (A1),
+│   │                                AiRateLimiter (delegates to RateLimiter), AiResultCache
+│   ├── attachment                   AttachmentService, AttachmentView (M14)
+│   ├── ratelimit                    RateLimiter (one sliding-window limiter with named buckets, M14)
+│   ├── demo                         AdjustableClock (D1), OutageDrillService (D2), demo profile only
 │   └── config                       ConfigService (live app_config cache)
 ├── domain
 │   ├── assignment                   AssignmentStrategy + 5 strategies, FactorStrategy, AssignmentEngine,
 │   │                                AssignmentFactors, EligibilityFilter, WorkloadTracker, TechnicianCandidate
+│   ├── attachment                   IncidentAttachment, AttachmentType (checks the first bytes), AttachmentName,
+│   │                                AttachmentStorage (port)
 │   ├── category                     Category (tree, required skills)
 │   ├── config                       ConfigKey, AppSettings, AppConfigEntry
-│   ├── audit                        AuditRecord (immutable), AuditAction, AuditQuery
+│   ├── audit                        AuditRecord (immutable), AuditAction, AuditQuery; S3: AuditSeal, AuditSealEntry,
+│   │                                AuditSealing, AuditFacts, AuditChainVerifier
 │   ├── event                        IncidentEvent, IncidentChanged, TriageNeeded, SlaWarning, SlaViolated,
-│   │                                SlaRunCompleted, SecurityAuditEvent (Observer pattern events)
+│   │                                SlaRunCompleted, SlaAtRisk, IncidentEscalated, EscalationExhausted,
+│   │                                SecurityAuditEvent (Observer pattern events)
 │   ├── notification                 Notification, NotificationPreference, NotificationEventType, ChannelType, Audience,
 │   │                                NotificationChannel (Adapter port), NotificationFactory, NotificationRules,
 │   │                                NotificationMessage, TeamResolver
@@ -176,29 +199,40 @@ com.iitsm
 │   ├── intelligence                 TextAnalysisService (Strategy port), KeywordTextAnalysisService, Tokenizer,
 │   │                                TfIdfModel, KeywordDictionary, TextRedactor, CircuitBreaker, SlaRiskScorer,
 │   │                                LlmClient (Adapter port), suggestion records
+│   ├── problem                      ProblemRecord, ProblemStatus (M12)
 │   ├── report                       ReportRows, ReportScope
 │   ├── feedback                     Feedback
 │   ├── search                       SavedFilter
-│   ├── exception                    ItsmException + 18 business exceptions
-│   ├── incident                     Incident, IncidentState + 10 states, StateFactory, IncidentFactory,
-│   │                                SlaTracker, SlaAlert, Resolution, IncidentComment, IncidentFact, enums
+│   ├── exception                    ItsmException + business exceptions (incl. ServiceUnavailableException, M14)
+│   ├── incident                     Incident, IncidentState + 10 states (OpenState is the parent of the open ones),
+│   │                                StateFactory, IncidentFactory, SlaTracker, SlaAlert, Resolution, IncidentComment,
+│   │                                IncidentFact, enums
 │   ├── priority                     Priority, PriorityStrategy, WeightedPriorityStrategy,
 │   │                                PriorityOverrideRule, PriorityEngine, PriorityBreakdown
-│   ├── repository                   one repository interface per aggregate
-│   ├── service                      ItService (IT services and their dependency graph)
+│   ├── repository                   one repository interface per aggregate (incl. Problem, Attachment, AuditSeal,
+│   │                                Dashboard)
+│   ├── service                      ItService (IT services and their dependency graph), ServiceGraph (impact,
+│   │                                upstream and common-upstream walks, M13)
 │   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver, SlaViolation
-│   └── user                         User, Role hierarchy, profiles, SkillSet, RefreshToken, UserFactory, enums
+│   └── user                         User, Role hierarchy, profiles, SkillSet, RefreshToken, UserFactory,
+│                                    PasswordPolicy (M14), enums
 └── infrastructure
     ├── config                       ClockConfig (not demo), DemoClockConfig (demo only), CorsConfig, DomainConfig
     ├── persistence                  Spring Data implementations of the domain repositories, CriteriaIncidentSearch,
-    │                                NativeReportRepository (report SQL), JpaIncidentTextRepository (M12 texts)
+    │                                NativeReportRepository, NativeDashboardRepository (SQL aggregates),
+    │                                JpaIncidentTextRepository (M12 texts)
     ├── notification                 InAppChannel, EmailChannel, WebSocketChannel, SmsSimulatedChannel,
     │                                ChatWebhookChannel, GlobalTeamResolver, NotificationAsyncConfig, WebSocketConfig
+    ├── realtime                     StompDashboardPublisher (Adapter), StompDestinationPolicy, StompPrincipal,
+    │                                WebSocketSessions (closes a socket at token expiry), RealtimeConfig (M13)
     ├── ai                           AiConfig, FallbackTextAnalysisService (@Primary), LlmTextAnalysisService,
     │                                AnthropicLlmClient, ScriptedLlmClient, LlmProperties, PromptLibrary
+    ├── google                       JjwtGoogleIdTokenVerifier, FakeGoogleIdTokenVerifier (Adapters),
+    │                                GoogleJwksKeyLocator, GoogleClaimsChecker, GoogleProperties, GoogleSignInConfig (M2b)
+    ├── attachment                   DiskAttachmentStorage (M14)
     ├── report                       OpenPdfPostIncidentRenderer (PDF adapter)
     ├── scheduler                    SchedulingConfig, SlaMonitorJob, EscalationMonitorJob, AutoVerifyJob,
-    │                                SlaRiskScanJob (intervals from app_config)
+    │                                SlaRiskScanJob, DashboardCountersJob, AuditSealJob (intervals from app_config)
     └── security                     SecurityConfig, JwtService, JwtAuthenticationFilter, ApiErrorWriter, ApiErrorCorsProcessor
 ```
 
@@ -1447,6 +1481,95 @@ Smoke test `m9_smoke.py` (needs Mailpit): 72 checks, all passed against the runn
 | Failing channels | Mail server stopped: incident still created, inbox and push still delivered, mail arrives after a retry; dead webhook and empty webhook handled and logged |
 | Storm control | Threshold 1: two P4 warnings in one run become one digest, two P1 warnings stay single (with SMS); below the threshold single messages; violations single even at threshold 1 |
 | WebSocket | CONNECT without token and other destinations refused |
+
+---
+
+## 12b. M10 Search and reports
+
+Built 2026-11-14 (decisions DEC-60 to DEC-66). The incident list gets its last filter, every report is a database aggregate over the incidents the caller may see, and four small features answer the brief: coverage risk (E3), post-incident report with PDF (E4), feedback after resolution, saved views and the priority what-if (A11). The reporter withdraw action (G3) is not part of this module's first delivery.
+
+```mermaid
+flowchart LR
+    C[Client] --> RC[ReportController]
+    C --> IC[IncidentController GET /incidents]
+    C --> X[Feedback, SavedFilter, Priority, PostIncidentReport controllers]
+    RC --> RS[ReportService]
+    RC --> EX[ReportExportService + CsvWriter]
+    RC --> CV[CoverageRiskService]
+    IC --> IS[IncidentService.list]
+    IS --> CR[CriteriaIncidentSearch<br/>filters + slaState + visibility]
+    RS --> RR[(ReportRepository<br/>NativeReportRepository: COUNT / GROUP BY)]
+    CV --> RR
+    EX --> RS
+    EX --> IS
+    X --> PS[PostIncidentReportService] --> AU[(audit_records)]
+    PS --> PDF[PostIncidentPdfRenderer port<br/>OpenPdfPostIncidentRenderer adapter]
+    X --> FS[FeedbackService] --> FB[(feedback)]
+    X --> SF[SavedFilterService] --> SV[(saved_filters)]
+    X --> WI[PriorityWhatIfService] --> PE[PriorityEngine, live settings]
+```
+
+### 12b.1 Search: all filters of Appendix B
+
+`GET /incidents` takes `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `slaState`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`, `page`, `size` (max 100) and `sort` (`createdAt`, `priority`, `status`, `code`, `resolutionDue`, `,asc|desc`). Everything is one dynamic Criteria query (DEC-24); visibility (own and assigned incidents for everyone except team leads and administrators) is added by `IncidentService` and cannot be chosen by the client.
+
+**`slaState` (DEC-61).** The shown state needs business-hours elapsed time, which SQL cannot compute, so the filter reads the flags the SLA monitor stores plus the status:
+
+| Filter | Matches |
+|---|---|
+| `OK` | no deadline yet, or open, not paused, no violation flag and no warning flag |
+| `WARNING` | open, not paused, not violated, and a first or second warning has fired (response warnings count only until acknowledged) |
+| `VIOLATED` | open, not paused, and a response or resolution violation flag is set; or finished (RESOLVED, VERIFIED, CLOSED) but not met |
+| `PAUSED` | open and the resolution clock is paused (PENDING_USER_INFO) |
+| `MET` | finished, resolved no later than the resolution deadline, and no violation flag |
+| `AT_RISK` | nothing until the SLA risk score exists (M12) |
+
+Consequence: the list can trail the detail view by up to one monitor interval (60 s by default). The detail view computes the state live; the list filter reports what the monitor has recorded.
+
+### 12b.2 Reports
+
+Every report covers the incidents the caller may see (employee: own; technician: own and assigned; team lead and administrator: all), the same rule as the list (DEC-60). Workload and coverage risk show other people's work and need `TEAM_VIEW`. All numbers come from one SQL `COUNT` or `GROUP BY` (`NativeReportRepository`), so a total equals a direct count.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /reports/overview?from&to` | `total, open, critical (open P1), resolved, slaViolations, avgResolutionMinutes, avgSatisfaction (null if no rating)` |
+| `GET /reports/services?from&to` | `[{serviceId, name, count}]`, most first |
+| `GET /reports/trends?from&to&bucket=day\|week` | `[{date, created, resolved}]`, empty buckets filled with zero, UTC, weeks start Monday; default last 30 days or 12 weeks; limit `report.trend.max.buckets` |
+| `GET /reports/priority-distribution?from&to` | `[{label, count}]`, P1 to P4 always listed (then UNSET if any) |
+| `GET /reports/category-distribution?from&to` | `[{label, count}]`, `Uncategorized` for incidents still in triage |
+| `GET /reports/sla-compliance?from&to&groupBy=priority\|service\|technician` | `[{label, total, met, violated, compliancePercent}]` |
+| `GET /reports/workload` (TEAM_VIEW) | `[{technicianId, name, active, load, maxLoad, avgResolutionMinutes}]` |
+| `GET /reports/coverage-risk?onlyFlagged` (TEAM_VIEW) | E3, section 12b.4 |
+| `GET /reports/export?type&from&to&format=csv` | CSV, section 12b.3 |
+
+Definitions shared by all reports (one place, `NativeReportRepository`): **open** = NEW to REOPENED, **resolved** = RESOLVED, VERIFIED or CLOSED, so open + resolved = total. **Violated** = the incident has an `sla_violations` row, or was resolved after its resolution deadline. **Judged** = has a deadline, was not closed as duplicate or withdrawn, and is finished or violated. **Met** = judged and not violated, so met + violated = total in every compliance row, and `overview.slaViolations` equals the sum of `violated`. `from`/`to` limit by creation time (trends: created by creation time, resolved by resolution time); `to` is exclusive and must be after `from`.
+
+### 12b.3 CSV export
+
+`GET /reports/export?type=` with `incidents`, `overview`, `services`, `trends`, `priority-distribution`, `category-distribution`, `sla-compliance` or `workload` (TEAM_VIEW). The rows are written straight to the response (no async dispatch, so the JWT check stays valid), the incident export walks through the list 200 rows at a time, and the number of rows is capped by the setting `report.export.max.rows` (default 10000). **Formula injection (DEC-62):** a text cell starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe; numbers are never altered; cells with commas, quotes or line breaks are quoted (RFC 4180).
+
+### 12b.4 E3 Coverage risk report
+
+A service has no category of its own, so the report ties them through history (DEC-63): every service and category seen together on incidents in the last `coverage.window.days` (90). For each pair it counts the technicians the assignment engine would accept for that category (active account, AVAILABLE or BUSY, holding at least one required skill; anyone if the category needs none) and lists them, with how many hold each required skill. `level` is `NO_COVERAGE` (0), `SINGLE_HOLDER` (1), `THIN` (below `coverage.min.holders`, default 2) or `COVERED`. A pair is **flagged** when the service criticality is at least `coverage.min.criticality` (4) and the count is below the minimum holders. Flagged pairs come first.
+
+### 12b.5 E4 Post-incident report
+
+`GET /incidents/{id}/post-incident-report` (JSON) and `.../pdf`, for whoever may see the incident (others get 404). Computed from the audit trail: `timeline` (every entry; a reporter without staff rights does not get internal-note entries), `timeInStatus` (wall-clock seconds per status over all visits; the current status runs to now, CLOSED is final and has no duration), `sla` (state, response and resolution due and result, violation rows), `people` (reporter, assignee and every actor, with roles and action counts), `resolution`, `satisfaction`, `totalSeconds`. An open incident gives a report so far (`complete: false`). The PDF is drawn by the `PostIncidentPdfRenderer` port; `OpenPdfPostIncidentRenderer` (OpenPDF 3.0.5) is the Adapter (DEC-64).
+
+### 12b.6 Feedback, saved views, what-if
+
+| Endpoint | Rules |
+|---|---|
+| `POST /incidents/{id}/feedback {rating 1-5, comment ≤1000}` | 201 `{rating, comment, createdAt}`. Stranger: 404. Viewer who is not the reporter: 403. Before RESOLVED: 409. Second time: 409 (primary key `incident_id`). `IncidentDetail.feedback` shows it; `allowedActions` has `GIVE_FEEDBACK` for the reporter until a rating exists. |
+| `GET /saved-filters`, `POST /saved-filters {name ≤60, filter}`, `DELETE /saved-filters/{id}` | Private to the owner (another user's id is 404). `filter` may hold only the keys of `GET /incidents`, with valid values (400 with `filter.<key>` field errors otherwise); a name is unique per user; at most `saved.filters.max` (20) per user (DEC-65). |
+| `POST /priority/what-if {incidentId? \| serviceId?+categoryId?, impact, urgency, affectedUsers}` | Any user who can see the incident. Returns `current` (stored priority and score, only for an incident), `whatIf` (the live `PriorityEngine` result with its breakdown and the SLA minutes of the resulting priority), `changed`, `scoreDifference`. Changes nothing: no save, no audit entry, no version change (DEC-66). |
+
+### 12b.7 Verified behavior (2026-11-14)
+
+Smoke test `m10_smoke.py` (135 checks) against the running app: each of the ten filters alone equals a direct database count, combinations and paging and sorting, `slaState` against the stored flags (OK, WARNING, VIOLATED, PAUSED, MET), visibility for employee, technician, team lead and administrator; every report total equals a direct count for five users and open + resolved = total, distributions and services sum to the total, compliance met + violated = total, trends equal creation and resolution counts, employees count only their own incidents; CSV neutralises a `=HYPERLINK` title, is capped by the setting and refuses an unknown type and a non-staff workload export; coverage flags a single holder, gives NO_COVERAGE when that holder goes OFF_DUTY and leaves a two-holder minor service unflagged; the post-incident report and its PDF (text extracted with `pdftotext`) show the timeline, SLA outcome, durations and people; feedback follows reporter-only, once, status rules; saved views are private, validated and limited; the what-if matches a real incident's priority and changes nothing.
+
+---
+
 ## 12c. M12 Intelligence and AI (core)
 
 **Built 2026-11-14 (branch `claude/m12-core-d3df02`).** The first part of M12: suggestions while a person fills in the report form, similar incidents, suggested fixes, the thread summary and the SLA risk score. Everything works with no API key; an LLM is an optional upgrade behind the same interface. **Not in this part** (they touch `Incident` and `IncidentService`): the duplicate check on creation (409 `DUPLICATE_INCIDENT`), `mark-duplicate`, problem records and Major Incident Mode, the recurring-problem detector, the chatbot intake. `TextAnalysisService.findSimilar` and `IntelligenceService.similarTo` are the entry points they will call.
@@ -1547,89 +1670,7 @@ Precision of DUPLICATE is 100 % on this set and recall 87.5 %; lowering the dupl
 
 Earlier suites run against this build: auth 27/27, M3 42/42, M6 33/33, M7 35/35, M8 24/24, calendar 11/11, M4 53/54 (the one failure expects `GIVE_FEEDBACK`, an M10 feature that is not in this branch), endpoint sweep 72/72 (65 earlier operations plus the 7 new ones; the M10 checks added to the shared sweep were removed from the copy used for this branch).
 
-## 12b. M10 Search and reports
-
-Built 2026-11-14 (decisions DEC-60 to DEC-66). The incident list gets its last filter, every report is a database aggregate over the incidents the caller may see, and four small features answer the brief: coverage risk (E3), post-incident report with PDF (E4), feedback after resolution, saved views and the priority what-if (A11). The reporter withdraw action (G3) is not part of this module's first delivery.
-
-```mermaid
-flowchart LR
-    C[Client] --> RC[ReportController]
-    C --> IC[IncidentController GET /incidents]
-    C --> X[Feedback, SavedFilter, Priority, PostIncidentReport controllers]
-    RC --> RS[ReportService]
-    RC --> EX[ReportExportService + CsvWriter]
-    RC --> CV[CoverageRiskService]
-    IC --> IS[IncidentService.list]
-    IS --> CR[CriteriaIncidentSearch<br/>filters + slaState + visibility]
-    RS --> RR[(ReportRepository<br/>NativeReportRepository: COUNT / GROUP BY)]
-    CV --> RR
-    EX --> RS
-    EX --> IS
-    X --> PS[PostIncidentReportService] --> AU[(audit_records)]
-    PS --> PDF[PostIncidentPdfRenderer port<br/>OpenPdfPostIncidentRenderer adapter]
-    X --> FS[FeedbackService] --> FB[(feedback)]
-    X --> SF[SavedFilterService] --> SV[(saved_filters)]
-    X --> WI[PriorityWhatIfService] --> PE[PriorityEngine, live settings]
-```
-
-### 12b.1 Search: all filters of Appendix B
-
-`GET /incidents` takes `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `slaState`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`, `page`, `size` (max 100) and `sort` (`createdAt`, `priority`, `status`, `code`, `resolutionDue`, `,asc|desc`). Everything is one dynamic Criteria query (DEC-24); visibility (own and assigned incidents for everyone except team leads and administrators) is added by `IncidentService` and cannot be chosen by the client.
-
-**`slaState` (DEC-61).** The shown state needs business-hours elapsed time, which SQL cannot compute, so the filter reads the flags the SLA monitor stores plus the status:
-
-| Filter | Matches |
-|---|---|
-| `OK` | no deadline yet, or open, not paused, no violation flag and no warning flag |
-| `WARNING` | open, not paused, not violated, and a first or second warning has fired (response warnings count only until acknowledged) |
-| `VIOLATED` | open, not paused, and a response or resolution violation flag is set; or finished (RESOLVED, VERIFIED, CLOSED) but not met |
-| `PAUSED` | open and the resolution clock is paused (PENDING_USER_INFO) |
-| `MET` | finished, resolved no later than the resolution deadline, and no violation flag |
-| `AT_RISK` | nothing until the SLA risk score exists (M12) |
-
-Consequence: the list can trail the detail view by up to one monitor interval (60 s by default). The detail view computes the state live; the list filter reports what the monitor has recorded.
-
-### 12b.2 Reports
-
-Every report covers the incidents the caller may see (employee: own; technician: own and assigned; team lead and administrator: all), the same rule as the list (DEC-60). Workload and coverage risk show other people's work and need `TEAM_VIEW`. All numbers come from one SQL `COUNT` or `GROUP BY` (`NativeReportRepository`), so a total equals a direct count.
-
-| Endpoint | Returns |
-|---|---|
-| `GET /reports/overview?from&to` | `total, open, critical (open P1), resolved, slaViolations, avgResolutionMinutes, avgSatisfaction (null if no rating)` |
-| `GET /reports/services?from&to` | `[{serviceId, name, count}]`, most first |
-| `GET /reports/trends?from&to&bucket=day\|week` | `[{date, created, resolved}]`, empty buckets filled with zero, UTC, weeks start Monday; default last 30 days or 12 weeks; limit `report.trend.max.buckets` |
-| `GET /reports/priority-distribution?from&to` | `[{label, count}]`, P1 to P4 always listed (then UNSET if any) |
-| `GET /reports/category-distribution?from&to` | `[{label, count}]`, `Uncategorized` for incidents still in triage |
-| `GET /reports/sla-compliance?from&to&groupBy=priority\|service\|technician` | `[{label, total, met, violated, compliancePercent}]` |
-| `GET /reports/workload` (TEAM_VIEW) | `[{technicianId, name, active, load, maxLoad, avgResolutionMinutes}]` |
-| `GET /reports/coverage-risk?onlyFlagged` (TEAM_VIEW) | E3, section 12b.4 |
-| `GET /reports/export?type&from&to&format=csv` | CSV, section 12b.3 |
-
-Definitions shared by all reports (one place, `NativeReportRepository`): **open** = NEW to REOPENED, **resolved** = RESOLVED, VERIFIED or CLOSED, so open + resolved = total. **Violated** = the incident has an `sla_violations` row, or was resolved after its resolution deadline. **Judged** = has a deadline, was not closed as duplicate or withdrawn, and is finished or violated. **Met** = judged and not violated, so met + violated = total in every compliance row, and `overview.slaViolations` equals the sum of `violated`. `from`/`to` limit by creation time (trends: created by creation time, resolved by resolution time); `to` is exclusive and must be after `from`.
-
-### 12b.3 CSV export
-
-`GET /reports/export?type=` with `incidents`, `overview`, `services`, `trends`, `priority-distribution`, `category-distribution`, `sla-compliance` or `workload` (TEAM_VIEW). The rows are written straight to the response (no async dispatch, so the JWT check stays valid), the incident export walks through the list 200 rows at a time, and the number of rows is capped by the setting `report.export.max.rows` (default 10000). **Formula injection (DEC-62):** a text cell starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe; numbers are never altered; cells with commas, quotes or line breaks are quoted (RFC 4180).
-
-### 12b.4 E3 Coverage risk report
-
-A service has no category of its own, so the report ties them through history (DEC-63): every service and category seen together on incidents in the last `coverage.window.days` (90). For each pair it counts the technicians the assignment engine would accept for that category (active account, AVAILABLE or BUSY, holding at least one required skill; anyone if the category needs none) and lists them, with how many hold each required skill. `level` is `NO_COVERAGE` (0), `SINGLE_HOLDER` (1), `THIN` (below `coverage.min.holders`, default 2) or `COVERED`. A pair is **flagged** when the service criticality is at least `coverage.min.criticality` (4) and the count is below the minimum holders. Flagged pairs come first.
-
-### 12b.5 E4 Post-incident report
-
-`GET /incidents/{id}/post-incident-report` (JSON) and `.../pdf`, for whoever may see the incident (others get 404). Computed from the audit trail: `timeline` (every entry; a reporter without staff rights does not get internal-note entries), `timeInStatus` (wall-clock seconds per status over all visits; the current status runs to now, CLOSED is final and has no duration), `sla` (state, response and resolution due and result, violation rows), `people` (reporter, assignee and every actor, with roles and action counts), `resolution`, `satisfaction`, `totalSeconds`. An open incident gives a report so far (`complete: false`). The PDF is drawn by the `PostIncidentPdfRenderer` port; `OpenPdfPostIncidentRenderer` (OpenPDF 3.0.5) is the Adapter (DEC-64).
-
-### 12b.6 Feedback, saved views, what-if
-
-| Endpoint | Rules |
-|---|---|
-| `POST /incidents/{id}/feedback {rating 1-5, comment ≤1000}` | 201 `{rating, comment, createdAt}`. Stranger: 404. Viewer who is not the reporter: 403. Before RESOLVED: 409. Second time: 409 (primary key `incident_id`). `IncidentDetail.feedback` shows it; `allowedActions` has `GIVE_FEEDBACK` for the reporter until a rating exists. |
-| `GET /saved-filters`, `POST /saved-filters {name ≤60, filter}`, `DELETE /saved-filters/{id}` | Private to the owner (another user's id is 404). `filter` may hold only the keys of `GET /incidents`, with valid values (400 with `filter.<key>` field errors otherwise); a name is unique per user; at most `saved.filters.max` (20) per user (DEC-65). |
-| `POST /priority/what-if {incidentId? \| serviceId?+categoryId?, impact, urgency, affectedUsers}` | Any user who can see the incident. Returns `current` (stored priority and score, only for an incident), `whatIf` (the live `PriorityEngine` result with its breakdown and the SLA minutes of the resulting priority), `changed`, `scoreDifference`. Changes nothing: no save, no audit entry, no version change (DEC-66). |
-
-### 12b.7 Verified behavior (2026-11-14)
-
-Smoke test `m10_smoke.py` (135 checks) against the running app: each of the ten filters alone equals a direct database count, combinations and paging and sorting, `slaState` against the stored flags (OK, WARNING, VIOLATED, PAUSED, MET), visibility for employee, technician, team lead and administrator; every report total equals a direct count for five users and open + resolved = total, distributions and services sum to the total, compliance met + violated = total, trends equal creation and resolution counts, employees count only their own incidents; CSV neutralises a `=HYPERLINK` title, is capped by the setting and refuses an unknown type and a non-staff workload export; coverage flags a single holder, gives NO_COVERAGE when that holder goes OFF_DUTY and leaves a two-holder minor service unflagged; the post-incident report and its PDF (text extracted with `pdftotext`) show the timeline, SLA outcome, durations and people; feedback follows reporter-only, once, status rules; saved views are private, validated and limited; the what-if matches a real incident's priority and changes nothing.
+---
 
 ## 12d. M11 Escalation, auto-verify and the demo clock
 
@@ -1713,95 +1754,95 @@ In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forwar
 
 ---
 
-## 12h. M2b Google sign-in
+## 12e. M12 rest: duplicates, problem records and Major Incident Mode
 
-**What it does.** Lets a person sign in with their Google account instead of a password. The frontend shows the Google button and sends us the **ID token** Google gives it; the backend checks that token and answers with the same `AuthResponse` (15-minute access token, 7-day rotating refresh token) as `/auth/login`. It is an extra: password login stays (D-001, DEC-04). Decisions: DEC-100 to DEC-103.
+Decisions: DEC-70 to DEC-78. Smoke suites: `m12b_smoke.py` (107 checks) and `m12b_drill.py` (9 checks, demo profile).
 
-### 12h.1 The adapter: one port, two implementations
-
-```mermaid
-classDiagram
-    direction LR
-    class GoogleSignInService {
-        +signIn(idToken) AuthResult
-    }
-    class GoogleIdTokenVerifier {
-        <<interface, port>>
-        +verify(idToken) GoogleIdentity
-    }
-    class JjwtGoogleIdTokenVerifier {
-        real adapter
-    }
-    class FakeGoogleIdTokenVerifier {
-        offline adapter, HS256 fixed key
-    }
-    class GoogleJwksKeyLocator {
-        fetches and caches Google's keys, picks by kid
-    }
-    class GoogleClaimsChecker {
-        issuer, audience, subject, email
-    }
-    GoogleSignInService ..> GoogleIdTokenVerifier
-    GoogleIdTokenVerifier <|.. JjwtGoogleIdTokenVerifier
-    GoogleIdTokenVerifier <|.. FakeGoogleIdTokenVerifier
-    JjwtGoogleIdTokenVerifier --> GoogleJwksKeyLocator
-    JjwtGoogleIdTokenVerifier --> GoogleClaimsChecker
-    FakeGoogleIdTokenVerifier --> GoogleClaimsChecker
-```
-
-`GoogleSignInConfig` picks the adapter from `app.google.verifier` (`google` or `fake`, env `GOOGLE_VERIFIER`). The fake exists so smoke runs work offline; the application refuses to start with it unless the `dev`, `demo` or `test` profile is active. Both adapters share `GoogleClaimsChecker`, so the claim rules are tested even with the fake.
-
-### 12h.2 Signing in
+### 12e.1 The creation pipeline now (front half in `IncidentCreationService`)
 
 ```mermaid
 flowchart TD
-    A[POST /auth/google idToken] --> B{Token valid?<br/>signature, expiry,<br/>audience, issuer}
-    B -- no --> X1[401 TOKEN_INVALID<br/>audited with the reason]
-    B -- Google keys unreachable --> X5[503 SERVICE_UNAVAILABLE]
-    B -- yes --> C{email_verified?}
-    C -- no --> X2[401 INVALID_CREDENTIALS, audited]
-    C -- yes --> D[find user by google_sub,<br/>then by email]
-    D -- none --> E{auth.google.autoregister?}
-    E -- off --> X2
-    E -- on --> F[create EMPLOYEE user<br/>no password, google_sub set]
-    D -- found --> G{locked?}
-    G -- yes --> X3[423 ACCOUNT_LOCKED]
-    G -- no --> H{active?}
-    H -- no --> X2
-    H -- yes --> I{linked to a<br/>different Google sub?}
-    I -- yes --> X2
-    I -- no --> J[link google_sub if empty,<br/>reset failed_logins]
-    F --> K[200 AuthResponse]
-    J --> K
+    A[POST /incidents] --> B{similar open incident on the same service in 24 h?}
+    B -- "score 0.55 or more, not confirmed" --> X[409 DUPLICATE_INCIDENT with similar]
+    B -- "no, or confirmNotDuplicate" --> C{category given?}
+    C -- no --> D{AI suggestion at 0.60 or more?}
+    D -- yes --> E[category applied, audit names the AI]
+    D -- no --> F[triage]
+    C -- yes --> G[IncidentService.create: one transaction]
+    E --> G
+    F --> G
+    G --> H[ProblemCorrelator: same service and score 0.35 or more, or neighbour service with an open P1/P2 within 60 min]
+    H --> I[grouped under a problem record, audited as DUPLICATE_LINKED]
 ```
 
-Every failure writes a `LOGIN_FAILED` audit entry ("Failed Google login: ...") in its own transaction. Google failures never add to `failed_logins`; a success resets it. Account-level problems all answer the same `INVALID_CREDENTIALS` as a wrong password, so nobody can probe which emails have accounts.
+The model call and the similarity read happen **before** the transaction, so no database connection is held (DEC-M12-9). Grouping runs after commit; a failure there is logged and the incident stays ungrouped.
 
-### 12h.3 Endpoint, settings and environment
+### 12e.2 Endpoints
 
-| Item | Value |
-|---|---|
-| Endpoint | `POST /api/v1/auth/google` `{ "idToken": "..." }`, public, returns `AuthResponse`; errors `TOKEN_INVALID` 401, `INVALID_CREDENTIALS` 401, `ACCOUNT_LOCKED` 423, `SERVICE_UNAVAILABLE` 503 |
-| `app_config` key | `auth.google.autoregister` = `false` (default) or `true`: whether an unknown verified email gets a new EMPLOYEE account |
-| Environment | `GOOGLE_CLIENT_ID` (the OAuth client id, same one the frontend button uses), `GOOGLE_VERIFIER` (`google` default, `fake` for offline) |
-| Real key source | `https://www.googleapis.com/oauth2/v3/certs`, cached by `Cache-Control: max-age`, early refetch on an unknown `kid` (at most once a minute) |
-| Schema | none: `users.password_hash` is already nullable and `users.google_sub` already unique (D-001) |
+| Method and path | Who | What |
+|---|---|---|
+| `POST /incidents/{id}/withdraw` `{reason}` | reporter | closes as WITHDRAWN (CLASSIFIED, ASSIGNED, ACKNOWLEDGED only) |
+| `POST /incidents/{id}/mark-duplicate` `{duplicateOfId}` | admin, team lead | closes as DUPLICATE, audit DUPLICATE_LINKED |
+| `POST /incidents` (+ `confirmNotDuplicate`) | any user | 409 `DUPLICATE_INCIDENT` with `similar` unless confirmed |
+| `GET /problems?status=` / `GET /problems/{id}` | admin, team lead | record with lead, linked incidents, `joined` count |
+| `POST /problems` `{title?, incidentIds}` | admin, team lead | opens a record by hand |
+| `POST /problems/{id}/resolve` `{rootCause, notes, steps, timeSpentMinutes}` | admin, team lead | "Resolve whole problem": one fix for every open incident, record RESOLVED |
+| `DELETE /problems/{id}/incidents/{incidentId}` | admin | ungroup, audited |
+| `GET /problems/{id}/root-cause` | admin, team lead | probable root cause and candidates from the service graph, with paths |
+| `GET /problems/known-outages?serviceId=` | any user | open outages on the service or on a service it depends on |
+| `POST /problems/{id}/join` | any user | one-click join (below) |
+| `GET /problems/recurring` | admin, team lead | E2 proposals |
+| `POST /intelligence/chat` | any user | A1 chatbot turn |
+| `POST /admin/demo/outage-drill` `{rootServiceId}` | admin, **demo profile only** | D2 |
 
-### 12h.4 Verified behavior (2026-11-14)
+### 12e.3 Major Incident Mode (S2) in one picture
 
-`m2b_smoke.py` against the running app with the fake verifier: **32 of 32 checks passed**; `auth_smoke.py` against the same app: **27 of 27**.
+```mermaid
+sequenceDiagram
+    participant R as Employee
+    participant API as Backend
+    participant L as Lead incident
+    R->>API: GET /problems/known-outages?serviceId=Portal
+    API-->>R: "Core platform down, 120 affected, being worked on"
+    R->>API: POST /problems/7/join
+    API->>API: new incident for R, closed as DUPLICATE of the lead
+    API->>L: affected users +1, priority recalculated (x1.25 at 10, x1.5 at 101)
+    Note over L: technician resolves the lead
+    L->>API: resolve
+    API->>API: internal note on every other open linked incident, record stays OPEN
+    API-->>R: one in-app notice (after commit)
+    Note over API: a team lead or admin presses Resolve problem (POST /problems/7/resolve): same fix for the rest, record RESOLVED
+```
 
-| Area | Checked |
-|---|---|
-| Linking | Existing account with the same verified email gets `google_sub`; the returned tokens work on `/auth/me` and rotate on `/auth/refresh`; a second sign-in is found by `google_sub` even when Google's email changed; password login of the linked account still works |
-| Refusals | Unverified email 401 `INVALID_CREDENTIALS` and nothing linked; unknown email with auto-registration off 401 and no user created; deactivated account 401; email linked to a different Google account 401 and the stored sub unchanged |
-| Auto-registration | An administrator switches `auth.google.autoregister` on through `/admin/config`; the new user is EMPLOYEE only, `password_hash` NULL, name from the token; its password login answers `INVALID_CREDENTIALS` |
-| Bad tokens | Wrong audience, expired, wrong issuer, forged signature and garbage all 401 `TOKEN_INVALID`; a missing `idToken` is 400 `VALIDATION_FAILED` |
-| Lockout | Failed Google attempts leave `failed_logins` at 3; a success resets it to 0; a locked account gets 423 even with a valid token |
-| Audit | Refusals and rejected tokens are `LOGIN_FAILED` entries with their reasons |
-| Contract | `/v3/api-docs` lists `POST /auth/google` as implemented (no longer tagged Planned) |
+### 12e.4 Rules worth knowing
 
-**Not verified here:** the real adapter against Google's live keys (needs internet and a real client id; only the fake was run), and the startup refusal of `fake` outside dev, demo and test.
+- **Lead of a record:** highest priority, then earliest created; joiner incidents never lead. Derived on read, never stored.
+- **No automatic cascade (DEC-72, as changed):** resolving the *lead* only leaves an internal note on the other open incidents (staff only); "Resolve problem" (`POST /problems/{id}/resolve`, team lead or admin) resolves them all with one fix through `Incident.resolveWithProblem`, legal from every open status (`OpenState`). Joiners are notified once.
+- **Withdraw and duplicate closures cannot be reopened** (`ClosedState.reopenable`).
+- **G4:** wrong person is 403, but a closed incident is still 409 (the G4 check runs only while the incident is editable).
+- **Internal audit entries** exist only through `AuditRecord.internal(...)`; `IncidentChanged.internal` carries the flag to the audit listener.
+- **Root cause:** `ServiceGraph.commonUpstream` ranks by farthest distance, then total distance, then id; an affected service is its own upstream at distance 0.
+
+### 12e.5 Settings added (live, `app_config`; six keys added by this part)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `priority.security.category` | Security | category (with its children) that triggers override rule 1 |
+| `autocat.apply.confidence` | 0.60 | apply a suggested category on create from this confidence |
+| `problem.correlation.window.minutes` | 60 | age of the open P1/P2 on a neighbouring service that still pulls a new incident in |
+| `recurring.min.count` | 3 | resolved times of one service and category to be proposed |
+| `recurring.window.days` | 30 | look-back of the recurring detector |
+| `recurring.min.reopens` | 2 | reopens from which an incident is proposed |
+
+Tables: `problem_records` (Appendix A.3, id, title, service_id, status, created_at) and `incidents.problem_id` / `duplicate_of_id` (already in Appendix A). No new table.
+
+### 12e.6 Classes
+
+Domain: `OpenState` (shared parent of CLASSIFIED, ASSIGNED, ACKNOWLEDGED, IN_PROGRESS, PENDING_USER_INFO, REOPENED: mark-duplicate, withdraw, resolve with the problem), `ProblemRecord`, `ProblemStatus`, `ProblemRepository`, `ServiceGraph` (from session B), `IncidentAction.WITHDRAW`, `Category.isWithin`, `AuditRecord.internal` / `of`. Application: `IncidentCreationService`, `PriorityRecalculator`, `WithdrawCommand`, `ProblemCorrelator`, `ProblemService`, `KnownOutageService`, `JoinerNotifier`, `RecurringProblemService`, `ChatIntakeService`, `OutageDrillService` (demo). Web: `ProblemController`, `AdminOutageDrillController` (demo), `ChatRequest`, `CreateProblemRequest`, `MarkDuplicateRequest`. Patterns visible: State (`OpenState` hierarchy), Command (`WithdrawCommand`), Strategy (similarity behind `TextAnalysisService`), Observer (grouping and audit through events), Factory (`IncidentFactory` for joiners).
+
+### 12e.7 Verified behavior (2026-11-14, `m12b_smoke.py` 107/107, `m12b_drill.py` 9/9)
+
+Withdraw (CLASSIFIED, ASSIGNED, ACKNOWLEDGED allowed; IN_PROGRESS 409; stranger 403 or 404; reopen of the result 409; load drops); mark-duplicate (employee refused, self, unknown and already-duplicate targets 400, audit names the original); G4 (reporter 403 on impact after assignment, description still editable, unchanged value allowed, team lead and admin allowed, before assignment allowed); C3 (the setting drives rule 1 for both create and what-if, over-long value 400, internal note hidden from the reporter's history); duplicate check (409 with `similar`, similarity at least 0.55, confirm creates and groups, other service not a duplicate, unrelated text not grouped); auto category (applied and audited, vague text stays in triage); correlation (dependant joins an open P1, unrelated service and a P4 do not); S2 (known-outage view hides reporters, join creates a DUPLICATE incident, lead users +1, priority P3 to P2 at ten users, joining twice idempotent, resolved outage 409); lead resolved (the related incident is not resolved, staff get an internal note that the reporter does not see, the record stays OPEN, the joiner is notified once); Resolve whole problem (an employee 403, team lead and admin allowed, the open incidents get the same root cause, the joiner is not told twice); ungroup (permissions and audit); root cause (Auth before Database, one path per affected service); E2 (three fixes proposed, disappear once a record exists, reopen proposal); chatbot (ask, re-ask, service by name, number read, ready to file, filed through POST /incidents); drill (403 for employees, 404 unknown service, 4 incidents in one record, root cause is the failing service, second run joins the same record).
 
 ---
 
@@ -1896,6 +1937,8 @@ No new table, no schema change.
 
 Smoke test `m13_smoke.py`: 72 checks, all passed against the running app (backend with 1-minute tokens for the expiry check). Done-when: creating a P1 incident reached an open admin subscription as `INCIDENT_CREATED` 1.3 s after the request started (request time included), a `COUNTERS` message followed with total +1; employee and technician sockets are refused on `/topic/dashboard` and receive nothing; the employee's own notification push still works; `GET /dashboard/live` equals `/reports/overview`; an expired token's socket is closed with 4001 and a reconnect with it is refused; graph, impact and the status board give the values of the table above on a staged chain, including `causedBy` distances, P2 and P3/P4 handling, SLA compliance from null to 100.0 to 0.0, and switched-off services left out. `m9_smoke.py` re-run against the same build.
 
+---
+
 ## 12g. M14 Hardening and the sealed audit trail
 
 Built 2026-11-14 (decisions DEC-90 to DEC-94). Six protections that make the system safe to demonstrate: it throttles abusers, accepts only safe files, answers politely when a dependency is down, refuses weak passwords, and can prove its audit log has not been tampered with.
@@ -1988,95 +2031,97 @@ Demo (two minutes): create an incident, press Seal, edit one audit row in SQL (`
 
 ---
 
-## 12e. M12 rest: duplicates, problem records and Major Incident Mode
+## 12h. M2b Google sign-in
 
-Decisions: DEC-70 to DEC-78. Smoke suites: `m12b_smoke.py` (107 checks) and `m12b_drill.py` (9 checks, demo profile).
+**What it does.** Lets a person sign in with their Google account instead of a password. The frontend shows the Google button and sends us the **ID token** Google gives it; the backend checks that token and answers with the same `AuthResponse` (15-minute access token, 7-day rotating refresh token) as `/auth/login`. It is an extra: password login stays (D-001, DEC-04). Decisions: DEC-100 to DEC-103.
 
-### 12e.1 The creation pipeline now (front half in `IncidentCreationService`)
+### 12h.1 The adapter: one port, two implementations
+
+```mermaid
+classDiagram
+    direction LR
+    class GoogleSignInService {
+        +signIn(idToken) AuthResult
+    }
+    class GoogleIdTokenVerifier {
+        <<interface, port>>
+        +verify(idToken) GoogleIdentity
+    }
+    class JjwtGoogleIdTokenVerifier {
+        real adapter
+    }
+    class FakeGoogleIdTokenVerifier {
+        offline adapter, HS256 fixed key
+    }
+    class GoogleJwksKeyLocator {
+        fetches and caches Google's keys, picks by kid
+    }
+    class GoogleClaimsChecker {
+        issuer, audience, subject, email
+    }
+    GoogleSignInService ..> GoogleIdTokenVerifier
+    GoogleIdTokenVerifier <|.. JjwtGoogleIdTokenVerifier
+    GoogleIdTokenVerifier <|.. FakeGoogleIdTokenVerifier
+    JjwtGoogleIdTokenVerifier --> GoogleJwksKeyLocator
+    JjwtGoogleIdTokenVerifier --> GoogleClaimsChecker
+    FakeGoogleIdTokenVerifier --> GoogleClaimsChecker
+```
+
+`GoogleSignInConfig` picks the adapter from `app.google.verifier` (`google` or `fake`, env `GOOGLE_VERIFIER`). The fake exists so smoke runs work offline; the application refuses to start with it unless the `dev`, `demo` or `test` profile is active. Both adapters share `GoogleClaimsChecker`, so the claim rules are tested even with the fake.
+
+### 12h.2 Signing in
 
 ```mermaid
 flowchart TD
-    A[POST /incidents] --> B{similar open incident on the same service in 24 h?}
-    B -- "score 0.55 or more, not confirmed" --> X[409 DUPLICATE_INCIDENT with similar]
-    B -- "no, or confirmNotDuplicate" --> C{category given?}
-    C -- no --> D{AI suggestion at 0.60 or more?}
-    D -- yes --> E[category applied, audit names the AI]
-    D -- no --> F[triage]
-    C -- yes --> G[IncidentService.create: one transaction]
-    E --> G
-    F --> G
-    G --> H[ProblemCorrelator: same service and score 0.35 or more, or neighbour service with an open P1/P2 within 60 min]
-    H --> I[grouped under a problem record, audited as DUPLICATE_LINKED]
+    A[POST /auth/google idToken] --> B{Token valid?<br/>signature, expiry,<br/>audience, issuer}
+    B -- no --> X1[401 TOKEN_INVALID<br/>audited with the reason]
+    B -- Google keys unreachable --> X5[503 SERVICE_UNAVAILABLE]
+    B -- yes --> C{email_verified?}
+    C -- no --> X2[401 INVALID_CREDENTIALS, audited]
+    C -- yes --> D[find user by google_sub,<br/>then by email]
+    D -- none --> E{auth.google.autoregister?}
+    E -- off --> X2
+    E -- on --> F[create EMPLOYEE user<br/>no password, google_sub set]
+    D -- found --> G{locked?}
+    G -- yes --> X3[423 ACCOUNT_LOCKED]
+    G -- no --> H{active?}
+    H -- no --> X2
+    H -- yes --> I{linked to a<br/>different Google sub?}
+    I -- yes --> X2
+    I -- no --> J[link google_sub if empty,<br/>reset failed_logins]
+    F --> K[200 AuthResponse]
+    J --> K
 ```
 
-The model call and the similarity read happen **before** the transaction, so no database connection is held (DEC-M12-9). Grouping runs after commit; a failure there is logged and the incident stays ungrouped.
+Every failure writes a `LOGIN_FAILED` audit entry ("Failed Google login: ...") in its own transaction. Google failures never add to `failed_logins`; a success resets it. Account-level problems all answer the same `INVALID_CREDENTIALS` as a wrong password, so nobody can probe which emails have accounts.
 
-### 12e.2 Endpoints
+### 12h.3 Endpoint, settings and environment
 
-| Method and path | Who | What |
-|---|---|---|
-| `POST /incidents/{id}/withdraw` `{reason}` | reporter | closes as WITHDRAWN (CLASSIFIED, ASSIGNED, ACKNOWLEDGED only) |
-| `POST /incidents/{id}/mark-duplicate` `{duplicateOfId}` | admin, team lead | closes as DUPLICATE, audit DUPLICATE_LINKED |
-| `POST /incidents` (+ `confirmNotDuplicate`) | any user | 409 `DUPLICATE_INCIDENT` with `similar` unless confirmed |
-| `GET /problems?status=` / `GET /problems/{id}` | admin, team lead | record with lead, linked incidents, `joined` count |
-| `POST /problems` `{title?, incidentIds}` | admin, team lead | opens a record by hand |
-| `POST /problems/{id}/resolve` `{rootCause, notes, steps, timeSpentMinutes}` | admin, team lead | "Resolve whole problem": one fix for every open incident, record RESOLVED |
-| `DELETE /problems/{id}/incidents/{incidentId}` | admin | ungroup, audited |
-| `GET /problems/{id}/root-cause` | admin, team lead | probable root cause and candidates from the service graph, with paths |
-| `GET /problems/known-outages?serviceId=` | any user | open outages on the service or on a service it depends on |
-| `POST /problems/{id}/join` | any user | one-click join (below) |
-| `GET /problems/recurring` | admin, team lead | E2 proposals |
-| `POST /intelligence/chat` | any user | A1 chatbot turn |
-| `POST /admin/demo/outage-drill` `{rootServiceId}` | admin, **demo profile only** | D2 |
+| Item | Value |
+|---|---|
+| Endpoint | `POST /api/v1/auth/google` `{ "idToken": "..." }`, public, returns `AuthResponse`; errors `TOKEN_INVALID` 401, `INVALID_CREDENTIALS` 401, `ACCOUNT_LOCKED` 423, `SERVICE_UNAVAILABLE` 503 |
+| `app_config` key | `auth.google.autoregister` = `false` (default) or `true`: whether an unknown verified email gets a new EMPLOYEE account |
+| Environment | `GOOGLE_CLIENT_ID` (the OAuth client id, same one the frontend button uses), `GOOGLE_VERIFIER` (`google` default, `fake` for offline) |
+| Real key source | `https://www.googleapis.com/oauth2/v3/certs`, cached by `Cache-Control: max-age`, early refetch on an unknown `kid` (at most once a minute) |
+| Schema | none: `users.password_hash` is already nullable and `users.google_sub` already unique (D-001) |
 
-### 12e.3 Major Incident Mode (S2) in one picture
+### 12h.4 Verified behavior (2026-11-14)
 
-```mermaid
-sequenceDiagram
-    participant R as Employee
-    participant API as Backend
-    participant L as Lead incident
-    R->>API: GET /problems/known-outages?serviceId=Portal
-    API-->>R: "Core platform down, 120 affected, being worked on"
-    R->>API: POST /problems/7/join
-    API->>API: new incident for R, closed as DUPLICATE of the lead
-    API->>L: affected users +1, priority recalculated (x1.25 at 10, x1.5 at 101)
-    Note over L: technician resolves the lead
-    L->>API: resolve
-    API->>API: internal note on every other open linked incident, record stays OPEN
-    API-->>R: one in-app notice (after commit)
-    Note over API: a team lead or admin presses Resolve problem (POST /problems/7/resolve): same fix for the rest, record RESOLVED
-```
+`m2b_smoke.py` against the running app with the fake verifier: **32 of 32 checks passed**; `auth_smoke.py` against the same app: **27 of 27**.
 
-### 12e.4 Rules worth knowing
+| Area | Checked |
+|---|---|
+| Linking | Existing account with the same verified email gets `google_sub`; the returned tokens work on `/auth/me` and rotate on `/auth/refresh`; a second sign-in is found by `google_sub` even when Google's email changed; password login of the linked account still works |
+| Refusals | Unverified email 401 `INVALID_CREDENTIALS` and nothing linked; unknown email with auto-registration off 401 and no user created; deactivated account 401; email linked to a different Google account 401 and the stored sub unchanged |
+| Auto-registration | An administrator switches `auth.google.autoregister` on through `/admin/config`; the new user is EMPLOYEE only, `password_hash` NULL, name from the token; its password login answers `INVALID_CREDENTIALS` |
+| Bad tokens | Wrong audience, expired, wrong issuer, forged signature and garbage all 401 `TOKEN_INVALID`; a missing `idToken` is 400 `VALIDATION_FAILED` |
+| Lockout | Failed Google attempts leave `failed_logins` at 3; a success resets it to 0; a locked account gets 423 even with a valid token |
+| Audit | Refusals and rejected tokens are `LOGIN_FAILED` entries with their reasons |
+| Contract | `/v3/api-docs` lists `POST /auth/google` as implemented (no longer tagged Planned) |
 
-- **Lead of a record:** highest priority, then earliest created; joiner incidents never lead. Derived on read, never stored.
-- **No automatic cascade (DEC-72, as changed):** resolving the *lead* only leaves an internal note on the other open incidents (staff only); "Resolve problem" (`POST /problems/{id}/resolve`, team lead or admin) resolves them all with one fix through `Incident.resolveWithProblem`, legal from every open status (`OpenState`). Joiners are notified once.
-- **Withdraw and duplicate closures cannot be reopened** (`ClosedState.reopenable`).
-- **G4:** wrong person is 403, but a closed incident is still 409 (the G4 check runs only while the incident is editable).
-- **Internal audit entries** exist only through `AuditRecord.internal(...)`; `IncidentChanged.internal` carries the flag to the audit listener.
-- **Root cause:** `ServiceGraph.commonUpstream` ranks by farthest distance, then total distance, then id; an affected service is its own upstream at distance 0.
+**Not verified here:** the real adapter against Google's live keys (needs internet and a real client id; only the fake was run), and the startup refusal of `fake` outside dev, demo and test.
 
-### 12e.5 Settings added (live, `app_config`; six keys added by this part)
-
-| Key | Default | Meaning |
-|---|---|---|
-| `priority.security.category` | Security | category (with its children) that triggers override rule 1 |
-| `autocat.apply.confidence` | 0.60 | apply a suggested category on create from this confidence |
-| `problem.correlation.window.minutes` | 60 | age of the open P1/P2 on a neighbouring service that still pulls a new incident in |
-| `recurring.min.count` | 3 | resolved times of one service and category to be proposed |
-| `recurring.window.days` | 30 | look-back of the recurring detector |
-| `recurring.min.reopens` | 2 | reopens from which an incident is proposed |
-
-Tables: `problem_records` (Appendix A.3, id, title, service_id, status, created_at) and `incidents.problem_id` / `duplicate_of_id` (already in Appendix A). No new table.
-
-### 12e.6 Classes
-
-Domain: `OpenState` (shared parent of CLASSIFIED, ASSIGNED, ACKNOWLEDGED, IN_PROGRESS, PENDING_USER_INFO, REOPENED: mark-duplicate, withdraw, resolve with the problem), `ProblemRecord`, `ProblemStatus`, `ProblemRepository`, `ServiceGraph` (from session B), `IncidentAction.WITHDRAW`, `Category.isWithin`, `AuditRecord.internal` / `of`. Application: `IncidentCreationService`, `PriorityRecalculator`, `WithdrawCommand`, `ProblemCorrelator`, `ProblemService`, `KnownOutageService`, `JoinerNotifier`, `RecurringProblemService`, `ChatIntakeService`, `OutageDrillService` (demo). Web: `ProblemController`, `AdminOutageDrillController` (demo), `ChatRequest`, `CreateProblemRequest`, `MarkDuplicateRequest`. Patterns visible: State (`OpenState` hierarchy), Command (`WithdrawCommand`), Strategy (similarity behind `TextAnalysisService`), Observer (grouping and audit through events), Factory (`IncidentFactory` for joiners).
-
-### 12e.7 Verified behavior (2026-11-14, `m12b_smoke.py` 107/107, `m12b_drill.py` 9/9)
-
-Withdraw (CLASSIFIED, ASSIGNED, ACKNOWLEDGED allowed; IN_PROGRESS 409; stranger 403 or 404; reopen of the result 409; load drops); mark-duplicate (employee refused, self, unknown and already-duplicate targets 400, audit names the original); G4 (reporter 403 on impact after assignment, description still editable, unchanged value allowed, team lead and admin allowed, before assignment allowed); C3 (the setting drives rule 1 for both create and what-if, over-long value 400, internal note hidden from the reporter's history); duplicate check (409 with `similar`, similarity at least 0.55, confirm creates and groups, other service not a duplicate, unrelated text not grouped); auto category (applied and audited, vague text stays in triage); correlation (dependant joins an open P1, unrelated service and a P4 do not); S2 (known-outage view hides reporters, join creates a DUPLICATE incident, lead users +1, priority P3 to P2 at ten users, joining twice idempotent, resolved outage 409); lead resolved (the related incident is not resolved, staff get an internal note that the reporter does not see, the record stays OPEN, the joiner is notified once); Resolve whole problem (an employee 403, team lead and admin allowed, the open incidents get the same root cause, the joiner is not told twice); ungroup (permissions and audit); root cause (Auth before Database, one path per affected service); E2 (three fixes proposed, disappear once a record exists, reopen proposal); chatbot (ask, re-ask, service by name, number read, ready to file, filed through POST /incidents); drill (403 for employees, 404 unknown service, 4 incidents in one record, root cause is the failing service, second run joins the same record).
+---
 
 ## 13. Data model built so far
 
@@ -2316,10 +2361,10 @@ New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 1
 |---|---|---|
 | **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` (M9) builds notification wording from templates. |
 | **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
-| **Adapter** | 🟡 growing | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); `LlmClient` port with `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c). |
+| **Adapter** | ✅ in use | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); `LlmClient` port with `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c); `PostIncidentPdfRenderer` with OpenPDF (M10); `DashboardPublisher` with `StompDashboardPublisher` (M13); `AttachmentStorage` with `DiskAttachmentStorage` (M14); `GoogleIdTokenVerifier` with `JjwtGoogleIdTokenVerifier` and the offline `FakeGoogleIdTokenVerifier` (M2b, section 12h). |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
 | **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. M12: `TextAnalysisService` with `KeywordTextAnalysisService`, `LlmTextAnalysisService` and the `FallbackTextAnalysisService` that chooses by `ai.primary` (section 12c). |
-| **Observer** | ✅ in use (M8) | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `SecurityAuditEvent`); `AuditListener` records them in the action's transaction; `NotificationListener` (M9) reacts after commit, asynchronously. The dashboard listener (M13) follows. |
+| **Observer** | ✅ in use | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `IncidentEscalated`, `EscalationExhausted`, `SecurityAuditEvent`, ...); `AuditListener` records them in the action's transaction; `NotificationListener` (M9) and `DashboardListener` (M13) react after commit, asynchronously. |
 | **Chain of Responsibility** | ✅ in use (M11) | `EscalationHandler` with `TechnicianHandler`, `TeamLeadHandler`, `SystemAdminHandler`, `ItManagerHandler`, linked by `EscalationChain` (section 12d.1). |
 
 ### 14.3 Further patterns in the code
@@ -2329,7 +2374,10 @@ New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 1
 | **Template Method** | ✅ in use | `FactorStrategy.rank` is final: it scores every candidate, sorts best first and applies the tie-break; subclasses (`CompositeStrategy`, `SkillBasedStrategy`, `LoadBasedStrategy`, `ExperiencePriorityStrategy`) only supply `score` (section 10.3). |
 | **Strategy** (third use) | ✅ in use | `WorkCalendar` with `AlwaysCalendar` and `BusinessHoursCalendar`: an SLA policy chooses how time is counted (section 11.3). |
 | **Policy object** | ✅ in use | `IncidentAccessPolicy` holds every "who may do what" rule in one class, separate from the State pattern's "is it legal now" (section 8.4). |
-| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with nine implementations (`EscalateCommand` joined with M11) (`AcknowledgeCommand` ... `ReopenCommand`) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
+| **Command** | ✅ in use (DEC-46) | `IncidentCommand` with ten implementations (`AcknowledgeCommand` ... `ReopenCommand`, `EscalateCommand` with M11, `WithdrawCommand` with M12) run by `IncidentCommandRunner`, which does the steps every incident action shares: load, check who may act, perform, leave the note, publish the audit event, build the view. |
+| **Decorator** | ✅ in use (M13) | `WebSocketSessions` wraps each Spring WebSocket session handler so the socket is closed when its access token expires (section 12f). |
+| **Graph traversal (data structure)** | ✅ in use (M13) | `ServiceGraph`: breadth-first walks with a visited set for impact, upstream and the common upstream that names the probable root cause in Major Incident Mode (sections 12e, 12f). |
+| **Hash chain** | ✅ in use (M14, S3) | `AuditSealing` and `AuditChainVerifier`: each seal hashes its records' digests with the previous seal's hash, so one altered audit row is named (section 12g). |
 
 ---
 
@@ -2429,26 +2477,31 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-14 | M9, M10, M11 and M12 core merged into `main` together (ERROR_LOG E-033): decision ids renumbered (M9 DEC-54, M12 DEC-M12-n, M11 DEC-50 to DEC-53, section 12d), `planned-endpoints.json` merged by key, 63 settings. All smoke suites run on the merged build. |
 | 2026-11-14 | Docs brought in line with the merged code, no code change: package map (section 3) lists the M10 to M12 packages; status table and section 18 show what is built; contract count is 95 built and 10 planned operations (plus 2 demo-only); a merge gap between M9 and M11 notifications was found and logged (ERROR_LOG E-034). |
 | 2026-11-14 | E-034 fixed: escalation notices come from `IncidentEscalated` / `EscalationExhausted` (exact recipients per hop, exhausted alert to every administrator with its own wording and SMS for P1, manual escalator not told); `IncidentEscalated` gained `actorId`; the ESCALATED audit action no longer notifies. `m11_smoke.py` 78/78, `e034_check.py` 12/12. |
+| 2026-11-14 | M2b Google sign-in (section 12h, DEC-100 to DEC-103, session D): `POST /auth/google` behind the `GoogleIdTokenVerifier` port, JJWT adapter with Google's published keys, offline fake for dev, demo and test, link by verified email, optional auto-registration (`auth.google.autoregister`). `m2b_smoke.py` 32/32, `auth_smoke.py` 27/27. |
+| 2026-11-14 | M13 real-time layer, dashboard, service graph (section 12f, DEC-80 to DEC-84, session B): live admin dashboard (`DashboardListener` after commit, `GET /dashboard/live`, `/topic/dashboard` events plus coalesced counters), WebSocket permission per destination and close at token expiry (4001), `GET /services/graph`, `/services/{id}/impact`, E1 status board `GET /services/status`, `ServiceGraph` domain class. Two settings. `m13_smoke.py` 72/72. |
+| 2026-11-14 | M14 hardening and S3 (section 12g, DEC-90 to DEC-94, session C): attachments (upload, list, download), 503 `SERVICE_UNAVAILABLE` on database outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, sealed audit trail (`GET /audit/verify`, `POST /audit/seal`). Four settings; new tables `audit_seals`, `audit_seal_entries` (plus `incident_attachments` of Appendix A). `m14_smoke.py` 81/81. |
+| 2026-11-14 | M12 rest (section 12e, DEC-70 to DEC-78, session A): duplicate check on create (409 with `similar`, `confirmNotDuplicate`), applied AI category, `mark-duplicate`, problem records with correlation (text and dependency graph), Major Incident Mode (known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem; resolving the lead only leaves notes, DEC-72 changed by the user), E2 recurring-problem detector, A1 chatbot intake, D2 outage drill (demo); G3 withdraw, G4 reporter edit lock, C3 security-category setting and internal-audit factory. Six settings. `m12b_smoke.py` 107/107, `m10_smoke.py` 135/135. |
+| 2026-11-14 | The four parallel branches and the E-034 fix merged on `backend/integrate-m12-m14` (order M2b, M13, M14, M12, E-034): `ConfigKey` blocks joined (76 settings), `planned-endpoints.json` merged by key (now empty: every agreed endpoint is built), sections 12a to 12h put in order, this guide's sections 1, 3 and 18 updated. |
 
 ---
 
 ## 18. Planned work beyond the handbook
 
-Accepted on 2026-11-13. Built so far: D1, E3, E4, A6, A11 (marked below); the rest is not built yet. Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
+Accepted on 2026-11-13. Built by 2026-11-14: everything below except S1 (still to come), E5 and A2 (frontend). Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
 
 | Id | Feature | What the user will see | Built with |
 |---|---|---|---|
 | S1 | Service Desk Simulator | An administrator replays a workload under up to three configurations on a virtual clock and compares SLA violations, time to resolve and workload spread | after M13 |
-| S2 | Major Incident Mode | Related incidents are grouped, the common upstream service is named as probable root cause, employees join a known outage with one click, and the priority climbs as they join | M12, M13 |
-| S3 | Sealed audit trail | A Verify action proves the audit log is intact or names the first altered record | M14 |
-| E1 | Service status board | Every service as Healthy, Degraded or Outage, derived from reported incidents | M13 |
-| E2 | Recurring-problem detector | A team lead is told when the same failure keeps coming back | M12 |
+| S2 | Major Incident Mode (built 2026-11-14, section 12e) | Related incidents are grouped, the common upstream service is named as probable root cause, employees join a known outage with one click, and the priority climbs as they join | M12, M13 |
+| S3 | Sealed audit trail (built 2026-11-14, section 12g) | A Verify action proves the audit log is intact or names the first altered record | M14 |
+| E1 | Service status board (built 2026-11-14, section 12f) | Every service as Healthy, Degraded or Outage, derived from reported incidents | M13 |
+| E2 | Recurring-problem detector (built 2026-11-14, section 12e) | A team lead is told when the same failure keeps coming back | M12 |
 | E3 | Coverage risk report (built 2026-11-14, section 12b.4) | Critical services that only one available technician can handle | M10 |
 | E4 | Post-incident report (built 2026-11-14, section 12b.5) | Timeline, time in each status and SLA outcome of one incident, as PDF | M10 |
 | E5 | Reporter tracking view | A progress line with the SLA due time | Frontend |
-| D2 | Demo aid (demo profile only) | Start a prepared outage (the clock control D1 is built, section 12d.5) | M12 |
-| A1, A2 | Chatbot and voice reporting | A conversational or spoken report that files the incident | M12, Frontend |
+| D2 | Outage drill, demo profile only (built 2026-11-14, section 12e) | Start a prepared outage (the clock control D1 is built, section 12d.5) | M12 |
+| A1, A2 | Chatbot and voice reporting (A1 chatbot intake built 2026-11-14, section 12e; A2 is frontend) | A conversational or spoken report that files the incident | M12, Frontend |
 | A6 | Chat-webhook channel (built 2026-11-13, section 12a.3) | Escalations, violations and P1 events posted to a team chat room | M9 |
 | A11 | Priority what-if and escalation preview (built 2026-11-14, sections 12b.6 and 12d.3) | Live priority preview while editing; "escalates to Team Lead in 04:12" on the incident | M10, M11 |
 
-Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts (G3, not built); once an incident is assigned only a team lead or administrator can change impact, urgency and affected users (G4, M14, not built); resolved incidents nobody confirms are verified and closed automatically (G2, built with M11). Escalation (DEC-48, DEC-49, built with M11): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to every administrator.
+Changes to existing behavior that come with this work (DEC-46): a reporter can withdraw an incident before work starts (G3, built with M12); once an incident is assigned only a team lead or administrator can change impact, urgency and affected users (G4, built with M12); resolved incidents nobody confirms are verified and closed automatically (G2, built with M11). Escalation (DEC-48, DEC-49, built with M11): an unassigned P1 or P2 in triage escalates from level 0 after the normal timeout, and after level 3 one final exhausted alert goes to every administrator.

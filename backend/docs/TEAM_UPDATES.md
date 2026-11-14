@@ -18,12 +18,12 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 | Skill score | "Best skill proficiency match" | 70% best proficiency + 30% share of required skills held | DEC-29 |
 | Team lead visibility | "Team lead sees their team" | Team leads see all incidents (the schema has no team) | DEC-26 |
 | SLA calendars | Listed as a Tier 3 extra | Built: a policy is ALWAYS or BUSINESS_HOURS; one company calendar in `app_config` (`sla.business.*`) | DEC-39 |
-| Settings | 27 keys in Appendix A.5 | 63 keys (35, plus six `notification.*` with M9, six report and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with M12); defaults live in the code, so seed rows are optional | DEC-18 |
+| Settings | 27 keys in Appendix A.5 | 76 keys (35, plus six `notification.*` with M9, six report and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with the M12 core, six with the rest of M12, two with M13, four with M14, one with M2b); defaults live in the code, so seed rows are optional | DEC-18 |
 | Demo | Docker Compose | Unchanged: the recorded demo runs locally with Docker Compose. Cloud deployment is the last priority | DEC-45 |
 | Grading | Summary table in section 1.2 | Use the rubric in the course brief; our plan against it is `ROADMAP.md` section 8 | DEC-43 |
 
-**Built so far (backend):** M1 to M11 and the core of M12: users and login, catalog and live settings, incidents with the full lifecycle, priority, five assignment strategies with explainable recommendations, SLA monitor with warnings and violations, audit trail, notifications (M9), search and reports (M10), escalation (M11), suggestions, similar incidents and SLA risk (M12 core).
-**Not built yet:** the rest of M12 (duplicate check, problem records, Major Incident Mode, chatbot), the withdraw action, M13 real-time and graph, M14 hardening, Google sign-in.
+**Built so far (backend):** every module M1 to M14 and M2b: users and login (also with Google), catalog and live settings, incidents with the full lifecycle (withdraw included), priority, five assignment strategies with explainable recommendations, SLA monitor, audit trail with tamper-evident seals, notifications, search and reports, escalation, intelligence (suggestions, duplicates, problem records, Major Incident Mode, chatbot intake), live dashboard, service graph and status board, attachments, rate limits.
+**Not built yet:** the S1 Service Desk Simulator, the A7 load test and the last-priority items (mobile push, Grafana, password reset and TOTP, cloud deployment). Every endpoint of the agreed contract exists now.
 
 
 ### New features accepted on 2026-11-13 (built since: coverage risk, post-incident report, chat webhook, priority what-if, escalation preview, demo clock)
