@@ -55,6 +55,14 @@ def main():
     attachments = request(f'/incidents/{incident_id}/attachments', token=token)
     results.append({'case': 'T10', 'check': 'nothing stored', 'expected': [],
                     'actual': attachments, 'status': 200, 'passed': attachments == []})
+    boundary = 'iitsm-valid-control'
+    data = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="evidence.txt"\r\n'
+            'Content-Type: text/plain\r\n\r\nFictional attachment for the test workflow.\r\n'
+            f'--{boundary}--\r\n').encode()
+    status, raw = send(f'/incidents/{incident_id}/attachments', token, data,
+                       'multipart/form-data; boundary=' + boundary)
+    results.append({'case': 'T10', 'check': 'valid upload control', 'expected': 201,
+                    'status': status, 'response': raw[:1000], 'passed': status == 201})
     Path('/tmp/iitsm-handbook-contracts.json').write_text(json.dumps(results, indent=2))
     for result in results:
         print(f"{result['case']} {result['check']}: {'PASS' if result['passed'] else 'FAIL'} (HTTP {result['status']})")

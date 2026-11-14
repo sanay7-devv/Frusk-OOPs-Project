@@ -79,7 +79,8 @@ BEGIN
         RAISE EXCEPTION 'Audit DELETE was allowed';
     EXCEPTION WHEN SQLSTATE '55000' THEN NULL; END;
     BEGIN
-        TRUNCATE audit_records;
+        -- Include its new referencing table so PostgreSQL reaches the protection trigger.
+        TRUNCATE audit_records, audit_seal_entries;
         RAISE EXCEPTION 'Audit TRUNCATE was allowed';
     EXCEPTION WHEN SQLSTATE '55000' THEN NULL; END;
 END $$;
