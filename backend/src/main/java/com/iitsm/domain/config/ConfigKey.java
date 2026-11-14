@@ -149,7 +149,13 @@ public enum ConfigKey {
     // Google sign-in (module M2b, session D, DEC-102)
     AUTH_GOOGLE_AUTOREGISTER("auth.google.autoregister", "false",
             "Whether an unknown email signing in with Google gets a new EMPLOYEE account (false: only existing accounts link)",
-            Type.CHOICE, "true", "false");
+            Type.CHOICE, "true", "false"),
+
+    // ---- session B (M13 real-time, dashboard, service graph, E1 status board)
+    DASHBOARD_COUNTERS_INTERVAL_SECONDS("dashboard.counters.interval.seconds", "30",
+            "How often the live dashboard counters are pushed even when nothing changes", Type.INTEGER, "5", "3600"),
+    STATUS_SLA_WINDOW_DAYS("status.sla.window.days", "30",
+            "Days of incidents behind the SLA compliance shown on the service status board", Type.INTEGER, "1", "365");
 
     /** The kind of value a key holds. */
     public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }

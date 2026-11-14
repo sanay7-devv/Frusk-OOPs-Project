@@ -367,3 +367,13 @@ Entry template:
 - Fix: M12's feature commit `5d993b3` was merged instead of the broken merge commit; ids were renumbered (M9 is DEC-54 and D-028, M12 D-029, M11 D-030 and section 12d, M10 section 12b); `planned-endpoints.json` was merged as JSON (a three-way merge by key); `m11_smoke.py` counts only `EscalationMonitor` log lines; the settings count is 63 (35 plus 6 M9, 6 M10, 2 M11, 14 M12) in the two older suites and in `TEAM_UPDATES.md`.
 - Prevention: before merging parallel branches, grep each one for `<<<<<<<`; give parallel sessions disjoint id ranges up front; regenerate `planned-endpoints.json` from `gen_planned.py` rather than merging it; count settings from `ConfigKey.values().length`, not a literal (Testing teammate).
 - Status: fixed
+
+### E-M13-1: Long smoke scripts fail with 401 when the backend runs with 1-minute tokens
+
+- Date: 2026-11-14
+- Area: tests (smoke scripts)
+- Symptom: `m9_smoke.py` stopped after 65 checks with `KeyError: 'id'` (an incident request returned an error body).
+- Cause: the token-expiry check of `m13_smoke.py` needs `APP_JWT_ACCESS_TOKEN_MINUTES=1`; with that setting every token in a script that runs longer than a minute expires, so later calls answer 401.
+- Fix: run `m13_smoke.py` against a backend started with `APP_JWT_ACCESS_TOKEN_MINUTES=1` (with the default 15 the expiry check is skipped and says so), and every other script against a backend with the default.
+- Prevention: the header of `m13_smoke.py` states the setting; the script reads the token lifetime from the token itself.
+- Status: fixed

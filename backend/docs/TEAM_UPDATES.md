@@ -169,3 +169,17 @@ Seven endpoints moved from Planned to built (contract: 72 operations built, 26 p
 
 **Report and content**
 - Security section: Google sign-in is implemented through a port with a real and a fake adapter (Adapter pattern); the backend verifies signature (Google's published RSA keys), expiry, issuer, audience and `email_verified`; accounts link only by a verified email; failures are audited and answered identically so emails cannot be probed. SSO and MFA stay documented-only.
+
+### M13 real-time layer, dashboard, graph and the status board (2026-11-14)
+
+**Frontend**
+- Dashboard: `GET /dashboard/live` (administrators) for the first load, then STOMP `/ws` with header `Authorization: Bearer <access token>` and `SUBSCRIBE /topic/dashboard`. Two shapes arrive on it: events `{type, incidentId, code, priority, status, at}` and counters `{type: "COUNTERS", counters {total, open, critical, resolved, slaViolations}, byPriority [{label, count}], at}`; tell them apart by `type`. The counters also come every 30 s without any event. Non-administrators get an ERROR frame on that subscription.
+- When the access token expires the server closes the socket with close code 4001 `TOKEN_EXPIRED`: refresh the token, reconnect, and poll `GET /dashboard/live` meanwhile.
+- Service graph: `GET /services/graph` (`nodes [{id, name, criticality, openIncidents, hasOpenP1}]`, `edges [{from, to}]`, from depends on to) and `GET /services/{id}/impact` (`affected [{id, name, distance}]`), any logged-in user.
+- **New screen: service status board (E1)**, visible to employees: `GET /services/status` returns `label` ("Based on reported incidents": show it), `windowDays` and `services [{id, name, criticality, status (OUTAGE, DEGRADED, HEALTHY), reason, causedBy [{id, name, distance}], open {total, P1, P2, P3, P4}, slaCompliancePercent (null when nothing was judged), slaJudged}]`, already sorted worst first. This endpoint is an addition to the handbook contract.
+
+**Testing and DevOps**
+- New settings `dashboard.counters.interval.seconds` and `status.sla.window.days`; no schema change. Class names and expected values for unit tests: `ROADMAP.md` section 7 (D-031). Smoke script `m13_smoke.py` (backend lead's machine); its expiry check needs the backend started with `APP_JWT_ACCESS_TOKEN_MINUTES=1`.
+
+**Report and content**
+- Patterns to cite: Observer (`DashboardListener`), Adapter (`DashboardPublisher` port with `StompDashboardPublisher`), Decorator (`WebSocketSessions` around Spring's WebSocket handler), plus a plain domain class for graph traversal (`ServiceGraph`). Challenge answered: "poor visibility into service health" (E1, DEC-84).
