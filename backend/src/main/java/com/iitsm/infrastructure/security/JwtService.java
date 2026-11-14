@@ -73,15 +73,31 @@ public class JwtService implements AccessTokenIssuer {
         return new IssuedAccessToken(token, accessTokenSeconds);
     }
 
+    /** A verified access token: the caller and the moment the token stops being valid. */
+    public record VerifiedAccessToken(AuthenticatedUser user, Instant expiresAt) {
+    }
+
     /** Verifies signature and expiry and rebuilds the caller. Throws TOKEN_EXPIRED or TOKEN_INVALID. */
     public AuthenticatedUser parse(String token) {
+        return verify(token).user();
+    }
+
+    /**
+     * Like {@link #parse} but also returns the expiry, for a long-lived connection that must end when its token does
+     * (the WebSocket session, decision DEC-42).
+     */
+    public VerifiedAccessToken verify(String token) {
         try {
             Claims claims = parser.parseSignedClaims(token).getPayload();
-            return new AuthenticatedUser(
+            if (claims.getExpiration() == null) {
+                throw new TokenInvalidException();
+            }
+            return new VerifiedAccessToken(new AuthenticatedUser(
                     Long.valueOf(claims.getSubject()),
                     claims.get(CLAIM_EMAIL, String.class),
                     toEnumSet(claims.get(CLAIM_ROLES, List.class), RoleType.class),
-                    toEnumSet(claims.get(CLAIM_PERMISSIONS, List.class), PermissionKey.class));
+                    toEnumSet(claims.get(CLAIM_PERMISSIONS, List.class), PermissionKey.class)),
+                    claims.getExpiration().toInstant());
         } catch (ExpiredJwtException ex) {
             throw new TokenExpiredException();
         } catch (JwtException | IllegalArgumentException | ClassCastException ex) {

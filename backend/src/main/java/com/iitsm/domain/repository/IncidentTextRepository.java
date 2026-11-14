@@ -16,6 +16,11 @@ public interface IncidentTextRepository {
     /** Open incidents of one service created in [from, to], newest first, without the incident {@code excludeId}. */
     List<Incident> findOpenOnService(Long serviceId, Instant from, Instant to, Long excludeId);
 
+    /** Open incidents on any of the services with one of the priorities, created since a moment, newest first. */
+    List<Incident> findOpenOnServices(java.util.Collection<Long> serviceIds,
+                                      java.util.Collection<com.iitsm.domain.priority.Priority> priorities,
+                                      Instant since);
+
     /** Incidents resolved since a moment that carry a resolution, newest first, optionally of one service. */
     List<Incident> findResolved(Long serviceIdOrNull, Instant since, int limit);
 

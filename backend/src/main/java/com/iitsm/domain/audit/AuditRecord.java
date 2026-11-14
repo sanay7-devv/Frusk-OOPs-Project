@@ -33,8 +33,11 @@ import jakarta.persistence.Table;
         @Index(name = "idx_audit_records_actor", columnList = "actor_id")})
 public class AuditRecord {
 
-    /** Descriptions of entries hidden from reporters start with this (decision DEC-38). */
-    public static final String INTERNAL_PREFIX = "Internal note";
+    /**
+     * Descriptions of entries hidden from reporters start with this (decision DEC-38). Only {@link #internal} writes
+     * it; {@link #of} refuses a description that starts with it, so a public text can never turn internal by accident.
+     */
+    private static final String INTERNAL_PREFIX = "Internal note";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -69,8 +72,29 @@ public class AuditRecord {
     protected AuditRecord() {
     }
 
-    public AuditRecord(Incident incident, User actor, AuditAction action, IncidentStatus previousState,
-                       IncidentStatus newState, String description, Instant createdAt) {
+    /** An entry every participant may read. */
+    public static AuditRecord of(Incident incident, User actor, AuditAction action, IncidentStatus previousState,
+                                 IncidentStatus newState, String description, Instant createdAt) {
+        if (description.startsWith(INTERNAL_PREFIX)) {
+            throw new IllegalArgumentException("Internal entries are created with AuditRecord.internal");
+        }
+        return new AuditRecord(incident, actor, action, previousState, newState, description, createdAt);
+    }
+
+    /**
+     * An entry hidden from reporters without staff rights: the only way to create one (decision DEC-46, C3). The
+     * description gets the internal marker in front, for example "added by Ravi" becomes "Internal note added by
+     * Ravi"; {@link #isInternal} reads it back.
+     */
+    public static AuditRecord internal(Incident incident, User actor, AuditAction action,
+                                       IncidentStatus previousState, IncidentStatus newState, String text,
+                                       Instant createdAt) {
+        return new AuditRecord(incident, actor, action, previousState, newState, INTERNAL_PREFIX + " " + text,
+                createdAt);
+    }
+
+    private AuditRecord(Incident incident, User actor, AuditAction action, IncidentStatus previousState,
+                        IncidentStatus newState, String description, Instant createdAt) {
         this.incident = incident;
         this.actor = actor;
         this.action = action;

@@ -96,6 +96,11 @@ public class SlaRiskService {
         return view(score, settings);
     }
 
+    /** Ids of the incidents the last scans flagged and that are still at risk (the live dashboard, module M13). */
+    public java.util.Set<Long> flaggedIds() {
+        return java.util.Set.copyOf(flagged.keySet());
+    }
+
     /** The scheduled scan: scores every incident being worked on and flags those at or above the threshold. */
     public ScanResult scanOnce() {
         List<Long> candidates = incidents.findSlaMonitorCandidates(IncidentStatus.ACTIVE_WORK);

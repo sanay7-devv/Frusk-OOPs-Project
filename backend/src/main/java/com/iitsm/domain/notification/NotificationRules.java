@@ -3,6 +3,8 @@ package com.iitsm.domain.notification;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.user.RoleType;
 import com.iitsm.domain.user.User;
@@ -66,6 +68,16 @@ public final class NotificationRules {
     /** The inbox is always kept; critical alerts stay on in every channel. Everything else can be switched off. */
     public static boolean cannotSwitchOff(User user, NotificationEventType type, ChannelType channel) {
         return channel == ChannelType.IN_APP || isCritical(user, type);
+    }
+
+    /**
+     * Whether an audited incident action is announced at all. DUPLICATE_LINKED covers two moves: closing an incident as
+     * a duplicate (mark-duplicate, a known-outage join), which is announced, and grouping it into a problem record,
+     * which keeps the status and stays quiet: the reporter may just have confirmed "not a duplicate", and staff see the
+     * grouping in the history and on the problem view (user decision 2026-11-14, ERROR_LOG E-035).
+     */
+    public static boolean announced(AuditAction action, IncidentStatus newState) {
+        return action != AuditAction.DUPLICATE_LINKED || newState == IncidentStatus.CLOSED;
     }
 
     /** P1 incidents and SLA violations are always sent one by one, never folded into a digest. */

@@ -43,7 +43,8 @@ public class EscalationService {
         EscalationTarget target = EscalationTarget.ofLevel(level);
         List<Long> holders = recipients.holdersOf(target).stream().map(User::getId).toList();
         events.publishEvent(new IncidentEscalated(detail.id(), detail.code(), detail.priority(), level - 1, level,
-                target, holders, detail.assignee() == null ? null : detail.assignee().id(), true, clock.instant()));
+                target, holders, detail.assignee() == null ? null : detail.assignee().id(), true, caller.id(),
+                clock.instant()));
         return detail;
     }
 }

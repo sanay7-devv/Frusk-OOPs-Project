@@ -3,7 +3,6 @@ package com.iitsm.application.incident;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -26,13 +25,16 @@ import com.iitsm.application.incident.command.RequestInfoCommand;
 import com.iitsm.application.incident.command.ResolveCommand;
 import com.iitsm.application.incident.command.StartWorkCommand;
 import com.iitsm.application.incident.command.VerifyCommand;
+import com.iitsm.application.incident.command.WithdrawCommand;
+import com.iitsm.application.problem.ProblemService;
 import com.iitsm.domain.assignment.EligibilityFilter;
 import com.iitsm.domain.audit.AuditAction;
-import com.iitsm.domain.audit.AuditRecord;
 import com.iitsm.domain.event.TriageNeeded;
 import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.assignment.WorkloadTracker;
 import com.iitsm.domain.category.Category;
+import com.iitsm.domain.config.AppSettings;
+import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.IncidentNotFoundException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.OptimisticLockConflictException;
@@ -49,8 +51,6 @@ import com.iitsm.domain.incident.IncidentQuery;
 import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.priority.PriorityBreakdown;
-import com.iitsm.domain.priority.PriorityEngine;
-import com.iitsm.domain.priority.PriorityInput;
 import com.iitsm.domain.repository.CategoryRepository;
 import com.iitsm.domain.repository.IncidentCommentRepository;
 import com.iitsm.domain.repository.IncidentRepository;
@@ -85,7 +85,7 @@ public class IncidentService {
     private final CategoryRepository categories;
     private final UserRepository users;
     private final IncidentFactory factory;
-    private final PriorityEngine priorityEngine;
+    private final PriorityRecalculator priorities;
     private final SlaPolicyResolver slaPolicies;
     private final ConfigService config;
     private final IncidentAccessPolicy access;
@@ -95,14 +95,16 @@ public class IncidentService {
     private final ApplicationEventPublisher events;
     private final IncidentEventPublisher publisher;
     private final IncidentCommandRunner commands;
+    private final ProblemService problems;
     private final Clock clock;
 
     public IncidentService(IncidentRepository incidents, IncidentSearch search, IncidentCommentRepository comments,
                            ItServiceRepository services, CategoryRepository categories, UserRepository users,
-                           IncidentFactory factory, PriorityEngine priorityEngine, SlaPolicyResolver slaPolicies,
+                           IncidentFactory factory, PriorityRecalculator priorities, SlaPolicyResolver slaPolicies,
                            ConfigService config, IncidentAccessPolicy access, IncidentViewMapper views,
                            AssignmentService assignment, AuditRepository audit, ApplicationEventPublisher events,
-                           IncidentEventPublisher publisher, IncidentCommandRunner commands, Clock clock) {
+                           IncidentEventPublisher publisher, IncidentCommandRunner commands, ProblemService problems,
+                           Clock clock) {
         this.incidents = incidents;
         this.search = search;
         this.comments = comments;
@@ -110,7 +112,7 @@ public class IncidentService {
         this.categories = categories;
         this.users = users;
         this.factory = factory;
-        this.priorityEngine = priorityEngine;
+        this.priorities = priorities;
         this.slaPolicies = slaPolicies;
         this.config = config;
         this.access = access;
@@ -120,6 +122,7 @@ public class IncidentService {
         this.events = events;
         this.publisher = publisher;
         this.commands = commands;
+        this.problems = problems;
         this.clock = clock;
     }
 
@@ -133,6 +136,17 @@ public class IncidentService {
     @Transactional
     public IncidentDetail create(AuthenticatedUser caller, String title, String description, Long serviceId,
                                  Long categoryId, int impact, int urgency, int affectedUsers) {
+        return create(caller, title, description, serviceId, categoryId, impact, urgency, affectedUsers, null);
+    }
+
+    /**
+     * @param classificationNote audit wording of the CLASSIFIED step when the category was chosen by the AI
+     *                           suggestion and not by the reporter (decision DEC-70); null otherwise
+     */
+    @Transactional
+    public IncidentDetail create(AuthenticatedUser caller, String title, String description, Long serviceId,
+                                 Long categoryId, int impact, int urgency, int affectedUsers,
+                                 String classificationNote) {
         User reporter = loadUser(caller.id());
         ItService service = services.findById(serviceId).orElseThrow(() -> new ServiceNotFoundException(serviceId));
         Category category = categoryId == null ? null : categories.findById(categoryId)
@@ -143,7 +157,7 @@ public class IncidentService {
         recalculatePriority(incident);
         assignment.autoAssign(incident); // stays CLASSIFIED (triage) without a category or an eligible technician
         incident = incidents.save(incident);
-        publishCreation(incident, reporter);
+        publishCreation(incident, reporter, classificationNote);
         return views.detail(incident, caller);
     }
 
@@ -152,7 +166,7 @@ public class IncidentService {
      * technician was found) assigned; here each fact gets its actor and wording. Without an assignee the incident
      * goes to triage.
      */
-    private void publishCreation(Incident incident, User reporter) {
+    private void publishCreation(Incident incident, User reporter, String classificationNote) {
         Category category = incident.getCategory();
         for (IncidentFact fact : incident.drainFacts()) {
             switch (fact.action()) {
@@ -160,6 +174,7 @@ public class IncidentService {
                         "Reported by " + reporter.getName() + " on " + incident.getService().getName());
                 case CLASSIFIED -> publish(incident, fact, null,
                         category == null ? "No category given: waiting in triage"
+                                : classificationNote != null ? classificationNote
                                 : "Classified as " + category.getName());
                 case PRIORITY_CALCULATED -> publish(incident, fact, null, priorityText(incident));
                 case ASSIGNED -> publish(incident, fact, null,
@@ -235,6 +250,11 @@ public class IncidentService {
         if (expectedVersion != null && expectedVersion != incident.getVersion()) {
             throw new OptimisticLockConflictException();
         }
+        // a status that forbids editing is the domain's answer (409), so the G4 check only applies while it is open
+        if (incident.getStatus().isEditable() && (changes(impact, incident.getImpact()) || changes(urgency, incident.getUrgency())
+                || changes(affectedUsers, incident.getAffectedUsers()))) {
+            access.requirePriorityInputEdit(caller, incident);
+        }
         Priority before = incident.getPriority();
         incident.updateDetails(description, impact, urgency, affectedUsers, clock.instant());
         recalculatePriority(incident);
@@ -245,6 +265,11 @@ public class IncidentService {
                         + (changed ? "priority " + before + " → " + incident.getPriority() + ". " : "")
                         + priorityText(incident));
         return views.detail(incident, caller);
+    }
+
+    /** A value sent that differs from the stored one (sending the same value back is not a change). */
+    private static boolean changes(Integer sent, int current) {
+        return sent != null && sent != current;
     }
 
     /** Admin or team lead sets the priority by hand; the reason is recorded in the breakdown and as a note. */
@@ -338,8 +363,11 @@ public class IncidentService {
     @Transactional
     public IncidentDetail resolve(AuthenticatedUser caller, Long id, String rootCause, String notes, String steps,
                                   Integer timeSpentMinutes, boolean reusableSolution) {
-        return commands.run(caller, id,
+        IncidentDetail resolved = commands.run(caller, id,
                 new ResolveCommand(rootCause, notes, steps, timeSpentMinutes, reusableSolution));
+        // the lead of a problem record resolved: the rest of the record gets the same fix (DEC-72)
+        problems.cascadeAfterResolve(id, caller.id());
+        return resolved;
     }
 
     @Transactional
@@ -356,6 +384,35 @@ public class IncidentService {
     @Transactional
     public IncidentDetail reopen(AuthenticatedUser caller, Long id, String reason) {
         return commands.run(caller, id, new ReopenCommand(reason));
+    }
+
+    /** The reporter takes the report back before work starts (G3); the reason is a public note. */
+    @Transactional
+    public IncidentDetail withdraw(AuthenticatedUser caller, Long id, String reason) {
+        return commands.run(caller, id, new WithdrawCommand(reason));
+    }
+
+    /**
+     * POST /incidents/{id}/mark-duplicate (admin, team lead): closes this incident as a duplicate of another one; the
+     * work continues there. Audited as DUPLICATE_LINKED; the reporter gets a public note naming the original.
+     */
+    @Transactional
+    public IncidentDetail markDuplicate(AuthenticatedUser caller, Long id, Long duplicateOfId) {
+        Incident incident = load(id);
+        access.require(caller, incident, IncidentAction.MARK_DUPLICATE);
+        if (duplicateOfId == null) {
+            throw new InputValidationException("duplicateOfId", "is required");
+        }
+        Incident original = incidents.findById(duplicateOfId)
+                .orElseThrow(() -> new InputValidationException("duplicateOfId", "unknown incident " + duplicateOfId));
+        Instant now = clock.instant();
+        incident.markDuplicate(original, now);
+        User actor = loadUser(caller.id());
+        addNote(incident, actor, CommentVisibility.PUBLIC,
+                "Closed as a duplicate of " + original.getCode() + ": the work continues there.", now);
+        publishFact(incident, actor, "Marked as a duplicate of " + original.getCode() + " by " + actor.getName()
+                + "; closed as DUPLICATE");
+        return views.detail(incident, caller);
     }
 
     // ------------------------------------------------------------------ comments
@@ -375,9 +432,12 @@ public class IncidentService {
         // a comment is a separate record, not a change of the incident itself, so the incident has no fact for it
         User author = loadUser(caller.id());
         IncidentStatus status = incident.getStatus();
-        publish(incident, new IncidentFact(AuditAction.COMMENT_ADDED, status, status), author,
-                (chosen == CommentVisibility.INTERNAL ? AuditRecord.INTERNAL_PREFIX + " added by %s"
-                        : "Comment added by %s").formatted(author.getName()));
+        IncidentFact fact = new IncidentFact(AuditAction.COMMENT_ADDED, status, status);
+        if (chosen == CommentVisibility.INTERNAL) {
+            publisher.publishInternal(incident, fact, author, "added by " + author.getName());
+        } else {
+            publish(incident, fact, author, "Comment added by " + author.getName());
+        }
         return views.comment(saved);
     }
 
@@ -399,28 +459,8 @@ public class IncidentService {
                 + ", resolution due " + incident.getSla().getResolutionDue();
     }
 
-    /**
-     * Runs the priority engine with the live settings and applies the result together with the SLA targets of the
-     * resolved policy (service policy, else global default, else SLA_NOT_CONFIGURED).
-     */
     private void recalculatePriority(Incident incident) {
-        ItService service = incident.getService();
-        PriorityInput input = new PriorityInput(incident.getImpact(), incident.getUrgency(),
-                service.getCriticality(), incident.getAffectedUsers(), service.getName(), service.isAlwaysP1(),
-                isSecurity(incident.getCategory()));
-        PriorityBreakdown breakdown = priorityEngine.calculate(input, config.current());
-        SlaPolicy policy = slaPolicies.resolve(service, breakdown.band());
-        incident.applyPriority(breakdown, policy.targets(config.current()), clock.instant());
-    }
-
-    /** The category is Security or sits under it (for example Phishing). Categories are admin data, not code. */
-    private static boolean isSecurity(Category category) {
-        for (Category c = category; c != null; c = c.getParent()) {
-            if (c.getName().toLowerCase(Locale.ROOT).equals("security")) {
-                return true;
-            }
-        }
-        return false;
+        priorities.recalculate(incident);
     }
 
     private User loadEligibleTechnician(Long technicianId, Incident incident) {

@@ -1,7 +1,5 @@
 package com.iitsm.application.priority;
 
-import java.util.Locale;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +9,7 @@ import com.iitsm.application.incident.IncidentAccessPolicy;
 import com.iitsm.application.incident.IncidentViews.Ref;
 import com.iitsm.domain.category.Category;
 import com.iitsm.domain.config.AppSettings;
+import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.IncidentNotFoundException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.ResourceNotFoundException;
@@ -97,7 +96,8 @@ public class PriorityWhatIfService {
                     : categories.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Category", categoryId));
         }
         PriorityInput input = new PriorityInput(impact, urgency, service.getCriticality(), affectedUsers,
-                service.getName(), service.isAlwaysP1(), isSecurity(category));
+                service.getName(), service.isAlwaysP1(),
+                category != null && category.isWithin(settings.raw(ConfigKey.PRIORITY_SECURITY_CATEGORY)));
         PriorityBreakdown result = engine.calculate(input, settings);
         Scenario whatIf = scenario(service, impact, urgency, affectedUsers, result, settings);
 
@@ -128,15 +128,5 @@ public class PriorityWhatIfService {
             // no policy for this priority: the SLA part stays empty, the priority answer is still valid
         }
         return new Scenario(impact, urgency, users, b.score(), b.band(), b, response, resolution);
-    }
-
-    /** Same rule as the incident pipeline (the category is Security or sits under it); C3 will replace both. */
-    private static boolean isSecurity(Category category) {
-        for (Category c = category; c != null; c = c.getParent()) {
-            if (c.getName().toLowerCase(Locale.ROOT).equals("security")) {
-                return true;
-            }
-        }
-        return false;
     }
 }
