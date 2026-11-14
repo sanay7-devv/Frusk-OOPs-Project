@@ -1,7 +1,7 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material';
 import { theme } from './theme/theme';
@@ -9,6 +9,11 @@ import { AuthProvider } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AppRoutes from './routes/AppRoutes';
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="current-route">{location.pathname}</output>;
+}
 
 function renderApp(initialPath = '/login') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -18,6 +23,7 @@ function renderApp(initialPath = '/login') {
         <QueryClientProvider client={qc}>
           <ToastProvider>
             <MemoryRouter initialEntries={[initialPath]}>
+              <LocationProbe />
               <AuthProvider>
                 <AppRoutes />
               </AuthProvider>
@@ -44,7 +50,7 @@ describe('Auth and Navigation Flow', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Live dashboard')).toBeDefined();
+      expect(screen.getByTestId('current-route').textContent).toBe('/admin/dashboard');
     });
   });
 
@@ -59,7 +65,7 @@ describe('Auth and Navigation Flow', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Team queue').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByTestId('current-route').textContent).toBe('/lead/team-queue');
     });
   });
 
@@ -74,7 +80,7 @@ describe('Auth and Navigation Flow', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Employee home')).toBeDefined();
+      expect(screen.getByTestId('current-route').textContent).toBe('/employee/home');
     });
   });
 });
