@@ -5,41 +5,6 @@
     "version": "0"
   },
   "paths": {
-    "/api/v1/auth/google": {
-      "post": {
-        "tags": [
-          "Planned"
-        ],
-        "summary": "Sign in with a Google ID token",
-        "description": "**Planned for M2b; not implemented yet.** Who: public. Agreed in the API contract (Appendix B/C).",
-        "x-status": "planned",
-        "x-module": "M2b",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleLoginRequest"
-              }
-            }
-          }
-        },
-        "security": [],
-        "operationId": "planned_post_auth_google"
-      }
-    },
     "/api/v1/incidents/{id}/mark-duplicate": {
       "post": {
         "tags": [
@@ -359,18 +324,6 @@
   },
   "components": {
     "schemas": {
-      "GoogleLoginRequest": {
-        "type": "object",
-        "properties": {
-          "idToken": {
-            "type": "string",
-            "description": "Google ID token from the Sign-In button"
-          }
-        },
-        "required": [
-          "idToken"
-        ]
-      },
       "MarkDuplicateRequest": {
         "type": "object",
         "properties": {

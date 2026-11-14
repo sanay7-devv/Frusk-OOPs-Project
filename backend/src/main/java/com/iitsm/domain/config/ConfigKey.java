@@ -144,7 +144,12 @@ public enum ConfigKey {
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
     SECURITY_LOCKOUT_MINUTES("security.lockout.minutes", "15", "Minutes an account stays locked",
-            Type.INTEGER, "1", "1440");
+            Type.INTEGER, "1", "1440"),
+
+    // Google sign-in (module M2b, session D, DEC-102)
+    AUTH_GOOGLE_AUTOREGISTER("auth.google.autoregister", "false",
+            "Whether an unknown email signing in with Google gets a new EMPLOYEE account (false: only existing accounts link)",
+            Type.CHOICE, "true", "false");
 
     /** The kind of value a key holds. */
     public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }

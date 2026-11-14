@@ -1684,6 +1684,99 @@ In the `demo` profile `Clock` is an `AdjustableClock` (system time plus a forwar
 
 ---
 
+## 12h. M2b Google sign-in
+
+**What it does.** Lets a person sign in with their Google account instead of a password. The frontend shows the Google button and sends us the **ID token** Google gives it; the backend checks that token and answers with the same `AuthResponse` (15-minute access token, 7-day rotating refresh token) as `/auth/login`. It is an extra: password login stays (D-001, DEC-04). Decisions: DEC-100 to DEC-103.
+
+### 12h.1 The adapter: one port, two implementations
+
+```mermaid
+classDiagram
+    direction LR
+    class GoogleSignInService {
+        +signIn(idToken) AuthResult
+    }
+    class GoogleIdTokenVerifier {
+        <<interface, port>>
+        +verify(idToken) GoogleIdentity
+    }
+    class JjwtGoogleIdTokenVerifier {
+        real adapter
+    }
+    class FakeGoogleIdTokenVerifier {
+        offline adapter, HS256 fixed key
+    }
+    class GoogleJwksKeyLocator {
+        fetches and caches Google's keys, picks by kid
+    }
+    class GoogleClaimsChecker {
+        issuer, audience, subject, email
+    }
+    GoogleSignInService ..> GoogleIdTokenVerifier
+    GoogleIdTokenVerifier <|.. JjwtGoogleIdTokenVerifier
+    GoogleIdTokenVerifier <|.. FakeGoogleIdTokenVerifier
+    JjwtGoogleIdTokenVerifier --> GoogleJwksKeyLocator
+    JjwtGoogleIdTokenVerifier --> GoogleClaimsChecker
+    FakeGoogleIdTokenVerifier --> GoogleClaimsChecker
+```
+
+`GoogleSignInConfig` picks the adapter from `app.google.verifier` (`google` or `fake`, env `GOOGLE_VERIFIER`). The fake exists so smoke runs work offline; the application refuses to start with it unless the `dev`, `demo` or `test` profile is active. Both adapters share `GoogleClaimsChecker`, so the claim rules are tested even with the fake.
+
+### 12h.2 Signing in
+
+```mermaid
+flowchart TD
+    A[POST /auth/google idToken] --> B{Token valid?<br/>signature, expiry,<br/>audience, issuer}
+    B -- no --> X1[401 TOKEN_INVALID<br/>audited with the reason]
+    B -- Google keys unreachable --> X5[503 SERVICE_UNAVAILABLE]
+    B -- yes --> C{email_verified?}
+    C -- no --> X2[401 INVALID_CREDENTIALS, audited]
+    C -- yes --> D[find user by google_sub,<br/>then by email]
+    D -- none --> E{auth.google.autoregister?}
+    E -- off --> X2
+    E -- on --> F[create EMPLOYEE user<br/>no password, google_sub set]
+    D -- found --> G{locked?}
+    G -- yes --> X3[423 ACCOUNT_LOCKED]
+    G -- no --> H{active?}
+    H -- no --> X2
+    H -- yes --> I{linked to a<br/>different Google sub?}
+    I -- yes --> X2
+    I -- no --> J[link google_sub if empty,<br/>reset failed_logins]
+    F --> K[200 AuthResponse]
+    J --> K
+```
+
+Every failure writes a `LOGIN_FAILED` audit entry ("Failed Google login: ...") in its own transaction. Google failures never add to `failed_logins`; a success resets it. Account-level problems all answer the same `INVALID_CREDENTIALS` as a wrong password, so nobody can probe which emails have accounts.
+
+### 12h.3 Endpoint, settings and environment
+
+| Item | Value |
+|---|---|
+| Endpoint | `POST /api/v1/auth/google` `{ "idToken": "..." }`, public, returns `AuthResponse`; errors `TOKEN_INVALID` 401, `INVALID_CREDENTIALS` 401, `ACCOUNT_LOCKED` 423, `SERVICE_UNAVAILABLE` 503 |
+| `app_config` key | `auth.google.autoregister` = `false` (default) or `true`: whether an unknown verified email gets a new EMPLOYEE account |
+| Environment | `GOOGLE_CLIENT_ID` (the OAuth client id, same one the frontend button uses), `GOOGLE_VERIFIER` (`google` default, `fake` for offline) |
+| Real key source | `https://www.googleapis.com/oauth2/v3/certs`, cached by `Cache-Control: max-age`, early refetch on an unknown `kid` (at most once a minute) |
+| Schema | none: `users.password_hash` is already nullable and `users.google_sub` already unique (D-001) |
+
+### 12h.4 Verified behavior (2026-11-14)
+
+`m2b_smoke.py` against the running app with the fake verifier: **32 of 32 checks passed**; `auth_smoke.py` against the same app: **27 of 27**.
+
+| Area | Checked |
+|---|---|
+| Linking | Existing account with the same verified email gets `google_sub`; the returned tokens work on `/auth/me` and rotate on `/auth/refresh`; a second sign-in is found by `google_sub` even when Google's email changed; password login of the linked account still works |
+| Refusals | Unverified email 401 `INVALID_CREDENTIALS` and nothing linked; unknown email with auto-registration off 401 and no user created; deactivated account 401; email linked to a different Google account 401 and the stored sub unchanged |
+| Auto-registration | An administrator switches `auth.google.autoregister` on through `/admin/config`; the new user is EMPLOYEE only, `password_hash` NULL, name from the token; its password login answers `INVALID_CREDENTIALS` |
+| Bad tokens | Wrong audience, expired, wrong issuer, forged signature and garbage all 401 `TOKEN_INVALID`; a missing `idToken` is 400 `VALIDATION_FAILED` |
+| Lockout | Failed Google attempts leave `failed_logins` at 3; a success resets it to 0; a locked account gets 423 even with a valid token |
+| Audit | Refusals and rejected tokens are `LOGIN_FAILED` entries with their reasons |
+| Contract | `/v3/api-docs` lists `POST /auth/google` as implemented (no longer tagged Planned) |
+
+**Not verified here:** the real adapter against Google's live keys (needs internet and a real client id; only the fake was run), and the startup refusal of `fake` outside dev, demo and test.
+
+---
+
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.

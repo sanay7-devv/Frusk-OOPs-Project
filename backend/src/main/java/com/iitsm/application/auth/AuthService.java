@@ -169,7 +169,8 @@ public class AuthService {
 
     // ------------------------------------------------------------------ helpers
 
-    private AuthResult issueTokens(User user, Instant now) {
+    /** Package-visible so {@link GoogleSignInService} issues the same tokens (M2b). */
+    AuthResult issueTokens(User user, Instant now) {
         IssuedAccessToken access = accessTokenIssuer.issue(user);
         String rawRefresh = newOpaqueToken();
         refreshTokens.save(new RefreshToken(user, hash(rawRefresh), now.plus(refreshTokenLifetime)));

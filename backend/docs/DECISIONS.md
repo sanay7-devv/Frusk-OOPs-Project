@@ -17,7 +17,7 @@
 | [DEC-01](#dec-01-layered-monolith-with-four-layers) | Layered monolith with four layers | 2026-10-15 | Setup | ✅ |
 | [DEC-02](#dec-02-spring-boot-411-instead-of-3x) | Spring Boot 4.1.1 instead of 3.x | 2026-10-15 | Setup | ✅ (supersedes 3.5) |
 | [DEC-03](#dec-03-postgresql-with-flyway-migrations) | PostgreSQL with Flyway migrations | 2026-10-15 | Setup | ✅ |
-| [DEC-04](#dec-04-google-sign-in-as-an-extra-not-a-replacement) | Google sign-in as an extra, not a replacement | 2026-10-15 | M2b | ✅ (not built yet) |
+| [DEC-04](#dec-04-google-sign-in-as-an-extra-not-a-replacement) | Google sign-in as an extra, not a replacement | 2026-10-15 | M2b | ✅ built 2026-11-14 |
 | [DEC-05](#dec-05-one-global-error-handler-and-one-error-shape) | One global error handler and one error shape | 2026-10-16 | M1 | ✅ |
 | [DEC-06](#dec-06-request-id-in-a-header-not-in-the-error-body) | Request ID in a header, not in the error body | 2026-10-16 | M1 | ✅ |
 | [DEC-07](#dec-07-temporary-schema-auto-profile) | Temporary `schema-auto` profile | 2026-11-06 | M2 | ⏳ |
@@ -84,6 +84,10 @@
 | [DEC-64](#dec-64-post-incident-report-from-the-audit-trail-pdf-through-an-adapter) | Post-incident report from the audit trail, PDF through an adapter | 2026-11-14 | M10 | ✅ |
 | [DEC-65](#dec-65-feedback-and-saved-views) | Feedback and saved views | 2026-11-14 | M10 | ✅ |
 | [DEC-66](#dec-66-priority-what-if) | Priority what-if | 2026-11-14 | M10 | ✅ user decision |
+| [DEC-100](#dec-100-google-id-tokens-verified-with-jjwt-and-googles-published-keys) | Google ID tokens verified with JJWT and Google's published keys | 2026-11-14 | M2b | ✅ user decision |
+| [DEC-101](#dec-101-the-offline-fake-verifier-and-how-it-is-switched-on) | The offline fake verifier and how it is switched on | 2026-11-14 | M2b | ✅ user decision |
+| [DEC-102](#dec-102-google-sign-in-rules-and-which-error-answers-what) | Google sign-in rules and which error answers what | 2026-11-14 | M2b | ✅ user decision |
+| [DEC-103](#dec-103-small-choices-in-google-sign-in) | Small choices in Google sign-in | 2026-11-14 | M2b | ✅ |
 
 ---
 
@@ -149,7 +153,7 @@
 
 | When | Module | Status | Also in |
 |---|---|---|---|
-| 2026-10-15 | M2b | ✅ approved, not built yet | ROADMAP D-001 |
+| 2026-10-15 | M2b | ✅ approved, built 2026-11-14 (DEC-100 to DEC-103) | ROADMAP D-001 |
 
 **Decision.** Keep email and password login; add `POST /auth/google` that verifies a Google ID token and returns the same JWT tokens. `password_hash` becomes nullable and `google_sub` is added.
 
@@ -1464,3 +1468,61 @@ Numbers DEC-60 to DEC-66 are used so they do not collide with decisions written 
 **Decision.** `AutoVerifyMonitor` finds incidents RESOLVED at least `verify.auto.hours` ago (existing key, default 48, demo 0.033), re-checks each inside its own transaction, moves it to VERIFIED and then CLOSED with `ClosureReason.AUTO_VERIFIED`; both steps are audit entries with no actor. Idempotent (a closed incident is no longer RESOLVED). The interval is a new setting `verify.monitor.interval.seconds` (default 300, demo 30), read again after every run, like the other monitors, instead of the property `app.autoverify.monitor-interval-seconds` that only existed in the demo properties file (that property is now unused; the demo seed should set the new key to 30).
 
 **Cross-questions.** *"What if the reporter replies at the same moment?"* The transaction re-reads the incident; the version column makes one of the two writers lose, and the loser is retried or refused cleanly.
+
+---
+
+## M2b Google sign-in (session D, DEC-100 to DEC-109)
+
+### DEC-100: Google ID tokens verified with JJWT and Google's published keys
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ user decision | User ("Approve all", recommended option) |
+
+**Decision.** `JjwtGoogleIdTokenVerifier` parses the token with JJWT (already in the project). A `GoogleJwksKeyLocator` fetches Google's key set from `https://www.googleapis.com/oauth2/v3/certs` with `java.net.http`, picks the key by the token's `kid` header, accepts only RS256, caches the keys for the `Cache-Control: max-age` Google sends (one hour if missing) and refetches early (at most once a minute) when it sees an unknown `kid`. After the signature and expiry (one minute of clock skew) are good, `GoogleClaimsChecker` checks issuer (`accounts.google.com` or `https://accounts.google.com`), audience (equal to `GOOGLE_CLIENT_ID`), and that subject and email exist. If Google's keys cannot be fetched and nothing is cached, sign-in answers 503 `SERVICE_UNAVAILABLE`; it never accepts an unchecked token.
+
+**Options.** (a) JJWT plus our own key fetch (chosen: no new dependency, every check visible in our own classes); (b) Google's `google-api-client` verifier (least code, but about 3 MB of dependencies and the checks are hidden); (c) Nimbus JOSE+JWT (good key caching, but a second JWT library beside JJWT).
+
+**Why.** The verification is the security-relevant part of the feature, so it should be readable in class. It also keeps the Adapter pattern visible: `GoogleIdTokenVerifier` is the port in `application.auth`, the adapters live in `infrastructure.google`.
+
+**Cross-questions.** *"Why not the oauth2-client starter?"* The frontend already holds the ID token from the Google button; the backend only has to check it, not run the OAuth redirect flow (D-001). *"What if Google rotates keys?"* An unknown `kid` triggers one refetch. *"What if Google is down?"* Cached keys keep working; with an empty cache the answer is 503, not a bypass.
+
+### DEC-101: The offline fake verifier and how it is switched on
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ user decision | User ("Approve all", recommended option) |
+
+**Decision.** Property `app.google.verifier` (env `GOOGLE_VERIFIER`), `google` by default or `fake`. The fake accepts HS256 tokens signed with a fixed key and passes them through the same `GoogleClaimsChecker`, so expiry, issuer and audience are really tested. `GoogleSignInConfig` refuses to start with `fake` unless the `dev`, `demo` or `test` profile is active.
+
+**Options.** (a) Property with a profile guard (chosen); (b) property without the guard (a stray setting in production would let anyone mint a token); (c) a separate `google-fake` Spring profile (more moving parts for the same result).
+
+**Cross-questions.** *"Is the fixed key a back door?"* It exists only when the property says `fake`, and the application will not start that way outside the three non-production profiles (same idea as DEC-52).
+
+### DEC-102: Google sign-in rules and which error answers what
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ user decision | User ("Approve all", recommended option) |
+
+**Decision.** `POST /auth/google {idToken}` returns the normal `AuthResponse`.
+- A bad token (signature, expiry, audience, issuer, missing claims) gives 401 `TOKEN_INVALID`.
+- Account-level problems give 401 `INVALID_CREDENTIALS`, the same answer as a wrong password: `email_verified` false, no account with auto-registration off, deactivated account, or an account already linked to a different Google subject. Nothing is linked in those cases.
+- A locked account gives 423 `ACCOUNT_LOCKED`, even with a valid token.
+- Every failure is audited as `LOGIN_FAILED` ("Failed Google login: ...", user id when known). Google failures do not add to `failed_logins` (a signed token cannot be guessed, and counting them would let anyone lock a victim out). A success resets the counter.
+- The account is found by `google_sub` first (it never changes), then by the verified email, which links it by storing `google_sub`.
+- Auto-registration is the `app_config` key `auth.google.autoregister` (`true` or `false`, default `false`): a new EMPLOYEE-only user, `password_hash` NULL, name from the token or the part before the `@`. A Google-only user's password login answers `INVALID_CREDENTIALS` (D-001).
+
+**Options.** (b) specific codes such as `GOOGLE_EMAIL_UNVERIFIED` (clearer for the login page, but tells strangers whether an email has an account and needs new contract entries); (c) count unverified and deactivated attempts toward lockout (consistent with passwords, but lets anyone with a Google account lock a victim by sending the victim's email).
+
+**Cross-questions.** *"Why link by email at all?"* Only because Google states the email is verified; an unverified email is never trusted. *"What stops account takeover through a recycled email?"* Once linked, the `google_sub` is checked first and a different sub on the same email is refused.
+
+### DEC-103: Small choices in Google sign-in
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-14 | M2b | ✅ | Backend lead (session D) |
+
+**Decision.** (1) `GoogleSignInService` is a new class; `AuthService` changed in one line only (`issueTokens` is package-visible), so session C's password-policy edits merge cleanly. (2) `POST /auth/google` is in `SecurityConfig.PUBLIC_PATHS`; rate limiting comes from session C's login interceptor, keyed by IP. (3) Failed key fetches answer 503 with the code `SERVICE_UNAVAILABLE`; the shared `ErrorCode` enum was not touched. (4) Rejection reasons (wrong audience, expired, ...) go only to the audit trail, never to the caller. (5) A blank `GOOGLE_CLIENT_ID` makes every Google sign-in fail (logged as a warning at startup) rather than accept any audience.
+
+**Cross-questions.** *"Why a separate service?"* Single responsibility: password flows and the Google flow share only token issuing.
