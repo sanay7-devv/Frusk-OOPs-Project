@@ -31,6 +31,7 @@ export interface IncidentDetail extends IncidentSummary {
   closureReason: string | null; problemId: number | null; duplicateOfId: number | null;
   reopenCount: number; pausedAt: string | null; resolution: Resolution | null;
   feedback: { rating: number; comment: string } | null; allowedActions: IncidentAction[];
+  version?: number;
 }
 export interface Page<T> { items: T[]; page: number; size: number; totalItems: number; totalPages: number }
 export interface ApiError {

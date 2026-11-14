@@ -115,7 +115,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     axios.post<AuthResponse>(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1'}/auth/refresh`, { refreshToken: rt }, { timeout: 3000 })
       .then((r) => signIn(r.data))
-      .catch(clear)
+      .catch((err) => {
+        // If it's a network error (backend offline) or timeout, preserve the stored session from localStorage
+        const isNetworkErr = !err?.response || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network') || err?.code === 'ECONNABORTED';
+        const savedUserStr = localStorage.getItem('currentUser');
+        if (isNetworkErr && savedUserStr) {
+          try {
+            const savedUser = JSON.parse(savedUserStr);
+            setUser(savedUser);
+            const all = workspacesFor(savedUser);
+            const saved = localStorage.getItem('workspace') as Workspace | null;
+            const chosen = saved && all.includes(saved) ? saved : all[0] ?? null;
+            if (chosen) {
+              localStorage.setItem('workspace', chosen);
+            }
+            setWs(chosen);
+            return;
+          } catch {
+            clear();
+          }
+        } else {
+          clear();
+        }
+      })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
 
