@@ -43,6 +43,11 @@ public class AuditListener {
 
     @EventListener
     public void on(IncidentChanged e) {
+        if (e.internal()) {
+            audit.insert(AuditRecord.internal(incident(e.incidentId()), actor(e.actorId()), e.action(),
+                    e.previousState(), e.newState(), e.description(), e.occurredAt()));
+            return;
+        }
         record(e.incidentId(), e.actorId(), e.action(), e.previousState(), e.newState(), e.description(),
                 e.occurredAt());
     }
@@ -69,9 +74,15 @@ public class AuditListener {
 
     private void record(Long incidentId, Long actorId, AuditAction action, IncidentStatus previous,
                         IncidentStatus next, String description, Instant at) {
-        Incident incident = incidentId == null ? null : incidents.findById(incidentId).orElseThrow();
-        User actor = actorId == null ? null : users.findById(actorId).orElse(null);
-        audit.insert(new AuditRecord(incident, actor, action, previous, next, description, at));
+        audit.insert(AuditRecord.of(incident(incidentId), actor(actorId), action, previous, next, description, at));
+    }
+
+    private Incident incident(Long incidentId) {
+        return incidentId == null ? null : incidents.findById(incidentId).orElseThrow();
+    }
+
+    private User actor(Long actorId) {
+        return actorId == null ? null : users.findById(actorId).orElse(null);
     }
 
     private static String clockName(String clock) {

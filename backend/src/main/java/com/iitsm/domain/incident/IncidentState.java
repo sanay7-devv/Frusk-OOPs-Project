@@ -73,6 +73,16 @@ public abstract class IncidentState {
         throw refused(IncidentAction.REASSIGN);
     }
 
+    /** The reporter withdraws the report (G3); CLASSIFIED, ASSIGNED and ACKNOWLEDGED allow it. */
+    void withdraw(Incident incident, String reason, Instant now) {
+        throw refused(IncidentAction.WITHDRAW);
+    }
+
+    /** Closes the incident as a duplicate of another one; every open status allows it ({@link OpenState}). */
+    void markDuplicate(Incident incident, Incident original, Instant now) {
+        throw refused(IncidentAction.MARK_DUPLICATE);
+    }
+
     /** Manual escalation by a person; only the states that allow it override this. */
     void escalate(Incident incident, Instant now) {
         throw refused(IncidentAction.ESCALATE);

@@ -66,6 +66,22 @@ public class Category {
         return parent;
     }
 
+    /**
+     * True if this category is named {@code categoryName} (ignoring case) or sits anywhere under it, for example
+     * Phishing under Security. Used for rules that name a category in a setting (decision DEC-46, C3).
+     */
+    public boolean isWithin(String categoryName) {
+        if (categoryName == null || categoryName.isBlank()) {
+            return false;
+        }
+        for (Category c = this; c != null; c = c.getParent()) {
+            if (c.getName().equalsIgnoreCase(categoryName.strip())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isActive() {
         return active;
     }

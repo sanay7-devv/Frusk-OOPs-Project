@@ -3,7 +3,6 @@ package com.iitsm.application.incident;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -26,13 +25,15 @@ import com.iitsm.application.incident.command.RequestInfoCommand;
 import com.iitsm.application.incident.command.ResolveCommand;
 import com.iitsm.application.incident.command.StartWorkCommand;
 import com.iitsm.application.incident.command.VerifyCommand;
+import com.iitsm.application.incident.command.WithdrawCommand;
 import com.iitsm.domain.assignment.EligibilityFilter;
 import com.iitsm.domain.audit.AuditAction;
-import com.iitsm.domain.audit.AuditRecord;
 import com.iitsm.domain.event.TriageNeeded;
 import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.assignment.WorkloadTracker;
 import com.iitsm.domain.category.Category;
+import com.iitsm.domain.config.AppSettings;
+import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.IncidentNotFoundException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.OptimisticLockConflictException;
@@ -235,6 +236,11 @@ public class IncidentService {
         if (expectedVersion != null && expectedVersion != incident.getVersion()) {
             throw new OptimisticLockConflictException();
         }
+        // a status that forbids editing is the domain's answer (409), so the G4 check only applies while it is open
+        if (incident.getStatus().isEditable() && (changes(impact, incident.getImpact()) || changes(urgency, incident.getUrgency())
+                || changes(affectedUsers, incident.getAffectedUsers()))) {
+            access.requirePriorityInputEdit(caller, incident);
+        }
         Priority before = incident.getPriority();
         incident.updateDetails(description, impact, urgency, affectedUsers, clock.instant());
         recalculatePriority(incident);
@@ -245,6 +251,11 @@ public class IncidentService {
                         + (changed ? "priority " + before + " → " + incident.getPriority() + ". " : "")
                         + priorityText(incident));
         return views.detail(incident, caller);
+    }
+
+    /** A value sent that differs from the stored one (sending the same value back is not a change). */
+    private static boolean changes(Integer sent, int current) {
+        return sent != null && sent != current;
     }
 
     /** Admin or team lead sets the priority by hand; the reason is recorded in the breakdown and as a note. */
@@ -358,6 +369,35 @@ public class IncidentService {
         return commands.run(caller, id, new ReopenCommand(reason));
     }
 
+    /** The reporter takes the report back before work starts (G3); the reason is a public note. */
+    @Transactional
+    public IncidentDetail withdraw(AuthenticatedUser caller, Long id, String reason) {
+        return commands.run(caller, id, new WithdrawCommand(reason));
+    }
+
+    /**
+     * POST /incidents/{id}/mark-duplicate (admin, team lead): closes this incident as a duplicate of another one; the
+     * work continues there. Audited as DUPLICATE_LINKED; the reporter gets a public note naming the original.
+     */
+    @Transactional
+    public IncidentDetail markDuplicate(AuthenticatedUser caller, Long id, Long duplicateOfId) {
+        Incident incident = load(id);
+        access.require(caller, incident, IncidentAction.MARK_DUPLICATE);
+        if (duplicateOfId == null) {
+            throw new InputValidationException("duplicateOfId", "is required");
+        }
+        Incident original = incidents.findById(duplicateOfId)
+                .orElseThrow(() -> new InputValidationException("duplicateOfId", "unknown incident " + duplicateOfId));
+        Instant now = clock.instant();
+        incident.markDuplicate(original, now);
+        User actor = loadUser(caller.id());
+        addNote(incident, actor, CommentVisibility.PUBLIC,
+                "Closed as a duplicate of " + original.getCode() + ": the work continues there.", now);
+        publishFact(incident, actor, "Marked as a duplicate of " + original.getCode() + " by " + actor.getName()
+                + "; closed as DUPLICATE");
+        return views.detail(incident, caller);
+    }
+
     // ------------------------------------------------------------------ comments
 
     /** INTERNAL notes are for technicians and admins only. */
@@ -375,9 +415,12 @@ public class IncidentService {
         // a comment is a separate record, not a change of the incident itself, so the incident has no fact for it
         User author = loadUser(caller.id());
         IncidentStatus status = incident.getStatus();
-        publish(incident, new IncidentFact(AuditAction.COMMENT_ADDED, status, status), author,
-                (chosen == CommentVisibility.INTERNAL ? AuditRecord.INTERNAL_PREFIX + " added by %s"
-                        : "Comment added by %s").formatted(author.getName()));
+        IncidentFact fact = new IncidentFact(AuditAction.COMMENT_ADDED, status, status);
+        if (chosen == CommentVisibility.INTERNAL) {
+            publisher.publishInternal(incident, fact, author, "added by " + author.getName());
+        } else {
+            publish(incident, fact, author, "Comment added by " + author.getName());
+        }
         return views.comment(saved);
     }
 
@@ -405,22 +448,21 @@ public class IncidentService {
      */
     private void recalculatePriority(Incident incident) {
         ItService service = incident.getService();
+        AppSettings settings = config.current();
         PriorityInput input = new PriorityInput(incident.getImpact(), incident.getUrgency(),
                 service.getCriticality(), incident.getAffectedUsers(), service.getName(), service.isAlwaysP1(),
-                isSecurity(incident.getCategory()));
-        PriorityBreakdown breakdown = priorityEngine.calculate(input, config.current());
+                isSecurity(incident.getCategory(), settings));
+        PriorityBreakdown breakdown = priorityEngine.calculate(input, settings);
         SlaPolicy policy = slaPolicies.resolve(service, breakdown.band());
-        incident.applyPriority(breakdown, policy.targets(config.current()), clock.instant());
+        incident.applyPriority(breakdown, policy.targets(settings), clock.instant());
     }
 
-    /** The category is Security or sits under it (for example Phishing). Categories are admin data, not code. */
-    private static boolean isSecurity(Category category) {
-        for (Category c = category; c != null; c = c.getParent()) {
-            if (c.getName().toLowerCase(Locale.ROOT).equals("security")) {
-                return true;
-            }
-        }
-        return false;
+    /**
+     * Override rule 1: the category is the security category named in {@code priority.security.category} or sits
+     * under it (for example Phishing under Security). A setting, not a name in the code (decision DEC-46, C3).
+     */
+    private static boolean isSecurity(Category category, AppSettings settings) {
+        return category != null && category.isWithin(settings.raw(ConfigKey.PRIORITY_SECURITY_CATEGORY));
     }
 
     private User loadEligibleTechnician(Long technicianId, Incident incident) {

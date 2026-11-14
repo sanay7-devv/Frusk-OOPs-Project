@@ -7,7 +7,7 @@ import java.util.Set;
 import com.iitsm.domain.user.User;
 
 /** Status ASSIGNED. */
-final class AssignedState extends IncidentState {
+final class AssignedState extends OpenState {
 
     @Override
     public IncidentStatus status() {
@@ -15,8 +15,8 @@ final class AssignedState extends IncidentState {
     }
 
     @Override
-    public Set<IncidentAction> legalActions(Incident incident, Instant now, Duration reopenWindow) {
-        return withEscalate(incident, IncidentAction.ACKNOWLEDGE, IncidentAction.REASSIGN);
+    Set<IncidentAction> ownActions(Incident incident, Instant now, Duration reopenWindow) {
+        return withEscalate(incident, IncidentAction.ACKNOWLEDGE, IncidentAction.REASSIGN, IncidentAction.WITHDRAW);
     }
 
     @Override
@@ -42,5 +42,11 @@ final class AssignedState extends IncidentState {
     void reassign(Incident incident, User technician, Instant now) {
         giveTo(incident, technician);
         incident.moveTo(status(), now);
+    }
+
+    /** The reporter withdraws the report before work starts (G3). */
+    @Override
+    void withdraw(Incident incident, String reason, Instant now) {
+        withdrawBeforeWork(incident, reason, now);
     }
 }

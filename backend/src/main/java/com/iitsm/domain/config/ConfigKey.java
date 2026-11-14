@@ -144,10 +144,14 @@ public enum ConfigKey {
     SECURITY_LOCKOUT_ATTEMPTS("security.lockout.attempts", "5", "Failed logins before the account is locked",
             Type.INTEGER, "1", "100"),
     SECURITY_LOCKOUT_MINUTES("security.lockout.minutes", "15", "Minutes an account stays locked",
-            Type.INTEGER, "1", "1440");
+            Type.INTEGER, "1", "1440"),
+
+    // ---- session A: M12 rest (duplicates, problem records, Major Incident Mode, E2, A1, D2) and C3 ----
+    PRIORITY_SECURITY_CATEGORY("priority.security.category", "Security",
+            "Category (with everything under it) that triggers priority override rule 1", Type.TEXT, "100");
 
     /** The kind of value a key holds. */
-    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL }
+    public enum Type { INTEGER, DECIMAL, CHOICE, TIME, ZONE, DAYS, DATES, EMAIL, URL, OPTIONAL_URL, TEXT }
 
     private final String key;
     private final String defaultValue;
@@ -207,6 +211,10 @@ public enum ConfigKey {
                     ? Optional.empty()
                     : Optional.of("must be an email address like no-reply@iitsm.local");
             case URL, OPTIONAL_URL -> trimmed.isEmpty() ? Optional.empty() : checkHttpUrl(trimmed);
+            // TEXT: one line, at most {max length} characters
+            case TEXT -> trimmed.length() > Integer.parseInt(constraints.get(0)) || trimmed.lines().count() > 1
+                    ? Optional.of("must be one line of at most " + constraints.get(0) + " characters")
+                    : Optional.empty();
         };
     }
 

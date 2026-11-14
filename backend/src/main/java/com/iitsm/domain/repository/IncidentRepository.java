@@ -36,5 +36,8 @@ public interface IncidentRepository {
     /** Auto-verify: ids of incidents RESOLVED at or before the cutoff and not reopened since. */
     List<Long> findResolvedUpTo(Instant cutoff);
 
+    /** Every incident grouped under a problem record, in creation order. */
+    List<Incident> findByProblemIdOrderByCreatedAtAsc(Long problemId);
+
     Incident save(Incident incident);
 }

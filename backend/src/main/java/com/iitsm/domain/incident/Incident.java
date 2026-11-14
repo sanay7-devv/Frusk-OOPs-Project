@@ -272,6 +272,16 @@ public class Incident {
         recorded(AuditAction.REOPENED, () -> state().reopen(this, reason, now, reopenWindow, targets));
     }
 
+    /** The reporter takes the report back before work starts (G3): closes as WITHDRAWN, audited as CLOSED. */
+    public void withdraw(String reason, Instant now) {
+        recorded(AuditAction.CLOSED, () -> state().withdraw(this, reason, now));
+    }
+
+    /** Closes this incident as a duplicate of {@code original} (module M12), audited as DUPLICATE_LINKED. */
+    public void markDuplicate(Incident original, Instant now) {
+        recorded(AuditAction.DUPLICATE_LINKED, () -> state().markDuplicate(this, original, now));
+    }
+
     public void reassign(User technician, Instant now) {
         recorded(AuditAction.REASSIGNED, () -> state().reassign(this, technician, now));
     }
@@ -407,6 +417,33 @@ public class Incident {
 
     void setAssignee(User technician) {
         assignee = technician;
+    }
+
+    /**
+     * Groups the incident under a problem record (module M12). Every grouping is audited (DEC-42), so it records a
+     * DUPLICATE_LINKED fact; the status does not change. Joining the record it is already in changes nothing.
+     */
+    public void joinProblem(Long problem, Instant now) {
+        if (problem.equals(problemId)) {
+            return;
+        }
+        problemId = problem;
+        touch(now);
+        facts.add(new IncidentFact(AuditAction.DUPLICATE_LINKED, status, status));
+    }
+
+    /** An administrator takes the incident out of its problem record; audited like the grouping. */
+    public void leaveProblem(Instant now) {
+        if (problemId == null) {
+            return;
+        }
+        problemId = null;
+        touch(now);
+        facts.add(new IncidentFact(AuditAction.DUPLICATE_LINKED, status, status));
+    }
+
+    void setDuplicateOf(Incident original) {
+        duplicateOf = original;
     }
 
     void markAcknowledged(Instant now) {

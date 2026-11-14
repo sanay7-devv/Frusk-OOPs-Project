@@ -34,6 +34,7 @@ import com.iitsm.web.dto.PageResponse;
 import com.iitsm.web.dto.incident.AssignRequest;
 import com.iitsm.web.dto.incident.CommentRequest;
 import com.iitsm.web.dto.incident.CreateIncidentRequest;
+import com.iitsm.web.dto.incident.MarkDuplicateRequest;
 import com.iitsm.web.dto.incident.OverridePriorityRequest;
 import com.iitsm.web.dto.incident.ProvideInfoRequest;
 import com.iitsm.web.dto.incident.ReasonRequest;
@@ -274,6 +275,33 @@ public class IncidentController {
     public IncidentDetail reopen(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
                                  @Valid @RequestBody ReasonRequest request) {
         return incidents.reopen(caller, id, request.reason());
+    }
+
+    @PostMapping("/{id}/withdraw")
+    @Operation(summary = "Withdraw the report before work starts (reporter; CLASSIFIED, ASSIGNED or ACKNOWLEDGED); "
+            + "closes as WITHDRAWN")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.VALIDATION_FAILED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
+    public IncidentDetail withdraw(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                   @Valid @RequestBody ReasonRequest request) {
+        return incidents.withdraw(caller, id, request.reason());
+    }
+
+    @PostMapping("/{id}/mark-duplicate")
+    @Operation(summary = "Close as a duplicate of another incident (admin, team lead); audited as DUPLICATE_LINKED")
+    @ApiErrors({
+            ErrorCode.INCIDENT_NOT_FOUND,
+            ErrorCode.UNAUTHORIZED_OPERATION,
+            ErrorCode.INVALID_STATE_TRANSITION,
+            ErrorCode.VALIDATION_FAILED,
+            ErrorCode.OPTIMISTIC_LOCK_CONFLICT})
+    public IncidentDetail markDuplicate(@AuthenticationPrincipal AuthenticatedUser caller, @PathVariable Long id,
+                                        @Valid @RequestBody MarkDuplicateRequest request) {
+        return incidents.markDuplicate(caller, id, request.duplicateOfId());
     }
 
     @PostMapping("/{id}/override-priority")
