@@ -43,6 +43,7 @@ describe('Auth and Navigation Flow', () => {
   it('Admin login routes to Admin Dashboard', async () => {
     localStorage.clear();
     renderApp('/login');
+    fireEvent.click(screen.getByText('Demo workspaces'));
     
     // Quick-select Admin chip
     const adminChip = screen.getByRole('button', { name: /^Administrator$/i });
@@ -59,6 +60,7 @@ describe('Auth and Navigation Flow', () => {
   it('Team Lead login routes to Team Lead Queue', async () => {
     localStorage.clear();
     renderApp('/login');
+    fireEvent.click(screen.getByText('Demo workspaces'));
 
     const leadChip = screen.getByRole('button', { name: /Team Lead/i });
     fireEvent.click(leadChip);
@@ -74,6 +76,7 @@ describe('Auth and Navigation Flow', () => {
   it('Employee login routes to Employee Home', async () => {
     localStorage.clear();
     renderApp('/login');
+    fireEvent.click(screen.getByText('Demo workspaces'));
 
     const empChip = screen.getByRole('button', { name: /Employee/i });
     fireEvent.click(empChip);

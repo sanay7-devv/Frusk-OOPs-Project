@@ -76,7 +76,7 @@ export default function WorkshopRoom({ workspace }: { workspace: 'employee' | 'a
   const sceneStyle = { '--yaw': `${view.yaw}deg`, '--pitch': `${view.pitch}deg`, '--room-scale': Math.min(1.03, width / 860) * view.zoom, '--pin-scale': Math.min(2.2, 1 / (Math.min(1.03, width / 860) * view.zoom)) } as CSSProperties;
 
   return <section className={`workshop ${station ? `workshop--${station}` : ''}`} aria-label="Interactive service workshop">
-    <div className="workshop-heading"><div><span className="eyebrow">A PLACE FOR EVERY PROBLEM</span><h2>The service workshop<span>.</span></h2><p>Pick a station. Move something forward.</p></div><span className="workshop-edition">FRUSK STUDIO<br />OPEN FOR GOOD FIXES ↗</span></div>
+    <div className="workshop-heading"><div><h2>The service workshop<span>.</span></h2><p>Pick a station. Move something forward.</p></div></div>
     <div className={`workshop-viewport ${dragging ? 'is-dragging' : ''}`} ref={viewport} style={sceneStyle} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       <div className="workshop-ambient" aria-hidden="true" />
       <div className="workshop-scene" aria-hidden="true">
@@ -124,7 +124,7 @@ export default function WorkshopRoom({ workspace }: { workspace: 'employee' | 'a
         {STATIONS.map((item, index) => <button type="button" key={item.id} className={`workshop-pin workshop-pin--${item.id}`} aria-label={`Open ${item.label.toLowerCase()}`} title={item.label} onClick={event => select(item.id, event.currentTarget)} style={{ left: [150, 376, 555][index], top: [210, 55, 120][index], '--pin-height': `${[210, 200, 195][index]}px`, '--station-colour': item.colour } as CSSProperties}><span>{item.number}</span><strong>{item.label}</strong><b aria-hidden="true">↗</b></button>)}
       </div>
       <div className="workshop-view-controls" role="group" aria-label="Workshop view controls"><button type="button" aria-label="Rotate workshop left" onClick={() => setView(v => ({ ...v, yaw: clamp(v.yaw - 12, -55, 10) }))}>↶</button><button type="button" aria-label="Rotate workshop right" onClick={() => setView(v => ({ ...v, yaw: clamp(v.yaw + 12, -55, 10) }))}>↷</button><span /><button type="button" aria-label="Zoom out of workshop" disabled={view.zoom <= .8} onClick={() => setView(v => ({ ...v, zoom: Math.max(.8, v.zoom - .15) }))}>−</button><button type="button" aria-label="Zoom into workshop" disabled={view.zoom >= 1.3} onClick={() => setView(v => ({ ...v, zoom: Math.min(1.3, v.zoom + .15) }))}>＋</button><button type="button" aria-label="Reset workshop view" onClick={() => setView(OVERVIEW)}>⌂</button></div>
-      <div className="workshop-drag-hint" aria-hidden="true"><span>↔</span> Drag to rotate · pick a station below</div>
+      <div className="workshop-drag-hint" aria-hidden="true"><span>↔</span> Drag to rotate · select a station</div>
       {station && <div className="workshop-focus-label" aria-hidden="true">{STATIONS.find(item => item.id === station)?.label}</div>}
     </div>
     <div className="workshop-stations" role="group" aria-label="Choose a workshop station">{STATIONS.map(item => <button key={item.id} type="button" aria-pressed={station === item.id} aria-controls="workshop-closeup" onClick={event => select(item.id, event.currentTarget)} style={{ '--station-colour': item.colour } as CSSProperties}><span>{item.number}</span><div><strong>{item.label}</strong><small>{item.note}</small></div><b aria-hidden="true">↗</b></button>)}</div>

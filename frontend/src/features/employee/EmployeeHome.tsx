@@ -225,7 +225,6 @@ export default function EmployeeHome() {
   return (
     <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 6 }}>
       <StudioHero workspace="employee" />
-      <div className="studio-section-title">01 / YOUR WORKDAY <span>THE NEXT THING TO MOVE FORWARD</span></div>
 
       {/* 2. OPERATIONAL ALERT BANNER (High Urgency User Blocker) */}
       <Paper

@@ -244,7 +244,6 @@ export default function TechQueue() {
   return (
     <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 6 }}>
       <StudioHero workspace="tech" />
-      <div id="work-queue" className="studio-section-title">01 / YOUR QUEUE <span>PICK UP THE NEXT FIX</span></div>
       {/* 1. TOP COMMAND BAR */}
       <Box
         sx={{

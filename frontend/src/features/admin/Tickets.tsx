@@ -1,4 +1,3 @@
-import IncidentBoard from '../../components/IncidentBoard';
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -1184,6 +1183,5 @@ function TicketLedger() {
 
 
 export default function Tickets() {
-  const [view, setView] = useState('ledger');
-  return <section><div className="workspace-view-switch" role="group" aria-label="Ticket view"><span>YOUR VIEW</span><button aria-pressed={view === 'cards'} onClick={() => setView('cards')}>Browse incidents</button><button aria-pressed={view === 'ledger'} onClick={() => setView('ledger')}>Manage tickets</button></div>{view === 'cards' ? <IncidentBoard admin /> : <TicketLedger />}</section>;
+  return <TicketLedger />;
 }

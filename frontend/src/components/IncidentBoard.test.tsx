@@ -9,7 +9,7 @@ vi.mock('../api/client', () => ({ tokenStore: { getAccess: () => 'mock-demo-toke
 vi.mock('../api/studio', () => ({ listStudioIncidents: vi.fn(async () => ({ page: 0, size: 12, totalItems: 1, totalPages: 1, items: [{ id: 101, code: 'INC-101', title: 'Campus Wi-Fi unavailable', status: 'ASSIGNED', priority: 'P2', service: { id: 1, name: 'Campus network' }, reporter: { id: 7, name: 'Demo employee' }, assignee: { id: 9, name: 'Demo technician' }, category: null, createdAt: '2026-11-15T08:00:00Z', slaState: 'OK', major: false, escalationLevel: 0 }] })) }));
 afterEach(cleanup);
 
-it('opens the incident preview from the default table and preserves it in the optional card view', async () => {
+it('opens the incident preview from the table and returns to the report list', async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<MemoryRouter><QueryClientProvider client={client}><IncidentBoard /></QueryClientProvider></MemoryRouter>);
   const title = await screen.findByRole('button', { name: 'View INC-101: Campus Wi-Fi unavailable' });
@@ -21,8 +21,6 @@ it('opens the incident preview from the default table and preserves it in the op
   expect(within(dialog).getByRole('heading', { name: 'Campus Wi-Fi unavailable' })).toBeDefined();
   expect(within(dialog).getByText('Demo employee')).toBeDefined();
   fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Cards' }));
-  expect(screen.queryByRole('table')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'View INC-101: Campus Wi-Fi unavailable' }));
-  expect(within(await screen.findByRole('dialog')).getByText('Campus Wi-Fi unavailable')).toBeDefined();
+  expect(await screen.findByRole('table', { name: 'Your reported incidents' })).toBeDefined();
+  expect(screen.queryByRole('button', { name: 'Cards' })).toBeNull();
 });

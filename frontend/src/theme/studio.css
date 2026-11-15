@@ -80,22 +80,7 @@
 @media(min-width:1500px){.auth-editorial h1{font-size:94px}.auth-form-heading{font-size:52px}}
 @media(max-width:850px){.auth-grid{gap:5vw}.auth-editorial h1{font-size:52px}.auth-form-heading{font-size:38px}.studio-hero-copy{padding-left:6px}}
 @media(max-width:600px){.auth-grid{gap:48px;padding-top:22px}.auth-masthead{height:78px}.auth-editorial h1{font-size:52px}.auth-form-heading{font-size:40px}.service-poster{border-radius:22px}.studio-hero{gap:12px}.studio-hero-copy{padding:20px 6px}.studio-hero h1{font-size:52px}.studio-hero .service-poster{border:0}.audit-summary{gap:12px}.audit-summary>div:first-child{border:1px solid var(--line)}.audit-search input{max-width:calc(100% - 120px)}}
-/* Motion follows the reader: reveals on entry, tactile hovers, drifting artwork. */
-.studio-scroll-progress{position:fixed;inset:0 0 auto;height:3px;z-index:1500;background:linear-gradient(90deg,var(--blue),#7f95cb,var(--red));transform:scaleX(0);transform-origin:left;pointer-events:none}
-.studio-motion-toggle{position:fixed;right:18px;bottom:16px;z-index:1250;border:1px solid #e5e2db;background:#fffffff0;backdrop-filter:blur(12px);border-radius:24px;padding:9px 13px;display:flex;align-items:center;gap:7px;font:11px Arial;color:var(--muted);box-shadow:0 4px 18px #20211f08;cursor:pointer}
-.studio-motion-toggle:hover{color:var(--blue);border-color:#bdcceb}.studio-motion-toggle>span{font-size:14px;color:var(--blue)}
-.studio-hero-copy h1 em,.auth-editorial h1 em{display:inline-block}
-.studio-button>span,.incident-card-status>span:last-child{transition:transform .4s var(--ease)}
-.studio-button:hover>span{transform:translate(4px,-4px)}
-.incident-card:hover .incident-card-status>span:last-child{transform:translateX(5px)}
-.poster-shape{transform-box:fill-box;transform-origin:center}
-:root[data-studio-motion=on] .poster-shape--square{animation:shape-drift 4.5s ease-in-out infinite alternate}
-:root[data-studio-motion=on] .poster-shape--circle{animation:shape-drift 5.5s -.8s ease-in-out infinite alternate-reverse}
-:root[data-studio-motion=on] .poster-shape--triangle{animation:shape-drift 6s -1.5s ease-in-out infinite alternate}
-:root[data-studio-motion=on] .poster-orbit{animation:orbit-breathe 5s ease-in-out infinite alternate}
-:root[data-studio-motion=off] .studio-scroll-progress{display:none}
-:root[data-studio-motion=off] *, :root[data-studio-motion=off] *::before, :root[data-studio-motion=off] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-@keyframes shape-drift{from{transform:translateY(-5px) rotate(-7deg)}to{transform:translateY(10px) rotate(9deg)}}
-@keyframes orbit-breathe{from{transform:scale(.96);opacity:.4}to{transform:scale(1.06);opacity:.8}}
-@media(max-width:600px){.studio-motion-toggle{right:12px;bottom:12px;padding:8px 11px;font-size:10px}.studio-main-footer{padding-bottom:36px}}
+/* Brief entrance transitions respect reduced-motion settings below. */
+.studio-button>span{transition:transform .3s var(--ease)}
+.studio-button:hover>span{transform:translate(2px,-2px)}
 @media(prefers-reduced-motion:reduce){:root{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}.poster-device{will-change:auto}.poster-art:hover .poster-device svg{transform:none}}
