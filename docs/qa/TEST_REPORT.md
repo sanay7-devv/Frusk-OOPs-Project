@@ -11,7 +11,8 @@ Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af
 | Frontend tests at this snapshot | 3 passed |
 | Seed generator tests | 7 passed |
 | API smoke requests | 40 passed |
-| Postman collection (follow-up) | 71 requests, 149 assertions passed |\n| Security dry run (follow-up) | 30 checks passed |
+| Postman collection (follow-up) | 71 requests, 149 assertions passed |
+| Security dry run (follow-up) | 30 checks passed |
 | Open blocker bugs at this snapshot | 0 recorded |
 
 The exact expected and observed result for each handbook case is in [test_cases.csv](test_cases.csv). That table now records the run date and commit. CI run links contain the job results; the Postman, smoke and security JSON reports are uploaded as demo-stack evidence. The six follow-up jobs also uploaded backend test reports. A bug about stale frontend login selectors, issue #11, was fixed by PR #16 and has since been closed.
