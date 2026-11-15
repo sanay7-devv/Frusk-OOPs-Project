@@ -14,15 +14,26 @@ import com.iitsm.domain.priority.Priority;
  * @param sortField       one of createdAt, priority, status, code, resolutionDue
  * @param slaState        filter on the SLA state as far as the stored flags and the status can tell (decision
  *                        DEC-42); null = any. May lag the detail view by one SLA monitor interval.
+ * @param minEscalationLevel only incidents already escalated to at least this level (0 to 3); null = any
  */
 public record IncidentQuery(Long visibleToUserId, List<IncidentStatus> statuses, List<Priority> priorities,
                             Long categoryId, Long serviceId, Long assigneeId, Long reporterId, String code,
                             String text, Instant createdFrom, Instant createdTo, int page, int size,
-                            String sortField, boolean ascending, SlaState slaState) {
+                            String sortField, boolean ascending, SlaState slaState,
+                            Integer minEscalationLevel) {
 
     public IncidentQuery {
         statuses = statuses == null ? List.of() : List.copyOf(statuses);
         priorities = priorities == null ? List.of() : List.copyOf(priorities);
+    }
+
+    /** Without an escalation level filter (the shape every caller used before the escalations screen needed it). */
+    public IncidentQuery(Long visibleToUserId, List<IncidentStatus> statuses, List<Priority> priorities,
+                         Long categoryId, Long serviceId, Long assigneeId, Long reporterId, String code,
+                         String text, Instant createdFrom, Instant createdTo, int page, int size,
+                         String sortField, boolean ascending, SlaState slaState) {
+        this(visibleToUserId, statuses, priorities, categoryId, serviceId, assigneeId, reporterId, code, text,
+                createdFrom, createdTo, page, size, sortField, ascending, slaState, null);
     }
 
     /** Without an SLA state filter (the shape every caller used before module M10). */
@@ -31,18 +42,19 @@ public record IncidentQuery(Long visibleToUserId, List<IncidentStatus> statuses,
                          String text, Instant createdFrom, Instant createdTo, int page, int size,
                          String sortField, boolean ascending) {
         this(visibleToUserId, statuses, priorities, categoryId, serviceId, assigneeId, reporterId, code, text,
-                createdFrom, createdTo, page, size, sortField, ascending, null);
+                createdFrom, createdTo, page, size, sortField, ascending, null, null);
     }
 
     /** The same query restricted to one user's own and assigned incidents. */
     public IncidentQuery visibleTo(Long userId) {
         return new IncidentQuery(userId, statuses, priorities, categoryId, serviceId, assigneeId, reporterId, code,
-                text, createdFrom, createdTo, page, size, sortField, ascending, slaState);
+                text, createdFrom, createdTo, page, size, sortField, ascending, slaState, minEscalationLevel);
     }
 
     /** The same query for another page and size (used by the CSV export to walk through the result). */
     public IncidentQuery withPage(int newPage, int newSize) {
         return new IncidentQuery(visibleToUserId, statuses, priorities, categoryId, serviceId, assigneeId,
-                reporterId, code, text, createdFrom, createdTo, newPage, newSize, sortField, ascending, slaState);
+                reporterId, code, text, createdFrom, createdTo, newPage, newSize, sortField, ascending, slaState,
+                minEscalationLevel);
     }
 }

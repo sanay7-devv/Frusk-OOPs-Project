@@ -1616,6 +1616,193 @@ paths:
       summary: "Replace the services this one depends on (no self-reference, no cycles)"
       tags:
       - "Admin: catalog"
+  /api/v1/admin/simulations:
+    post:
+      operationId: simulate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: "Replay recent incidents in memory under up to three configurations\
+        \ and compare the results. Writes nothing: no incidents, audit entries or\
+        \ notifications are created"
+      tags:
+      - "Admin: service desk simulator"
+  /api/v1/admin/simulations/apply:
+    post:
+      operationId: apply
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Apply a configuration's strategy and weights to the live settings (audited
+        as CONFIG_CHANGED)
+      tags:
+      - "Admin: service desk simulator"
   /api/v1/admin/skills:
     get:
       operationId: skills
@@ -4465,6 +4652,14 @@ paths:
           - VIOLATED
           - PAUSED
           - MET
+      - in: query
+        name: minEscalationLevel
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 3
+          minimum: 0
       - in: query
         name: createdFrom
         required: false
@@ -12584,6 +12779,69 @@ components:
       required:
       - key
       - value
+    ConfigurationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 60
+          minLength: 0
+        strategy:
+          type: string
+          maxLength: 30
+          minLength: 0
+        technicians:
+          type: integer
+          format: int32
+          maximum: 50
+          minimum: 1
+        weights:
+          $ref: "#/components/schemas/WeightsRequest"
+    ConfigurationView:
+      type: object
+      properties:
+        fairness:
+          type: number
+          format: double
+        incidents:
+          type: integer
+          format: int32
+        matchesRealAssigneePercent:
+          type: number
+          format: double
+        meanResolveMinutes:
+          type: number
+          format: double
+        meanWaitMinutes:
+          type: number
+          format: double
+        name:
+          type: string
+        p90ResolveMinutes:
+          type: number
+          format: double
+        perTechnician:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkerResult"
+        slaViolationPercent:
+          type: number
+          format: double
+        slaViolations:
+          type: integer
+          format: int32
+        strategy:
+          type: string
+        technicians:
+          type: integer
+          format: int32
+        unassigned:
+          type: integer
+          format: int32
+        weights:
+          type: object
+          additionalProperties:
+            type: string
     Counters:
       type: object
       properties:
@@ -12889,31 +13147,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DashboardEvent"
-    Deadline:
-      type: object
-      properties:
-        code:
-          type: string
-        due:
-          type: string
-          format: date-time
-        incidentId:
-          type: integer
-          format: int64
-        slaState:
-          type: string
-          enum:
-          - OK
-          - WARNING
-          - AT_RISK
-          - VIOLATED
-          - PAUSED
-          - MET
-        type:
-          type: string
-          enum:
-          - RESPONSE
-          - RESOLUTION
     DependenciesRequest:
       type: object
       properties:
@@ -14463,6 +14696,42 @@ components:
       - description
       - serviceId
       - title
+    SimulationRequest:
+      type: object
+      properties:
+        configurations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigurationRequest"
+          maxItems: 3
+          minItems: 0
+        lastIncidents:
+          type: integer
+          format: int32
+          maximum: 500
+          minimum: 10
+        speedUp:
+          type: number
+          format: double
+          maximum: 20
+          minimum: 1
+    SimulationView:
+      type: object
+      properties:
+        assumptions:
+          type: array
+          items:
+            type: string
+        best:
+          type: string
+        bestReason:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigurationView"
+        workload:
+          $ref: "#/components/schemas/WorkloadView"
     SkillCoverage:
       type: object
       properties:
@@ -15030,6 +15299,34 @@ components:
         unsealedRecords:
           type: integer
           format: int64
+    WeightsRequest:
+      type: object
+      properties:
+        experience:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        familiarity:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        load:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        priorityFit:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        skill:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
     WhatIfView:
       type: object
       properties:
@@ -15050,6 +15347,23 @@ components:
           $ref: "#/components/schemas/Ref"
         whatIf:
           $ref: "#/components/schemas/Scenario"
+    WorkerResult:
+      type: object
+      properties:
+        assigned:
+          type: integer
+          format: int32
+        busyMinutes:
+          type: number
+          format: double
+        name:
+          type: string
+        technicianId:
+          type: integer
+          format: int64
+        utilizationPercent:
+          type: number
+          format: double
     WorkloadReportRow:
       type: object
       properties:
@@ -15073,22 +15387,23 @@ components:
     WorkloadView:
       type: object
       properties:
-        activeIncidents:
+        excluded:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        from:
+          type: string
+          format: date-time
+        incidents:
           type: integer
           format: int32
-        load:
-          type: integer
-          format: int32
-        maxLoad:
-          type: integer
-          format: int32
-        resolvedThisWeek:
-          type: integer
-          format: int64
-        upcomingDeadlines:
-          type: array
-          items:
-            $ref: "#/components/schemas/Deadline"
+        speedUp:
+          type: number
+          format: double
+        to:
+          type: string
+          format: date-time
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT
