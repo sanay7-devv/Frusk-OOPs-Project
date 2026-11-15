@@ -360,7 +360,7 @@ function TicketLedger() {
             label="L3 • War Room"
             sx={{
               bgcolor: '#7f1d1d',
-              color: '#fffcf5',
+              color: '#ffffff',
               fontWeight: 800,
               fontSize: '0.72rem',
             }}
@@ -397,11 +397,11 @@ function TicketLedger() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <ConfirmationNumberIcon sx={{ fontSize: 32, color: '#1653c7' }} />
-            <Typography variant="h4" fontWeight="800" sx={{ color: '#20211f', letterSpacing: '-0.02em' }}>
-              Tickets Hub
+            <Typography variant="h4" fontWeight="800" sx={{ color: '#172b4d', letterSpacing: '-0.02em' }}>
+              Ticket management
             </Typography>
             <Chip
-              label="Live Backend Connected"
+              label="Incident management"
               size="small"
               sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontWeight: 700, height: 22 }}
             />
@@ -428,15 +428,15 @@ function TicketLedger() {
             onClick={() => setDeclareOpen(true)}
             sx={{
               borderRadius: 2,
-              bgcolor: '#ba1a1a',
-              color: '#fffcf5',
+              bgcolor: '#2457b7',
+              color: '#ffffff',
               textTransform: 'none',
               fontWeight: 700,
               boxShadow: '0 2px 6px rgba(186, 26, 26, 0.25)',
-              '&:hover': { bgcolor: '#93000a' },
+              '&:hover': { bgcolor: '#1d4694' },
             }}
           >
-            Declare Ticket / Incident
+            Create incident
           </Button>
         </Stack>
       </Stack>
@@ -449,8 +449,8 @@ function TicketLedger() {
             onClick={() => handleTabChange({} as any, 0)}
             sx={{
               borderRadius: 2.5,
-              border: activeTab === 0 ? '2px solid #1653c7' : '1px solid #d6d0c3',
-              bgcolor: activeTab === 0 ? '#f0f5ff' : '#fffcf5',
+              border: activeTab === 0 ? '2px solid #1653c7' : '1px solid #e2e8f0',
+              bgcolor: activeTab === 0 ? '#f0f5ff' : '#ffffff',
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(43,91,181,0.1)' },
@@ -463,7 +463,7 @@ function TicketLedger() {
                 </Typography>
                 <TodayIcon sx={{ fontSize: 18, color: '#1653c7' }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 1 }}>
                 {metrics.todayCount}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -479,8 +479,8 @@ function TicketLedger() {
             onClick={() => handleTabChange({} as any, 1)}
             sx={{
               borderRadius: 2.5,
-              border: activeTab === 1 ? '2px solid #1653c7' : '1px solid #d6d0c3',
-              bgcolor: activeTab === 1 ? '#f0f5ff' : '#fffcf5',
+              border: activeTab === 1 ? '2px solid #1653c7' : '1px solid #e2e8f0',
+              bgcolor: activeTab === 1 ? '#f0f5ff' : '#ffffff',
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,77,153,0.1)' },
@@ -493,7 +493,7 @@ function TicketLedger() {
                 </Typography>
                 <HistoryIcon sx={{ fontSize: 18, color: '#6a685f' }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 1 }}>
                 {metrics.prevCount}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -512,8 +512,8 @@ function TicketLedger() {
             }}
             sx={{
               borderRadius: 2.5,
-              border: statusFilter === 'ACTIVE' ? '2px solid #1653c7' : '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: statusFilter === 'ACTIVE' ? '2px solid #1653c7' : '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
@@ -574,8 +574,8 @@ function TicketLedger() {
             elevation={0}
             sx={{
               borderRadius: 2.5,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
@@ -585,7 +585,7 @@ function TicketLedger() {
                 </Typography>
                 <WarningIcon sx={{ fontSize: 18, color: '#d97706' }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: metrics.unassignedCount > 0 ? '#d97706' : '#20211f', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: metrics.unassignedCount > 0 ? '#d97706' : '#172b4d', mt: 1 }}>
                 {metrics.unassignedCount}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -597,8 +597,8 @@ function TicketLedger() {
       </Grid>
 
       {/* 3. Tab Switcher: Today's vs Previous Days' vs All */}
-      <Paper elevation={0} sx={{ border: '1px solid #d6d0c3', borderRadius: 3, mb: 3, overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#f5f0e5', px: 2 }}>
+      <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, mb: 3, overflow: 'hidden' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#f5f7fa', px: 2 }}>
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
@@ -624,8 +624,8 @@ function TicketLedger() {
                     sx={{
                       height: 20,
                       fontWeight: 700,
-                      bgcolor: activeTab === 0 ? '#1653c7' : '#d6d0c3',
-                      color: activeTab === 0 ? '#fffcf5' : '#475569',
+                      bgcolor: activeTab === 0 ? '#1653c7' : '#e2e8f0',
+                      color: activeTab === 0 ? '#ffffff' : '#475569',
                     }}
                   />
                 </Box>
@@ -643,8 +643,8 @@ function TicketLedger() {
                     sx={{
                       height: 20,
                       fontWeight: 700,
-                      bgcolor: activeTab === 1 ? '#1653c7' : '#d6d0c3',
-                      color: activeTab === 1 ? '#fffcf5' : '#475569',
+                      bgcolor: activeTab === 1 ? '#1653c7' : '#e2e8f0',
+                      color: activeTab === 1 ? '#ffffff' : '#475569',
                     }}
                   />
                 </Box>
@@ -662,8 +662,8 @@ function TicketLedger() {
                     sx={{
                       height: 20,
                       fontWeight: 700,
-                      bgcolor: activeTab === 2 ? '#1653c7' : '#d6d0c3',
-                      color: activeTab === 2 ? '#fffcf5' : '#475569',
+                      bgcolor: activeTab === 2 ? '#1653c7' : '#e2e8f0',
+                      color: activeTab === 2 ? '#ffffff' : '#475569',
                     }}
                   />
                 </Box>
@@ -673,7 +673,7 @@ function TicketLedger() {
         </Box>
 
         {/* 4. Toolbar / Filter Controls */}
-        <Box sx={{ p: 2, bgcolor: '#fffcf5' }}>
+        <Box sx={{ p: 2, bgcolor: '#ffffff' }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems="center">
             <TextField
               placeholder="Search code, title, handler name, reporter, or service..."
@@ -760,9 +760,9 @@ function TicketLedger() {
         elevation={0}
         sx={{
           borderRadius: 3,
-          border: '1px solid #d6d0c3',
+          border: '1px solid #e2e8f0',
           boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
-          overflow: 'hidden',
+          overflowX: 'auto',
         }}
       >
         {isLoading ? (
@@ -774,7 +774,7 @@ function TicketLedger() {
           </Box>
         ) : displayedIncidents.length === 0 ? (
           <Box p={8} textAlign="center">
-            <Typography variant="h6" fontWeight="700" color="#20211f" gutterBottom>
+            <Typography variant="h6" fontWeight="700" color="#172b4d" gutterBottom>
               {activeTab === 0
                 ? "No tickets reported today matching your filters"
                 : activeTab === 1
@@ -791,8 +791,8 @@ function TicketLedger() {
             </Button>
           </Box>
         ) : (
-          <Table>
-            <TableHead sx={{ bgcolor: '#f5f0e5' }}>
+          <Table sx={{ minWidth: 1320 }}>
+            <TableHead sx={{ bgcolor: '#f5f7fa' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>TICKET CODE</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>TITLE &amp; SERVICE</TableCell>
@@ -816,7 +816,7 @@ function TicketLedger() {
                     sx={{
                       cursor: 'pointer',
                       transition: 'background-color 0.15s',
-                      '&:hover': { bgcolor: '#f5f0e5' },
+                      '&:hover': { bgcolor: '#f5f7fa' },
                     }}
                     onClick={() => navigate(`/admin/tickets/${inc.id}`)}
                   >
@@ -826,8 +826,9 @@ function TicketLedger() {
                         <Typography
                           variant="body2"
                           sx={{
-                            fontFamily: 'monospace',
-                            fontWeight: 700,
+                            fontFamily: 'inherit',
+                            whiteSpace: 'nowrap',
+                            fontWeight: 600,
                             color: '#1653c7',
                             fontSize: '0.85rem',
                           }}
@@ -842,8 +843,8 @@ function TicketLedger() {
                               height: 18,
                               fontSize: 10,
                               fontWeight: 800,
-                              bgcolor: '#ba1a1a',
-                              color: '#fffcf5',
+                              bgcolor: '#2457b7',
+                              color: '#ffffff',
                             }}
                           />
                         )}
@@ -852,7 +853,7 @@ function TicketLedger() {
 
                     {/* 2. Title & Service */}
                     <TableCell sx={{ maxWidth: 320 }}>
-                      <Typography variant="body2" fontWeight="700" color="#20211f" noWrap>
+                      <Typography variant="body2" fontWeight="700" color="#172b4d" noWrap>
                         {inc.title}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center" mt={0.4}>
@@ -896,13 +897,13 @@ function TicketLedger() {
                               fontSize: 12,
                               fontWeight: 700,
                               bgcolor: '#1653c7',
-                              color: '#fffcf5',
+                              color: '#ffffff',
                             }}
                           >
                             {inc.assignee.name.charAt(0)}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" fontWeight="700" color="#20211f">
+                            <Typography variant="body2" fontWeight="700" color="#172b4d">
                               {inc.assignee.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
@@ -948,7 +949,7 @@ function TicketLedger() {
 
                     {/* 7. Reported Date */}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Typography variant="body2" fontSize="0.82rem" color="#20211f" fontWeight={isToday ? 700 : 500}>
+                      <Typography variant="body2" fontSize="0.82rem" color="#172b4d" fontWeight={isToday ? 700 : 500}>
                         {formatTicketDate(inc.createdAt, isToday)}
                       </Typography>
                       {isToday && (
@@ -1006,8 +1007,8 @@ function TicketLedger() {
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5} mt={1}>
-            <Box sx={{ p: 1.5, bgcolor: '#f5f0e5', borderRadius: 2 }}>
-              <Typography variant="subtitle2" fontWeight="700" color="#20211f">
+            <Box sx={{ p: 1.5, bgcolor: '#f5f7fa', borderRadius: 2 }}>
+              <Typography variant="subtitle2" fontWeight="700" color="#172b4d">
                 {targetIncident?.title}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -1158,7 +1159,7 @@ function TicketLedger() {
                       <Chip
                         size="small"
                         label={tech.roles.includes('ADMINISTRATOR') ? 'Admin' : 'Technician'}
-                        sx={{ height: 18, fontSize: 10, bgcolor: '#d6d0c3', fontWeight: 600 }}
+                        sx={{ height: 18, fontSize: 10, bgcolor: '#e2e8f0', fontWeight: 600 }}
                       />
                     </Box>
                   </MenuItem>
@@ -1183,7 +1184,6 @@ function TicketLedger() {
 
 
 export default function Tickets() {
-  const [params] = useSearchParams();
-  const [view, setView] = useState(params.size ? 'ledger' : 'cards');
-  return <section><div className="workspace-view-switch" role="group" aria-label="Ticket view"><span>YOUR VIEW</span><button aria-pressed={view === 'cards'} onClick={() => setView('cards')}>Card board</button><button aria-pressed={view === 'ledger'} onClick={() => setView('ledger')}>Manage tickets</button></div>{view === 'cards' ? <IncidentBoard admin /> : <TicketLedger />}</section>;
+  const [view, setView] = useState('ledger');
+  return <section><div className="workspace-view-switch" role="group" aria-label="Ticket view"><span>YOUR VIEW</span><button aria-pressed={view === 'cards'} onClick={() => setView('cards')}>Browse incidents</button><button aria-pressed={view === 'ledger'} onClick={() => setView('ledger')}>Manage tickets</button></div>{view === 'cards' ? <IncidentBoard admin /> : <TicketLedger />}</section>;
 }

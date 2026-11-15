@@ -258,7 +258,7 @@ export default function TechQueue() {
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#20211f', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#172b4d', letterSpacing: '-0.01em' }}>
               Technician Operational Work Queue
             </Typography>
             <Box
@@ -315,7 +315,7 @@ export default function TechQueue() {
             py: 1,
             borderRadius: 2.5,
             border: '1px solid #cbd5e1',
-            bgcolor: '#fffcf5',
+            bgcolor: '#ffffff',
             boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           }}
         >
@@ -328,7 +328,7 @@ export default function TechQueue() {
             }}
           />
           <Box>
-            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#20211f', lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#172b4d', lineHeight: 1.2 }}>
               Status: {isAvailable ? 'Available' : 'Busy / On-Call Hold'}
             </Typography>
             <Typography sx={{ fontSize: 11, color: '#5c5a52' }}>
@@ -343,8 +343,8 @@ export default function TechQueue() {
             }}
             sx={{
               ml: 1,
-              bgcolor: '#eee7d9',
-              color: '#20211f',
+              bgcolor: '#f1f5f9',
+              color: '#172b4d',
               fontSize: 11.5,
               fontWeight: 700,
               textTransform: 'none',
@@ -369,7 +369,7 @@ export default function TechQueue() {
               p: 2.5,
               borderRadius: 3,
               border: '1px solid #cbd5e1',
-              bgcolor: '#fffcf5',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -385,7 +385,7 @@ export default function TechQueue() {
                     height: 42,
                     borderRadius: 2,
                     bgcolor: '#1653c7',
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -397,7 +397,7 @@ export default function TechQueue() {
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 15, fontWeight: 800, color: '#20211f' }}>
+                    <Typography sx={{ fontSize: 15, fontWeight: 800, color: '#172b4d' }}>
                       Marcus Chen
                     </Typography>
                     <Chip
@@ -408,7 +408,7 @@ export default function TechQueue() {
                         fontSize: 10,
                         fontWeight: 700,
                         fontFamily: 'monospace',
-                        bgcolor: '#eee7d9',
+                        bgcolor: '#f1f5f9',
                       }}
                     />
                   </Box>
@@ -430,7 +430,7 @@ export default function TechQueue() {
                 <Box sx={{ flex: 1, bgcolor: '#1653c7', borderRadius: 1 }} />
                 <Box sx={{ flex: 1, bgcolor: '#1653c7', borderRadius: 1 }} />
                 <Box sx={{ flex: 1, bgcolor: '#ba1a1a', borderRadius: 1, animation: 'pulse 1.2s infinite' }} />
-                <Box sx={{ flex: 1, bgcolor: '#d6d0c3', borderRadius: 1 }} />
+                <Box sx={{ flex: 1, bgcolor: '#e2e8f0', borderRadius: 1 }} />
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontFamily: 'monospace', color: '#5c5a52' }}>
                 <span>Slot 1 (Active)</span>
@@ -523,7 +523,7 @@ export default function TechQueue() {
                 sx={{
                   p: 2,
                   borderRadius: 2.5,
-                  bgcolor: '#fffcf5',
+                  bgcolor: '#ffffff',
                   border: '1px solid #cbd5e1',
                   height: '100%',
                   display: 'flex',
@@ -538,7 +538,7 @@ export default function TechQueue() {
                   <SyncIcon sx={{ fontSize: 18, color: '#1653c7' }} />
                 </Box>
                 <Box sx={{ my: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d' }}>
                     {inProgressCount}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: '#5c5a52' }}>
@@ -558,7 +558,7 @@ export default function TechQueue() {
                 sx={{
                   p: 2,
                   borderRadius: 2.5,
-                  bgcolor: '#fffcf5',
+                  bgcolor: '#ffffff',
                   border: '1px solid #cbd5e1',
                   height: '100%',
                   display: 'flex',
@@ -573,7 +573,7 @@ export default function TechQueue() {
                   <PauseCircleIcon sx={{ fontSize: 18, color: '#1653c7' }} />
                 </Box>
                 <Box sx={{ my: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d' }}>
                     {pendingInfoCount}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: '#5c5a52' }}>
@@ -599,15 +599,15 @@ export default function TechQueue() {
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: 1.5,
-            borderBottom: '1px solid #d6d0c3',
+            borderBottom: '1px solid #e2e8f0',
             pb: 1.5,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: '#eee7d9', p: 0.5, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
             {(
               [
-                { id: 'ALL', label: 'All Active', count: queue.length, bg: '#1653c7', text: '#fffcf5' },
-                { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: '#ba1a1a', text: '#fffcf5' },
+                { id: 'ALL', label: 'All Active', count: queue.length, bg: '#1653c7', text: '#ffffff' },
+                { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: '#ba1a1a', text: '#ffffff' },
                 { id: 'AT_RISK', label: 'At-Risk SLAs (<25%)', count: atRiskCount, bg: '#ffdad6', text: '#93000a' },
                 { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, bg: '#e5eaf4', text: '#5c5a52' },
                 { id: 'PENDING_INFO', label: 'Pending Info', count: pendingInfoCount, bg: '#e5eaf4', text: '#5c5a52' },
@@ -623,13 +623,13 @@ export default function TechQueue() {
                     fontWeight: isSelected ? 800 : 600,
                     fontSize: 12,
                     color: isSelected ? '#1653c7' : '#5c5a52',
-                    bgcolor: isSelected ? '#fffcf5' : 'transparent',
+                    bgcolor: isSelected ? '#ffffff' : 'transparent',
                     boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
                     borderRadius: 1.5,
                     px: 1.5,
                     py: 0.6,
                     textTransform: 'none',
-                    '&:hover': { bgcolor: isSelected ? '#fffcf5' : '#e5eaf4' },
+                    '&:hover': { bgcolor: isSelected ? '#ffffff' : '#e5eaf4' },
                   }}
                 >
                   <span>{tab.label}</span>
@@ -670,7 +670,7 @@ export default function TechQueue() {
             sx={{
               width: { xs: '100%', md: 260 },
               '& .MuiOutlinedInput-root': {
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 borderRadius: 2,
                 fontSize: 12.5,
                 '& fieldset': { borderColor: '#cbd5e1' },
@@ -686,7 +686,7 @@ export default function TechQueue() {
             px: 2,
             py: 1.2,
             borderRadius: 2,
-            bgcolor: '#eee7d9',
+            bgcolor: '#f1f5f9',
             border: '1px solid #cbd5e1',
             display: 'flex',
             alignItems: 'center',
@@ -705,7 +705,7 @@ export default function TechQueue() {
                 value={serviceFilter}
                 onChange={(e) => setServiceFilter(e.target.value)}
                 sx={{
-                  bgcolor: '#fffcf5',
+                  bgcolor: '#ffffff',
                   fontSize: 12,
                   fontWeight: 600,
                   height: 30,
@@ -731,7 +731,7 @@ export default function TechQueue() {
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
                 sx={{
-                  bgcolor: '#fffcf5',
+                  bgcolor: '#ffffff',
                   fontSize: 12,
                   fontWeight: 600,
                   height: 30,
@@ -757,7 +757,7 @@ export default function TechQueue() {
                 sx={{
                   height: 22,
                   bgcolor: '#e5eaf4',
-                  color: '#20211f',
+                  color: '#172b4d',
                   fontFamily: 'monospace',
                   fontWeight: 700,
                   fontSize: 11,
@@ -774,7 +774,7 @@ export default function TechQueue() {
               label="SLA Breach Margin (Ascending)"
               size="small"
               sx={{
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 border: '1px solid #cbd5e1',
                 color: '#ba1a1a',
                 fontWeight: 700,
@@ -788,9 +788,9 @@ export default function TechQueue() {
       {/* 4. HIGH-DENSITY INCIDENT QUEUE STREAM */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {filteredQueue.length === 0 ? (
-          <Paper sx={{ p: 6, textAlign: 'center', bgcolor: '#fffcf5', borderRadius: 3, border: '1px solid #d6d0c3' }}>
+          <Paper sx={{ p: 6, textAlign: 'center', bgcolor: '#ffffff', borderRadius: 3, border: '1px solid #e2e8f0' }}>
             <CheckCircleIcon sx={{ fontSize: 40, color: '#1653c7', mb: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f' }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d' }}>
               Zero Matching Incidents in Queue
             </Typography>
             <Typography sx={{ fontSize: 13, color: '#5c5a52' }}>
@@ -813,7 +813,7 @@ export default function TechQueue() {
                   borderRadius: 3,
                   border: '1px solid #cbd5e1',
                   borderLeft: isCritical ? '5px solid #ba1a1a' : isHigh ? '5px solid #1653c7' : '1px solid #cbd5e1',
-                  bgcolor: isPaused ? '#eee7d9' : '#fffcf5',
+                  bgcolor: isPaused ? '#f1f5f9' : '#ffffff',
                   boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                   transition: 'all 0.15s ease',
                   '&:hover': {
@@ -886,7 +886,7 @@ export default function TechQueue() {
                       </Typography>
                     </Box>
 
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', letterSpacing: '-0.01em', mb: 0.5, fontSize: 17 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', letterSpacing: '-0.01em', mb: 0.5, fontSize: 17 }}>
                       {inc.title}
                     </Typography>
 
@@ -927,7 +927,7 @@ export default function TechQueue() {
                         my: 0.8,
                         height: 6,
                         borderRadius: 2,
-                        bgcolor: '#d6d0c3',
+                        bgcolor: '#e2e8f0',
                         '& .MuiLinearProgress-bar': {
                           bgcolor: isAtRisk ? '#ba1a1a' : isPaused ? '#759efd' : '#1653c7',
                         },
@@ -943,7 +943,7 @@ export default function TechQueue() {
                 <Box
                   sx={{
                     pt: 1.5,
-                    borderTop: '1px solid #d6d0c3',
+                    borderTop: '1px solid #e2e8f0',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -994,7 +994,7 @@ export default function TechQueue() {
                         startIcon={<BoltIcon sx={{ fontSize: 16 }} />}
                         sx={{
                           bgcolor: '#ba1a1a',
-                          color: '#fffcf5',
+                          color: '#ffffff',
                           fontWeight: 800,
                           fontSize: 12.5,
                           borderRadius: 1.5,
@@ -1015,12 +1015,12 @@ export default function TechQueue() {
                         startIcon={<VideoCameraFrontIcon sx={{ fontSize: 16, color: '#ba1a1a' }} />}
                         sx={{
                           borderColor: '#cbd5e1',
-                          color: '#20211f',
+                          color: '#172b4d',
                           fontWeight: 600,
                           fontSize: 12,
                           borderRadius: 1.5,
                           textTransform: 'none',
-                          '&:hover': { bgcolor: '#eee7d9' },
+                          '&:hover': { bgcolor: '#f1f5f9' },
                         }}
                       >
                         Join War Room
@@ -1032,8 +1032,8 @@ export default function TechQueue() {
                       onClick={() => setNoteModalIncident(inc)}
                       startIcon={<EditNoteIcon sx={{ fontSize: 16 }} />}
                       sx={{
-                        bgcolor: '#eee7d9',
-                        color: '#20211f',
+                        bgcolor: '#f1f5f9',
+                        color: '#172b4d',
                         fontWeight: 600,
                         fontSize: 12,
                         borderRadius: 1.5,
@@ -1050,8 +1050,8 @@ export default function TechQueue() {
                         onClick={() => setRequestInfoIncident(inc)}
                         startIcon={<SendIcon sx={{ fontSize: 14 }} />}
                         sx={{
-                          bgcolor: '#eee7d9',
-                          color: '#20211f',
+                          bgcolor: '#f1f5f9',
+                          color: '#172b4d',
                           fontWeight: 600,
                           fontSize: 12,
                           borderRadius: 1.5,
@@ -1070,7 +1070,7 @@ export default function TechQueue() {
                       endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
                       sx={{
                         bgcolor: '#1653c7',
-                        color: '#fffcf5',
+                        color: '#ffffff',
                         fontWeight: 700,
                         fontSize: 12.5,
                         borderRadius: 1.5,
@@ -1090,7 +1090,7 @@ export default function TechQueue() {
                         fontSize: 12,
                         fontWeight: 600,
                         textTransform: 'none',
-                        '&:hover': { bgcolor: '#eee7d9' },
+                        '&:hover': { bgcolor: '#f1f5f9' },
                       }}
                     >
                       Reassign
@@ -1118,7 +1118,7 @@ export default function TechQueue() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 11.5, fontWeight: 700, color: '#1653c7' }}>
                   SRE INTERNAL WORKBENCH // {noteModalIncident.id}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                   Append Investigation Note
                 </Typography>
               </Box>
@@ -1138,7 +1138,7 @@ export default function TechQueue() {
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Log diagnostic findings, root cause analysis hypothesis, or deployment timestamps..."
                 sx={{
-                  bgcolor: '#f5f0e5',
+                  bgcolor: '#f5f7fa',
                   borderRadius: 2,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
                 }}
@@ -1176,7 +1176,7 @@ export default function TechQueue() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 11.5, fontWeight: 700, color: '#1653c7' }}>
                   CLARIFICATION REQUEST // {requestInfoIncident.id}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                   Request Information from Reporter
                 </Typography>
               </Box>
@@ -1185,7 +1185,7 @@ export default function TechQueue() {
               </IconButton>
             </DialogTitle>
             <DialogContent dividers sx={{ py: 2 }}>
-              <Paper sx={{ p: 1.8, bgcolor: '#eee7d9', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
+              <Paper sx={{ p: 1.8, bgcolor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
                   Reporter: {requestInfoIncident.reporter}
                 </Typography>
@@ -1201,7 +1201,7 @@ export default function TechQueue() {
                 onChange={(e) => setRequestInfoText(e.target.value)}
                 placeholder="Specify the log file, screenshot, or reproduction steps required..."
                 sx={{
-                  bgcolor: '#f5f0e5',
+                  bgcolor: '#f5f7fa',
                   borderRadius: 2,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
                 }}
@@ -1235,7 +1235,7 @@ export default function TechQueue() {
         {warRoomIncident && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                 Active Incident War Room
               </Typography>
               <IconButton onClick={() => setWarRoomIncident(null)} size="small">
@@ -1259,13 +1259,13 @@ export default function TechQueue() {
               >
                 <VideoCameraFrontIcon sx={{ fontSize: 28 }} />
               </Box>
-              <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#20211f', mb: 0.5 }}>
+              <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#172b4d', mb: 0.5 }}>
                 War Room #09 (Bridge Active)
               </Typography>
               <Typography sx={{ fontSize: 12.5, color: '#5c5a52', mb: 2 }}>
                 7 active participants (SRE Lead, Infra On-Call, Database Architect, Product Reliability).
               </Typography>
-              <Paper sx={{ p: 1.5, bgcolor: '#eee7d9', borderRadius: 2 }}>
+              <Paper sx={{ p: 1.5, bgcolor: '#f1f5f9', borderRadius: 2 }}>
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
                   BRIDGE: https://meet.iitsm.internal/war-room-09
                 </Typography>
@@ -1299,7 +1299,7 @@ export default function TechQueue() {
         {reassignIncident && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                 Reassign Incident {reassignIncident.id}
               </Typography>
               <IconButton onClick={() => setReassignIncident(null)} size="small">
@@ -1315,7 +1315,7 @@ export default function TechQueue() {
                 size="small"
                 value={reassignTarget}
                 onChange={(e) => setReassignTarget(e.target.value)}
-                sx={{ bgcolor: '#f5f0e5', borderRadius: 2 }}
+                sx={{ bgcolor: '#f5f7fa', borderRadius: 2 }}
               >
                 <MenuItem value="SRE Team Lead (Level 1 Escalation)">SRE Team Lead (Level 1 Escalation)</MenuItem>
                 <MenuItem value="SecOps Tier-2 Incident Squad">SecOps Tier-2 Incident Squad</MenuItem>

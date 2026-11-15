@@ -368,7 +368,7 @@ export default function Services() {
             >
               <DnsIcon />
             </Box>
-            <Typography variant="h5" fontWeight={800} color="#20211f">
+            <Typography variant="h5" fontWeight={800} color="#172b4d">
               IT Service Catalog & Registry
             </Typography>
           </Stack>
@@ -409,12 +409,12 @@ export default function Services() {
       <Grid container spacing={2.5} mb={3}>
         {/* Card 1: Total Services */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Total Managed Services
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#20211f" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} color="#172b4d" mt={0.5}>
                 {totalServices}
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
@@ -426,7 +426,7 @@ export default function Services() {
 
         {/* Card 2: Infrastructure Health */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Live Catalog Health
@@ -454,7 +454,7 @@ export default function Services() {
 
         {/* Card 3: Always P1 Policy */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Always P1 Critical Overrides
@@ -471,12 +471,12 @@ export default function Services() {
 
         {/* Card 4: Open Active Outage Tickets */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Active Service Incidents
               </Typography>
-              <Typography variant="h4" fontWeight={800} color={totalOpenOutages > 0 ? '#d97706' : '#20211f'} mt={0.5}>
+              <Typography variant="h4" fontWeight={800} color={totalOpenOutages > 0 ? '#d97706' : '#172b4d'} mt={0.5}>
                 {totalOpenOutages}
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
@@ -494,7 +494,7 @@ export default function Services() {
           p: 2,
           mb: 3,
           borderRadius: 2.5,
-          border: '1px solid #d6d0c3',
+          border: '1px solid #e2e8f0',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           gap: 2,
@@ -574,7 +574,7 @@ export default function Services() {
         elevation={0}
         sx={{
           borderRadius: 2.5,
-          border: '1px solid #d6d0c3',
+          border: '1px solid #e2e8f0',
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           overflow: 'hidden',
         }}
@@ -594,7 +594,7 @@ export default function Services() {
           </Box>
         ) : (
           <Table>
-            <TableHead sx={{ bgcolor: '#f5f0e5', borderBottom: '2px solid #d6d0c3' }}>
+            <TableHead sx={{ bgcolor: '#f5f7fa', borderBottom: '2px solid #e2e8f0' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
                   CODE
@@ -636,7 +636,7 @@ export default function Services() {
                     hover
                     sx={{
                       bgcolor: hasActiveOutage ? 'rgba(254, 242, 242, 0.45)' : 'inherit',
-                      '&:hover': { bgcolor: hasActiveOutage ? '#fef2f2 !important' : '#f5f0e5 !important' },
+                      '&:hover': { bgcolor: hasActiveOutage ? '#fef2f2 !important' : '#f5f7fa !important' },
                     }}
                   >
                     {/* Column 1: Monospace Service Code */}
@@ -649,7 +649,7 @@ export default function Services() {
                           fontWeight: 800,
                           fontSize: '0.78rem',
                           bgcolor: '#f1f5f9',
-                          color: '#20211f',
+                          color: '#172b4d',
                           border: '1px solid #cbd5e1',
                           letterSpacing: 0.5,
                         }}
@@ -660,11 +660,11 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       <Stack spacing={0.5}>
                         <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="body2" fontWeight={700} color="#20211f">
+                          <Typography variant="body2" fontWeight={700} color="#172b4d">
                             {svc.name}
                           </Typography>
                           {svc.owner && (
-                            <Typography variant="caption" sx={{ color: '#64748b', bgcolor: '#f5f0e5', px: 1, py: 0.2, borderRadius: 1, border: '1px solid #d6d0c3' }}>
+                            <Typography variant="caption" sx={{ color: '#64748b', bgcolor: '#f5f7fa', px: 1, py: 0.2, borderRadius: 1, border: '1px solid #e2e8f0' }}>
                               {svc.owner}
                             </Typography>
                           )}
@@ -708,7 +708,7 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       <Stack direction="row" alignItems="center" spacing={0.5}>
                         <StarIcon fontSize="small" sx={{ color: '#f59e0b', fontSize: 18 }} />
-                        <Typography variant="body2" fontWeight={800} color="#20211f">
+                        <Typography variant="body2" fontWeight={800} color="#172b4d">
                           {svc.criticality} / 5
                         </Typography>
                         <Typography variant="caption" color="text.secondary" ml={0.5}>
@@ -721,12 +721,12 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       {svc.alwaysP1 ? (
                         <Chip
-                          icon={<CrisisAlertIcon fontSize="small" sx={{ color: '#fffcf5 !important' }} />}
+                          icon={<CrisisAlertIcon fontSize="small" sx={{ color: '#ffffff !important' }} />}
                           label="Always P1"
                           size="small"
                           sx={{
                             bgcolor: '#dc2626',
-                            color: '#fffcf5',
+                            color: '#ffffff',
                             fontWeight: 800,
                             fontSize: '0.75rem',
                           }}
@@ -811,7 +811,7 @@ export default function Services() {
 
       {/* Dialog 1: Register New Service */}
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#20211f' }}>Register New IT Service</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, color: '#172b4d' }}>Register New IT Service</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5} mt={1}>
             <Stack direction="row" spacing={2}>
@@ -935,7 +935,7 @@ export default function Services() {
 
       {/* Dialog 2: Edit Service */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#20211f' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: '#172b4d' }}>
           Edit IT Service: {selectedService?.name}
         </DialogTitle>
         <DialogContent dividers>
@@ -1021,7 +1021,7 @@ export default function Services() {
 
       {/* Dialog 3: Manage Service Dependencies */}
       <Dialog open={depsOpen} onClose={() => setDepsOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#20211f' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: '#172b4d' }}>
           Configure Dependencies: {selectedService?.name}
         </DialogTitle>
         <DialogContent dividers>
@@ -1051,8 +1051,8 @@ export default function Services() {
                       borderRadius: 2,
                       cursor: 'pointer',
                       border: '1px solid',
-                      borderColor: isSelected ? '#3b82f6' : '#d6d0c3',
-                      bgcolor: isSelected ? '#eff6ff' : '#fffcf5',
+                      borderColor: isSelected ? '#3b82f6' : '#e2e8f0',
+                      bgcolor: isSelected ? '#eff6ff' : '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -1066,7 +1066,7 @@ export default function Services() {
                           size="small"
                           sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem' }}
                         />
-                        <Typography variant="body2" fontWeight={700} color="#20211f">
+                        <Typography variant="body2" fontWeight={700} color="#172b4d">
                           {svc.name}
                         </Typography>
                       </Stack>

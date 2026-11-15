@@ -51,12 +51,12 @@ import { useToast } from '../../components/Toast';
 // Design System Tokens (Reliant Slate)
 const COLORS = {
   surface: '#f9f9ff',
-  surfaceContainerLowest: '#fffcf5',
-  surfaceContainerLow: '#eee7d9',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f1f5f9',
   surfaceContainer: '#e5eaf4',
   surfaceContainerHigh: '#e5eaf4',
   surfaceContainerHighest: '#d8e3fb',
-  onSurface: '#20211f',
+  onSurface: '#172b4d',
   onSurfaceVariant: '#5c5a52',
   outlineVariant: '#c2c6d4',
   border: '#cbd5e1',
@@ -296,7 +296,7 @@ export default function TechWorkload() {
                   height: 26,
                   borderRadius: '50%',
                   bgcolor: COLORS.primaryContainer,
-                  color: '#fffcf5',
+                  color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1040,7 +1040,7 @@ export default function TechWorkload() {
                               bgcolor: COLORS.surfaceContainer,
                               '&:hover': {
                                 bgcolor: COLORS.primary,
-                                color: '#fffcf5',
+                                color: '#ffffff',
                                 borderColor: COLORS.primary,
                               },
                             }}
@@ -1060,11 +1060,11 @@ export default function TechWorkload() {
                               py: 0.4,
                               px: 1.25,
                               bgcolor: row.isImminent ? COLORS.primary : COLORS.surfaceContainerHigh,
-                              color: row.isImminent ? '#fffcf5' : COLORS.onSurface,
+                              color: row.isImminent ? '#ffffff' : COLORS.onSurface,
                               boxShadow: 'none',
                               '&:hover': {
                                 bgcolor: row.isImminent ? COLORS.secondary : COLORS.surfaceContainer,
-                                color: row.isImminent ? '#fffcf5' : COLORS.primary,
+                                color: row.isImminent ? '#ffffff' : COLORS.primary,
                                 boxShadow: 'none',
                               },
                             }}
@@ -1150,7 +1150,7 @@ export default function TechWorkload() {
                       height: 38,
                       borderRadius: 2,
                       bgcolor: COLORS.primaryContainer,
-                      color: '#fffcf5',
+                      color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1500,20 +1500,20 @@ export default function TechWorkload() {
             />
 
             {/* Line Points with Data Marks */}
-            <circle cx="36" cy="45" r="3" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="91" cy="38" r="3" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="146" cy="50" r="3" fill="#fffcf5" stroke="#ba1a1a" strokeWidth="2" />
-            <circle cx="201" cy="35" r="3" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="256" cy="42" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="311" cy="32" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="366" cy="30" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="421" cy="28" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="476" cy="35" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="531" cy="30" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="586" cy="38" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="641" cy="32" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
-            <circle cx="696" cy="25" r="3.5" fill="#fffcf5" stroke="#1653c7" strokeWidth="2.5" />
-            <circle cx="751" cy="28" r="3.5" fill="#1653c7" stroke="#fffcf5" strokeWidth="1.5" />
+            <circle cx="36" cy="45" r="3" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="91" cy="38" r="3" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="146" cy="50" r="3" fill="#ffffff" stroke="#ba1a1a" strokeWidth="2" />
+            <circle cx="201" cy="35" r="3" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="256" cy="42" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="311" cy="32" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="366" cy="30" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="421" cy="28" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="476" cy="35" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="531" cy="30" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="586" cy="38" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="641" cy="32" fill="#ffffff" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="696" cy="25" r="3.5" fill="#ffffff" stroke="#1653c7" strokeWidth="2.5" />
+            <circle cx="751" cy="28" r="3.5" fill="#1653c7" stroke="#ffffff" strokeWidth="1.5" />
           </svg>
         </Box>
 

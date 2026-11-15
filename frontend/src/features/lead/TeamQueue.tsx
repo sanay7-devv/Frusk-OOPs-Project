@@ -53,12 +53,12 @@ import { useToast } from '../../components/Toast';
 // Design System Tokens (Reliant Slate)
 const COLORS = {
   surface: '#f9f9ff',
-  surfaceContainerLowest: '#fffcf5',
-  surfaceContainerLow: '#eee7d9',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f1f5f9',
   surfaceContainer: '#e5eaf4',
   surfaceContainerHigh: '#e5eaf4',
   surfaceContainerHighest: '#d8e3fb',
-  onSurface: '#20211f',
+  onSurface: '#172b4d',
   onSurfaceVariant: '#5c5a52',
   outlineVariant: '#c2c6d4',
   border: '#cbd5e1',
@@ -455,7 +455,7 @@ export default function TeamQueue() {
               startIcon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />}
               sx={{
                 bgcolor: COLORS.primaryContainer,
-                color: '#fffcf5',
+                color: '#ffffff',
                 borderRadius: 2,
                 fontSize: 12.5,
                 fontWeight: 700,
@@ -705,7 +705,7 @@ export default function TeamQueue() {
                         fontSize: 11.5,
                         fontWeight: isActive ? 700 : 500,
                         bgcolor: isActive ? COLORS.primaryContainer : tab.color || COLORS.surfaceContainer,
-                        color: isActive ? '#fffcf5' : tab.textColor || COLORS.onSurface,
+                        color: isActive ? '#ffffff' : tab.textColor || COLORS.onSurface,
                         height: 24,
                         '&:hover': {
                           bgcolor: isActive ? COLORS.primary : COLORS.surfaceContainerHigh,
@@ -951,7 +951,7 @@ export default function TeamQueue() {
                         height: 26,
                         borderRadius: 1.5,
                         bgcolor: COLORS.primaryContainer,
-                        color: '#fffcf5',
+                        color: '#ffffff',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1023,7 +1023,7 @@ export default function TeamQueue() {
                           height: 44,
                           borderRadius: '50%',
                           bgcolor: COLORS.primary,
-                          color: '#fffcf5',
+                          color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1042,7 +1042,7 @@ export default function TeamQueue() {
                           height: 12,
                           borderRadius: '50%',
                           bgcolor: COLORS.secondary,
-                          border: '2px solid #fffcf5',
+                          border: '2px solid #ffffff',
                         }}
                         title="Online & Available"
                       />
@@ -1080,7 +1080,7 @@ export default function TeamQueue() {
                       gap: 0.5,
                       px: 1.25,
                       py: 0.5,
-                      bgcolor: '#fffcf5',
+                      bgcolor: '#ffffff',
                       borderRadius: 10,
                       boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                     }}
@@ -1148,7 +1148,7 @@ export default function TeamQueue() {
                   sx={{
                     py: 1,
                     bgcolor: COLORS.primary,
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     fontWeight: 700,
                     fontSize: 13,
                     textTransform: 'none',
@@ -1237,12 +1237,12 @@ export default function TeamQueue() {
                         textTransform: 'none',
                         px: 1.5,
                         py: 0.4,
-                        bgcolor: '#fffcf5',
+                        bgcolor: '#ffffff',
                         borderColor: cand.nearCap ? COLORS.error : COLORS.border,
                         color: cand.nearCap ? COLORS.error : COLORS.onSurface,
                         '&:hover': {
                           bgcolor: cand.nearCap ? COLORS.error : COLORS.primary,
-                          color: '#fffcf5',
+                          color: '#ffffff',
                           borderColor: cand.nearCap ? COLORS.error : COLORS.primary,
                         },
                       }}
@@ -1327,7 +1327,7 @@ export default function TeamQueue() {
                   fontFamily: 'monospace',
                   fontSize: 10,
                   fontWeight: 800,
-                  bgcolor: '#fffcf5',
+                  bgcolor: '#ffffff',
                   color: COLORS.primary,
                   border: `1px solid ${COLORS.border}`,
                 }}

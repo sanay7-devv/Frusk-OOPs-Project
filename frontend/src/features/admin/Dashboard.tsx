@@ -599,8 +599,8 @@ export default function Dashboard() {
           p: 2,
           mb: 3,
           borderRadius: 3,
-          border: '1px solid #d6d0c3',
-          bgcolor: '#fffcf5',
+          border: '1px solid #e2e8f0',
+          bgcolor: '#ffffff',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
@@ -635,7 +635,7 @@ export default function Dashboard() {
                 Executive Mode
               </Typography> */}
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#20211f', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: '#172b4d', letterSpacing: '-0.01em' }}>
               Incident Command &amp; Reliability Center
             </Typography>
           </Box>
@@ -644,9 +644,9 @@ export default function Dashboard() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
           {/* IST Clock */}
           {/* 
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 1.5, py: 0.6, bgcolor: '#eee7d9', borderRadius: 2 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 1.5, py: 0.6, bgcolor: '#f1f5f9', borderRadius: 2 }}>
             <ScheduleIcon sx={{ fontSize: 16, color: '#6a685f' }} />
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#20211f' }}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#172b4d' }}>
               {istTime || 'IST --:--:--'}
             </Typography>
           </Box>
@@ -755,7 +755,7 @@ export default function Dashboard() {
             sx={{
               borderRadius: 2,
               bgcolor: '#ba1a1a',
-              color: '#fffcf5',
+              color: '#ffffff',
               textTransform: 'none',
               fontWeight: 700,
               px: 2,
@@ -781,7 +781,7 @@ export default function Dashboard() {
                 p: 2,
                 borderRadius: 3,
                 border: '1px solid #bfdbfe',
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -804,7 +804,7 @@ export default function Dashboard() {
                 <ConfirmationNumberIcon sx={{ fontSize: 20, color: '#1653c7' }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', letterSpacing: '-0.02em' }}>
                   {todayCount}
                 </Typography>
                 <Chip
@@ -832,8 +832,8 @@ export default function Dashboard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -856,7 +856,7 @@ export default function Dashboard() {
                 <PendingActionsIcon sx={{ fontSize: 20, color: '#5c5a52' }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', letterSpacing: '-0.02em' }}>
                   {activeOpenCount}
                 </Typography>
                 <Chip
@@ -911,10 +911,10 @@ export default function Dashboard() {
                   {p1Count < 10 ? `0${p1Count}` : p1Count}
                 </Typography>
                 <Chip
-                  icon={<CrisisAlertIcon sx={{ fontSize: 14, color: '#fffcf5 !important' }} />}
+                  icon={<CrisisAlertIcon sx={{ fontSize: 14, color: '#ffffff !important' }} />}
                   label="Active War Room"
                   size="small"
-                  sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#ba1a1a', color: '#fffcf5' }}
+                  sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#ba1a1a', color: '#ffffff' }}
                 />
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#93000a', fontWeight: 500 }}>
@@ -935,8 +935,8 @@ export default function Dashboard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -955,7 +955,7 @@ export default function Dashboard() {
                 <VerifiedIcon sx={{ fontSize: 20, color: slaViolationsCount > 0 ? '#ba1a1a' : '#059669' }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: slaViolationsCount > 0 ? '#ba1a1a' : '#20211f', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: slaViolationsCount > 0 ? '#ba1a1a' : '#172b4d', letterSpacing: '-0.02em' }}>
                   {slaViolationsCount}
                 </Typography>
                 <Chip
@@ -989,8 +989,8 @@ export default function Dashboard() {
             sx={{
               p: 2,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1035,8 +1035,8 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1047,7 +1047,7 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#20211f' }}>
+                  <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#172b4d' }}>
                     Incident Velocity &amp; Remediation Volume
                   </Typography>
                   <Tooltip title="Real-time incoming alerts vs resolved incident throughput">
@@ -1059,7 +1059,7 @@ export default function Dashboard() {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', bgcolor: '#eee7d9', p: 0.5, borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
                 {(['today', '7d', '30d'] as const).map((r) => (
                   <Button
                     key={r}
@@ -1072,7 +1072,7 @@ export default function Dashboard() {
                       fontWeight: velocityRange === r ? 700 : 500,
                       borderRadius: 1.5,
                       textTransform: 'none',
-                      bgcolor: velocityRange === r ? '#fffcf5' : 'transparent',
+                      bgcolor: velocityRange === r ? '#ffffff' : 'transparent',
                       color: velocityRange === r ? '#1653c7' : '#5c5a52',
                       boxShadow: velocityRange === r ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                     }}
@@ -1087,13 +1087,13 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: '#1653c7' }} />
-                <Typography sx={{ fontSize: 12, color: '#20211f', fontWeight: 500 }}>
+                <Typography sx={{ fontSize: 12, color: '#172b4d', fontWeight: 500 }}>
                   Inbound Incidents <span style={{ fontFamily: 'sans-serif', color: '#6a685f' }}>(Total: {chartData.rangeInboundTotal})</span>
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: '#759efd' }} />
-                <Typography sx={{ fontSize: 12, color: '#20211f', fontWeight: 500 }}>
+                <Typography sx={{ fontSize: 12, color: '#172b4d', fontWeight: 500 }}>
                   Remediated <span style={{ fontFamily: 'sans-serif', color: '#6a685f' }}>(Total: {chartData.rangeResolvedTotal})</span>
                 </Typography>
               </Box>
@@ -1155,10 +1155,10 @@ export default function Dashboard() {
                 {/* Real Data Interactive Markers */}
                 {chartData.points.map((p, idx) => (
                   <g key={idx}>
-                    <circle cx={p.x} cy={p.yInbound} r="4" fill="#1653c7" stroke="#fffcf5" strokeWidth="1.5">
+                    <circle cx={p.x} cy={p.yInbound} r="4" fill="#1653c7" stroke="#ffffff" strokeWidth="1.5">
                       <title>{`${p.label} - Inbound: ${p.inbound} incident${p.inbound === 1 ? '' : 's'}`}</title>
                     </circle>
-                    <circle cx={p.x} cy={p.yResolved} r="3.5" fill="#759efd" stroke="#fffcf5" strokeWidth="1.5">
+                    <circle cx={p.x} cy={p.yResolved} r="3.5" fill="#759efd" stroke="#ffffff" strokeWidth="1.5">
                       <title>{`${p.label} - Remediated: ${p.resolved} incident${p.resolved === 1 ? '' : 's'}`}</title>
                     </circle>
                   </g>
@@ -1211,7 +1211,7 @@ export default function Dashboard() {
               sx={{
                 mt: 2,
                 p: 1.5,
-                bgcolor: '#eee7d9',
+                bgcolor: '#f1f5f9',
                 borderRadius: 2,
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -1222,7 +1222,7 @@ export default function Dashboard() {
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <BoltIcon sx={{ fontSize: 18, color: '#1653c7' }} />
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#20211f' }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#172b4d' }}>
                   System Health:
                 </Typography>
                 <Typography sx={{ fontSize: 13, color: '#5c5a52' }}>
@@ -1250,8 +1250,8 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1260,7 +1260,7 @@ export default function Dashboard() {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#20211f' }}>
+                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#172b4d' }}>
                   Active Priority Distribution
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: '#5c5a52', mt: 0.2 }}>
@@ -1278,7 +1278,7 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, my: 2 }}>
               <Box sx={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#d6d0c3" strokeWidth="12" />
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="12" />
                   {totalActive > 0 && (
                     <>
                       {/* P4 Arc */}
@@ -1337,7 +1337,7 @@ export default function Dashboard() {
                   )}
                 </svg>
                 <Box sx={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#20211f', lineHeight: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#172b4d', lineHeight: 1 }}>
                     {totalActive}
                   </Typography>
                   <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#6a685f', textTransform: 'uppercase' }}>
@@ -1351,7 +1351,7 @@ export default function Dashboard() {
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6a685f', textTransform: 'uppercase' }}>
                   Fleetwide MTTR
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#20211f' }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#172b4d' }}>
                   {avgMttrMinutes}m
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#059669', fontSize: 12, fontWeight: 600 }}>
@@ -1362,7 +1362,7 @@ export default function Dashboard() {
                   <Typography sx={{ fontFamily: 'monospace', fontSize: 10, color: '#6a685f', textTransform: 'uppercase' }}>
                     Active Escalations
                   </Typography>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#20211f' }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#172b4d' }}>
                     {p1Count > 0 ? 'Tier 2 (Lead SRE)' : 'Tier 1 Support'}
                   </Typography>
                 </Box>
@@ -1387,43 +1387,43 @@ export default function Dashboard() {
 
               {/* P2 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#eee7d9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#759efd' }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#20211f' }}>P2 High</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#172b4d' }}>P2 High</Typography>
                       <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#6a685f' }}>MTTR: 30m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f' }}>{p2Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d' }}>{p2Count}</Typography>
                 </Box>
               </Grid>
 
               {/* P3 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#eee7d9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#1653c7' }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#20211f' }}>P3 Medium</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#172b4d' }}>P3 Medium</Typography>
                       <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#6a685f' }}>MTTR: 60m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f' }}>{p3Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d' }}>{p3Count}</Typography>
                 </Box>
               </Grid>
 
               {/* P4 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#eee7d9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#5c5a52' }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#20211f' }}>P4 Low</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#172b4d' }}>P4 Low</Typography>
                       <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#6a685f' }}>MTTR: 120m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f' }}>{p4Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d' }}>{p4Count}</Typography>
                 </Box>
               </Grid>
             </Grid>
@@ -1440,8 +1440,8 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1450,7 +1450,7 @@ export default function Dashboard() {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#20211f' }}>
+                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#172b4d' }}>
                   Team Capacity Heatmap
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: '#5c5a52', mt: 0.2 }}>
@@ -1475,7 +1475,7 @@ export default function Dashboard() {
                     sx={{
                       p: 1.5,
                       borderRadius: 2,
-                      bgcolor: '#eee7d9',
+                      bgcolor: '#f1f5f9',
                       transition: 'background-color 0.2s',
                       '&:hover': { bgcolor: '#e5eaf4' },
                     }}
@@ -1486,7 +1486,7 @@ export default function Dashboard() {
                           {tech.name.charAt(0)}
                         </Avatar>
                         <Box>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#20211f' }}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#172b4d' }}>
                             {tech.name}
                           </Typography>
                           <Typography sx={{ fontFamily: 'monospace', fontSize: 10, color: '#5c5a52' }}>
@@ -1496,7 +1496,7 @@ export default function Dashboard() {
                       </Box>
 
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: isAtCapacity ? '#ba1a1a' : '#20211f' }}>
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: isAtCapacity ? '#ba1a1a' : '#172b4d' }}>
                           {tech.activeCount} / {tech.maxCount} {isAtCapacity ? 'Max' : 'Active'}
                         </Typography>
 
@@ -1525,9 +1525,9 @@ export default function Dashboard() {
                             borderRadius: 1.5,
                             px: 1.5,
                             py: 0.3,
-                            bgcolor: isAtCapacity ? '#fffcf5' : '#1653c7',
-                            color: isAtCapacity ? '#6a685f' : '#fffcf5',
-                            '&:hover': { bgcolor: isAtCapacity ? '#fffcf5' : '#00468c' },
+                            bgcolor: isAtCapacity ? '#ffffff' : '#1653c7',
+                            color: isAtCapacity ? '#6a685f' : '#ffffff',
+                            '&:hover': { bgcolor: isAtCapacity ? '#ffffff' : '#00468c' },
                           }}
                         >
                           View Queue
@@ -1576,8 +1576,8 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1587,12 +1587,12 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <RssFeedIcon sx={{ fontSize: 20, color: '#1653c7' }} />
-                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#20211f' }}>
+                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#172b4d' }}>
                   Live Operational Feed
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, bgcolor: '#eee7d9', borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, bgcolor: '#f1f5f9', borderRadius: 3 }}>
                 <Box
                   sx={{
                     width: 8,
@@ -1619,8 +1619,8 @@ export default function Dashboard() {
                   sx={{
                     p: 1.5,
                     borderRadius: 2,
-                    bgcolor: evt.type === 'outage' ? 'rgba(255, 218, 214, 0.3)' : evt.type === 'sla_warning' ? 'rgba(219, 232, 255, 0.4)' : '#eee7d9',
-                    border: evt.type === 'outage' ? '1px solid rgba(186, 26, 26, 0.2)' : '1px solid #d6d0c3',
+                    bgcolor: evt.type === 'outage' ? 'rgba(255, 218, 214, 0.3)' : evt.type === 'sla_warning' ? 'rgba(219, 232, 255, 0.4)' : '#f1f5f9',
+                    border: evt.type === 'outage' ? '1px solid rgba(186, 26, 26, 0.2)' : '1px solid #e2e8f0',
                     display: 'flex',
                     gap: 1.5,
                     alignItems: 'flex-start',
@@ -1632,7 +1632,7 @@ export default function Dashboard() {
                       height: 26,
                       borderRadius: '50%',
                       bgcolor: evt.type === 'outage' ? '#ba1a1a' : evt.type === 'sla_warning' ? '#1653c7' : '#d8e3fb',
-                      color: evt.type === 'outage' || evt.type === 'sla_warning' ? '#fffcf5' : '#1653c7',
+                      color: evt.type === 'outage' || evt.type === 'sla_warning' ? '#ffffff' : '#1653c7',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1653,7 +1653,7 @@ export default function Dashboard() {
                         sx={{
                           fontSize: 13,
                           fontWeight: 700,
-                          color: evt.type === 'outage' ? '#ba1a1a' : '#20211f',
+                          color: evt.type === 'outage' ? '#ba1a1a' : '#172b4d',
                         }}
                       >
                         {evt.title}
@@ -1702,7 +1702,7 @@ export default function Dashboard() {
             </Box>
 
             {/* Feed Controls Footer */}
-            <Box sx={{ mt: 2, p: 1, bgcolor: '#eee7d9', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ mt: 2, p: 1, bgcolor: '#f1f5f9', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <IconButton
                   size="small"

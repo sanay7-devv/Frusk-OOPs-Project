@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import WorkshopRoom from './WorkshopRoom';
 
 const COPY = {
-  employee: { label: 'YOUR SERVICE DESK', title: <>Make work<br /><em>work again.</em></>, text: 'Big blocker or little glitch. Start a report, follow the fix, and get back to what matters.', action: 'Report an issue', to: '/employee/report', stage: 0 },
-  admin: { label: 'THE BIG PICTURE', title: <>Every action.<br /><em>Accounted for.</em></>, text: 'Keep the moving parts moving. Follow incidents, find the pressure points, and see the whole story.', action: 'Explore incidents', to: '/admin/tickets', stage: 2 },
-  tech: { label: 'THE REPAIR DEPARTMENT', title: <>Good fixes.<br /><em>Better days.</em></>, text: 'Pick up the next challenge. Turn a reported problem into someone’s productive afternoon.', action: 'Go to your queue', to: '#work-queue', stage: 1 },
+  employee: { label: 'EMPLOYEE WORKSPACE', title: 'Service overview', text: 'Report an incident, review your requests and track resolution progress.', action: 'Report incident', to: '/employee/report' },
+  admin: { label: 'SERVICE OPERATIONS', title: 'Incident dashboard', text: 'Monitor incident activity, service performance and operational workload.', action: 'Manage tickets', to: '/admin/tickets' },
+  tech: { label: 'TECHNICIAN WORKSPACE', title: 'Assigned incidents', text: 'Review your queue, manage active incidents and update resolution progress.', action: 'View queue', to: '#work-queue' },
 };
 export default function StudioHero({ workspace }: { workspace: keyof typeof COPY }) {
   const copy = COPY[workspace];

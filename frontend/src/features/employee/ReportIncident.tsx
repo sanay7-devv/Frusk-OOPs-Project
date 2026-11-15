@@ -300,10 +300,10 @@ export default function ReportIncident() {
 
   return (
     <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 6 }}>
-      <div className="eyebrow"><span className="shape-dot" />THE FIRST STEP TO A FIX</div>
-      <h1 className="studio-report-title">What’s getting in your way?</h1>
+      <div className="eyebrow"><span className="shape-dot" />INCIDENT REPORTING</div>
+      <h1 className="studio-report-title">Report an incident</h1>
       <p style={{ maxWidth: 600, color: 'var(--muted)', fontSize: 13, lineHeight: 1.7, marginBottom: 25 }}>Tell us what happened and who it affects. A clear report helps the right person find the right fix.</p>
-      <div className="studio-intake-band"><strong>Good details. Faster handoffs.</strong><div className="studio-intake-steps"><span><b>1</b> THE ISSUE</span><span><b>2</b> THE IMPACT</span><span><b>3</b> THE DETAILS</span></div></div>
+      <div className="studio-intake-band"><strong>Incident details</strong><div className="studio-intake-steps"><span><b>1</b> THE ISSUE</span><span><b>2</b> THE IMPACT</span><span><b>3</b> THE DETAILS</span></div></div>
 
       {/* Main Two-Column Grid */}
       <Grid container spacing={3} alignItems="flex-start">
@@ -316,8 +316,8 @@ export default function ReportIncident() {
             sx={{
               p: { xs: 2.5, md: 3.5 },
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
             }}
           >
             {/* SECTION 1: Core Parameters */}
@@ -353,10 +353,10 @@ export default function ReportIncident() {
                   helperText={errors.title?.message || 'Be concise. Avoid ambiguous titles like "System broken" or "Help urgently".'}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      bgcolor: '#f5f0e5',
+                      bgcolor: '#f5f7fa',
                       borderRadius: 0,
-                      '&:hover': { bgcolor: '#fffcf5' },
-                      '&.Mui-focused': { bgcolor: '#fffcf5' },
+                      '&:hover': { bgcolor: '#ffffff' },
+                      '&.Mui-focused': { bgcolor: '#ffffff' },
                     },
                   }}
                 />
@@ -377,7 +377,7 @@ export default function ReportIncident() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => field.onChange(Number(e.target.value))}
-                          sx={{ bgcolor: '#f5f0e5', borderRadius: 0 }}
+                          sx={{ bgcolor: '#f5f7fa', borderRadius: 0 }}
                         >
                           {services.map((s) => (
                             <MenuItem key={s.id} value={s.id}>
@@ -406,7 +406,7 @@ export default function ReportIncident() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                          sx={{ bgcolor: '#f5f0e5', borderRadius: 0 }}
+                          sx={{ bgcolor: '#f5f7fa', borderRadius: 0 }}
                         >
                           {categories.map((c) => (
                             <MenuItem key={c.id} value={c.id}>
@@ -479,11 +479,11 @@ export default function ReportIncident() {
                               ? isCatastrophic
                                 ? '#d32f2f'
                                 : '#1653c7'
-                              : '#f5f0e5',
-                            color: isSelected ? '#fffcf5' : '#1e293b',
+                              : '#f5f7fa',
+                            color: isSelected ? '#ffffff' : '#1e293b',
                             border: isSelected
                               ? `1px solid ${isCatastrophic ? '#b71c1c' : '#0d47a1'}`
-                              : '1px solid #d6d0c3',
+                              : '1px solid #e2e8f0',
                             '&:hover': {
                               bgcolor: isSelected
                                 ? isCatastrophic
@@ -499,7 +499,7 @@ export default function ReportIncident() {
                             <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, opacity: isSelected ? 0.9 : 0.6 }}>
                               LVL {item.level}
                             </Typography>
-                            {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: '#fffcf5' }} />}
+                            {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: '#ffffff' }} />}
                           </Box>
                           <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 0.5 }}>
                             {item.title}
@@ -539,10 +539,10 @@ export default function ReportIncident() {
                   <Box
                     sx={{
                       display: 'flex',
-                      bgcolor: '#f5f0e5',
+                      bgcolor: '#f5f7fa',
                       p: 0.5,
                       borderRadius: 2,
-                      border: '1px solid #d6d0c3',
+                      border: '1px solid #e2e8f0',
                       gap: 0.5,
                     }}
                   >
@@ -562,7 +562,7 @@ export default function ReportIncident() {
                             fontSize: 13,
                             fontWeight: isSelected ? 700 : 500,
                             bgcolor: isSelected ? (isImmed ? '#d32f2f' : '#1653c7') : 'transparent',
-                            color: isSelected ? '#fffcf5' : isImmed ? '#d32f2f' : '#475569',
+                            color: isSelected ? '#ffffff' : isImmed ? '#d32f2f' : '#475569',
                             boxShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
                             '&:hover': {
                               bgcolor: isSelected
@@ -571,7 +571,7 @@ export default function ReportIncident() {
                                   : '#0d47a1'
                                 : isImmed
                                   ? '#fee2e2'
-                                  : '#d6d0c3',
+                                  : '#e2e8f0',
                             },
                           }}
                         >
@@ -591,9 +591,9 @@ export default function ReportIncident() {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      bgcolor: '#f5f0e5',
+                      bgcolor: '#f5f7fa',
                       borderRadius: 2,
-                      border: '1px solid #d6d0c3',
+                      border: '1px solid #e2e8f0',
                       p: 0.5,
                     }}
                   >
@@ -652,11 +652,11 @@ export default function ReportIncident() {
                 <Paper
                   elevation={0}
                   sx={{
-                    border: '1px solid #d6d0c3',
+                    border: '1px solid #e2e8f0',
                     borderRadius: 2,
                     overflow: 'hidden',
-                    bgcolor: '#f5f0e5',
-                    '&:focus-within': { borderColor: '#1653c7', bgcolor: '#fffcf5' },
+                    bgcolor: '#f5f7fa',
+                    '&:focus-within': { borderColor: '#1653c7', bgcolor: '#ffffff' },
                   }}
                 >
                   {/* Toolbar */}
@@ -668,7 +668,7 @@ export default function ReportIncident() {
                       px: 1.5,
                       py: 0.8,
                       bgcolor: '#f1f5f9',
-                      borderBottom: '1px solid #d6d0c3',
+                      borderBottom: '1px solid #e2e8f0',
                     }}
                   >
                     <Tooltip title="Bold">
@@ -707,7 +707,7 @@ export default function ReportIncident() {
                       <Chip
                         label="AI Auto-Enrichment Active"
                         size="small"
-                        sx={{ height: 20, fontSize: 11, bgcolor: '#fffcf5', color: '#475569', border: '1px solid #cbd5e1' }}
+                        sx={{ height: 20, fontSize: 11, bgcolor: '#ffffff', color: '#475569', border: '1px solid #cbd5e1' }}
                       />
                     </Box>
                   </Box>
@@ -749,7 +749,7 @@ export default function ReportIncident() {
                     p: 3,
                     borderRadius: 2.5,
                     border: '1.5px dashed #cbd5e1',
-                    bgcolor: '#f5f0e5',
+                    bgcolor: '#f5f7fa',
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -806,7 +806,7 @@ export default function ReportIncident() {
                           }}
                           deleteIcon={<CloseIcon fontSize="small" />}
                           sx={{
-                            bgcolor: '#fffcf5',
+                            bgcolor: '#ffffff',
                             border: '1px solid #cbd5e1',
                             borderRadius: 0,
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
@@ -840,7 +840,7 @@ export default function ReportIncident() {
                     color: '#475569',
                     textTransform: 'none',
                     fontWeight: 600,
-                    '&:hover': { borderColor: '#94a3b8', bgcolor: '#f5f0e5' },
+                    '&:hover': { borderColor: '#94a3b8', bgcolor: '#f5f7fa' },
                   }}
                 >
                   Cancel &amp; Discard
@@ -875,7 +875,7 @@ export default function ReportIncident() {
               p: 2,
               borderRadius: 2.5,
               bgcolor: '#f1f5f9',
-              border: '1px solid #d6d0c3',
+              border: '1px solid #e2e8f0',
               display: 'flex',
               alignItems: 'flex-start',
               gap: 1.5,
@@ -902,8 +902,8 @@ export default function ReportIncident() {
               sx={{
                 p: 2,
                 borderRadius: 2.5,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -916,7 +916,7 @@ export default function ReportIncident() {
                     height: 36,
                     borderRadius: 2,
                     bgcolor: '#1653c7',
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -949,8 +949,8 @@ export default function ReportIncident() {
               sx={{
                 p: 2.5,
                 borderRadius: 2.5,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
@@ -971,7 +971,7 @@ export default function ReportIncident() {
               </Box>
 
               {/* Classification Metric Box */}
-              <Box sx={{ bgcolor: '#f5f0e5', p: 2, borderRadius: 2, border: '1px solid #d6d0c3' }}>
+              <Box sx={{ bgcolor: '#f5f7fa', p: 2, borderRadius: 2, border: '1px solid #e2e8f0' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography sx={{ fontSize: 12, color: '#64748b' }}>Category Match:</Typography>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#1653c7' }}>
@@ -1005,7 +1005,7 @@ export default function ReportIncident() {
                   <LinearProgress
                     variant="determinate"
                     value={(aiSuggestion?.confidence || 0.94) * 100}
-                    sx={{ height: 6, borderRadius: 3, bgcolor: '#d6d0c3', '& .MuiLinearProgress-bar': { bgcolor: '#1653c7' } }}
+                    sx={{ height: 6, borderRadius: 3, bgcolor: '#e2e8f0', '& .MuiLinearProgress-bar': { bgcolor: '#1653c7' } }}
                   />
                 </Box>
               </Box>
@@ -1025,7 +1025,7 @@ export default function ReportIncident() {
                   color: '#1653c7',
                   fontWeight: 600,
                   textTransform: 'none',
-                  bgcolor: '#f5f0e5',
+                  bgcolor: '#f5f7fa',
                   '&:hover': { bgcolor: '#e3f2fd', borderColor: '#1653c7' },
                 }}
               >
@@ -1065,7 +1065,7 @@ export default function ReportIncident() {
                     sx={{
                       p: 1.5,
                       borderRadius: 2,
-                      bgcolor: idx === 0 ? '#fffcf5' : 'rgba(255,255,255,0.7)',
+                      bgcolor: idx === 0 ? '#ffffff' : 'rgba(255,255,255,0.7)',
                       border: '1px solid rgba(217, 119, 6, 0.2)',
                     }}
                   >
@@ -1096,7 +1096,7 @@ export default function ReportIncident() {
                     mt: 0.5,
                     borderRadius: 2,
                     bgcolor: '#d97706',
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     fontWeight: 700,
                     textTransform: 'none',
                     '&:hover': { bgcolor: '#b45309' },
@@ -1113,8 +1113,8 @@ export default function ReportIncident() {
               sx={{
                 p: 2.5,
                 borderRadius: 2.5,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
@@ -1134,7 +1134,7 @@ export default function ReportIncident() {
 
               <Grid container spacing={1.5}>
                 <Grid item xs={6}>
-                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f5f0e5', border: '1px solid #d6d0c3' }}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f5f7fa', border: '1px solid #e2e8f0' }}>
                     <Typography sx={{ fontSize: 11, color: '#64748b' }}>Initial Response</Typography>
                     <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#1653c7', mt: 0.3 }}>
                       &lt; 15 mins
@@ -1145,7 +1145,7 @@ export default function ReportIncident() {
                   </Box>
                 </Grid>
                 <Grid item xs={6}>
-                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f5f0e5', border: '1px solid #d6d0c3' }}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f5f7fa', border: '1px solid #e2e8f0' }}>
                     <Typography sx={{ fontSize: 11, color: '#64748b' }}>Target Resolution</Typography>
                     <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#1e293b', mt: 0.3 }}>
                       &lt; 2 hours
@@ -1157,7 +1157,7 @@ export default function ReportIncident() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: '#f5f0e5', border: '1px solid #d6d0c3' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: '#f5f7fa', border: '1px solid #e2e8f0' }}>
                 <Box
                   sx={{
                     width: 36,
@@ -1189,8 +1189,8 @@ export default function ReportIncident() {
               sx={{
                 p: 2,
                 borderRadius: 2.5,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -1296,7 +1296,7 @@ export default function ReportIncident() {
                 Your incident was categorized, prioritized, and dispatched to on-call engineers.
               </Alert>
 
-              <Box sx={{ bgcolor: '#f5f0e5', p: 2.5, borderRadius: 2, border: '1px solid #d6d0c3' }}>
+              <Box sx={{ bgcolor: '#f5f7fa', p: 2.5, borderRadius: 2, border: '1px solid #e2e8f0' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography sx={{ fontSize: 12, color: '#64748b' }}>Incident Code:</Typography>
                   <Typography sx={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, color: '#1653c7' }}>

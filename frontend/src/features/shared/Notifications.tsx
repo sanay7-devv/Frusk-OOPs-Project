@@ -276,7 +276,7 @@ export default function Notifications() {
             <span>Portal</span>
           </NavLink>
           <ChevronRightIcon sx={{ fontSize: 16, color: '#6a685f' }} />
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#20211f' }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#172b4d' }}>
             Notification Center
           </Typography>
         </Box>
@@ -288,8 +288,8 @@ export default function Notifications() {
             gap: 1,
             px: 1.5,
             py: 0.5,
-            bgcolor: '#fffcf5',
-            border: '1px solid #d6d0c3',
+            bgcolor: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderRadius: 3,
             boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
           }}
@@ -321,8 +321,8 @@ export default function Notifications() {
           p: 3,
           mb: 2.5,
           borderRadius: 3,
-          border: '1px solid #d6d0c3',
-          bgcolor: '#fffcf5',
+          border: '1px solid #e2e8f0',
+          bgcolor: '#ffffff',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
@@ -333,7 +333,7 @@ export default function Notifications() {
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#20211f', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#172b4d', letterSpacing: '-0.01em' }}>
               Notification Center
             </Typography>
             {unreadCount > 0 ? (
@@ -386,7 +386,7 @@ export default function Notifications() {
               borderRadius: 2,
               px: 1.8,
               py: 0.6,
-              '&:hover': { bgcolor: '#eee7d9', borderColor: '#94a3b8' },
+              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' },
             }}
           >
             Mark All as Read
@@ -399,9 +399,9 @@ export default function Notifications() {
               border: '1px solid #cbd5e1',
               borderRadius: 2,
               p: 0.8,
-              bgcolor: '#fffcf5',
+              bgcolor: '#ffffff',
               color: '#424752',
-              '&:hover': { bgcolor: '#eee7d9', color: '#1653c7' },
+              '&:hover': { bgcolor: '#f1f5f9', color: '#1653c7' },
             }}
           >
             <SettingsIcon sx={{ fontSize: 18 }} />
@@ -416,8 +416,8 @@ export default function Notifications() {
           p: 1.8,
           mb: 3,
           borderRadius: 3,
-          border: '1px solid #d6d0c3',
-          bgcolor: '#fffcf5',
+          border: '1px solid #e2e8f0',
+          bgcolor: '#ffffff',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'stretch', md: 'center' },
@@ -445,14 +445,14 @@ export default function Notifications() {
                 sx={{
                   fontWeight: isSelected ? 800 : 600,
                   fontSize: 12,
-                  color: isSelected ? '#fffcf5' : '#424752',
+                  color: isSelected ? '#ffffff' : '#424752',
                   bgcolor: isSelected ? '#1653c7' : 'transparent',
                   borderRadius: 2,
                   px: 1.5,
                   py: 0.5,
                   textTransform: 'none',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: isSelected ? '#00337c' : '#eee7d9' },
+                  '&:hover': { bgcolor: isSelected ? '#00337c' : '#f1f5f9' },
                 }}
               >
                 {tab.label}
@@ -477,12 +477,12 @@ export default function Notifications() {
           sx={{
             width: { xs: '100%', md: 240 },
             '& .MuiOutlinedInput-root': {
-              bgcolor: '#eee7d9',
+              bgcolor: '#f1f5f9',
               borderRadius: 2,
               fontSize: 12.5,
               '& fieldset': { borderColor: 'transparent' },
               '&:hover fieldset': { borderColor: '#cbd5e1' },
-              '&.Mui-focused': { bgcolor: '#fffcf5' },
+              '&.Mui-focused': { bgcolor: '#ffffff' },
             },
           }}
         />
@@ -495,8 +495,8 @@ export default function Notifications() {
           sx={{
             p: 6,
             borderRadius: 3,
-            border: '1px solid #d6d0c3',
-            bgcolor: '#fffcf5',
+            border: '1px solid #e2e8f0',
+            bgcolor: '#ffffff',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -510,7 +510,7 @@ export default function Notifications() {
               width: 52,
               height: 52,
               borderRadius: '50%',
-              bgcolor: '#eee7d9',
+              bgcolor: '#f1f5f9',
               color: '#424752',
               display: 'flex',
               alignItems: 'center',
@@ -519,7 +519,7 @@ export default function Notifications() {
           >
             <NotificationsPausedIcon sx={{ fontSize: 28 }} />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#20211f', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#172b4d', fontSize: 16 }}>
             No notifications found
           </Typography>
           <Typography sx={{ fontSize: 13, color: '#64748b', maxWidth: 360 }}>
@@ -616,8 +616,8 @@ export default function Notifications() {
             mt: 3,
             p: 2,
             borderRadius: 3,
-            border: '1px solid #d6d0c3',
-            bgcolor: '#fffcf5',
+            border: '1px solid #e2e8f0',
+            bgcolor: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -632,7 +632,7 @@ export default function Notifications() {
             <IconButton size="small" disabled sx={{ color: '#94a3b8' }}>
               <ChevronLeftIcon sx={{ fontSize: 18 }} />
             </IconButton>
-            <Box sx={{ px: 1.2, py: 0.2, bgcolor: '#e5eaf4', borderRadius: 1, fontSize: 11, fontFamily: 'monospace', fontWeight: 800, color: '#20211f' }}>
+            <Box sx={{ px: 1.2, py: 0.2, bgcolor: '#e5eaf4', borderRadius: 1, fontSize: 11, fontFamily: 'monospace', fontWeight: 800, color: '#172b4d' }}>
               1
             </Box>
             <IconButton size="small" disabled sx={{ color: '#94a3b8' }}>
@@ -657,7 +657,7 @@ export default function Notifications() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 11.5, fontWeight: 700, color: '#1653c7' }}>
                   REPLY TO SRE // {replyItem.incidentCode}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                   {replyItem.title} {replyItem.incidentCode}
                 </Typography>
               </Box>
@@ -666,11 +666,11 @@ export default function Notifications() {
               </IconButton>
             </DialogTitle>
             <DialogContent dividers sx={{ py: 2 }}>
-              <Paper sx={{ p: 2, bgcolor: '#eee7d9', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
+              <Paper sx={{ p: 2, bgcolor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
                   {replyItem.sender || 'Technician Request'}:
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#20211f', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 13, color: '#172b4d', mt: 0.5 }}>
                   &ldquo;{replyItem.message}&rdquo;
                 </Typography>
               </Paper>
@@ -682,7 +682,7 @@ export default function Notifications() {
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Enter diagnostic details, upload trace snippets, or respond to the technician..."
                 sx={{
-                  bgcolor: '#f5f0e5',
+                  bgcolor: '#f5f7fa',
                   borderRadius: 2,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
                 }}
@@ -720,7 +720,7 @@ export default function Notifications() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#1653c7' }}>
                   RESOLUTION VERIFICATION // {verifyItem.incidentCode}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                   Rate Incident Experience
                 </Typography>
               </Box>
@@ -747,7 +747,7 @@ export default function Notifications() {
                 onChange={(e) => setRatingComment(e.target.value)}
                 placeholder="Optional feedback for IT Service delivery..."
                 sx={{
-                  bgcolor: '#f5f0e5',
+                  bgcolor: '#f5f7fa',
                   borderRadius: 2,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
                 }}
@@ -778,7 +778,7 @@ export default function Notifications() {
         PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
             Notification Preferences
           </Typography>
           <IconButton onClick={() => setPrefsOpen(false)} size="small">
@@ -856,7 +856,7 @@ export default function Notifications() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#ba1a1a' }}>
                   CRITICAL SLA RUNBOOK // {runbookItem.incidentCode}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                   {runbookItem.title}
                 </Typography>
               </Box>
@@ -873,7 +873,7 @@ export default function Notifications() {
                   {runbookItem.message}
                 </Typography>
               </Paper>
-              <Typography sx={{ fontSize: 13, color: '#20211f', mb: 1, fontWeight: 600 }}>
+              <Typography sx={{ fontSize: 13, color: '#172b4d', mb: 1, fontWeight: 600 }}>
                 Service: {runbookItem.service} • Priority: {runbookItem.priority}
               </Typography>
               <Typography sx={{ fontSize: 12.5, color: '#5c5a52' }}>
@@ -943,7 +943,7 @@ function NotificationCard({
     iconColor = '#1653c7';
   } else if (notif.category === 'submitted') {
     iconComp = <ConfirmationNumberIcon sx={{ fontSize: 20 }} />;
-    iconBg = '#eee7d9';
+    iconBg = '#f1f5f9';
     iconColor = '#5c5a52';
   } else if (notif.category === 'system') {
     iconComp = <SecurityIcon sx={{ fontSize: 20 }} />;
@@ -957,8 +957,8 @@ function NotificationCard({
       sx={{
         p: 2.5,
         borderRadius: 3,
-        border: isUnread ? '1px solid #c2c6d4' : '1px solid #d6d0c3',
-        bgcolor: isUnread ? '#eee7d9' : '#fffcf5',
+        border: isUnread ? '1px solid #c2c6d4' : '1px solid #e2e8f0',
+        bgcolor: isUnread ? '#f1f5f9' : '#ffffff',
         position: 'relative',
         transition: 'all 0.15s ease',
         '&:hover': {
@@ -1004,7 +1004,7 @@ function NotificationCard({
         {/* Content */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#20211f' }}>
+            <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#172b4d' }}>
               {notif.title}{' '}
               {notif.incidentCode && (
                 <span style={{ color: '#1653c7', fontFamily: 'monospace' }}>
@@ -1043,7 +1043,7 @@ function NotificationCard({
 
           <Typography sx={{ fontSize: 13, color: '#424752', lineHeight: 1.5, mb: 1 }}>
             {notif.sender && (
-              <strong style={{ color: '#20211f' }}>{notif.sender}: </strong>
+              <strong style={{ color: '#172b4d' }}>{notif.sender}: </strong>
             )}
             {notif.message}
           </Typography>
@@ -1085,11 +1085,11 @@ function NotificationCard({
                         ? '#ba1a1a'
                         : notif.priority === 'P2'
                         ? '#ed6c02'
-                        : '#d6d0c3',
+                        : '#e2e8f0',
                     color:
                       notif.priority === 'P1' || notif.priority === 'P2'
-                        ? '#fffcf5'
-                        : '#20211f',
+                        ? '#ffffff'
+                        : '#172b4d',
                   }}
                 />
               </>
@@ -1106,7 +1106,7 @@ function NotificationCard({
                 startIcon={<ReplyIcon sx={{ fontSize: 15 }} />}
                 sx={{
                   bgcolor: '#1653c7',
-                  color: '#fffcf5',
+                  color: '#ffffff',
                   fontSize: 12,
                   fontWeight: 700,
                   textTransform: 'none',
@@ -1152,14 +1152,14 @@ function NotificationCard({
                 startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
                 sx={{
                   borderColor: '#cbd5e1',
-                  color: '#20211f',
+                  color: '#172b4d',
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'none',
                   borderRadius: 1.5,
                   px: 1.5,
                   py: 0.4,
-                  '&:hover': { bgcolor: '#eee7d9' },
+                  '&:hover': { bgcolor: '#f1f5f9' },
                 }}
               >
                 View Incident Live Runbook
@@ -1178,9 +1178,9 @@ function NotificationCard({
                   borderRadius: 1.5,
                   px: 1.5,
                   py: 0.4,
-                  bgcolor: '#fffcf5',
-                  border: '1px solid #d6d0c3',
-                  '&:hover': { bgcolor: '#f5f0e5', color: '#20211f' },
+                  bgcolor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  '&:hover': { bgcolor: '#f5f7fa', color: '#172b4d' },
                 }}
               >
                 Mark as Read

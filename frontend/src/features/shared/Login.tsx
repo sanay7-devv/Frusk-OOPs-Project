@@ -35,10 +35,10 @@ export default function Login() {
   };
 
   return <main className="auth-studio">
-    <header className="auth-masthead"><Link to="/login" className="studio-brand" aria-label="Frusk service desk home"><img src={mark} alt="" /><div><strong>frusk.</strong><small>THE IT SERVICE STUDIO</small></div></Link><div className="masthead-note">A LITTLE LESS FRICTION.<br />A LOT MORE FORWARD.</div></header>
+    <header className="auth-masthead"><Link to="/login" className="studio-brand" aria-label="Frusk service desk home"><img src={mark} alt="" /><div><strong>frusk.</strong><small>IT SERVICE MANAGEMENT</small></div></Link><div className="masthead-note">Incident management &amp; audit</div></header>
     <div className="auth-grid">
-      <section className="auth-editorial" aria-labelledby="welcome-title"><div className="eyebrow"><span className="shape-dot" />BUILT AROUND BETTER WORKDAYS</div><h1 id="welcome-title">Less friction.<br /><em>More flow.</em></h1><div className="auth-art-wrap"><ServicePoster /></div></section>
-      <section className="auth-form-wrap" aria-labelledby="signin-title"><div className="eyebrow">YOUR NEXT FIX STARTS HERE ↘</div><h2 className="auth-form-heading" id="signin-title">Hello,<br />problem solver.</h2><p className="auth-form-intro">One place to raise an issue, follow its progress, and keep every action in view.</p>
+      <section className="auth-editorial" aria-labelledby="welcome-title"><div className="eyebrow"><span className="shape-dot" />FRUSK SERVICE PLATFORM</div><h1 id="welcome-title">IT service<br /><em>management.</em></h1><div className="auth-art-wrap"><ServicePoster /></div></section>
+      <section className="auth-form-wrap" aria-labelledby="signin-title"><div className="eyebrow">WORKSPACE ACCESS</div><h2 className="auth-form-heading" id="signin-title">Sign in</h2><p className="auth-form-intro">Access your service workspace to report incidents, manage requests and review activity.</p>
         {user && workspace && <Alert severity="success" sx={{ mb: 2 }} action={<Button color="inherit" size="small" onClick={() => navigate(HOME[workspace])}>Continue</Button>}>Signed in as {user.name}.</Alert>}
         <form onSubmit={onSubmit} noValidate aria-label="Sign in">
           <div><label className="field-label" htmlFor="signin-email">Email address</label><TextField id="signin-email" type="email" placeholder="you@yourcompany.com" fullWidth autoComplete="email" {...register('email', { onChange: () => setSelected('') })} error={!!errors.email} helperText={errors.email?.message} inputProps={{ 'aria-label': 'Email Address' }} /></div>
@@ -46,9 +46,9 @@ export default function Login() {
           {err && <Alert severity="error" role="alert">{err}</Alert>}
           <Button className="auth-submit" type="submit" variant="contained" fullWidth disabled={isSubmitting} endIcon={<ArrowForward />}>{isSubmitting ? 'Signing in…' : 'Sign in to your workspace'}</Button>
         </form>
-        <GoogleSignIn onError={setErr} /><p className="auth-register-link">New here? <Link to="/register">Create an employee account ↗</Link></p>
-        <div className="auth-demo"><div className="auth-demo-heading"><span>Take a look around</span><span>DEMO ACCESS / 04 ROLES</span></div><div className="demo-roles">{DEMO_ACCOUNTS.map(account => <button className="demo-role" type="button" key={account.email} aria-pressed={selected === account.email} onClick={() => choose(account)}>{account.roleLabel}</button>)}</div><p className="demo-description">{selected ? PREDEFINED_ACCOUNTS.find(account => account.email === selected)?.description : 'Choose a role to fill the demo credentials, then sign in.'}</p><p className="auth-demo-note">Demo accounts open a sample workspace. For your own reports, use your organisation’s account.</p></div>
+        <GoogleSignIn onError={setErr} /><p className="auth-register-link">Need an account? <Link to="/register">Create an employee account ↗</Link></p>
+        <div className="auth-demo"><div className="auth-demo-heading"><span>Demo workspaces</span><span>4 ROLES</span></div><div className="demo-roles">{DEMO_ACCOUNTS.map(account => <button className="demo-role" type="button" key={account.email} aria-pressed={selected === account.email} onClick={() => choose(account)}>{account.roleLabel}</button>)}</div><p className="demo-description">{selected ? PREDEFINED_ACCOUNTS.find(account => account.email === selected)?.description : 'Choose a role to fill the demo credentials, then sign in.'}</p><p className="auth-demo-note">Demo accounts open a sample workspace. For your own reports, use your organisation’s account.</p></div>
       </section>
-    </div><footer className="auth-footer"><span>REPORT. RESOLVE. RECORD.</span><span>I—ITSM / SERVICE MANAGEMENT, WITH CHARACTER.</span><span className="footer-shapes" aria-hidden="true"><i /><i /><i /></span></footer>
+    </div><footer className="auth-footer"><span>Frusk · IT service management</span><span>Incident reporting and operational audit</span><span className="footer-shapes" aria-hidden="true"><i /><i /><i /></span></footer>
   </main>;
 }

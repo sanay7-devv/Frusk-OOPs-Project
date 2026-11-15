@@ -393,8 +393,8 @@ export default function Users() {
           p: 2.5,
           mb: 3.5,
           borderRadius: 3,
-          border: '1px solid #d6d0c3',
-          bgcolor: '#fffcf5',
+          border: '1px solid #e2e8f0',
+          bgcolor: '#ffffff',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
@@ -419,7 +419,7 @@ export default function Users() {
             <GroupIcon sx={{ fontSize: 26 }} />
           </Box>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#20211f', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#172b4d', letterSpacing: '-0.01em' }}>
               Enterprise Workforce &amp; User Directory
             </Typography>
             <Typography sx={{ fontSize: 13, color: '#64748b' }}>
@@ -456,7 +456,7 @@ export default function Users() {
             startIcon={<AddIcon />}
             sx={{
               bgcolor: '#1653c7',
-              color: '#fffcf5',
+              color: '#ffffff',
               fontWeight: 700,
               fontSize: 13,
               borderRadius: 2,
@@ -474,11 +474,11 @@ export default function Users() {
       {/* 2. TOP METRIC STREAM */}
       <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
         <Grid item xs={12} sm={6} lg={3}>
-          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #d6d0c3', bgcolor: '#fffcf5' }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
             <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
               Total Directory Accounts
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 0.5 }}>
               {metrics.totalUsers}
             </Typography>
             <Typography sx={{ fontSize: 12, color: '#1653c7', mt: 0.5, fontWeight: 600 }}>
@@ -488,11 +488,11 @@ export default function Users() {
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
-          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #d6d0c3', bgcolor: '#fffcf5' }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
             <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
               Active Open Tickets
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 0.5 }}>
               {metrics.totalActiveTickets}
             </Typography>
             <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
@@ -507,8 +507,8 @@ export default function Users() {
             sx={{
               p: 2.5,
               borderRadius: 3,
-              border: metrics.actionNeededCount > 0 ? '2px solid #ed6c02' : '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: metrics.actionNeededCount > 0 ? '2px solid #ed6c02' : '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
             }}
           >
             <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#ed6c02', textTransform: 'uppercase' }}>
@@ -524,13 +524,13 @@ export default function Users() {
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
-          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #d6d0c3', bgcolor: '#fffcf5' }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
             <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
               Delegated Session Broker
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#16a34a' }} />
-              <Typography sx={{ fontSize: 15, fontWeight: 800, color: '#20211f' }}>
+              <Typography sx={{ fontSize: 15, fontWeight: 800, color: '#172b4d' }}>
                 READY
               </Typography>
             </Box>
@@ -542,7 +542,7 @@ export default function Users() {
       </Grid>
 
       {/* 3. SEARCH & 4-ROLE FILTER */}
-      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid #d6d0c3', bgcolor: '#fffcf5' }}>
+      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={5} md={5}>
             <TextField
@@ -559,7 +559,7 @@ export default function Users() {
                 ),
               }}
               sx={{
-                bgcolor: '#f5f0e5',
+                bgcolor: '#f5f7fa',
                 borderRadius: 2,
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
               }}
@@ -589,11 +589,11 @@ export default function Users() {
                     sx={{
                       fontWeight: isSelected ? 800 : 500,
                       bgcolor: isSelected ? '#1653c7' : '#f1f5f9',
-                      color: isSelected ? '#fffcf5' : '#334155',
+                      color: isSelected ? '#ffffff' : '#334155',
                       cursor: 'pointer',
                       borderRadius: 1.5,
                       px: 0.5,
-                      '&:hover': { bgcolor: isSelected ? '#00337c' : '#d6d0c3' },
+                      '&:hover': { bgcolor: isSelected ? '#00337c' : '#e2e8f0' },
                     }}
                   />
                 );
@@ -604,13 +604,13 @@ export default function Users() {
       </Paper>
 
       {/* 4. WORKFORCE & USERS DIRECTORY TABLE */}
-      <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #d6d0c3', bgcolor: '#fffcf5', overflow: 'hidden' }}>
+      <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff', overflow: 'hidden' }}>
         {/* Table Filter Action Strip */}
         <Box
           sx={{
             p: 2,
-            bgcolor: '#f5f0e5',
-            borderBottom: '1px solid #d6d0c3',
+            bgcolor: '#f5f7fa',
+            borderBottom: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
@@ -618,7 +618,7 @@ export default function Users() {
             gap: 1.5,
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#20211f' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#172b4d' }}>
             Corporate Workforce &amp; Staff Directory ({filteredUsers.length} Accounts)
           </Typography>
 
@@ -633,7 +633,7 @@ export default function Users() {
                 borderRadius: 1.5,
                 bgcolor: tableTab === 'ALL' ? '#1653c7' : 'transparent',
                 borderColor: '#cbd5e1',
-                color: tableTab === 'ALL' ? '#fffcf5' : '#475569',
+                color: tableTab === 'ALL' ? '#ffffff' : '#475569',
               }}
             >
               All ({users.length})
@@ -648,7 +648,7 @@ export default function Users() {
                 borderRadius: 1.5,
                 bgcolor: tableTab === 'ACTIVE_TICKETS' ? '#1653c7' : 'transparent',
                 borderColor: '#cbd5e1',
-                color: tableTab === 'ACTIVE_TICKETS' ? '#fffcf5' : '#475569',
+                color: tableTab === 'ACTIVE_TICKETS' ? '#ffffff' : '#475569',
               }}
             >
               With Active Tickets
@@ -663,7 +663,7 @@ export default function Users() {
                 borderRadius: 1.5,
                 bgcolor: tableTab === 'TECHS_LEADS' ? '#1653c7' : 'transparent',
                 borderColor: '#cbd5e1',
-                color: tableTab === 'TECHS_LEADS' ? '#fffcf5' : '#475569',
+                color: tableTab === 'TECHS_LEADS' ? '#ffffff' : '#475569',
               }}
             >
               Technicians &amp; Leads ({metrics.techsCount + metrics.leadsCount})
@@ -677,7 +677,7 @@ export default function Users() {
                 textTransform: 'none',
                 borderRadius: 1.5,
                 bgcolor: tableTab === 'ACTION_NEEDED' ? '#ed6c02' : 'transparent',
-                color: tableTab === 'ACTION_NEEDED' ? '#fffcf5' : '#ed6c02',
+                color: tableTab === 'ACTION_NEEDED' ? '#ffffff' : '#ed6c02',
                 borderColor: '#ed6c02',
               }}
             >
@@ -741,8 +741,8 @@ export default function Users() {
                         component="tr"
                         key={u.id}
                         sx={{
-                          borderBottom: '1px solid #d6d0c3',
-                          '&:hover': { bgcolor: '#f5f0e5' },
+                          borderBottom: '1px solid #e2e8f0',
+                          '&:hover': { bgcolor: '#f5f7fa' },
                           transition: 'background-color 0.15s ease',
                         }}
                       >
@@ -756,7 +756,7 @@ export default function Users() {
                                 bgcolor: deptColor,
                                 fontSize: 14,
                                 fontWeight: 700,
-                                color: '#fffcf5',
+                                color: '#ffffff',
                               }}
                             >
                               {u.name
@@ -767,7 +767,7 @@ export default function Users() {
                                 .join('')}
                             </Avatar>
                             <Box>
-                              <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#20211f' }}>
+                              <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#172b4d' }}>
                                 {u.name}
                               </Typography>
                               <Typography sx={{ fontSize: 11.5, color: '#64748b' }}>
@@ -843,7 +843,7 @@ export default function Users() {
                                 label={`${activeCount} Active`}
                                 size="small"
                                 sx={{
-                                  bgcolor: highestPriority === 'P1' ? '#fee2e2' : '#eee7d9',
+                                  bgcolor: highestPriority === 'P1' ? '#fee2e2' : '#f1f5f9',
                                   color: highestPriority === 'P1' ? '#991b1b' : '#1653c7',
                                   fontWeight: 700,
                                   fontSize: 11,
@@ -859,7 +859,7 @@ export default function Users() {
                                     fontSize: 10,
                                     fontWeight: 800,
                                     bgcolor: highestPriority === 'P1' ? '#991b1b' : highestPriority === 'P2' ? '#c65102' : '#1653c7',
-                                    color: '#fffcf5',
+                                    color: '#ffffff',
                                   }}
                                 />
                               )}
@@ -934,7 +934,7 @@ export default function Users() {
                               startIcon={<LoginIcon sx={{ fontSize: 15 }} />}
                               sx={{
                                 bgcolor: '#1653c7',
-                                color: '#fffcf5',
+                                color: '#ffffff',
                                 textTransform: 'none',
                                 fontWeight: 700,
                                 fontSize: 12,
@@ -973,7 +973,7 @@ export default function Users() {
         anchor="right"
         open={Boolean(inspectUser)}
         onClose={() => setInspectUser(null)}
-        PaperProps={{ sx: { width: { xs: '100%', sm: 560 }, p: 3, bgcolor: '#fffcf5' } }}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 560 }, p: 3, bgcolor: '#ffffff' } }}
       >
         {inspectUser && (() => {
           const meta = userIncidentMap.get(inspectUser.id);
@@ -986,12 +986,12 @@ export default function Users() {
           return (
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Drawer Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2, borderBottom: '1px solid #d6d0c3' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2, borderBottom: '1px solid #e2e8f0' }}>
                 <Box>
                   <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#1653c7', letterSpacing: '0.04em' }}>
                     USER &amp; WORKSPACE INSPECTION // ID #{inspectUser.id}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', mt: 0.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', mt: 0.2 }}>
                     {inspectUser.name}
                   </Typography>
                 </Box>
@@ -1002,13 +1002,13 @@ export default function Users() {
 
               {/* Profile Overview Card */}
               <Box sx={{ py: 2.5, overflowY: 'auto', flexGrow: 1 }}>
-                <Paper sx={{ p: 2, bgcolor: '#f5f0e5', border: '1px solid #d6d0c3', borderRadius: 2.5, mb: 2.5 }}>
+                <Paper sx={{ p: 2, bgcolor: '#f5f7fa', border: '1px solid #e2e8f0', borderRadius: 2.5, mb: 2.5 }}>
                   <Grid container spacing={1.5}>
                     <Grid item xs={6}>
                       <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
                         Designation
                       </Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#20211f' }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#172b4d' }}>
                         {getDesignation(inspectUser)}
                       </Typography>
                     </Grid>
@@ -1016,7 +1016,7 @@ export default function Users() {
                       <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
                         Department
                       </Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#20211f' }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#172b4d' }}>
                         {inspectUser.department || 'General Staff'}
                       </Typography>
                     </Grid>
@@ -1040,8 +1040,8 @@ export default function Users() {
                 </Paper>
 
                 {/* Role Clearance & Admin Controls */}
-                <Paper sx={{ p: 2, mb: 2.5, borderRadius: 2.5, border: '1px solid #d6d0c3', bgcolor: '#fffcf5' }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#20211f', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
+                <Paper sx={{ p: 2, mb: 2.5, borderRadius: 2.5, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#172b4d', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
                     Security Clearance &amp; Role Management
                   </Typography>
 
@@ -1105,7 +1105,7 @@ export default function Users() {
                 {/* Tickets Associated with User */}
                 <Box sx={{ mb: 2.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 800, color: '#20211f', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 800, color: '#172b4d', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       Associated Incidents &amp; Tickets ({tickets.length})
                     </Typography>
                     {activeTickets.length > 0 && (
@@ -1131,8 +1131,8 @@ export default function Users() {
                           p: 2,
                           mb: 1.5,
                           borderRadius: 2,
-                          border: t.priority === 'P1' ? '1px solid #fca5a5' : '1px solid #d6d0c3',
-                          bgcolor: t.priority === 'P1' ? '#fef2f2' : '#fffcf5',
+                          border: t.priority === 'P1' ? '1px solid #fca5a5' : '1px solid #e2e8f0',
+                          bgcolor: t.priority === 'P1' ? '#fef2f2' : '#ffffff',
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
@@ -1148,7 +1148,7 @@ export default function Users() {
                                 fontSize: 10,
                                 fontWeight: 800,
                                 bgcolor: t.priority === 'P1' ? '#991b1b' : '#c65102',
-                                color: '#fffcf5',
+                                color: '#ffffff',
                               }}
                             />
                             <Chip
@@ -1165,7 +1165,7 @@ export default function Users() {
                             />
                           </Box>
                         </Box>
-                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#20211f', mb: 0.5 }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#172b4d', mb: 0.5 }}>
                           {t.title}
                         </Typography>
                         <Typography sx={{ fontSize: 11.5, color: '#64748b' }}>
@@ -1184,7 +1184,7 @@ export default function Users() {
               </Box>
 
               {/* Impersonate Button in Drawer Footer */}
-              <Box sx={{ pt: 2, borderTop: '1px solid #d6d0c3' }}>
+              <Box sx={{ pt: 2, borderTop: '1px solid #e2e8f0' }}>
                 <Button
                   variant="contained"
                   fullWidth
@@ -1192,7 +1192,7 @@ export default function Users() {
                   startIcon={<LoginIcon />}
                   sx={{
                     bgcolor: '#1653c7',
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     fontWeight: 800,
                     fontSize: 13.5,
                     py: 1.2,
@@ -1276,7 +1276,7 @@ export default function Users() {
         PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
             Provision Enterprise Account
           </Typography>
           <IconButton onClick={() => setProvisionOpen(false)} size="small">

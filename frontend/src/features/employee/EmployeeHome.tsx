@@ -258,7 +258,7 @@ export default function EmployeeHome() {
                 width: 38,
                 height: 38,
                 borderRadius: 2,
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 color: '#1653c7',
                 display: 'flex',
                 alignItems: 'center',
@@ -277,7 +277,7 @@ export default function EmployeeHome() {
                   size="small"
                   sx={{
                     bgcolor: '#1653c7',
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     fontWeight: 800,
                     fontSize: 10.5,
                     height: 20,
@@ -285,14 +285,14 @@ export default function EmployeeHome() {
                     letterSpacing: '0.04em',
                   }}
                 />
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#20211f' }}>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#172b4d' }}>
                   INC-2026-00088
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: '#5c5a52' }}>
                   • Support Technician Marcus Chen requested log clarification 25m ago
                 </Typography>
               </Box>
-              <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#20211f' }}>
+              <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#172b4d' }}>
                 VPN &amp; SSO Gateway Handshake Timeout on macOS Sequoia 15.3 Build
               </Typography>
             </Box>
@@ -304,16 +304,16 @@ export default function EmployeeHome() {
               size="small"
               onClick={() => setSelectedIncident(incidents.find((i) => i.id === 'INC-2026-00088') || incidents[0])}
               sx={{
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 borderColor: '#cbd5e1',
-                color: '#20211f',
+                color: '#172b4d',
                 textTransform: 'none',
                 fontWeight: 600,
                 fontSize: 13,
                 borderRadius: 2,
                 px: 2,
                 py: 0.8,
-                '&:hover': { bgcolor: '#f5f0e5', borderColor: '#94a3b8' },
+                '&:hover': { bgcolor: '#f5f7fa', borderColor: '#94a3b8' },
               }}
             >
               View Details
@@ -328,7 +328,7 @@ export default function EmployeeHome() {
               startIcon={<ReplyIcon sx={{ fontSize: 17 }} />}
               sx={{
                 bgcolor: '#1653c7',
-                color: '#fffcf5',
+                color: '#ffffff',
                 textTransform: 'none',
                 fontWeight: 700,
                 fontSize: 13,
@@ -354,8 +354,8 @@ export default function EmployeeHome() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -366,7 +366,7 @@ export default function EmployeeHome() {
               <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5c5a52', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Unified Service Directory
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#20211f', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#172b4d', mb: 2 }}>
                 How can Global Engineering Support assist you today?
               </Typography>
 
@@ -397,11 +397,11 @@ export default function EmployeeHome() {
                   ),
                 }}
                 sx={{
-                  bgcolor: '#eee7d9',
+                  bgcolor: '#f1f5f9',
                   borderRadius: 2,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
                   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
-                  '&.Mui-focused': { bgcolor: '#fffcf5' },
+                  '&.Mui-focused': { bgcolor: '#ffffff' },
                   mb: 2,
                 }}
               />
@@ -420,7 +420,7 @@ export default function EmployeeHome() {
                   onClick={() => setKbModalTopic(topic)}
                   sx={{
                     bgcolor: '#e5eaf4',
-                    color: '#20211f',
+                    color: '#172b4d',
                     fontSize: 11.5,
                     fontWeight: 600,
                     borderRadius: 2,
@@ -441,7 +441,7 @@ export default function EmployeeHome() {
               p: 3,
               borderRadius: 3,
               background: 'linear-gradient(135deg, #1653c7 0%, #1653c7 100%)',
-              color: '#fffcf5',
+              color: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -469,12 +469,12 @@ export default function EmployeeHome() {
             <Box sx={{ position: 'relative', zIndex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <Chip
-                  icon={<BoltIcon sx={{ fontSize: '15px !important', color: '#fffcf5 !important' }} />}
+                  icon={<BoltIcon sx={{ fontSize: '15px !important', color: '#ffffff !important' }} />}
                   label="INCIDENT DESK"
                   size="small"
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.18)',
-                    color: '#fffcf5',
+                    color: '#ffffff',
                     fontWeight: 800,
                     fontSize: 11,
                     height: 22,
@@ -487,7 +487,7 @@ export default function EmployeeHome() {
                 </Typography>
               </Box>
 
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fffcf5', mb: 0.8, lineHeight: 1.25 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', mb: 0.8, lineHeight: 1.25 }}>
                 Experiencing an Interruption?
               </Typography>
               <Typography sx={{ fontSize: 12.5, color: '#dae5ff', lineHeight: 1.5 }}>
@@ -501,7 +501,7 @@ export default function EmployeeHome() {
               startIcon={<BoltIcon sx={{ fontSize: 20 }} />}
               sx={{
                 mt: 2.5,
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 color: '#1653c7',
                 fontWeight: 800,
                 fontSize: 13.5,
@@ -511,7 +511,7 @@ export default function EmployeeHome() {
                 position: 'relative',
                 zIndex: 1,
                 textTransform: 'none',
-                '&:hover': { bgcolor: '#eee7d9', color: '#00337c' },
+                '&:hover': { bgcolor: '#f1f5f9', color: '#00337c' },
               }}
             >
               + Report Issue / Outage
@@ -529,8 +529,8 @@ export default function EmployeeHome() {
             sx={{
               p: 2.5,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -542,7 +542,7 @@ export default function EmployeeHome() {
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5c5a52', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Active Incidents
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 0.5 }}>
                   {activeCount}
                 </Typography>
               </Box>
@@ -571,7 +571,7 @@ export default function EmployeeHome() {
               p: 2.5,
               borderRadius: 3,
               border: '2px solid #1653c7',
-              bgcolor: '#fffcf5',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -597,7 +597,7 @@ export default function EmployeeHome() {
             </Box>
             <Box sx={{ pt: 1.5, borderTop: '1px solid #f1f5f9', mt: 1 }}>
               <Typography sx={{ fontSize: 11.5, color: '#5c5a52' }} noWrap>
-                <strong style={{ color: '#20211f' }}>INC-2026-00088:</strong> Needs client log verification
+                <strong style={{ color: '#172b4d' }}>INC-2026-00088:</strong> Needs client log verification
               </Typography>
             </Box>
           </Paper>
@@ -610,8 +610,8 @@ export default function EmployeeHome() {
             sx={{
               p: 2.5,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -623,7 +623,7 @@ export default function EmployeeHome() {
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5c5a52', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Resolved (Past 30d)
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 0.5 }}>
                   {resolvedCount + 13}
                 </Typography>
               </Box>
@@ -647,8 +647,8 @@ export default function EmployeeHome() {
             sx={{
               p: 2.5,
               borderRadius: 3,
-              border: '1px solid #d6d0c3',
-              bgcolor: '#fffcf5',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -660,7 +660,7 @@ export default function EmployeeHome() {
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5c5a52', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Avg SLA Fulfillment
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#20211f', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: '#172b4d', mt: 0.5 }}>
                   99.4%
                 </Typography>
               </Box>
@@ -683,7 +683,7 @@ export default function EmployeeHome() {
                     strokeLinecap="round"
                   />
                 </svg>
-                <Typography sx={{ position: 'absolute', fontSize: 10, fontWeight: 800, fontFamily: 'monospace', color: '#20211f' }}>
+                <Typography sx={{ position: 'absolute', fontSize: 10, fontWeight: 800, fontFamily: 'monospace', color: '#172b4d' }}>
                   OK
                 </Typography>
               </Box>
@@ -702,8 +702,8 @@ export default function EmployeeHome() {
         elevation={0}
         sx={{
           borderRadius: 3,
-          border: '1px solid #d6d0c3',
-          bgcolor: '#fffcf5',
+          border: '1px solid #e2e8f0',
+          bgcolor: '#ffffff',
           overflow: 'hidden',
           mb: 3.5,
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
@@ -713,8 +713,8 @@ export default function EmployeeHome() {
         <Box
           sx={{
             p: 2.5,
-            bgcolor: '#f5f0e5',
-            borderBottom: '1px solid #d6d0c3',
+            bgcolor: '#f5f7fa',
+            borderBottom: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             alignItems: { xs: 'flex-start', md: 'center' },
@@ -724,7 +724,7 @@ export default function EmployeeHome() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                 My Recent Incidents &amp; Requests
               </Typography>
               <Typography sx={{ fontSize: 12, color: '#5c5a52' }}>
@@ -746,7 +746,7 @@ export default function EmployeeHome() {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             {/* Filter Tabs */}
-            <Box sx={{ display: 'flex', bgcolor: '#fffcf5', border: '1px solid #d6d0c3', borderRadius: 2, p: 0.3 }}>
+            <Box sx={{ display: 'flex', bgcolor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 2, p: 0.3 }}>
               {(['ALL', 'ACTIVE', 'PENDING', 'RESOLVED'] as const).map((tab) => {
                 const count =
                   tab === 'ALL'
@@ -816,7 +816,7 @@ export default function EmployeeHome() {
                 border: '1px solid #cbd5e1',
                 borderRadius: 2,
                 p: 0.8,
-                bgcolor: '#fffcf5',
+                bgcolor: '#ffffff',
                 color: '#5c5a52',
                 transform: isRefreshing ? 'rotate(180deg)' : 'none',
                 transition: 'transform 0.5s ease',
@@ -877,9 +877,9 @@ export default function EmployeeHome() {
                       component="tr"
                       key={inc.id}
                       sx={{
-                        borderBottom: '1px solid #d6d0c3',
-                        bgcolor: isActionNeeded ? '#eee7d9' : '#fffcf5',
-                        '&:hover': { bgcolor: isActionNeeded ? '#e5eaf4' : '#f5f0e5' },
+                        borderBottom: '1px solid #e2e8f0',
+                        bgcolor: isActionNeeded ? '#f1f5f9' : '#ffffff',
+                        '&:hover': { bgcolor: isActionNeeded ? '#e5eaf4' : '#f5f7fa' },
                         transition: 'background-color 0.15s ease',
                       }}
                     >
@@ -954,7 +954,7 @@ export default function EmployeeHome() {
 
                       {/* Title & Assignee */}
                       <Box component="td" sx={{ py: 1.8, px: 2, maxWidth: 300 }}>
-                        <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#20211f' }} noWrap title={inc.title}>
+                        <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#172b4d' }} noWrap title={inc.title}>
                           {inc.title}
                         </Typography>
                         <Typography sx={{ fontSize: 11.5, color: isActionNeeded ? '#1653c7' : '#6a685f', fontWeight: isActionNeeded ? 600 : 400 }}>
@@ -969,7 +969,7 @@ export default function EmployeeHome() {
                           {inc.serviceIcon === 'vpn' && <VpnKeyIcon sx={{ fontSize: 16, color: '#6a685f' }} />}
                           {inc.serviceIcon === 'kanban' && <ViewKanbanIcon sx={{ fontSize: 16, color: '#6a685f' }} />}
                           {inc.serviceIcon === 'terminal' && <TerminalIcon sx={{ fontSize: 16, color: '#6a685f' }} />}
-                          <Typography sx={{ fontSize: 12.5, color: '#20211f' }}>{inc.service}</Typography>
+                          <Typography sx={{ fontSize: 12.5, color: '#172b4d' }}>{inc.service}</Typography>
                         </Box>
                       </Box>
 
@@ -1011,7 +1011,7 @@ export default function EmployeeHome() {
                                 fontFamily: 'monospace',
                                 fontSize: 11,
                                 fontWeight: 700,
-                                color: inc.slaState === 'error' ? '#ba1a1a' : '#20211f',
+                                color: inc.slaState === 'error' ? '#ba1a1a' : '#172b4d',
                               }}
                             >
                               {inc.slaLabel}
@@ -1027,7 +1027,7 @@ export default function EmployeeHome() {
                           sx={{
                             height: 5,
                             borderRadius: 2,
-                            bgcolor: '#d6d0c3',
+                            bgcolor: '#e2e8f0',
                             '& .MuiLinearProgress-bar': {
                               bgcolor:
                                 inc.slaState === 'error'
@@ -1056,7 +1056,7 @@ export default function EmployeeHome() {
                             onClick={() => setReplyIncident(inc)}
                             sx={{
                               bgcolor: '#1653c7',
-                              color: '#fffcf5',
+                              color: '#ffffff',
                               fontSize: 12,
                               fontWeight: 700,
                               textTransform: 'none',
@@ -1075,7 +1075,7 @@ export default function EmployeeHome() {
                             onClick={() => handleConfirmFixed(inc.id)}
                             sx={{
                               bgcolor: '#1653c7',
-                              color: '#fffcf5',
+                              color: '#ffffff',
                               fontSize: 12,
                               fontWeight: 700,
                               textTransform: 'none',
@@ -1093,9 +1093,9 @@ export default function EmployeeHome() {
                             variant="outlined"
                             onClick={() => setSelectedIncident(inc)}
                             sx={{
-                              borderColor: '#d6d0c3',
+                              borderColor: '#e2e8f0',
                               color: '#1653c7',
-                              bgcolor: '#f5f0e5',
+                              bgcolor: '#f5f7fa',
                               fontSize: 12,
                               fontWeight: 600,
                               textTransform: 'none',
@@ -1121,8 +1121,8 @@ export default function EmployeeHome() {
         <Box
           sx={{
             p: 2,
-            bgcolor: '#f5f0e5',
-            borderTop: '1px solid #d6d0c3',
+            bgcolor: '#f5f7fa',
+            borderTop: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: 'center',
@@ -1157,7 +1157,7 @@ export default function EmployeeHome() {
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 18 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 18 }}>
               Automated Self-Service Tools
             </Typography>
             <Typography sx={{ fontSize: 12.5, color: '#6a685f' }}>
@@ -1178,8 +1178,8 @@ export default function EmployeeHome() {
               sx={{
                 p: 2.5,
                 borderRadius: 3,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
@@ -1198,7 +1198,7 @@ export default function EmployeeHome() {
                   <PasswordIcon sx={{ fontSize: 22 }} />
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#20211f', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#172b4d', mb: 0.5 }}>
                     Self-Service Password &amp; MFA
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: '#6a685f', lineHeight: 1.5 }}>
@@ -1221,8 +1221,8 @@ export default function EmployeeHome() {
               sx={{
                 p: 2.5,
                 borderRadius: 3,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
@@ -1241,7 +1241,7 @@ export default function EmployeeHome() {
                   <AppsIcon sx={{ fontSize: 22 }} />
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#20211f', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#172b4d', mb: 0.5 }}>
                     Software License Catalog
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: '#6a685f', lineHeight: 1.5 }}>
@@ -1264,8 +1264,8 @@ export default function EmployeeHome() {
               sx={{
                 p: 2.5,
                 borderRadius: 3,
-                border: '1px solid #d6d0c3',
-                bgcolor: '#fffcf5',
+                border: '1px solid #e2e8f0',
+                bgcolor: '#ffffff',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
@@ -1284,7 +1284,7 @@ export default function EmployeeHome() {
                   <WifiTetheringIcon sx={{ fontSize: 22 }} />
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#20211f', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#172b4d', mb: 0.5 }}>
                     Wi-Fi &amp; Device MDM Profiles
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: '#6a685f', lineHeight: 1.5 }}>
@@ -1316,7 +1316,7 @@ export default function EmployeeHome() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
                   {selectedIncident.id}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 17 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 17 }}>
                   {selectedIncident.title}
                 </Typography>
               </Box>
@@ -1330,7 +1330,7 @@ export default function EmployeeHome() {
                   <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6a685f', textTransform: 'uppercase' }}>
                     Service
                   </Typography>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#20211f' }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#172b4d' }}>
                     {selectedIncident.service}
                   </Typography>
                 </Grid>
@@ -1347,7 +1347,7 @@ export default function EmployeeHome() {
                   <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6a685f', textTransform: 'uppercase' }}>
                     Assigned Technician
                   </Typography>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#20211f' }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#172b4d' }}>
                     {selectedIncident.assignedTo}
                   </Typography>
                 </Grid>
@@ -1396,7 +1396,7 @@ export default function EmployeeHome() {
                 <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
                   RESPOND TO TECHNICIAN // {replyIncident.id}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
                   {replyIncident.title}
                 </Typography>
               </Box>
@@ -1405,11 +1405,11 @@ export default function EmployeeHome() {
               </IconButton>
             </DialogTitle>
             <DialogContent dividers sx={{ py: 2 }}>
-              <Paper sx={{ p: 1.5, bgcolor: '#eee7d9', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
+              <Paper sx={{ p: 1.5, bgcolor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
                   Technician Request:
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#20211f', mt: 0.3 }}>
+                <Typography sx={{ fontSize: 13, color: '#172b4d', mt: 0.3 }}>
                   &ldquo;Please attach terminal output from <code>log show --predicate 'process == \"GlobalProtect\"' --last 10m</code> or verify if DNS resolves internal gateways.&rdquo;
                 </Typography>
               </Paper>
@@ -1422,7 +1422,7 @@ export default function EmployeeHome() {
                 onChange={(e) => setReplyMessage(e.target.value)}
                 placeholder="Paste diagnostics, terminal logs, or describe the latest occurrence..."
                 sx={{
-                  bgcolor: '#f5f0e5',
+                  bgcolor: '#f5f7fa',
                   borderRadius: 2,
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
                 }}
@@ -1438,7 +1438,7 @@ export default function EmployeeHome() {
                 disabled={!replyMessage.trim()}
                 sx={{
                   bgcolor: '#1653c7',
-                  color: '#fffcf5',
+                  color: '#ffffff',
                   textTransform: 'none',
                   fontWeight: 700,
                   '&:hover': { bgcolor: '#00337c' },
@@ -1462,7 +1462,7 @@ export default function EmployeeHome() {
         {kbModalTopic && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 17 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 17 }}>
                 {kbModalTopic.label}
               </Typography>
               <IconButton onClick={() => setKbModalTopic(null)} size="small">
@@ -1473,7 +1473,7 @@ export default function EmployeeHome() {
               <Typography sx={{ fontSize: 13.5, color: '#334155', lineHeight: 1.6, mb: 2 }}>
                 {kbModalTopic.article}
               </Typography>
-              <Paper sx={{ p: 2, bgcolor: '#f5f0e5', border: '1px solid #d6d0c3', borderRadius: 2 }}>
+              <Paper sx={{ p: 2, bgcolor: '#f5f7fa', border: '1px solid #e2e8f0', borderRadius: 2 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#1653c7', mb: 0.5 }}>
                   Recommended Action:
                 </Typography>
@@ -1510,7 +1510,7 @@ export default function EmployeeHome() {
         PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#20211f', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#172b4d', fontSize: 16 }}>
             {selfServiceModal === 'password' && 'Self-Service Password & MFA'}
             {selfServiceModal === 'licenses' && 'Software License Request'}
             {selfServiceModal === 'wifi' && 'Wi-Fi & MDM Profiles'}
@@ -1528,7 +1528,7 @@ export default function EmployeeHome() {
             {selfServiceModal === 'wifi' &&
               'The 802.1X certificate bundle and mobile configuration payload are ready for your registered hardware.'}
           </Typography>
-          <Paper sx={{ p: 1.5, bgcolor: '#eee7d9', borderRadius: 2, textAlign: 'center' }}>
+          <Paper sx={{ p: 1.5, bgcolor: '#f1f5f9', borderRadius: 2, textAlign: 'center' }}>
             <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#1653c7' }}>
               STATUS: PROVISION_READY
             </Typography>

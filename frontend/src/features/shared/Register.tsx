@@ -84,7 +84,7 @@ export default function Register() {
             <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 48, height: 48, objectFit: 'contain' }} />
           </Box>
           <Typography variant="h5" fontWeight="bold" color="primary">
-            Your next chapter.
+            Create your account
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Self-register for employee incident reporting & IT catalog services

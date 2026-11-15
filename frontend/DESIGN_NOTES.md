@@ -1,6 +1,6 @@
 # Frusk service studio
 
-Bauhaus colour and geometry, with rounded bento cards, soft pastel artwork backgrounds and open spacing. The complaint form keeps a quiet background and clear field hierarchy. The shared theme carries the palette into existing technician, lead and administrator views.
+The operational interface uses neutral white/slate surfaces, restrained blue accents, system typography and concise service-management labels. The interactive workshop remains an optional overview entry point. Incident management and the global audit ledger default to tables; employee incidents also open as a table, with cards available as an optional layout. The complaint form keeps a clear field hierarchy. The shared theme carries this professional treatment into existing technician, lead and administrator views.
 
 ## Interactions
 
@@ -10,6 +10,7 @@ Bauhaus colour and geometry, with rounded bento cards, soft pastel artwork backg
 - Navigation has a mobile disclosure, Escape handling, visible focus and a skip link. The sign-in form appears before artwork on phones.
 - My incidents and administrator incidents use a searchable, filterable card board with ticket previews. Administrator previews link to the incident audit view.
 - Audit search accepts an incident ID or code and filters events by people/system. The API timestamp field is used for live events.
+- Ticket management defaults to the existing management table, with horizontal scrolling for all columns instead of clipped content. Employee incident tables preserve filtering, pagination and report previews; the optional card layout uses the same query and selection state.
 - Routes load separately, keeping the sign-in entrance from downloading every dashboard upfront.
 
 ## Data and existing behaviour
@@ -24,6 +25,7 @@ The latest main branch’s admin settings, register form, Google sign-in integra
 - Existing three role-login navigation tests, with Task 3 cleanup/route assertions retained and the renamed submit button reflected.
 - Service-poster stage selection and keyboard cycle tests.
 - Workshop tests cover on-demand loading, actual incident-to-audit ID mapping, employee-scoped requests, Escape/focus restoration, and API error/retry without fabricated data.
+- Incident-table regression covers row details and the same preview after changing to cards.
 - Browser review of login, employee/admin home, complaint form, incident filtering/preview, audit navigation, and the actual swipe gesture.
 - Responsive review at 390px and 768px widths, including mobile navigation.
 

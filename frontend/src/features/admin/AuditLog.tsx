@@ -121,5 +121,5 @@ function AuditLedger() {
 export default function AuditLog() {
   const [params] = useSearchParams();
   const [view, setView] = useState(params.has('incident') ? 'incident' : 'ledger');
-  return <section><div className="workspace-view-switch" role="group" aria-label="Audit view"><span>YOUR VIEW</span><button aria-pressed={view === 'ledger'} onClick={() => setView('ledger')}>All audit events</button><button aria-pressed={view === 'incident'} onClick={() => setView('incident')}>Incident story</button></div>{view === 'ledger' ? <AuditLedger /> : <AuditTimeline />}</section>;
+  return <section><div className="workspace-view-switch" role="group" aria-label="Audit view"><span>YOUR VIEW</span><button aria-pressed={view === 'ledger'} onClick={() => setView('ledger')}>All audit events</button><button aria-pressed={view === 'incident'} onClick={() => setView('incident')}>Incident timeline</button></div>{view === 'ledger' ? <AuditLedger /> : <AuditTimeline />}</section>;
 }

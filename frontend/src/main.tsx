@@ -9,6 +9,7 @@ import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import App from './App';
 import './theme/studio.css';
+import './theme/professional.css';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000, retry: 2 } } });
 
