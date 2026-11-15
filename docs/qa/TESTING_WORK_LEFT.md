@@ -1,8 +1,37 @@
 # Testing and DevOps: what is left, and the optional full test catalogue
 
-**Update, 2026-11-15:** This is the original planning snapshot and several “not yet” items below are now complete in Task 3 PR #21. All six jobs passed in [run 43736234225](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225): 71 Postman requests/149 assertions and 30 security checks. The portable tests, CI reports, dated case matrix, bug closure and test report are also in PR #21. Use [TEST_REPORT.md](TEST_REPORT.md) for current results and [DEMO_RUN_SHEET.md](DEMO_RUN_SHEET.md) for recording. Remaining hands-on work is browser script-text review, sealed-audit demo dry run, fresh-clone/laptop reset timing, final recording, and repository-owner branch protection.
+## Status on 2026-11-15 (checked against the code at `260d159`)
 
-Written 2026-11-15 against `main` (`acce260`). Read together with `docs/qa/README.md` (your evidence so far) and `backend/docs/TEAM_UPDATES.md` (everything that differs from the handbook PDFs).
+Checked against `main` at `260d159` (PR #21 merged as `b15a166`; the tests, CI, deploy, db and docs/qa files are identical to PR #21 head `efbd419`, which is what was inspected), the GitHub repository `sanay7-devv/Frusk-OOPs-Project`, and the CI runs on that branch. Only code, CI logs and GitHub state count as evidence here; the claims in `TEST_REPORT.md` and the READMEs were re-checked against them.
+
+**PR #21 is merged into `main`.** "Done (merged, PR #21)" below means it is on `main` now. The checks listed were made on PR #21 head `efbd419`; no test, CI or deploy file differs on `main`.
+
+CI evidence: [run 43736234225](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) (commit `3bc8ab6`) and the two runs on `efbd419` itself (43736502715 and 43736498088) all succeeded. Six jobs, whole run 2 min 9 s, longest job (demo stack) 2 min 6 s. The run shows: backend 40 tests, 0 failures (2 skipped in the schema-only job, 0 in the two seed jobs), frontend 3 tests, 7 seed-generator tests, 40 API smoke checks, Postman 71 requests and 149 assertions, security checks 30/30, T10/T16 contract checks, tamper helper round trip.
+
+| Item | Status | One line |
+|---|---|---|
+| R1 close issue #11 | **Done** | Closed 2026-11-15 09:27 UTC. |
+| R2 portable tests | **Done (merged, PR #21)** | UTC and Testcontainers fixed in code; not run on a non-UTC laptop by this check. |
+| R3 security checks | **Partly done (merged, PR #21)** | Run and green (30/30); the written table lacks the exact request and a date, and the browser check is open. |
+| R4 Postman | **Done (merged, PR #21)** | 11 folders, 71 requests, 149 assertions in CI; one expected value in this doc was wrong. |
+| R5 dry-run checklist, tamper helper | **Partly done (merged, PR #21)** | Helper done and tested in CI; run sheet covers workflows 1 to 3 but not the administrator and security segments or the recording-day checks. |
+| R6 reset time, fresh clone | **Not done** | Nothing measured. Blank table in `DEMO_RUN_SHEET.md`; `deploy/README.md` says "unmeasured". |
+| R7 test report | **Partly done (merged, PR #21)** | Columns, summary and T16 note done; evidence is a CI link per case, no screenshots or Newman output per case; security table not final. |
+| R8 bug tracking, repo settings | **Partly done** | Template and badge on the PR branch; labels, board and branch protection not done. |
+| R9 CI gaps | **Partly done** | Reports upload done; lint not done (no script); time budget recorded below. |
+| R10 frontend tests | **Not done** | Still the same 3 navigation tests. |
+| R11 handbook unit-test classes | **Not done** | 4 of 12 classes exist; 8 missing. |
+
+What is left, in order: R6; R11; R8 (labels, board, owner's branch protection); finish R3, R5 and R7 gaps; R10 and the lint step once the Frontend Developer adds them. Sections 4 to 6 stay optional.
+
+### Done (nothing more to do)
+- **R1** issue #11 closed.
+- **R2** `IitsmBackendApplicationTests` uses Testcontainers PostgreSQL and `HandbookIntegrationTest` was already on it; both set `TimeZone` to UTC in a static block (`backend/src/test/java/com/iitsm/IitsmBackendApplicationTests.java:21`, `HandbookIntegrationTest.java:42`). A new `@SpringBootTest` class must copy that block, since there is no shared extension.
+- **R4** all three workflows and the Intelligence, Reports and Notifications folders (details under R4).
+- **R9, reports upload:** `backend-test-reports` artifact (`if: always()`), plus `seed-tests-dev`, `seed-tests-demo` and `demo-stack-evidence`.
+- **Handbook 2.15, tests in CI:** unit, integration (Testcontainers), API (Newman, smoke, security) and frontend tests all run on every push and on pull requests to `main`.
+
+---
 
 ## 0. How to read this
 
@@ -23,108 +52,114 @@ Written 2026-11-15 against `main` (`acce260`). Read together with `docs/qa/READM
 
 | Checklist item | State | Evidence or note |
 |---|---|---|
-| Migrations match Appendix A and run cleanly from an empty database | **Done** | V1 to V9 applied cleanly on an empty database and Hibernate `validate` accepted the entities (checked 2026-11-15 on merged `main`). |
-| Seed data loads in dev and demo; staged demo state present | **Done** | 18 users, 212 incidents, 180 feedback rows, 63 settings loaded. |
-| One command starts the system; one command resets the demo | **Done** | `docker compose -f deploy/docker-compose.yml up --build --detach --wait`; `bash db/tools/reset-demo.sh`. Reset time on the recording laptop is **not measured** (R6). |
-| CI runs unit, integration, API and frontend tests and blocks bad merges | **Mostly** | Six jobs run and pass. "Blocks bad merges" needs branch protection, which is not enabled (R8). |
-| All 26 cases pass and are documented with evidence | **Done** | `docs/qa/test_cases.csv`. The table lacks the date and commit columns the handbook asks for (R7). |
-| Bugs triaged; no open blockers at freeze | **Partly** | One open issue (#11), already fixed (R1). Labels `severity:*` and `area:*` do not exist (R8). |
-| Test report delivered to the Report teammate | **Not yet** | The pieces exist; the single report does not (R7). |
-| No secrets committed; `.env.example` complete; README tells a newcomer what to run | **Partly** | `deploy/README.md` is good. The root README has no CI badge (R8). |
+| Migrations match Appendix A and run cleanly from an empty database | **Done** | Migrations V1 to V10 (V10 is the Backend Lead's, password reset, TOTP and push), seed V100 to V102, demo-only V200. `IitsmBackendApplicationTests` starts the full context on an empty Testcontainers database and Hibernate `validate` accepts the entities (CI run 43736234225, backend job). The handbook text says V1 to V6; the real set is larger. |
+| Seed data loads in dev and demo; staged demo state present | **Done** | Both seed jobs pass in CI; `db/checks/verify.sql` passes; the demo job checks `verify.auto.hours` is `0.033` in demo and `48` in dev. |
+| One command starts the system; one command resets the demo | **Done**, reset time **not measured** | `docker compose -f deploy/docker-compose.yml up --build --detach --wait`; `bash db/tools/reset-demo.sh` (runs in CI). No timing on a laptop, no fresh-clone run on a second machine (R6). |
+| CI runs unit, integration, API and frontend tests and blocks bad merges | **Partly** | The tests run (six jobs, green). Nothing blocks a bad merge: `GET /branches/main/protection` returns 404 and the repository has no rulesets. 404 is consistent with "no protection" but this check could not prove it; needs the repository owner (R8). The frontend job has no lint step (R9). |
+| All 26 cases pass and are documented with evidence | **Done (merged, PR #21)**, evidence thin | 26 rows, all `PASS`, each with date `2026-11-14` and commit `86096c4`. Evidence per row is a CI run link, not a screenshot or Newman output as the handbook asks (R7). The cases were last tied to commit `86096c4`, not to the current head. |
+| Bugs triaged; no open blockers at freeze | **Partly** | The only issue (#11) is closed. The labels `severity:*` and `area:*` do not exist, so triage cannot be recorded (R8). |
+| Test report delivered to the Report teammate | **Partly (merged, PR #21)** | `docs/qa/TEST_REPORT.md` is on `main`. Not yet handed over, security table incomplete (R7). |
+| No secrets committed; `.env.example` complete; README tells a newcomer what to run | **Partly** | `deploy/README.md` explains the run. The CI badge and the issue template are on the PR branch only (R8). Secrets and `.env.example` were not audited by this check. |
 
 ---
 
-## 2. Required work left, in priority order
+## 2. Required work, with status
 
-### R1. Close issue #11
-- **What:** issue #11 "QA: Update frontend auth-flow tests for current login controls" is still open.
-- **Why:** PRs #15 and #16 fixed it. An open bug that is already fixed looks like unfinished work in the bug record.
-- **How:** close it with a link to PR #16.
-- **Done when:** no open issues remain for fixed bugs.
+### R1. Close issue #11 — Done
+- Issue #11 "QA: Update frontend auth-flow tests for current login controls" is CLOSED (2026-11-15 09:27 UTC). It is the only issue in the repository.
+- Left: nothing.
 
-### R2. Make the tests run on any machine
-Two problems found when the suite was run on a Windows laptop in the India time zone. CI is Linux and UTC, so CI does not see them.
+### R2. Make the tests run on any machine — Done (merged, PR #21)
+1. **Time zone — Done.** Static `TimeZone.setDefault(UTC)` in `IitsmBackendApplicationTests` and `HandbookIntegrationTest`.
+2. **`IitsmBackendApplicationTests` — Done.** Uses `PostgreSQLContainer("postgres:16")` with `@Testcontainers`, `app.scheduling.enabled=false`, and asserts the JVM zone is UTC.
+- **Not verified:** CI is Linux and UTC, so it cannot show the fix works. Nobody has recorded `./mvnw test` on a clean clone of a non-UTC Windows laptop. If you do that once, write the result in `docs/qa/TEST_REPORT.md`.
 
-1. **Time zone.** `HandbookIntegrationTest` failed with `FATAL: invalid value for parameter "TimeZone": "Asia/Calcutta"`. The application forces UTC in `IitsmBackendApplication.main`, but tests do not start through `main`, so the JVM keeps the machine's zone. Fix in `src/test`: set `TimeZone.setDefault(TimeZone.getTimeZone("UTC"))` once, for example in a shared `@BeforeAll` or a JUnit extension used by every `@SpringBootTest`.
-2. **`IitsmBackendApplicationTests`.** It has no Testcontainers, so on a machine without a database on `localhost:5432` it fails with `password authentication failed`. In CI it only passes because of the Postgres service container. Give it the same Testcontainers database as `HandbookIntegrationTest`, or turn it into a unit-level test.
+### R3. Record the basic security checks (handbook 2.11) — Partly done (merged, PR #21)
+The checks run as `deploy/security_checks.py` against the demo stack in CI (30/30, evidence JSON `iitsm-security-checks.json` in the `demo-stack-evidence` artifact). `docs/qa/TEST_REPORT.md` has a table of results. Mapping to the six checks:
 
-- **Why:** a teammate who runs `mvn test` on their own laptop and sees 22 errors will think the code is broken.
-- **Done when:** `./mvnw test` passes on a clean clone with only Docker running, whatever the machine's time zone.
+| # | Check | Status | Evidence |
+|---|---|---|---|
+| 1 | Another user's incident by id | **Done** | `security_checks.py`: other employee gets 404 on read and 403 on `acknowledge`. Also T18. |
+| 2 | Admin endpoint with an employee token | **Done** | 403 on `GET /admin/users`, and an `ACCESS_DENIED` audit row is asserted. Also T17 (two audit rows). |
+| 3 | Expired then garbage token | **Done** | Garbage token 401 `TOKEN_INVALID`; the demo clock is advanced 16 minutes and the old token gets 401 `TOKEN_EXPIRED`. Also T19. |
+| 4 | `<script>alert(1)</script>` | **Partly** | Title, description and comment are stored and returned unchanged by the API. The "shown as text, never executed in the UI" half was never checked in a browser (`TEST_REPORT.md` says so too). |
+| 5 | Very long input | **Done** | Title 201, description 5001, comment 4001 characters and a password over 72 bytes give 400 `VALIDATION_FAILED` naming the field (`security_checks.py`). The oversized and the `.exe` upload are covered by `deploy/handbook_contract_checks.py` (T10), not by the security script. |
+| 6 | Wrong passwords, lockout, rate limit | **Done** | Five wrong passwords then 423 `ACCOUNT_LOCKED` for the correct password; login rate probe gets 429 `RATE_LIMITED` with `Retry-After`. Also T20. |
 
-### R3. Record the basic security checks (handbook 2.11)
-The handbook asks for a written result of six checks for the report's security section. Run them against the Compose stack and record the result and evidence.
+Extras: common password `Password1` is refused (`security_checks.py`); renamed `.exe` refused (T10); reuse of an old refresh token returns 401 `TOKEN_INVALID` and the rotated token is revoked as well (T19 in `HandbookIntegrationTest`, not in the script).
 
-| # | Check | Expected result |
-|---|---|---|
-| 1 | Read another user's incident by changing the id in `GET /incidents/{id}` | 404 `INCIDENT_NOT_FOUND` (existence is not revealed). The same person trying an action on it gets 403 `UNAUTHORIZED_OPERATION` (T18). |
-| 2 | Call an admin endpoint with an employee token | 403 `UNAUTHORIZED_OPERATION`, and an `ACCESS_DENIED` audit row (T17). |
-| 3 | Send an expired token, then a garbage token | 401 `TOKEN_EXPIRED`, then 401 `TOKEN_INVALID` (T19). |
-| 4 | Send `<script>alert(1)</script>` as a title, description and comment | Record what happens. Expected: accepted as plain text, returned unchanged in JSON, shown as text (never executed) in the UI. |
-| 5 | Send a very long input (title over 200 characters, description over 5000, comment over 4000, a password over 72 bytes, a file over 5 MB) | 400 `VALIDATION_FAILED` with `fieldErrors` naming the field; an oversized upload is refused with 400 `fieldErrors` on `file`. |
-| 6 | Try five wrong passwords, then keep trying | 423 `ACCOUNT_LOCKED` after the fifth (T20); more than 10 login attempts a minute for one email gives 429 `RATE_LIMITED` with a `Retry-After` header. |
-
-Extra checks worth including because the backend now does them (see `TEAM_UPDATES.md`): reusing an old refresh token revokes every session of that user; a renamed `.exe` upload is refused because the type is read from the file content; common passwords such as `Password1` are refused.
-
+**Left:**
+- Browser check for check 4: open an incident whose title is `<script>alert(1)</script>` in the running frontend and note that the text is shown, not run.
+- Make the report table match the handbook's ask: for each check, the request, the observed result, the date and the evidence. The current table has no request and no date column and merges some checks.
 - **Done when:** a table with check, request, observed result, date and evidence is in `docs/qa/` and handed over with the test report.
 
-### R4. Complete the Postman collection (handbook 2.6)
-The collection has these folders today: Setup, Auth, Catalog and setup, Workflow 1, Workflow 2, Negative cases, Admin and multi-role authorization (38 requests, 83 assertions). The handbook asks for **one folder per demo workflow** and folders for Intelligence, Reports and Notifications.
+### R4. Complete the Postman collection (handbook 2.6) — Done (merged, PR #21)
+`deploy/postman/iitsm.postman_collection.json` (generated by `build_collection.py`) has 11 folders and 71 requests; Newman reported 149 assertions in CI (the file holds 138 `pm.test` calls; the rest come from the repeated login requests):
 
-Add:
+| Folder | Requests |
+|---|---|
+| Setup (real seeded accounts) | 18 |
+| Auth | 1 |
+| Catalog and setup | 3 |
+| Workflow 1, report and assign | 1 |
+| Negative cases | 3 |
+| Workflow 2, investigate and resolve | 9 |
+| Admin and multi-role authorization | 4 |
+| **Workflow 3, major incident mode** | 7 |
+| **Intelligence** | 8 |
+| **Reports** | 10 |
+| **Notifications** | 7 |
 
-| Folder | Requests (endpoints) | What to assert |
-|---|---|---|
-| **Workflow 3: Major Incident Mode** | `POST /admin/demo/outage-drill {rootServiceId}` (demo profile only), `GET /problems`, `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `GET /problems/known-outages?serviceId=`, `POST /problems/{id}/join`, `POST /problems/{id}/resolve` | Drill returns 201 with incident codes; root cause names the common upstream service; join returns 201 and the joiner's incident is CLOSED as a duplicate; resolving the problem resolves every open incident of the record. |
-| Intelligence | `POST /intelligence/suggest-category`, `/suggest-intake`, `/similar`, `/chat`; `GET /incidents/{id}/similar`, `/suggested-resolutions`, `/sla-risk`; `POST /incidents/{id}/summary` | With no LLM key, `source` is `KEYWORD`; a category is returned only when `categoryId` is not null; SLA risk returns `score`, `level` and factors that add up to the score. |
-| Reports | `GET /reports/overview`, `/services`, `/trends`, `/priority-distribution`, `/category-distribution`, `/sla-compliance`, `/workload`, `/coverage-risk`, `/export?type=` | Open + resolved = total; each distribution sums to the overview total; the CSV export starts a formula cell with `'`. |
-| Notifications | `GET /notifications`, `/unread-count`, `POST /notifications/{id}/read`, `/read-all`, `GET/PUT /notifications/preferences` | An assignment creates inbox rows; preferences return 60 switches; switching off a locked one is 400 with a `fieldErrors` entry. |
+Every endpoint listed in the earlier version of this section is called. Newman runs in the CI demo-stack job against the Compose stack. Intelligence asserts `source` is `KEYWORD`; Reports asserts open + resolved = total, each distribution sums to the overview total and the CSV cell starts with `'`; Notifications asserts 60 switches and a 400 with a field error for the locked switch.
 
-Run the new folders in the existing Newman step of CI.
-- **Done when:** each of the three workflows can be dry-run by API alone, as the handbook says.
+**One correction to the earlier expected value.** This page used to say the joiner's incident is CLOSED as a duplicate. The collection (and the passing CI run) asserts it stays `ASSIGNED` until the problem is resolved, and `DEMO_RUN_SHEET.md` says the same. `KnownOutageService.join` still calls `markDuplicate`, and its audit text mentions "Closed as a duplicate", so the Backend Lead should confirm which behaviour is intended (`SYSTEM_GUIDE.md` DEC-72 says "as changed"). Until then the Postman assertion is the working specification.
 
-### R5. Dry-run checklist for all three workflows, and the tamper helper
-`docs/qa/README.md` has a 7-step dry run that covers workflows 1 and 2 only. The video run sheet (`backend/docs/DECISIONS.md`, DEC-45) has five segments that need a checklist: workflow 1, workflow 2, workflow 3, administrator, security. For each: the account, the exact input, and what must appear. Run it twice a week and before every take (handbook 2.12).
+**Not covered by Postman** (backend operations added after this list was written): password reset and TOTP (A12), simulated push (A4), Google sign-in, attachments, audit seal and verify (these are in the run sheet and `check_audit_tamper.py`), feedback and the status board. Optional.
 
-Specific things the run sheet needs from you:
-- **Recording-day checks:** reset before every take; the mail catcher at http://localhost:8025 shows the emails; the demo timers are active (SLA monitor 30 s, escalation monitor 15 s with 1 minute per level, auto-verify about 2 minutes); the Gemini key works or the keyword fallback is acceptable (`source` says `KEYWORD`).
-- **Tamper helper for the sealed audit trail demo (S3).** The 30-second security segment edits an audit row in SQL and presses Verify. Your V7 trigger (`audit_records_no_update_delete`) rejects that edit, as it should. Add a small tool in `db/tools/` that, **for the demo database only**, disables the trigger, changes one row, and re-enables it, plus a second command that undoes the change, so the segment can be repeated in every take. The tool must refuse to run against the dev database.
-- **Done when:** a teammate who has never seen the system can follow the checklist and get the same result.
+### R5. Dry-run checklist for all three workflows, and the tamper helper — Partly done (merged, PR #21)
+- **Tamper helper — Done.** `db/tools/tamper-demo-audit.sh tamper|restore` disables the trigger, adds ` [DEMO_TAMPER]` to the first sealed record, re-enables the trigger, and restores it; it refuses a database without the demo-only migration V200. `deploy/check_audit_tamper.py` runs the whole sequence in CI against the disposable stack (the log shows altered then restored). Not yet rehearsed by hand on the recording laptop.
+- **Run sheet — Partly.** `docs/qa/DEMO_RUN_SHEET.md` has a preflight, the three workflows with accounts and values (employee1, tech1, asha.rao, password `Demo@1234`, score 187, P1, 3 and 20 minutes), the audit-seal steps and an evidence table. Missing against the handbook and the five segments of DEC-45:
+  - **no separate administrator segment and no security segment** with exact input and "what must appear" (a paragraph points at the Python script instead);
+  - **recording-day checks** are not there: mail catcher is mentioned only as a URL in preflight; the demo timers (SLA monitor 30 s, escalation 15 s with 1 minute per level, auto-verify about 2 minutes) and the LLM key or `KEYWORD` fallback are not mentioned at all;
+  - no record of the twice-a-week dry runs.
+- **Done when:** a teammate who has never seen the system can follow the checklist and get the same result, and the five segments plus recording-day checks are in it.
 
-### R6. Verify the demo reset on real hardware (handbook 2.12)
-- Measure `bash db/tools/reset-demo.sh` on the recording laptop. Target under two minutes; the README says this is still unmeasured.
-- Verify the one-command start and the reset from a **fresh clone on a different laptop**.
-- **Done when:** both results are written in `deploy/README.md`.
+### R6. Verify the demo reset on real hardware (handbook 2.12) — Not done
+- `bash db/tools/reset-demo.sh` runs in CI and the whole demo job takes about 2 minutes on a runner, but nobody has timed it on the recording laptop (the table in `DEMO_RUN_SHEET.md` is blank; `deploy/README.md` lines 21, 41 and 46 say "unmeasured").
+- No fresh-clone run on a different laptop is recorded anywhere.
+- **Done when:** both results (first build, warm reset, fresh clone on a second machine) are written in `deploy/README.md`.
 
-### R7. The test report (handbook 2.11)
-This goes into the PDF. Hand it to the Report teammate.
-
-1. Extend `docs/qa/test_cases.csv` with the **date** and **commit id** columns the handbook table requires (ID, category, status, date, commit id, short note). You already link the run.
-2. Evidence per case: a screenshot or the Newman output.
-3. A summary: total, passed, failed, open bugs, lessons learned.
-4. Update the T16 note: the handbook expects similarity thresholds of 0.80 and 0.65, but the backend now uses TF-IDF with a **duplicate threshold of 0.55** and a related threshold of 0.35 (DEC-M12-1). Your test already passes against the real engine; the report must say why the number differs.
-5. Add the R3 security table.
+### R7. The test report (handbook 2.11) — Partly done (merged, PR #21)
+1. **Date and commit columns — Done.** `test_cases.csv` columns: `id, category, scenario, expected, status, actual, date, commit_id, evidence`; 26 rows, all `PASS`, date `2026-11-14`, commit `86096c49aea8ec71cebe4317bbb38af9eb870809`.
+2. **Evidence per case — Partly.** The `evidence` column is one CI run link (run 43624315622) for every case. The handbook asks for a screenshot or the Newman output for each case. T05 to T07 are unit tests, T10 and T16 run in `handbook_contract_checks.py`; none of them has its own output attached.
+3. **Summary — Done.** `docs/qa/TEST_REPORT.md` has the totals (26 passed, 0 failed, 40 backend, 3 frontend, 7 generator, 40 smoke, 71 requests and 149 assertions, 30 security checks), coverage notes and lessons.
+4. **T16 note — Done.** The 0.80/0.65 versus 0.55/0.35 difference is explained.
+5. **Security table — Partly** (see R3).
+- **Corrections needed in `TEST_REPORT.md`:** it says "The six follow-up jobs also uploaded backend test reports". That is wrong: the backend job and the two seed jobs upload surefire reports, the demo job uploads evidence, and the two frontend jobs upload nothing. Its "Backend tests: 40 run; 38 passed, 2 skipped in the schema-only job" is right. Its "all six jobs" run is `43736234225` on `3bc8ab6`; the report should also say which commit the follow-up numbers belong to.
+- **Left:** per-case evidence (or a clear statement that the CI log is the evidence), a re-run of the 26 cases tied to the final commit after PR #21 and the Backend Lead's later merges, the corrected security table, the R10 frontend list.
 - **Done when:** the Report teammate has one document to paste from.
 
-### R8. Bug tracking and repository settings (handbook 2.11, 2.2, 2.10)
-- **Labels:** the repository has only GitHub's defaults (`bug`, `documentation` and so on). Create `severity:blocker`, `severity:major`, `severity:minor`, `area:backend`, `area:frontend`, `area:db`, `area:docs`.
-- **Issue template** with the fields: title, steps to reproduce, expected, actual, screenshot or log, build or commit, who found it.
-- **Project board** with columns To do, Doing, In review, Done.
-- **Branch protection on `main`:** pull request required, one review, CI jobs must pass. This needs the repository owner (the repo belongs to `sanay7-devv`); ask them to enable it, since it is not enabled today.
-- **CI badge:** add a build-status badge for the workflow to the top of the root `README.md` (one line; handbook 2.10). Do not edit the rest of that README.
+### R8. Bug tracking and repository settings (handbook 2.11, 2.2, 2.10) — Partly done
+- **Labels — Not done.** The repository has only `accessibility, bug, documentation, duplicate, enhancement, good first issue, help wanted, invalid, question, wontfix`. Create `severity:blocker`, `severity:major`, `severity:minor`, `area:backend`, `area:frontend`, `area:db`, `area:docs`.
+- **Issue template — Done (merged, PR #21).** `.github/ISSUE_TEMPLATE/bug_report.md` has what happened, steps, expected, actual, screenshot or log, build or commit, found by, severity and area. It only labels `bug`; the severity and area labels have to exist first.
+- **Project board — Could not verify.** The GitHub token used here lacks the `read:project` scope. Ask Tanisha for a link or screenshot (columns To do, Doing, In review, Done).
+- **Branch protection on `main` — Not done / could not verify.** API returns 404 and `rulesets` is empty. Needs the repository owner (`sanay7-devv`): pull request required, one review, the CI jobs required.
+- **CI badge — Done (merged, PR #21).** Line 14 of the root `README.md` (one line added).
 - **Done when:** a new bug can be filed with a severity and an area, and a red CI blocks a merge.
 
-### R9. Small CI gaps (handbook 2.10)
-- **Upload backend test reports as artifacts** from the `backend-test` job. Today only the seed jobs upload them.
-- **Frontend lint step.** The handbook's frontend job includes lint, but `frontend/package.json` has no lint script. Ask the Frontend Developer to add one; then add the step.
-- **Time budget:** the handbook wants CI under about 10 minutes. Record the real duration of the longest job (the demo-stack job has a 15 minute limit).
-- **Done when:** a failed test leaves a downloadable report.
+### R9. Small CI gaps (handbook 2.10) — Partly done
+- **Backend test reports as artifacts — Done (merged, PR #21).** `backend-test-reports` is uploaded with `if: always()`.
+- **Frontend lint step — Not done.** `frontend/package.json` still has only `dev`, `build`, `preview` and `test`; no lint script and no CI step. Ask the Frontend Developer for a `lint` script, then add the step.
+- **Time budget — Done, recorded here.** Run 43736234225: 2 min 9 s end to end; demo-stack job 2 min 6 s (limit 15 minutes); backend job 1 min 29 s. Well under the handbook's 10 minutes.
+- **Note:** the backend job runs `mvnw test`, not `verify` as the handbook says; harmless today because there are no integration-phase plugins.
+- **Done when:** a failed test leaves a downloadable report (true now) and lint runs (not yet).
 
-### R10. Frontend tests: review, run and list (handbook 2.7)
-The handbook says the Frontend Developer **writes** 3 or 4 component tests (SLA countdown colours, status chip mapping, login form validation, filter bar) and you review them, run them in CI and list them in the test document. Today there are only the 3 navigation tests in `auth-flow.test.tsx`.
+### R10. Frontend tests: review, run and list (handbook 2.7) — Not done
+- Only `frontend/src/auth-flow.test.tsx` exists, with 3 navigation tests (all pass in CI). None of the handbook's four component tests exist (SLA countdown colours, status chip mapping, login form validation, filter bar).
 - **Your part:** ask the Frontend Developer for the component tests, review them, and list all frontend tests in the test report. Do not write them yourself.
 
-### R11. Unit tests from the handbook's own list (handbook 2.4)
-The handbook's class-level table names these test classes. Five of them do not exist yet. They are required; the optional catalogue is in section 4.
+### R11. Unit tests from the handbook's own list (handbook 2.4) — Not done (8 of 12 classes missing)
+Test classes on the branch, counted from `@Test` methods in `backend/src/test`: `HandbookIntegrationTest` 21, `PriorityEngineTest` 4, `EligibilityFilterTest` 6, `WorkloadTrackerTest` 3, `SlaTrackerTest` 3, `IitsmBackendApplicationTests` 1, `SeedCompatibilityTest` 2 (disabled unless a seeded database is present). Total 40, matching CI. Package `domain` has only `assignment`, `incident` and `priority` test folders.
 
 | Handbook class | State | What to cover |
 |---|---|---|
@@ -132,12 +167,12 @@ The handbook's class-level table names these test classes. Five of them do not e
 | `EligibilityFilterTest` | **Done** (6 tests) | |
 | `WorkloadTrackerTest` | **Done** (3 tests) | |
 | `SlaTrackerTest` | **Done** (3 tests) | |
-| `IncidentStateTest` | **Missing** | For every state and every action: the allowed ones succeed with the right next state; every other combination throws `InvalidStateTransitionException`. Use a parameterized table test. Classes: `Incident`, `StateFactory`, `OpenState` and the state classes in `com.iitsm.domain.incident`. |
-| `AssignmentStrategyTests` | **Missing** | Skill, Load, RoundRobin, ExperiencePriority and Composite weights, and tie-break rotation. Weights are now skill 0.35, load 0.25, experience 0.15, priority fit 0.10, service familiarity 0.15 (they must sum to 1.0). Skill score is 0.7 times best proficiency plus 0.3 times the share of required skills held. A worked example with numbers is in `backend/docs/SYSTEM_GUIDE.md` section 10. Classes in `com.iitsm.domain.assignment`. |
+| `IncidentStateTest` | **Missing** | For every state and every action: the allowed ones succeed with the right next state; every other combination throws `InvalidStateTransitionException`. Use a parameterized table test. Classes: `Incident`, `StateFactory`, `IncidentState`, `OpenState` and the state classes in `com.iitsm.domain.incident`. |
+| `AssignmentStrategyTests` | **Missing** | Skill, Load, RoundRobin, ExperiencePriority and Composite weights, and tie-break rotation. Weights in `ConfigKey` are skill 0.35, load 0.25, experience 0.15, priority fit 0.10, service familiarity 0.15 (sum 1.0; checked). Skill score is 0.7 times best proficiency plus 0.3 times the share of required skills held. A worked example with numbers is in `backend/docs/SYSTEM_GUIDE.md` section 10. Classes in `com.iitsm.domain.assignment`. |
 | `EscalationChainTest` | **Missing** | Expected values are in section 4, M11. |
-| `SimilarityTest` and `KeywordCategorizerTest` | **Missing** | Use `Tokenizer`, `TfIdfModel` and `KeywordTextAnalysisService` (section 4, M12). Thresholds are **0.55 and 0.35**, not the handbook's 0.80 and 0.65. |
+| `SimilarityTest` and `KeywordCategorizerTest` | **Missing** | Use `Tokenizer`, `TfIdfModel` and `KeywordTextAnalysisService` (section 4, M12). Thresholds are **0.55 and 0.35** (`ConfigKey`), not the handbook's 0.80 and 0.65. |
 | `SlaRiskScorerTest` | **Missing** | Section 4, M12. |
-| `ExceptionMappingTest` | **Missing** | `ItsmException` and its subclasses in `com.iitsm.domain.exception`: each exception maps to its code and HTTP status from Appendix B.2; `GlobalExceptionHandler` renders `ErrorResponse`. |
+| `ExceptionMappingTest` | **Missing** | `ItsmException` and its subclasses in `com.iitsm.domain.exception` (22 classes extend it directly today): each exception maps to its code and HTTP status from Appendix B.2; `GlobalExceptionHandler` renders `ErrorResponse`. |
 | `PermissionTest` | **Missing** | Union of permissions for a multi-role user; team lead is a technician with escalation level 1 (section 4, M2). |
 
 - **Done when:** every class in the handbook's table has a test class.
@@ -146,7 +181,7 @@ The handbook's class-level table names these test classes. Five of them do not e
 
 ## 3. What exists today (so you do not duplicate it)
 
-**Backend tests: 40 run on `main`, 0 failures (2 skipped without a seeded database).**
+**Backend tests: 40 run, 0 failures** (CI run 43736234225). 2 of them skip when no seeded database is present (`SeedCompatibilityTest`); the two seed jobs run all 40.
 
 | Test class | Tests |
 |---|---|
@@ -155,27 +190,27 @@ The handbook's class-level table names these test classes. Five of them do not e
 | `EligibilityFilterTest` | 6 (T07) |
 | `WorkloadTrackerTest` | 3 |
 | `SlaTrackerTest` | 3 |
-| `IitsmBackendApplicationTests` | 1 (context loads; see R2) |
+| `IitsmBackendApplicationTests` | 1 (context loads on Testcontainers; UTC) |
 | `SeedCompatibilityTest` | 2 (run only with a seeded database) |
 
-**Other automated checks:** 3 frontend tests; 7 Python seed-generator tests; `db/checks/verify.sql`; `deploy/api_smoke.py` (40 requests); the Postman collection (38 requests, 83 assertions); `deploy/handbook_contract_checks.py` (T10 and T16, run against the Docker stack).
+**Other automated checks:** 3 frontend tests; 7 Python seed-generator tests (`db/tools/test_seed_generator.py`); `db/checks/verify.sql`; `deploy/api_smoke.py` (40 checks); the Postman collection (71 requests, 149 assertions); `deploy/handbook_contract_checks.py` (T10 and T16); `deploy/security_checks.py` (30 checks); `deploy/check_audit_tamper.py`.
 
-**CI:** six jobs (backend tests, frontend tests, frontend build, seed integrity for dev and demo, demo stack with snapshot round trip).
+**CI:** six jobs (backend tests, frontend tests, frontend build, seed integrity for dev and demo, demo stack with snapshot round trip and all API checks).
 
-**Gap in numbers:** the backend has 119 operations and over 400 classes; the unit tests above cover a handful of the rule classes. The optional catalogue in section 4 fills this.
+**Gap in numbers:** the backend has about 130 mapped operations (129 per the project docs) and 466 Java files; the unit tests above cover a handful of the rule classes. The optional catalogue in section 4 fills this. None of the catalogue classes below exists as a test yet, except the four listed in the R11 table and the integration cases T01 to T26.
 
 ---
 
 ## 4. Optional: unit test catalogue (all plain Java unless noted)
 
-Class names, packages and expected values come from `backend/docs/ROADMAP.md` section 7 and `TEAM_UPDATES.md`. Every class below was checked to exist in `backend/src/main/java/com/iitsm`. Use a fixed `Clock`; scheduling is off in the test profile (`app.scheduling.enabled=false`), so call the monitors directly.
+Class names, packages and expected values come from `backend/docs/ROADMAP.md` section 7 and `TEAM_UPDATES.md`. On 2026-11-15 every class below was re-checked against `backend/src/main/java/com/iitsm`: all exist in the stated packages, with two notes (`GoogleIdentity` is a nested record of `GoogleIdTokenVerifier`; `InvalidLlmResponseException` is a package-private nested class of `LlmTextAnalysisService`, so its test must sit in `com.iitsm.infrastructure.ai`). The expected values quoted from `ConfigKey` (weights, thresholds, `escalation.exhausted.minutes` 15, `verify.auto.hours` 48, `verify.monitor.interval.seconds` 300) still match. **Test status: none of these catalogue classes has a test yet** except those marked Done in the R11 table above. Use a fixed `Clock`; scheduling is off in the test profile (`app.scheduling.enabled=false`), so call the monitors directly.
 
 If an expected value here ever disagrees with the code, the code wins for "what exists now": check with the Backend Lead and note the difference.
 
 ### M1 and M2: foundations, users, authentication
 | Class (package) | Cases |
 |---|---|
-| `ItsmException` and its 17 subclasses (`domain.exception`), `GlobalExceptionHandler` (`web.handler`), `RequestIdFilter` (`web.filter`), `ErrorResponse` (`web.dto`) | Each exception gives its code and HTTP status; an exception from a test endpoint comes back in the standard body; `X-Request-Id` header present. |
+| `ItsmException` and its 22 direct subclasses (`domain.exception`), `GlobalExceptionHandler` (`web.handler`), `RequestIdFilter` (`web.filter`), `ErrorResponse` (`web.dto`) | Each exception gives its code and HTTP status; an exception from a test endpoint comes back in the standard body; `X-Request-Id` header present. |
 | `User`, `Role`, `EmployeeRole`, `TechnicianRole`, `AdministratorRole`, `SkillSet`, `UserFactory`, `PermissionKey` (`domain.user`) | Permission union for a multi-role user; team lead = technician with escalation level 1; every new user starts as EMPLOYEE. |
 | `User.recordFailedLogin(now, maxAttempts, lockDuration)`, `User.isLockedAt(now)` | Clock-driven lockout. |
 
@@ -290,6 +325,8 @@ Settings in play: `dup.tfidf.threshold.duplicate` 0.55, `dup.tfidf.threshold.rel
 
 ## 5. Optional: more integration (HTTP) tests beyond T01 to T26
 
+**Status 2026-11-15:** none of these is a JUnit test yet (`HandbookIntegrationTest` still holds only T01 to T26 minus T05 to T07, T10, T16). The Postman folders now cover some of the same ground over HTTP (problem records and demo outage drill, notifications and preferences, reports invariants, the CSV formula escape, password policy and rate limit in `security_checks.py`).
+
 Use the same setup as `HandbookIntegrationTest` (real HTTP, Testcontainers, fixed clock, each test creates its own data). Several of these also fit the Postman collection.
 
 | Area | Scenario | Expected |
@@ -318,6 +355,8 @@ Use the same setup as `HandbookIntegrationTest` (real HTTP, Testcontainers, fixe
 
 ## 6. Optional: shared extras from the accepted plan (DEC-43)
 
+**Status 2026-11-15:** A9 not done (`backend/pom.xml` has no ArchUnit or JaCoCo; CI has no coverage or static-analysis step). A10 not done. A7 not done: no load-test script or result in the repository (`backend/docs/SCALING.md` only mentions the tools). A14 not checked.
+
 | # | Item | Yours | Notes |
 |---|---|---|---|
 | A9 | Architecture rule tests (ArchUnit) | Yours | `domain` imports no Spring or web code; controllers never touch repositories. Needs `archunit-junit5` as a test dependency: ask the Backend Lead to add it to `backend/pom.xml`. |
@@ -343,7 +382,7 @@ Use the same setup as `HandbookIntegrationTest` (real HTTP, Testcontainers, fixe
 
 ## 8. Handover and tips
 
-- **Smoke scripts.** The Backend Lead has per-module smoke scripts (`auth`, `m3` to `m14`, `calendar`, `endpoint_sweep`, `check_contract`) outside this repository; they show the expected behaviour of every built endpoint and are meant to be turned into automated tests. Ask for the folder. They read `SMOKE_PORT` and `SMOKE_DB`, and some need a fresh database.
+- **Smoke scripts (not in the repository; PR #24 hands them over).** The Backend Lead has per-module smoke scripts (`auth`, `m3` to `m14`, `calendar`, `endpoint_sweep`, `check_contract`) outside this repository; they show the expected behaviour of every built endpoint and are meant to be turned into automated tests. Ask for the folder. They read `SMOKE_PORT` and `SMOKE_DB`, and some need a fresh database.
 - **Where the expected values live.** `backend/docs/ROADMAP.md` section 7, `backend/docs/TEAM_UPDATES.md`, and `backend/docs/SYSTEM_GUIDE.md` for each module's rules.
 - **Test naming and independence** (handbook 2.4): `method_condition_expectedResult`, each test builds its own data, time-based logic uses the injected `Clock`.
 - **Existing behaviour to remember when writing tests:** creating similar incidents on one service needs `confirmNotDuplicate: true`; the password policy refuses passwords containing a word of the user's name (4 or more characters) or the first part of the email; a category is no longer required on create, and a confident AI suggestion (0.60 or more) is applied.
