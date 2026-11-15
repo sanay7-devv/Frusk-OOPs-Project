@@ -1649,7 +1649,7 @@
                   "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
                   "",
                   "const d=pm.response.json();",
-                  "pm.test('Join is a closed duplicate',()=>{pm.expect(d.status).to.eql('CLOSED');pm.expect(d.closureReason).to.eql('DUPLICATE');});"
+                  "pm.test('Join creates a linked, assigned incident',()=>{pm.expect(d.status).to.eql('ASSIGNED');pm.expect(d.assignee).to.be.an('object');});"
                 ]
               }
             }

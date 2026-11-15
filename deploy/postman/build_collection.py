@@ -144,7 +144,7 @@ pm.test('Employee sees the known outage',()=>pm.expect(pm.response.json().some(x
 """)
 request(major,'Employee joins known outage','POST','/problems/{{problemId}}/join','token_employee2',status=201,checks="""
 const d=pm.response.json();
-pm.test('Join is a closed duplicate',()=>{pm.expect(d.status).to.eql('CLOSED');pm.expect(d.closureReason).to.eql('DUPLICATE');});
+pm.test('Join creates a linked, assigned incident',()=>{pm.expect(d.status).to.eql('ASSIGNED');pm.expect(d.assignee).to.be.an('object');});
 """)
 request(major,'Resolve the grouped outage','POST','/problems/{{problemId}}/resolve','token_asha.rao',
         {'rootCause':'Synthetic shared Database service outage',
