@@ -11368,20 +11368,27 @@ paths:
         schema:
           type: string
           format: date-time
-      - in: query
+      - description: csv (default) or pdf
+        in: query
         name: format
         required: false
         schema:
           type: string
-          default: csv
+          enum:
+          - csv
+          - pdf
       responses:
         "200":
           content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
             text/csv:
               schema:
                 type: string
                 format: binary
-          description: CSV file
+          description: CSV or PDF file
         "400":
           content:
             application/json:
@@ -11457,9 +11464,11 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
           description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
             \ down; try again shortly (M14, DEC-42)"
-      summary: "Download a report as CSV (type: incidents, overview, services, trends,\
-        \ priority-distribution, category-distribution, sla-compliance, workload);\
-        \ formula cells are neutralised and rows are capped"
+      summary: "Download a report as CSV (default) or PDF (format=csv|pdf; type: incidents,\
+        \ overview, services, trends, priority-distribution, category-distribution,\
+        \ sla-compliance, workload); CSV formula cells are neutralised and rows are\
+        \ capped; the PDF has a title, the date range, the generated-at time and the\
+        \ same rows"
       tags:
       - Reports
   /api/v1/reports/overview:
