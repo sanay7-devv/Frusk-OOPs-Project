@@ -67,7 +67,7 @@ def ok(name, cond, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -94,6 +94,11 @@ ok("POST /auth/refresh -> 200", s == 200, s)
 A, refresh = b["accessToken"], b["refreshToken"]
 s, b = call("GET", "/auth/me", token=A)
 ok("GET /auth/me -> 200", s == 200 and b["email"] == mail("admin"), (s, b))
+
+# Settings this sweep assumes (restored at exit): incidents stay in triage until the sweep assigns them (DEC-70 off),
+# and no 429 on the burst of incident creations and logins
+import smoke_setup  # noqa: E402
+smoke_setup.tune_with(os.environ.get("SMOKE_PORT", "8081"), A, {**smoke_setup.NO_AUTOCAT, **smoke_setup.NO_RATE_LIMITS})
 
 # ---------------------------------------------------------------- skills
 skills = [call("POST", "/admin/skills", {"name": f"{n}-{RUN}"}, token=A)[1]["id"] for n in ("Networking", "Linux", "Spare")]
@@ -170,7 +175,8 @@ call("POST", "/admin/escalation-policies", {"priority": "P2", "level": 1, "timeo
 
 # ---------------------------------------------------------------- config
 s, b = call("GET", "/admin/config", token=A)
-ok("GET /admin/config (76 settings)", s == 200 and len(b) == 76, (s, len(b) if isinstance(b, list) else b))
+ok("GET /admin/config lists every setting once, each with a default", s == 200 and len(b) >= 83
+   and len({c["key"] for c in b}) == len(b) and all("defaultValue" in c for c in b), (s, len(b) if isinstance(b, list) else b))
 s, b = call("PUT", "/admin/config", [{"key": "assignment.strategy", "value": "COMPOSITE"}], token=A)
 ok("PUT /admin/config", s == 200, s)
 

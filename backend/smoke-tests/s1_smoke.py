@@ -1,6 +1,6 @@
 """Smoke test of S1, the Service Desk Simulator (local dev server, Flyway seed data, local DB only).
 
-Needs the dev profile with the Flyway seed (profile dev, not schema-auto): 212 incidents and 18 users from
+Needs the dev profile with the Flyway seed (profile dev): 212 incidents and 18 users from
 db/seed, password Demo@1234. Port and database come from SMOKE_PORT (default 8081) and SMOKE_DB (default iitsm).
 Run it on a database no other suite has changed; it restores the strategy it switches.
 """
@@ -48,7 +48,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 

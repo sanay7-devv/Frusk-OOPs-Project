@@ -43,7 +43,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -68,6 +68,10 @@ sql(f"insert into user_roles(user_id, role_type, granted_at) values ({root_id}, 
 sql(f"insert into administrator_profiles(user_id, scope) values ({root_id}, 'SYSTEM_ADMIN')")
 A = login(mail("root"))
 call("PUT", "/admin/config", [{"key": "assignment.strategy", "value": "COMPOSITE"}], token=A)
+
+# Settings this suite assumes (restored at exit): incidents without a confident category stay in triage, no 429
+import smoke_setup  # noqa: E402
+smoke_setup.tune_with(os.environ.get("SMOKE_PORT", "8081"), A, {**smoke_setup.NO_AUTOCAT, **smoke_setup.NO_RATE_LIMITS})
 
 # catalog
 net_skill = call("POST", "/admin/skills", {"name": f"Networking-{RUN}"}, token=A)[1]["id"]

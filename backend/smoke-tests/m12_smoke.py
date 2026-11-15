@@ -293,7 +293,35 @@ cfg(A, sla__risk__threshold=0.30)
 s, hot = call("GET", f"/incidents/{iid}/sla-risk", token=assignee_token)
 check("threshold is live: at 0.30 the same incident is flagged at risk (level HIGH)",
       s == 200 and hot["atRisk"] and hot["level"] == "HIGH", (s, hot))
+# B1: the scan's flag makes slaState AT_RISK, in the detail, the list and the slaState filter (scan every 5 s)
+def at_risk_ids():
+    s_, page = call("GET", "/incidents?slaState=AT_RISK&size=100", token=A)
+    return s_, [i["id"] for i in page["items"]] if s_ == 200 else page
+
+
+deadline = time.time() + 20
+while time.time() < deadline and iid not in at_risk_ids()[1]:
+    time.sleep(1)
+s, d = call("GET", f"/incidents/{iid}", token=A)
+check("B1: flagged open incident, deadline not passed -> detail slaState AT_RISK", s == 200 and d["slaState"] == "AT_RISK", (s, d.get("slaState")))
+s, ids = at_risk_ids()
+check("B1: GET /incidents?slaState=AT_RISK returns the flagged incident", s == 200 and iid in ids, (s, ids))
+s, row = call("GET", f"/incidents?q={inc['code']}", token=A)
+check("B1: the list row of the same incident shows AT_RISK too (list and search agree)",
+      s == 200 and [i["slaState"] for i in row["items"] if i["id"] == iid] == ["AT_RISK"], (s, row))
+s, others = call("GET", "/incidents?slaState=WARNING&size=100", token=A)
+s2, others2 = call("GET", "/incidents?slaState=OK&size=100", token=A)
+check("B1: a flagged incident is not also listed under WARNING or OK",
+      s == 200 and s2 == 200 and all(i["id"] != iid for i in others["items"] + others2["items"]), (s, s2))
+s, resolved = call("GET", f"/incidents?slaState=AT_RISK&status=RESOLVED&status=VERIFIED&status=CLOSED", token=A)
+check("B1: resolved or closed incidents never match AT_RISK", s == 200 and resolved["items"] == [], (s, resolved))
 cfg(A, sla__risk__threshold=0.70)
+deadline = time.time() + 20
+while time.time() < deadline and iid in at_risk_ids()[1]:
+    time.sleep(1)
+s, d = call("GET", f"/incidents/{iid}", token=A)
+check("B1: threshold raised again -> the flag clears and slaState leaves AT_RISK",
+      s == 200 and d["slaState"] != "AT_RISK" and iid not in at_risk_ids()[1], (s, d.get("slaState")))
 s, cfgs = call("PUT", "/admin/config", [{"key": "sla.risk.weight.elapsed", "value": "0.9"}], token=A)
 check("risk weights must add up to 1.0 -> 400 keyed by config key", s == 400
       and any(f["field"] == "sla.risk.weight.elapsed" for f in cfgs.get("fieldErrors", [])), (s, cfgs))

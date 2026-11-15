@@ -1,4 +1,4 @@
-"""Smoke test of the outage drill (D2), demo profile only. Start a backend with SPRING_PROFILES_ACTIVE=dev,schema-auto,demo:
+"""Smoke test of the outage drill (D2), demo profile only. Start a backend with SPRING_PROFILES_ACTIVE=dev,demo:
     SMOKE_PORT=8085 SMOKE_DB=iitsm_m12b_demo python -I -X utf8 m12b_drill.py
 (the dev-profile 404 of the same path is checked at the end of m12b_smoke.py)"""
 import atexit

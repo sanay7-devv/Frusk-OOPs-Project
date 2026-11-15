@@ -38,7 +38,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -50,6 +50,10 @@ def ts(value):
 def fe(b):
     return sorted({f["field"] for f in b.get("fieldErrors", [])}) if isinstance(b, dict) else b
 
+
+# Settings this suite assumes (restored at exit): confident incidents stay in triage (DEC-70 off), no 429 on bursts
+import smoke_setup  # noqa: E402
+smoke_setup.tune(os.environ.get("SMOKE_PORT", "8081"), lambda q: sql(q), {**smoke_setup.NO_AUTOCAT, **smoke_setup.NO_RATE_LIMITS})
 
 # ---------------------------------------------------------------- people
 def user(tag, name):

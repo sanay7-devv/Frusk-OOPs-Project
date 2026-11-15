@@ -15,7 +15,7 @@ import os
 import subprocess
 import time
 
-DB = os.environ.get("ITSM_DB", "iitsm_m11")
+DB = os.environ.get("SMOKE_DB", os.environ.get("ITSM_DB", "iitsm_m11"))
 results = []
 
 
@@ -31,7 +31,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip()
 

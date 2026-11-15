@@ -1,7 +1,7 @@
 """Offline check of the Gemini adapter (GeminiLlmClient): a local stub plays the Gemini API.
 
 Start the backend with: LLM_PROVIDER=gemini LLM_API_KEY=stub-key LLM_BASE_URL=http://localhost:18090 (profiles
-dev,schema-auto), then run:  SMOKE_PORT=8081 SMOKE_DB=<db> python -I -X utf8 gemini_stub_check.py
+dev), then run:  SMOKE_PORT=8081 SMOKE_DB=<db> python -I -X utf8 gemini_stub_check.py
 The stub checks the URL, the key header and the request body, answers like Gemini (candidates/content/parts with a
 JSON text), and can be told to fail. Checks that suggestions come back with source LLM, that a blocked prompt or
 HTTP error falls back to KEYWORD, and that the key never appears in the URL.
@@ -86,7 +86,7 @@ def call(method, path, body=None, token=None):
 
 
 def sql(statement):
-    return subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
+    return subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
                           capture_output=True, text=True).stdout.strip()
 
 
@@ -107,7 +107,8 @@ s, b = call("POST", "/intelligence/suggest-category", {"title": "Network keeps d
             token=A)
 check("suggest-category answered by the LLM (source LLM)", s == 200 and b.get("source") == "LLM", (s, b))
 check("the stub's category was used (thought part skipped, JSON text parsed)",
-      s == 200 and b.get("categoryId") == net["id"], b)
+      s == 200 and b.get("categoryId") is not None and str(b.get("categoryName", "")).startswith("Network")
+      and b.get("reason") == "Gemini stub matched the name", b)  # the Flyway seed has a "Network" category too, the stub picks the first match
 req = seen[-1] if seen else {}
 check("request went to /v1beta/models/gemini-3.5-flash-lite:generateContent",
       req.get("path") == "/v1beta/models/gemini-3.5-flash-lite:generateContent", req.get("path"))

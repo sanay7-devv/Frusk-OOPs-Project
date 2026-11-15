@@ -16,8 +16,8 @@ import time
 import urllib.error
 import urllib.request
 
-PORT = os.environ.get("ITSM_PORT", "8081")
-DB = os.environ.get("ITSM_DB", "iitsm")
+PORT = os.environ.get("SMOKE_PORT", os.environ.get("ITSM_PORT", "8081"))
+DB = os.environ.get("SMOKE_DB", os.environ.get("ITSM_DB", "iitsm"))
 BASE = f"http://localhost:{PORT}/api/v1"
 RUN = secrets.token_hex(3)
 PW = "Ab9-Zq" + secrets.token_hex(4) + "9"
@@ -55,7 +55,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -98,7 +98,10 @@ def escalated_entries(inc_id):
 def age(inc_id, minutes):
     """Pretends the incident (and everything in its audit trail) is `minutes` older."""
     sql(f"update incidents set created_at = created_at - interval '{minutes} minutes' where id={inc_id}")
-    sql(f"update audit_records set created_at = created_at - interval '{minutes} minutes' where incident_id={inc_id}")
+    # audit_records is append-only (trigger from V7), so lift the trigger for this one test-only statement
+    sql("alter table audit_records disable trigger audit_records_no_update_delete; "
+        f"update audit_records set created_at = created_at - interval '{minutes} minutes' where incident_id={inc_id}; "
+        "alter table audit_records enable trigger audit_records_no_update_delete")
 
 
 def age_resolution(inc_id, minutes):
@@ -130,6 +133,8 @@ s, _ = call("PUT", "/admin/config", [{"key": "autocat.apply.confidence", "value"
                                      {"key": "escalation.exhausted.minutes", "value": "10"},
                                      {"key": "assignment.strategy", "value": "COMPOSITE"}], token=A)
 check("config: monitor intervals 5 s, exhausted wait 10 min", s == 200, s)
+import smoke_setup  # noqa: E402
+smoke_setup.settle_monitors(sql, DB)  # the 5 s intervals only apply after the first 60 s tick
 s, cfg = call("GET", "/admin/config", token=A)
 keys = {c["key"]: c for c in cfg}
 check("new settings listed with defaults (escalation.exhausted.minutes 15, verify.monitor.interval.seconds 300)",

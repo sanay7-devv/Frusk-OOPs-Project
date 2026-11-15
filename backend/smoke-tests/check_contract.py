@@ -5,7 +5,8 @@ import re
 import sys
 import urllib.request
 
-ROOT = "http://localhost:8081"
+import os
+ROOT = "http://localhost:" + os.environ.get("SMOKE_PORT", "8081")
 OUT = pathlib.Path(sys.argv[1])
 OUT.mkdir(parents=True, exist_ok=True)
 

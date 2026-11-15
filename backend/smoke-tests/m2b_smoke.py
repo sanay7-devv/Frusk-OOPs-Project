@@ -1,7 +1,7 @@
 """Smoke test of M2b Google sign-in (POST /auth/google) with the FAKE verifier, offline.
 
 Run against a fresh backend of the M2b worktree started with GOOGLE_VERIFIER=fake and
-GOOGLE_CLIENT_ID=test-client-id.apps.googleusercontent.com (profiles dev,schema-auto):
+GOOGLE_CLIENT_ID=test-client-id.apps.googleusercontent.com (profile dev):
   SMOKE_PORT=8085 SMOKE_DB=iitsm_m2b python -I -X utf8 m2b_smoke.py
 Tokens are HS256-signed with the fake verifier's fixed key (infrastructure/google/FakeGoogleIdTokenVerifier).
 """
@@ -92,6 +92,10 @@ def register(email):
     assert s == 201, (s, b)
     return b["user"]["id"]
 
+
+# Settings this suite assumes (restored at exit): no 429 on the per-address sign-in limit (M14, default 10 a minute)
+import smoke_setup  # noqa: E402
+smoke_setup.tune(PORT, sql, smoke_setup.NO_RATE_LIMITS)
 
 # --- 1 link an existing account by verified email
 e1 = f"link.{RUN}@iitsm.demo"
