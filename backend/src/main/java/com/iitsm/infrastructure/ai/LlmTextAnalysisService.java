@@ -15,6 +15,7 @@ import com.iitsm.domain.intelligence.CategorySuggestion;
 import com.iitsm.domain.intelligence.IntakeSuggestion;
 import com.iitsm.domain.intelligence.LlmClient;
 import com.iitsm.domain.intelligence.SimilarMatch;
+import com.iitsm.domain.intelligence.SimilarResult;
 import com.iitsm.domain.intelligence.TextAnalysisService;
 import com.iitsm.domain.intelligence.TextRecord;
 import com.iitsm.domain.intelligence.TextRedactor;
@@ -103,6 +104,12 @@ class LlmTextAnalysisService implements TextAnalysisService {
     public List<SimilarMatch> findSimilar(String title, String description, List<TextRecord> candidates,
                                           List<String> corpus) {
         return keyword.findSimilar(title, description, candidates, corpus);
+    }
+
+    @Override
+    public SimilarResult findSimilarScored(String title, String description, double[] queryVector,
+                                           List<TextRecord> candidates, List<String> corpus) {
+        return keyword.findSimilarScored(title, description, queryVector, candidates, corpus);
     }
 
     @Override

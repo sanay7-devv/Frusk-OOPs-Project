@@ -105,6 +105,21 @@ public enum ConfigKey {
             "TF-IDF similarity from which an incident is a likely duplicate", Type.DECIMAL, "0", "1"),
     DUP_TFIDF_THRESHOLD_RELATED("dup.tfidf.threshold.related", "0.35",
             "TF-IDF similarity from which incidents are possibly related", Type.DECIMAL, "0", "1"),
+    // M12 embeddings (DEC-M12-10): cosine thresholds of Gemini vectors; used only when every vector is available,
+    // otherwise the TF-IDF pair above applies. Gemini vectors are bunched together (on the 212 seed incidents unrelated
+    // pairs median 0.85, same-issue pairs median 0.95), so the handbook's 0.80 / 0.65 would call nearly everything a
+    // duplicate; 0.93 / 0.90 were calibrated on the seed data (see SYSTEM_GUIDE, embeddings).
+    DUP_EMBEDDING_THRESHOLD_DUPLICATE("dup.embedding.threshold.duplicate", "0.93",
+            "Embedding cosine similarity from which an incident is a likely duplicate", Type.DECIMAL, "0", "1"),
+    DUP_EMBEDDING_THRESHOLD_RELATED("dup.embedding.threshold.related", "0.90",
+            "Embedding cosine similarity from which incidents are possibly related", Type.DECIMAL, "0", "1"),
+    EMBEDDING_RATE_PER_MINUTE("embedding.rate.per.minute", "60",
+            "Texts sent to the embedding API per minute, all callers together (keeps inside the free tier)",
+            Type.INTEGER, "1", "1000"),
+    EMBEDDING_BACKFILL_BATCH("embedding.backfill.batch", "20",
+            "Incidents embedded per backfill run (also capped by embedding.rate.per.minute)", Type.INTEGER, "1", "100"),
+    EMBEDDING_BACKFILL_INTERVAL_SECONDS("embedding.backfill.interval.seconds", "60",
+            "How often the embedding backfill job runs", Type.INTEGER, "5", "3600"),
     RESOLUTION_MIN_SIMILARITY("resolution.min.similarity", "0.30",
             "Minimum TF-IDF similarity for a resolved incident to be suggested as a fix", Type.DECIMAL, "0", "1"),
     AI_IDF_WINDOW_DAYS("ai.idf.window.days", "90",

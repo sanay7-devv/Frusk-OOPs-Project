@@ -127,6 +127,12 @@ public final class AppSettings {
             issues.add(new FieldIssue(ConfigKey.DUP_TFIDF_THRESHOLD_DUPLICATE.key(),
                     "must be greater than dup.tfidf.threshold.related"));
         }
+        BigDecimal embeddingDuplicate = new BigDecimal(v.get(ConfigKey.DUP_EMBEDDING_THRESHOLD_DUPLICATE));
+        BigDecimal embeddingRelated = new BigDecimal(v.get(ConfigKey.DUP_EMBEDDING_THRESHOLD_RELATED));
+        if (embeddingDuplicate.compareTo(embeddingRelated) <= 0) {
+            issues.add(new FieldIssue(ConfigKey.DUP_EMBEDDING_THRESHOLD_DUPLICATE.key(),
+                    "must be greater than dup.embedding.threshold.related"));
+        }
         BigDecimal riskWeights = new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_ELAPSED))
                 .add(new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_LOAD)))
                 .add(new BigDecimal(v.get(ConfigKey.SLA_RISK_WEIGHT_PRIORITY)))

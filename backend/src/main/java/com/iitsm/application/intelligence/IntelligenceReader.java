@@ -60,8 +60,9 @@ class IntelligenceReader {
     record Ref(String code, String title, IncidentStatus status) {
     }
 
+    /** {@code queryVector} is the stored embedding of an existing incident, null for a draft or when absent. */
     record SimilarInputs(String title, String body, List<TextRecord> candidates, Map<Long, Ref> refs,
-                         List<String> corpus, AppSettings settings) {
+                         List<String> corpus, AppSettings settings, double[] queryVector) {
     }
 
     record ResolvedInfo(String code, String title, String rootCause, String notes, String steps, boolean reusable) {
@@ -83,11 +84,13 @@ class IntelligenceReader {
     private final IncidentAccessPolicy access;
     private final ConfigService config;
     private final Clock clock;
+    private final EmbeddingService embeddings;
     private volatile CachedCorpus corpusCache;
 
     IntelligenceReader(CategoryRepository categories, IncidentTextRepository texts, IncidentRepository incidents,
                        ItServiceRepository services, IncidentCommentRepository comments, AuditRepository audit,
-                       IncidentAccessPolicy access, ConfigService config, Clock clock) {
+                       IncidentAccessPolicy access, ConfigService config, Clock clock,
+                       EmbeddingService embeddings) {
         this.categories = categories;
         this.texts = texts;
         this.incidents = incidents;
@@ -97,6 +100,7 @@ class IntelligenceReader {
         this.access = access;
         this.config = config;
         this.clock = clock;
+        this.embeddings = embeddings;
     }
 
     // ------------------------------------------------------------------ draft text
@@ -141,7 +145,8 @@ class IntelligenceReader {
         AppSettings settings = config.current();
         Instant now = clock.instant();
         Duration window = Duration.ofHours(settings.intValue(ConfigKey.DUP_WINDOW_HOURS));
-        return similarInputs(title, body, texts.findOpenOnService(serviceId, now.minus(window), now, null), settings);
+        return similarInputs(title, body, texts.findOpenOnService(serviceId, now.minus(window), now, null), settings,
+                null);
     }
 
     /** Open incidents on the same service created within the look-back window of this incident, either side. */
@@ -152,17 +157,21 @@ class IntelligenceReader {
         Duration window = Duration.ofHours(settings.intValue(ConfigKey.DUP_WINDOW_HOURS));
         List<Incident> found = texts.findOpenOnService(incident.getService().getId(),
                 incident.getCreatedAt().minus(window), incident.getCreatedAt().plus(window), incident.getId());
-        return similarInputs(incident.getTitle(), incident.getDescription(), found, settings);
+        return similarInputs(incident.getTitle(), incident.getDescription(), found, settings,
+                embeddings.vector(incident.getId()).orElse(null));
     }
 
-    private SimilarInputs similarInputs(String title, String body, List<Incident> found, AppSettings settings) {
+    private SimilarInputs similarInputs(String title, String body, List<Incident> found, AppSettings settings,
+                                        double[] queryVector) {
         List<TextRecord> candidates = new ArrayList<>();
         Map<Long, Ref> refs = new HashMap<>();
+        Map<Long, double[]> vectors = embeddings.vectors(found.stream().map(Incident::getId).toList());
         for (Incident other : found) {
-            candidates.add(new TextRecord(other.getId(), other.getTitle(), other.getDescription()));
+            candidates.add(new TextRecord(other.getId(), other.getTitle(), other.getDescription(),
+                    vectors.get(other.getId())));
             refs.put(other.getId(), new Ref(other.getCode(), other.getTitle(), other.getStatus()));
         }
-        return new SimilarInputs(title, body, candidates, refs, corpus(), settings);
+        return new SimilarInputs(title, body, candidates, refs, corpus(), settings, queryVector);
     }
 
     // ------------------------------------------------------------------ staff-only reads

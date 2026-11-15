@@ -7,14 +7,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.iitsm.application.config.ConfigService;
+import com.iitsm.application.intelligence.EmbeddingClient;
 import com.iitsm.domain.intelligence.CircuitBreaker;
 import com.iitsm.domain.intelligence.KeywordDictionary;
 import com.iitsm.domain.intelligence.KeywordTextAnalysisService;
@@ -32,7 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry;
  * {@code @Primary} {@link FallbackTextAnalysisService} that the rest of the application injects.
  */
 @Configuration
-@EnableConfigurationProperties(LlmProperties.class)
+@EnableConfigurationProperties({LlmProperties.class, EmbeddingProperties.class})
 public class AiConfig {
 
     @Bean
@@ -77,6 +80,34 @@ public class AiConfig {
             default -> throw new IllegalStateException("app.llm.provider must be gemini, anthropic or fake, not '"
                     + properties.provider() + "'");
         };
+    }
+
+    /**
+     * The embedding adapter: Gemini when there is a key (EMBEDDING_API_KEY, or the LLM key if the LLM provider is
+     * also Gemini), else the disabled one. The Anthropic key is never used here.
+     */
+    @Bean
+    EmbeddingClient embeddingClient(EmbeddingProperties properties, LlmProperties llm, ObjectMapper mapper) {
+        String key = properties.apiKey();
+        if ((key == null || key.isBlank()) && LlmProperties.GEMINI.equals(llm.provider())) {
+            key = llm.apiKey();
+        }
+        if (EmbeddingProperties.NONE.equals(properties.provider()) || key == null || key.isBlank()) {
+            return new DisabledEmbeddingClient();
+        }
+        return new GeminiEmbeddingClient(properties, key, mapper);
+    }
+
+    @Bean("embeddingExecutor")
+    Executor embeddingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(1_000);
+        executor.setThreadNamePrefix("embedding-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(5);
+        return executor;
     }
 
     @Bean

@@ -21,11 +21,14 @@ public final class IntelligenceViews {
                                        double confidence, String reason, AnalysisSource source) {
     }
 
-    /** DUPLICATE: at or above the duplicate threshold; RELATED: at or above the related threshold. */
+    /**
+     * DUPLICATE: at or above the duplicate threshold; RELATED: at or above the related threshold. {@code source}
+     * says which engine scored it (EMBEDDING cosine of vectors, or KEYWORD TF-IDF): the two scales differ.
+     */
     public enum MatchKind { DUPLICATE, RELATED }
 
     public record SimilarIncidentView(Long incidentId, String code, String title, double similarity,
-                                      IncidentStatus status, MatchKind match) {
+                                      IncidentStatus status, MatchKind match, AnalysisSource source) {
     }
 
     public record SuggestedResolutionView(Long fromIncidentId, String code, String title, double similarity,

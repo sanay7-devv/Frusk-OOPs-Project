@@ -13,11 +13,14 @@ import com.iitsm.application.config.ConfigService;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.intelligence.AnalysisContext;
+import com.iitsm.domain.intelligence.AnalysisSource;
+import com.iitsm.domain.intelligence.EmbeddingSimilarity;
 import com.iitsm.domain.intelligence.CategorySuggestion;
 import com.iitsm.domain.intelligence.CircuitBreaker;
 import com.iitsm.domain.intelligence.IntakeSuggestion;
 import com.iitsm.domain.intelligence.LlmClient;
 import com.iitsm.domain.intelligence.SimilarMatch;
+import com.iitsm.domain.intelligence.SimilarResult;
 import com.iitsm.domain.intelligence.TextAnalysisService;
 import com.iitsm.domain.intelligence.TextRecord;
 import com.iitsm.domain.intelligence.ThreadInput;
@@ -74,6 +77,22 @@ class FallbackTextAnalysisService implements TextAnalysisService {
     public List<SimilarMatch> findSimilar(String title, String description, List<TextRecord> candidates,
                                           List<String> corpus) {
         return keyword.findSimilar(title, description, candidates, corpus);
+    }
+
+    /**
+     * Embeddings first when the query and every candidate have a vector (the application layer only supplies a query
+     * vector when embeddings are enabled and healthy), else TF-IDF; either way the result names its engine.
+     */
+    @Override
+    public SimilarResult findSimilarScored(String title, String description, double[] queryVector,
+                                           List<TextRecord> candidates, List<String> corpus) {
+        var ranked = EmbeddingSimilarity.rank(queryVector, candidates);
+        if (ranked.isPresent()) {
+            count("findSimilar", "embedding");
+            return new SimilarResult(ranked.get(), AnalysisSource.EMBEDDING);
+        }
+        count("findSimilar", "keyword");
+        return keyword.findSimilarScored(title, description, null, candidates, corpus);
     }
 
     @Override

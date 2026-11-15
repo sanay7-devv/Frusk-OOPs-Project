@@ -8195,7 +8195,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
           description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
             \ down; try again shortly (M14, DEC-42)"
-      summary: Similar open incidents for an existing incident
+      summary: Similar open incidents for an existing incident; each says its source
+        (EMBEDDING or KEYWORD)
       tags:
       - Intelligence
   /api/v1/incidents/{id}/sla-risk:
@@ -9149,8 +9150,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
           description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
             \ down; try again shortly (M14, DEC-42)"
-      summary: Similar open incidents on the same service inside the look-back window
-        (TF-IDF)
+      summary: Similar open incidents on the same service inside the look-back window;
+        each says its source (EMBEDDING or KEYWORD)
       tags:
       - Intelligence
   /api/v1/intelligence/suggest-category:
@@ -13389,6 +13390,7 @@ components:
           enum:
           - LLM
           - KEYWORD
+          - EMBEDDING
     CategoryView:
       type: object
       properties:
@@ -14330,6 +14332,7 @@ components:
           enum:
           - LLM
           - KEYWORD
+          - EMBEDDING
         urgency:
           type: integer
           format: int32
@@ -15071,6 +15074,7 @@ components:
           enum:
           - LLM
           - KEYWORD
+          - EMBEDDING
     ReportOverview:
       type: object
       properties:
@@ -15469,6 +15473,12 @@ components:
         similarity:
           type: number
           format: double
+        source:
+          type: string
+          enum:
+          - LLM
+          - KEYWORD
+          - EMBEDDING
         status:
           type: string
           enum:
@@ -15944,6 +15954,7 @@ components:
           enum:
           - LLM
           - KEYWORD
+          - EMBEDDING
         summary:
           type: string
     TimelineEntry:

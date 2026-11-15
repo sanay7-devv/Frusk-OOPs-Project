@@ -20,9 +20,11 @@ import com.iitsm.application.intelligence.IntelligenceViews.ThreadSummaryView;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.intelligence.AnalysisContext;
+import com.iitsm.domain.intelligence.AnalysisSource;
 import com.iitsm.domain.intelligence.CategorySuggestion;
 import com.iitsm.domain.intelligence.IntakeSuggestion;
 import com.iitsm.domain.intelligence.SimilarMatch;
+import com.iitsm.domain.intelligence.SimilarResult;
 import com.iitsm.domain.intelligence.TextAnalysisService;
 import com.iitsm.domain.intelligence.ThreadInput;
 import com.iitsm.domain.intelligence.ThreadSummary;
@@ -34,7 +36,8 @@ import com.iitsm.domain.intelligence.ThreadSummary;
  * <p>
  * Rules applied here, whichever engine answers: a category is shown only at {@code autocat.min.confidence} or more
  * (the user can always override); the suggestion endpoints are rate-limited per user and briefly cached; similar
- * incidents are scored with the TF-IDF thresholds, not the embedding ones (DEC-42).
+ * incidents are scored by embeddings when every vector exists, else by TF-IDF, each with its own thresholds
+ * (DEC-M12-10); suggested resolutions and the SLA-risk history stay on TF-IDF.
  * <p>
  * {@link #similarTo} and the threshold helper are the entry point the later duplicate check on creation,
  * mark-duplicate, problem-record grouping and Major Incident Mode will call.
@@ -52,14 +55,16 @@ public class IntelligenceService {
     private final ConfigService config;
     private final AiResultCache cache;
     private final AiRateLimiter limiter;
+    private final EmbeddingService embeddings;
 
     IntelligenceService(IntelligenceReader reader, TextAnalysisService analysis, ConfigService config,
-                        AiResultCache cache, AiRateLimiter limiter) {
+                        AiResultCache cache, AiRateLimiter limiter, EmbeddingService embeddings) {
         this.reader = reader;
         this.analysis = analysis;
         this.config = config;
         this.cache = cache;
         this.limiter = limiter;
+        this.embeddings = embeddings;
     }
 
     // ------------------------------------------------------------------ suggestions for a draft
@@ -148,17 +153,32 @@ public class IntelligenceService {
     /**
      * Scores the candidates and keeps those at or above the related threshold, best first. A score at or above the
      * duplicate threshold is a likely duplicate, below it only related. Reused later by the duplicate check.
+     * <p>
+     * Embeddings score when the query and every candidate have a vector (the query of a draft is embedded here, once,
+     * and only if it can matter); otherwise TF-IDF scores. Each engine has its own threshold pair, and every view
+     * says which engine produced it (DEC-M12-10).
      */
     List<SimilarIncidentView> similarTo(SimilarInputs inputs) {
-        double duplicate = inputs.settings().decimalValue(ConfigKey.DUP_TFIDF_THRESHOLD_DUPLICATE).doubleValue();
-        double related = inputs.settings().decimalValue(ConfigKey.DUP_TFIDF_THRESHOLD_RELATED).doubleValue();
-        return analysis.findSimilar(inputs.title(), inputs.body(), inputs.candidates(), inputs.corpus()).stream()
+        double[] query = inputs.queryVector();
+        if (query == null && !inputs.candidates().isEmpty() && embeddings.active()
+                && inputs.candidates().stream().allMatch(c -> c.vector() != null)) {
+            query = embeddings.embedQuery(inputs.title(), inputs.body()).orElse(null);
+        }
+        SimilarResult result = analysis.findSimilarScored(inputs.title(), inputs.body(), query, inputs.candidates(),
+                inputs.corpus());
+        boolean byEmbedding = result.source() == AnalysisSource.EMBEDDING;
+        double duplicate = inputs.settings().decimalValue(byEmbedding
+                ? ConfigKey.DUP_EMBEDDING_THRESHOLD_DUPLICATE : ConfigKey.DUP_TFIDF_THRESHOLD_DUPLICATE).doubleValue();
+        double related = inputs.settings().decimalValue(byEmbedding
+                ? ConfigKey.DUP_EMBEDDING_THRESHOLD_RELATED : ConfigKey.DUP_TFIDF_THRESHOLD_RELATED).doubleValue();
+        return result.matches().stream()
                 .filter(match -> match.similarity() >= related)
                 .limit(MAX_SIMILAR)
                 .map(match -> {
                     IntelligenceReader.Ref ref = inputs.refs().get(match.id());
                     return new SimilarIncidentView(match.id(), ref.code(), ref.title(), round(match.similarity()),
-                            ref.status(), match.similarity() >= duplicate ? MatchKind.DUPLICATE : MatchKind.RELATED);
+                            ref.status(), match.similarity() >= duplicate ? MatchKind.DUPLICATE : MatchKind.RELATED,
+                            result.source());
                 })
                 .toList();
     }
