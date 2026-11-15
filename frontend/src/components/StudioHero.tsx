@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import ServicePoster from './ServicePoster';
+import WorkshopRoom from './WorkshopRoom';
 
 const COPY = {
   employee: { label: 'YOUR SERVICE DESK', title: <>Make work<br /><em>work again.</em></>, text: 'Big blocker or little glitch. Start a report, follow the fix, and get back to what matters.', action: 'Report an issue', to: '/employee/report', stage: 0 },
@@ -8,11 +8,11 @@ const COPY = {
 };
 export default function StudioHero({ workspace }: { workspace: keyof typeof COPY }) {
   const copy = COPY[workspace];
-  return <section className="studio-hero">
+  return <section className="studio-hero studio-hero--workshop">
     <div className="studio-hero-copy"><div className="eyebrow"><span className="shape-dot" />{copy.label}</div>
       <h1>{copy.title}</h1><p>{copy.text}</p>
       {copy.to.startsWith('#') ? <a href={copy.to} className="studio-button">{copy.action}<span>↘</span></a> : <Link to={copy.to} className="studio-button">{copy.action}<span>↗</span></Link>}
       <span className="hero-edition">PEOPLE. PROCESS. PROGRESS.</span>
-    </div><ServicePoster compact initialStage={copy.stage} />
+    </div><WorkshopRoom workspace={workspace} />
   </section>;
 }
