@@ -26,7 +26,11 @@ import com.iitsm.application.report.ReportViews.SlaComplianceRow;
 import com.iitsm.application.report.ReportViews.TrendPoint;
 import com.iitsm.application.report.ReportViews.WorkloadReportRow;
 
+import com.iitsm.web.openapi.ApiErrors;
+import com.iitsm.web.openapi.ErrorCode;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -133,22 +137,36 @@ public class ReportController {
 
     @GetMapping("/export")
     @PreAuthorize(SEE_INCIDENTS)
-    @Operation(summary = "Download a report as CSV (type: incidents, overview, services, trends, priority-distribution, "
-            + "category-distribution, sla-compliance, workload); formula cells are neutralised and rows are capped",
-            responses = @ApiResponse(responseCode = "200", description = "CSV file",
-                    content = @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary"))))
+    @ApiErrors({ErrorCode.VALIDATION_FAILED, ErrorCode.UNAUTHORIZED_OPERATION})
+    @Operation(summary = "Download a report as CSV (default) or PDF (format=csv|pdf; type: incidents, overview, services, "
+            + "trends, priority-distribution, category-distribution, sla-compliance, workload); CSV formula cells are "
+            + "neutralised and rows are capped; the PDF has a title, the date range, the generated-at time and the same rows",
+            responses = @ApiResponse(responseCode = "200", description = "CSV or PDF file",
+                    content = {
+                        @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary")),
+                        @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary"))}))
     public void export(
             @AuthenticationPrincipal AuthenticatedUser caller,
             @RequestParam String type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @Parameter(description = "csv (default) or pdf", schema = @Schema(allowableValues = {"csv", "pdf"}))
             @RequestParam(defaultValue = "csv") String format,
             HttpServletResponse response) throws IOException {
         String checked = export.requireType(type);
+        String checkedFormat = export.requireFormat(format);
+        if ("pdf".equals(checkedFormat)) {
+            byte[] document = export.exportPdf(caller, checked, from, to);
+            response.setContentType("application/pdf");
+            response.setContentLength(document.length);
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + checked + ".pdf\"");
+            response.getOutputStream().write(document);
+            return;
+        }
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=\"" + checked + ".csv\"");
         PrintWriter writer = new PrintWriter(response.getOutputStream(), false, StandardCharsets.UTF_8);
-        export.export(caller, checked, from, to, writer);
+        export.exportCsv(caller, checked, from, to, writer);
         writer.flush();
     }
 }
