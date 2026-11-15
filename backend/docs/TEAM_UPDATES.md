@@ -88,6 +88,7 @@ Last updated: 2026-11-15 (S1 simulator, `minEscalationLevel`, A7 review, A12 pas
 
 ## 3. Testing and DevOps
 
+- **Smoke suites are now in the repo (2026-11-15):** the Python smoke and contract scripts are at `backend/smoke-tests/` (README there: prerequisites, run order, state files). Use them as the base for regression runs and the test catalogue; they need a running backend and the Docker Postgres container.
 - **Migrations V1 to V6 are still needed.** Until they arrive the backend runs with the temporary `schema-auto` profile (DEC-07). Differences from Appendix A to include:
   - `users.password_hash` nullable and `users.google_sub VARCHAR(100) NULL UNIQUE` (DEC-04).
   - `sla_policies.calendar_type`: widen beyond VARCHAR(12), or seed the stored value `BUSINESS_HRS` (ERROR_LOG E-022).
