@@ -11,6 +11,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Material UI](https://img.shields.io/badge/MUI-v5-007FFF?logo=mui&logoColor=white)](https://mui.com/)
 [![React Query](https://img.shields.io/badge/TanStack_Query-v5-FF4154?logo=react-query&logoColor=white)](https://tanstack.com/)
+[![CI](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/workflows/ci.yml/badge.svg)](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Proprietary-004d99)](#)
 
 </div>

@@ -1,5 +1,7 @@
 # Testing and DevOps: what is left, and the optional full test catalogue
 
+**Update, 2026-11-15:** This is the original planning snapshot and several “not yet” items below are now complete in Task 3 PR #21. All six jobs passed in [run 43736234225](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225): 71 Postman requests/149 assertions and 30 security checks. The portable tests, CI reports, dated case matrix, bug closure and test report are also in PR #21. Use [TEST_REPORT.md](TEST_REPORT.md) for current results and [DEMO_RUN_SHEET.md](DEMO_RUN_SHEET.md) for recording. Remaining hands-on work is browser script-text review, sealed-audit demo dry run, fresh-clone/laptop reset timing, final recording, and repository-owner branch protection.
+
 Written 2026-11-15 against `main` (`acce260`). Read together with `docs/qa/README.md` (your evidence so far) and `backend/docs/TEAM_UPDATES.md` (everything that differs from the handbook PDFs).
 
 ## 0. How to read this

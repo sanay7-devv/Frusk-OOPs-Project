@@ -41,3 +41,6 @@ Use `down --volumes` only when intentionally discarding this project's demo data
 Actions run 43621082128 verifies image build/start, fresh demo reset, both web health endpoints, real seeded API logins, snapshot/mutate/restore, and the Postman Payment lifecycle (38 requests, 83 assertions). Reset time under two minutes on the recording laptop is still unmeasured.
 
 Vercel deployment is outside this contribution: the team's current Vercel setup does not permit collaborator deployments. Use this local Docker setup for the Task 3 demonstration. GitHub Actions tests and builds run independently; a blocked Vercel deployment status is recorded separately from their results.
+
+
+The [Task 3 follow-up CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) passed all six jobs, including the expanded 71-request/149-assertion Postman collection and 30 security checks. Follow `docs/qa/DEMO_RUN_SHEET.md` for the final recording. The sealed-audit tamper helper works only with the disposable `iitsm-demo` database and still needs a manual recording-day dry run; no laptop-specific reset time has been measured yet.

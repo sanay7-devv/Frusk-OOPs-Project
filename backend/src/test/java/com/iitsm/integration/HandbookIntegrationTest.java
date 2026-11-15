@@ -39,6 +39,10 @@ import tools.jackson.databind.ObjectMapper;
 @Testcontainers
 @Import(HandbookIntegrationTest.TimeConfig.class)
 class HandbookIntegrationTest {
+    static {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+    }
+
     @Container static final PostgreSQLContainer DATABASE = new PostgreSQLContainer("postgres:16");
     @DynamicPropertySource static void database(DynamicPropertyRegistry properties) {
         properties.add("spring.datasource.url",DATABASE::getJdbcUrl);
