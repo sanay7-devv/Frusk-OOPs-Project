@@ -51,23 +51,23 @@ import { useToast } from '../../components/Toast';
 // Design System Tokens (Reliant Slate)
 const COLORS = {
   surface: '#f9f9ff',
-  surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f0f3ff',
-  surfaceContainer: '#e7eeff',
-  surfaceContainerHigh: '#dee8ff',
+  surfaceContainerLowest: '#fffcf5',
+  surfaceContainerLow: '#eee7d9',
+  surfaceContainer: '#e5eaf4',
+  surfaceContainerHigh: '#e5eaf4',
   surfaceContainerHighest: '#d8e3fb',
-  onSurface: '#111c2d',
-  onSurfaceVariant: '#425059',
+  onSurface: '#20211f',
+  onSurfaceVariant: '#5c5a52',
   outlineVariant: '#c2c6d4',
   border: '#cbd5e1',
-  primary: '#004d99',
-  primaryContainer: '#1565c0',
-  secondary: '#2b5bb5',
+  primary: '#1653c7',
+  primaryContainer: '#1653c7',
+  secondary: '#1653c7',
   secondaryContainer: '#759efd',
   error: '#ba1a1a',
   errorContainer: '#ffdad6',
   onErrorContainer: '#93000a',
-  tertiary: '#425059',
+  tertiary: '#5c5a52',
   tertiaryContainer: '#d8e7f2',
 };
 
@@ -296,7 +296,7 @@ export default function TechWorkload() {
                   height: 26,
                   borderRadius: '50%',
                   bgcolor: COLORS.primaryContainer,
-                  color: '#ffffff',
+                  color: '#fffcf5',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1040,7 +1040,7 @@ export default function TechWorkload() {
                               bgcolor: COLORS.surfaceContainer,
                               '&:hover': {
                                 bgcolor: COLORS.primary,
-                                color: '#ffffff',
+                                color: '#fffcf5',
                                 borderColor: COLORS.primary,
                               },
                             }}
@@ -1060,11 +1060,11 @@ export default function TechWorkload() {
                               py: 0.4,
                               px: 1.25,
                               bgcolor: row.isImminent ? COLORS.primary : COLORS.surfaceContainerHigh,
-                              color: row.isImminent ? '#ffffff' : COLORS.onSurface,
+                              color: row.isImminent ? '#fffcf5' : COLORS.onSurface,
                               boxShadow: 'none',
                               '&:hover': {
                                 bgcolor: row.isImminent ? COLORS.secondary : COLORS.surfaceContainer,
-                                color: row.isImminent ? '#ffffff' : COLORS.primary,
+                                color: row.isImminent ? '#fffcf5' : COLORS.primary,
                                 boxShadow: 'none',
                               },
                             }}
@@ -1150,7 +1150,7 @@ export default function TechWorkload() {
                       height: 38,
                       borderRadius: 2,
                       bgcolor: COLORS.primaryContainer,
-                      color: '#ffffff',
+                      color: '#fffcf5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1456,8 +1456,8 @@ export default function TechWorkload() {
           <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 780 180" style={{ width: '100%', height: '100%' }}>
             <defs>
               <linearGradient id={barGradientId} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#004d99" />
-                <stop offset="100%" stopColor="#1565c0" />
+                <stop offset="0%" stopColor="#1653c7" />
+                <stop offset="100%" stopColor="#1653c7" />
               </linearGradient>
               <linearGradient id={lineGlowId} x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="#759efd" stopOpacity="0.3" />
@@ -1500,20 +1500,20 @@ export default function TechWorkload() {
             />
 
             {/* Line Points with Data Marks */}
-            <circle cx="36" cy="45" r="3" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="91" cy="38" r="3" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="146" cy="50" r="3" fill="#ffffff" stroke="#ba1a1a" strokeWidth="2" />
-            <circle cx="201" cy="35" r="3" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="256" cy="42" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="311" cy="32" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="366" cy="30" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="421" cy="28" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="476" cy="35" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="531" cy="30" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="586" cy="38" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="641" cy="32" fill="#ffffff" stroke="#2b5bb5" strokeWidth="2" />
-            <circle cx="696" cy="25" r="3.5" fill="#ffffff" stroke="#004d99" strokeWidth="2.5" />
-            <circle cx="751" cy="28" r="3.5" fill="#2b5bb5" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="36" cy="45" r="3" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="91" cy="38" r="3" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="146" cy="50" r="3" fill="#fffcf5" stroke="#ba1a1a" strokeWidth="2" />
+            <circle cx="201" cy="35" r="3" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="256" cy="42" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="311" cy="32" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="366" cy="30" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="421" cy="28" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="476" cy="35" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="531" cy="30" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="586" cy="38" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="641" cy="32" fill="#fffcf5" stroke="#1653c7" strokeWidth="2" />
+            <circle cx="696" cy="25" r="3.5" fill="#fffcf5" stroke="#1653c7" strokeWidth="2.5" />
+            <circle cx="751" cy="28" r="3.5" fill="#1653c7" stroke="#fffcf5" strokeWidth="1.5" />
           </svg>
         </Box>
 
@@ -1813,3 +1813,4 @@ export default function TechWorkload() {
     </Box>
   );
 }
+

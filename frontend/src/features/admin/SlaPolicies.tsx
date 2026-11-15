@@ -306,7 +306,7 @@ export default function SlaPolicies() {
             >
               <PolicyIcon />
             </Box>
-            <Typography variant="h5" fontWeight={800} color="#0f172a">
+            <Typography variant="h5" fontWeight={800} color="#20211f">
               SLA Policy Matrix & Escalation Engine
             </Typography>
           </Stack>
@@ -350,7 +350,7 @@ export default function SlaPolicies() {
       <Grid container spacing={2.5} mb={3}>
         {/* Card 1: Live SLA Compliance */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Live SLA Compliance Rate
@@ -365,7 +365,7 @@ export default function SlaPolicies() {
                     boxShadow: Number(slaMetrics.complianceRate) >= 95 ? '0 0 8px #10b981' : '0 0 8px #f59e0b',
                   }}
                 />
-                <Typography variant="h4" fontWeight={800} color="#0f172a">
+                <Typography variant="h4" fontWeight={800} color="#20211f">
                   {slaMetrics.complianceRate}%
                 </Typography>
               </Stack>
@@ -378,12 +378,12 @@ export default function SlaPolicies() {
 
         {/* Card 2: Active SLA Health */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Active Incident Clocks
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#0f172a" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} color="#20211f" mt={0.5}>
                 {slaMetrics.activeOkCount + slaMetrics.warningCount} Open Clocks
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
@@ -401,7 +401,7 @@ export default function SlaPolicies() {
 
         {/* Card 3: Active Policies */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Configured SLA Rules
@@ -418,7 +418,7 @@ export default function SlaPolicies() {
 
         {/* Card 4: Escalation Ladder */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Automated Escalation Steps
@@ -435,13 +435,13 @@ export default function SlaPolicies() {
       </Grid>
 
       {/* Tabs navigation */}
-      <Paper elevation={0} sx={{ borderRadius: 2.5, border: '1px solid #e2e8f0', mb: 3 }}>
+      <Paper elevation={0} sx={{ borderRadius: 2.5, border: '1px solid #d6d0c3', mb: 3 }}>
         <Tabs
           value={activeTab}
           onChange={(_, val) => setActiveTab(val)}
           sx={{
             px: 2,
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid #d6d0c3',
             '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: '0.9rem', py: 2 },
           }}
         >
@@ -474,7 +474,7 @@ export default function SlaPolicies() {
               </Box>
             ) : (
               <Table>
-                <TableHead sx={{ bgcolor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                <TableHead sx={{ bgcolor: '#f5f0e5', borderBottom: '2px solid #d6d0c3' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
                       PRIORITY TIER
@@ -508,7 +508,7 @@ export default function SlaPolicies() {
                     const isGlobal = !pol.serviceId;
 
                     return (
-                      <TableRow key={pol.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc !important' } }}>
+                      <TableRow key={pol.id} hover sx={{ '&:hover': { bgcolor: '#f5f0e5 !important' } }}>
                         {/* Priority Badge */}
                         <TableCell sx={{ py: 2 }}>
                           <PriorityBadge priority={pol.priority} />
@@ -517,7 +517,7 @@ export default function SlaPolicies() {
                         {/* Scope */}
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="body2" fontWeight={isGlobal ? 700 : 600} color={isGlobal ? '#0f172a' : '#1d4ed8'}>
+                            <Typography variant="body2" fontWeight={isGlobal ? 700 : 600} color={isGlobal ? '#20211f' : '#1d4ed8'}>
                               {scopeName}
                             </Typography>
                             {isGlobal ? (
@@ -532,7 +532,7 @@ export default function SlaPolicies() {
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <AccessTimeIcon sx={{ fontSize: 16, color: '#64748b' }} />
-                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                            <Typography variant="body2" fontWeight={800} color="#20211f">
                               {formatDuration(pol.responseMinutes)}
                             </Typography>
                           </Stack>
@@ -545,7 +545,7 @@ export default function SlaPolicies() {
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <TimerIcon sx={{ fontSize: 16, color: '#64748b' }} />
-                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                            <Typography variant="body2" fontWeight={800} color="#20211f">
                               {formatDuration(pol.resolutionMinutes)}
                             </Typography>
                           </Stack>
@@ -617,7 +617,7 @@ export default function SlaPolicies() {
               </Box>
             ) : (
               <Table>
-                <TableHead sx={{ bgcolor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                <TableHead sx={{ bgcolor: '#f5f0e5', borderBottom: '2px solid #d6d0c3' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
                       TRIGGER PRIORITY
@@ -642,7 +642,7 @@ export default function SlaPolicies() {
                     const timeout = p.timeoutMinutes || p.triggerMinutes || 30;
 
                     return (
-                      <TableRow key={p.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc !important' } }}>
+                      <TableRow key={p.id} hover sx={{ '&:hover': { bgcolor: '#f5f0e5 !important' } }}>
                         <TableCell sx={{ py: 2 }}>
                           <PriorityBadge priority={p.priority} />
                         </TableCell>
@@ -660,7 +660,7 @@ export default function SlaPolicies() {
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <TimerIcon sx={{ fontSize: 16, color: '#d97706' }} />
-                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                            <Typography variant="body2" fontWeight={800} color="#20211f">
                               {timeout} minutes unacknowledged
                             </Typography>
                           </Stack>
@@ -670,7 +670,7 @@ export default function SlaPolicies() {
                         </TableCell>
 
                         <TableCell sx={{ py: 2 }}>
-                          <Typography variant="body2" fontWeight={600} color="#0f172a">
+                          <Typography variant="body2" fontWeight={600} color="#20211f">
                             {p.action || `Auto-escalate to Tier ${level} On-Call Queue & Page Duty Engineer`}
                           </Typography>
                         </TableCell>
@@ -696,7 +696,7 @@ export default function SlaPolicies() {
 
       {/* Dialog 1: Add / Edit SLA Policy */}
       <Dialog open={slaModalOpen} onClose={() => setSlaModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: '#20211f' }}>
           {editingSlaId ? 'Edit SLA Target Rule' : 'Configure New SLA Policy Target'}
         </DialogTitle>
         <DialogContent dividers>
@@ -778,7 +778,7 @@ export default function SlaPolicies() {
 
       {/* Dialog 2: Add Escalation Trigger */}
       <Dialog open={escModalOpen} onClose={() => setEscModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: '#20211f' }}>
           Configure Escalation Trigger Rule
         </DialogTitle>
         <DialogContent dividers>
@@ -840,3 +840,4 @@ export default function SlaPolicies() {
     </Box>
   );
 }
+

@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import AuditTimeline from '../../components/AuditTimeline';
 import { useQuery } from '@tanstack/react-query';
 import {
   Box,
@@ -17,7 +20,7 @@ import {
 import { Refresh as RefreshIcon, Security as SecurityIcon } from '@mui/icons-material';
 import { getAdminAuditLogs } from '../../api/admin';
 
-export default function AuditLog() {
+function AuditLedger() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-audit-logs'],
     queryFn: () => getAdminAuditLogs({ page: 0, size: 50 }),
@@ -112,4 +115,11 @@ export default function AuditLog() {
       </TableContainer>
     </Box>
   );
+}
+
+
+export default function AuditLog() {
+  const [params] = useSearchParams();
+  const [view, setView] = useState(params.has('incident') ? 'incident' : 'ledger');
+  return <section><div className="workspace-view-switch" role="group" aria-label="Audit view"><span>YOUR VIEW</span><button aria-pressed={view === 'ledger'} onClick={() => setView('ledger')}>All audit events</button><button aria-pressed={view === 'incident'} onClick={() => setView('incident')}>Incident story</button></div>{view === 'ledger' ? <AuditLedger /> : <AuditTimeline />}</section>;
 }

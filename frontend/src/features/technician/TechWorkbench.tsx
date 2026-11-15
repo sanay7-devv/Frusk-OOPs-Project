@@ -54,25 +54,25 @@ import { useToast } from '../../components/Toast';
 // Design System Tokens (Reliant Slate)
 const COLORS = {
   surface: '#f9f9ff',
-  surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f0f3ff',
-  surfaceContainer: '#e7eeff',
-  surfaceContainerHigh: '#dee8ff',
+  surfaceContainerLowest: '#fffcf5',
+  surfaceContainerLow: '#eee7d9',
+  surfaceContainer: '#e5eaf4',
+  surfaceContainerHigh: '#e5eaf4',
   surfaceContainerHighest: '#d8e3fb',
-  onSurface: '#111c2d',
-  onSurfaceVariant: '#425059',
+  onSurface: '#20211f',
+  onSurfaceVariant: '#5c5a52',
   outlineVariant: '#c2c6d4',
   border: '#cbd5e1',
-  primary: '#004d99',
-  primaryContainer: '#1565c0',
-  secondary: '#2b5bb5',
+  primary: '#1653c7',
+  primaryContainer: '#1653c7',
+  secondary: '#1653c7',
   secondaryContainer: '#759efd',
   error: '#ba1a1a',
   errorContainer: '#ffdad6',
   onErrorContainer: '#93000a',
   success: '#107c41',
   successContainer: '#d1e7dd',
-  tertiary: '#425059',
+  tertiary: '#5c5a52',
 };
 
 interface IncidentData {
@@ -660,10 +660,10 @@ export default function TechWorkbench() {
               <Button
                 variant="contained"
                 onClick={() => setIsWarRoomOpen(true)}
-                startIcon={<VideoCameraFrontIcon sx={{ color: '#ffffff' }} />}
+                startIcon={<VideoCameraFrontIcon sx={{ color: '#fffcf5' }} />}
                 sx={{
                   bgcolor: '#b71c1c',
-                  color: '#ffffff',
+                  color: '#fffcf5',
                   fontWeight: 700,
                   fontSize: 12.5,
                   textTransform: 'none',
@@ -731,7 +731,7 @@ export default function TechWorkbench() {
                 startIcon={<DoneAllIcon />}
                 sx={{
                   bgcolor: COLORS.success,
-                  color: '#ffffff',
+                  color: '#fffcf5',
                   fontWeight: 700,
                   fontSize: 12.5,
                   textTransform: 'none',
@@ -820,7 +820,7 @@ export default function TechWorkbench() {
                           fontSize: 11,
                           fontWeight: 700,
                           bgcolor: logFilter === lvl ? COLORS.primary : COLORS.surfaceContainer,
-                          color: logFilter === lvl ? '#ffffff' : COLORS.onSurface,
+                          color: logFilter === lvl ? '#fffcf5' : COLORS.onSurface,
                           height: 22,
                         }}
                       />
@@ -853,8 +853,8 @@ export default function TechWorkbench() {
                 {/* Dark Terminal Window */}
                 <Box
                   sx={{
-                    bgcolor: '#0f172a',
-                    color: '#f8fafc',
+                    bgcolor: '#20211f',
+                    color: '#f5f0e5',
                     fontFamily: 'monospace',
                     fontSize: 12,
                     p: 2,
@@ -893,7 +893,7 @@ export default function TechWorkbench() {
                         [{log.level}]
                       </span>
                       <span style={{ color: '#38bdf8' }}>[{log.source}]</span>
-                      <span style={{ color: '#e2e8f0', flex: 1, wordBreak: 'break-all' }}>{log.message}</span>
+                      <span style={{ color: '#d6d0c3', flex: 1, wordBreak: 'break-all' }}>{log.message}</span>
                     </Box>
                   ))}
                 </Box>
@@ -962,7 +962,7 @@ export default function TechWorkbench() {
                   <Chip
                     size="small"
                     label="Automated ITIL SRE Workflow"
-                    sx={{ bgcolor: COLORS.primary, color: '#ffffff', fontWeight: 700, fontSize: 11 }}
+                    sx={{ bgcolor: COLORS.primary, color: '#fffcf5', fontWeight: 700, fontSize: 11 }}
                   />
                 </Box>
 
@@ -987,7 +987,7 @@ export default function TechWorkbench() {
                               height: 24,
                               borderRadius: '50%',
                               bgcolor: step.status === 'COMPLETED' ? COLORS.success : COLORS.surfaceContainer,
-                              color: step.status === 'COMPLETED' ? '#ffffff' : COLORS.onSurface,
+                              color: step.status === 'COMPLETED' ? '#fffcf5' : COLORS.onSurface,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1013,7 +1013,7 @@ export default function TechWorkbench() {
                             textTransform: 'none',
                             borderRadius: 1.5,
                             bgcolor: step.status === 'COMPLETED' ? 'transparent' : COLORS.primary,
-                            color: step.status === 'COMPLETED' ? COLORS.success : '#ffffff',
+                            color: step.status === 'COMPLETED' ? COLORS.success : '#fffcf5',
                             borderColor: step.status === 'COMPLETED' ? COLORS.success : 'transparent',
                             '&:hover': {
                               bgcolor: step.status === 'COMPLETED' ? 'rgba(16, 124, 65, 0.08)' : COLORS.primaryContainer,
@@ -1075,7 +1075,7 @@ export default function TechWorkbench() {
                     placeholder="Enter diagnostic observations, triage actions, or stakeholder updates..."
                     value={newNoteText}
                     onChange={(e) => setNewNoteText(e.target.value)}
-                    sx={{ bgcolor: '#ffffff', borderRadius: 1.5, mb: 1.5, fontSize: 13 }}
+                    sx={{ bgcolor: '#fffcf5', borderRadius: 1.5, mb: 1.5, fontSize: 13 }}
                   />
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <FormControlLabel
@@ -1473,7 +1473,7 @@ export default function TechWorkbench() {
         </DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Box sx={{ p: 2, bgcolor: '#0f172a', borderRadius: 2, color: '#ffffff', textAlign: 'center' }}>
+            <Box sx={{ p: 2, bgcolor: '#20211f', borderRadius: 2, color: '#fffcf5', textAlign: 'center' }}>
               <VideoCameraFrontIcon sx={{ fontSize: 48, color: '#f87171', mb: 1 }} />
               <Typography sx={{ fontSize: 15, fontWeight: 700, mb: 0.5 }}>
                 Connected to Active Incident Bridge
@@ -1519,3 +1519,4 @@ export default function TechWorkbench() {
     </Box>
   );
 }
+

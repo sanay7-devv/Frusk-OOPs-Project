@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { register as registerApi } from '../../api/auth';
 import { useAuth, HOME } from '../../auth/AuthContext';
 import { errorMessage } from '../../utils/errors';
-import logoIcon from '../../assets/logo.png';
+import logoIcon from '../../assets/studio-mark.svg';
 
 const schema = z
   .object({
@@ -64,7 +64,7 @@ export default function Register() {
   });
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="85vh" px={2}>
+    <Box className="studio-register" display="flex" justifyContent="center" alignItems="center" minHeight="100svh" px={2}>
       <Paper elevation={4} sx={{ p: 4, width: '100%', maxWidth: 480, borderRadius: 3 }}>
         <Box textAlign="center" mb={3}>
           <Box
@@ -84,7 +84,7 @@ export default function Register() {
             <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 48, height: 48, objectFit: 'contain' }} />
           </Box>
           <Typography variant="h5" fontWeight="bold" color="primary">
-            Create Enterprise Account
+            Your next chapter.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Self-register for employee incident reporting & IT catalog services
@@ -166,3 +166,4 @@ export default function Register() {
     </Box>
   );
 }
+

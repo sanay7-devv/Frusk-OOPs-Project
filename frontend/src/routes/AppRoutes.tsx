@@ -1,31 +1,32 @@
+import { lazy, Suspense } from 'react';
 //we are importing all project folders 
 import { Navigate, Route, Routes } from 'react-router-dom';
 import RequireWorkspace from '../auth/RequireRole';
 import { useAuth, HOME } from '../auth/AuthContext';
 import AppShell from '../layouts/AppShell';
-import Notifications from '../features/shared/Notifications';
-import EmployeeHome from '../features/employee/EmployeeHome';
-import ReportIncident from '../features/employee/ReportIncident';
-import MyIncidents from '../features/employee/MyIncidents';
-import EmployeeIncidentDetail from '../features/employee/EmployeeIncidentDetail';
-import TechQueue from '../features/technician/TechQueue';
-import TechWorkbench from '../features/technician/TechWorkbench';
-import TechWorkload from '../features/technician/TechWorkload';
-import TeamQueue from '../features/lead/TeamQueue';
-import Escalations from '../features/lead/Escalations';
-import Dashboard from '../features/admin/Dashboard';
-import Tickets from '../features/admin/Tickets';
-import AdminIncidentDetail from '../features/admin/AdminIncidentDetail';
-import Users from '../features/admin/Users';
-import Services from '../features/admin/Services';
-import ServiceGraph from '../features/admin/ServiceGraph';
-import SlaPolicies from '../features/admin/SlaPolicies';
-import Categories from '../features/admin/Categories';
-import Config from '../features/admin/Config';
-import EscalationSettings from '../features/admin/EscalationSettings';
-import AuditLog from '../features/admin/AuditLog';
-import Reports from '../features/admin/Reports';
-import Register from '../features/shared/Register';
+const Notifications = lazy(() => import('../features/shared/Notifications'));
+const EmployeeHome = lazy(() => import('../features/employee/EmployeeHome'));
+const ReportIncident = lazy(() => import('../features/employee/ReportIncident'));
+const MyIncidents = lazy(() => import('../features/employee/MyIncidents'));
+const EmployeeIncidentDetail = lazy(() => import('../features/employee/EmployeeIncidentDetail'));
+const TechQueue = lazy(() => import('../features/technician/TechQueue'));
+const TechWorkbench = lazy(() => import('../features/technician/TechWorkbench'));
+const TechWorkload = lazy(() => import('../features/technician/TechWorkload'));
+const TeamQueue = lazy(() => import('../features/lead/TeamQueue'));
+const Escalations = lazy(() => import('../features/lead/Escalations'));
+const Dashboard = lazy(() => import('../features/admin/Dashboard'));
+const Tickets = lazy(() => import('../features/admin/Tickets'));
+const AdminIncidentDetail = lazy(() => import('../features/admin/AdminIncidentDetail'));
+const Users = lazy(() => import('../features/admin/Users'));
+const Services = lazy(() => import('../features/admin/Services'));
+const ServiceGraph = lazy(() => import('../features/admin/ServiceGraph'));
+const SlaPolicies = lazy(() => import('../features/admin/SlaPolicies'));
+const Categories = lazy(() => import('../features/admin/Categories'));
+const Config = lazy(() => import('../features/admin/Config'));
+const EscalationSettings = lazy(() => import('../features/admin/EscalationSettings'));
+const AuditLog = lazy(() => import('../features/admin/AuditLog'));
+const Reports = lazy(() => import('../features/admin/Reports'));
+const Register = lazy(() => import('../features/shared/Register'));
 import Login from '../features/shared/Login';
 
 function RootRedirect() {
@@ -37,6 +38,7 @@ function RootRedirect() {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<div className="route-loading" role="status">Opening your workspace…</div>}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -87,5 +89,7 @@ export default function AppRoutes() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
+

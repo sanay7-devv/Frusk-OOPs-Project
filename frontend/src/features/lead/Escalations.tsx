@@ -58,24 +58,24 @@ import { useToast } from '../../components/Toast';
 // Design System Tokens (Reliant Slate)
 const COLORS = {
   surface: '#f9f9ff',
-  surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f0f3ff',
-  surfaceContainer: '#e7eeff',
-  surfaceContainerHigh: '#dee8ff',
+  surfaceContainerLowest: '#fffcf5',
+  surfaceContainerLow: '#eee7d9',
+  surfaceContainer: '#e5eaf4',
+  surfaceContainerHigh: '#e5eaf4',
   surfaceContainerHighest: '#d8e3fb',
-  onSurface: '#111c2d',
-  onSurfaceVariant: '#425059',
+  onSurface: '#20211f',
+  onSurfaceVariant: '#5c5a52',
   outlineVariant: '#c2c6d4',
   border: '#cbd5e1',
-  primary: '#004d99',
-  primaryContainer: '#1565c0',
-  secondary: '#2b5bb5',
+  primary: '#1653c7',
+  primaryContainer: '#1653c7',
+  secondary: '#1653c7',
   secondaryContainer: '#759efd',
   error: '#ba1a1a',
   errorContainer: '#ffdad6',
   onErrorContainer: '#93000a',
   success: '#107c41',
-  tertiary: '#425059',
+  tertiary: '#5c5a52',
 };
 
 export default function Escalations() {
@@ -261,7 +261,7 @@ export default function Escalations() {
               startIcon={<ForwardIcon sx={{ fontSize: 18 }} />}
               sx={{
                 bgcolor: COLORS.secondary,
-                color: '#ffffff',
+                color: '#fffcf5',
                 borderRadius: 2,
                 fontSize: 12.5,
                 fontWeight: 600,
@@ -282,7 +282,7 @@ export default function Escalations() {
               startIcon={<CellTowerIcon sx={{ fontSize: 18 }} />}
               sx={{
                 bgcolor: COLORS.primaryContainer,
-                color: '#ffffff',
+                color: '#fffcf5',
                 borderRadius: 2,
                 fontSize: 12.5,
                 fontWeight: 700,
@@ -522,7 +522,7 @@ export default function Escalations() {
                     : tab.error
                     ? 'rgba(255, 218, 214, 0.4)'
                     : 'transparent',
-                  color: isActive ? '#ffffff' : tab.error ? COLORS.onErrorContainer : COLORS.onSurfaceVariant,
+                  color: isActive ? '#fffcf5' : tab.error ? COLORS.onErrorContainer : COLORS.onSurfaceVariant,
                   border: `1px solid ${isActive ? 'transparent' : COLORS.border}`,
                   '&:hover': {
                     bgcolor: isActive ? COLORS.primary : COLORS.surfaceContainer,
@@ -539,7 +539,7 @@ export default function Escalations() {
                     fontSize: 10,
                     fontWeight: 700,
                     fontFamily: 'monospace',
-                    bgcolor: isActive ? '#ffffff' : tab.error ? COLORS.errorContainer : COLORS.surfaceContainerHighest,
+                    bgcolor: isActive ? '#fffcf5' : tab.error ? COLORS.errorContainer : COLORS.surfaceContainerHighest,
                     color: isActive ? COLORS.primary : tab.error ? COLORS.onErrorContainer : COLORS.onSurface,
                   }}
                 />
@@ -619,7 +619,7 @@ export default function Escalations() {
                   label="LEVEL 1 ESCALATION: RESPONSE TIMEOUT EXPIRED"
                   sx={{
                     bgcolor: COLORS.error,
-                    color: '#ffffff',
+                    color: '#fffcf5',
                     fontSize: 10.5,
                     fontWeight: 800,
                     letterSpacing: '0.04em',
@@ -643,7 +643,7 @@ export default function Escalations() {
                     px: 1.25,
                     py: 0.25,
                     borderRadius: 1.5,
-                    bgcolor: '#ffffff',
+                    bgcolor: '#fffcf5',
                     color: COLORS.error,
                     fontFamily: 'monospace',
                     fontSize: 12,
@@ -762,7 +762,7 @@ export default function Escalations() {
                     sx={{
                       py: 1,
                       bgcolor: isAck1 ? COLORS.secondary : COLORS.primaryContainer,
-                      color: '#ffffff',
+                      color: '#fffcf5',
                       fontWeight: 700,
                       fontSize: 12.5,
                       textTransform: 'none',
@@ -782,7 +782,7 @@ export default function Escalations() {
                     endIcon={<ArrowDropDownIcon />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.onSurface,
                       fontWeight: 600,
@@ -818,7 +818,7 @@ export default function Escalations() {
                     startIcon={<EmergencyIcon sx={{ color: COLORS.error }} />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.error,
                       fontWeight: 700,
@@ -1016,7 +1016,7 @@ export default function Escalations() {
                     startIcon={<PauseIcon sx={{ color: COLORS.primary }} />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.onSurface,
                       fontWeight: 600,
@@ -1037,7 +1037,7 @@ export default function Escalations() {
                     startIcon={<TransferWithinAStationIcon sx={{ color: COLORS.secondary }} />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.onSurface,
                       fontWeight: 600,
@@ -1058,7 +1058,7 @@ export default function Escalations() {
                     startIcon={<PriorityHighIcon sx={{ color: COLORS.primary }} />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.onSurface,
                       fontWeight: 600,
@@ -1119,7 +1119,7 @@ export default function Escalations() {
                   label="LEVEL 1 ESCALATION: BLAST RADIUS AMPLIFICATION"
                   sx={{
                     bgcolor: COLORS.primaryContainer,
-                    color: '#ffffff',
+                    color: '#fffcf5',
                     fontSize: 10.5,
                     fontWeight: 700,
                     letterSpacing: '0.04em',
@@ -1139,7 +1139,7 @@ export default function Escalations() {
                   size="small"
                   label="Candidate for P1 Upgrade"
                   sx={{
-                    bgcolor: '#ffffff',
+                    bgcolor: '#fffcf5',
                     color: COLORS.primary,
                     fontFamily: 'monospace',
                     fontSize: 11,
@@ -1252,7 +1252,7 @@ export default function Escalations() {
                     sx={{
                       py: 1,
                       bgcolor: COLORS.primary,
-                      color: '#ffffff',
+                      color: '#fffcf5',
                       fontWeight: 700,
                       fontSize: 12.5,
                       textTransform: 'none',
@@ -1270,7 +1270,7 @@ export default function Escalations() {
                     startIcon={<ForumIcon sx={{ color: COLORS.secondary }} />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.onSurface,
                       fontWeight: 600,
@@ -1291,7 +1291,7 @@ export default function Escalations() {
                     startIcon={<SupportAgentIcon sx={{ color: COLORS.primary }} />}
                     sx={{
                       py: 1,
-                      bgcolor: '#ffffff',
+                      bgcolor: '#fffcf5',
                       borderColor: COLORS.border,
                       color: COLORS.onSurface,
                       fontWeight: 600,
@@ -1349,7 +1349,7 @@ export default function Escalations() {
                       height: 32,
                       borderRadius: 1.5,
                       bgcolor: COLORS.primaryContainer,
-                      color: '#ffffff',
+                      color: '#fffcf5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1670,7 +1670,7 @@ export default function Escalations() {
         </DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Box sx={{ p: 2, bgcolor: '#0f172a', borderRadius: 2, color: '#ffffff', textAlign: 'center' }}>
+            <Box sx={{ p: 2, bgcolor: '#20211f', borderRadius: 2, color: '#fffcf5', textAlign: 'center' }}>
               <Typography sx={{ fontSize: 15, fontWeight: 700, mb: 0.5 }}>
                 War Room #09 Bridge Active
               </Typography>
@@ -1741,3 +1741,4 @@ export default function Escalations() {
     </Box>
   );
 }
+

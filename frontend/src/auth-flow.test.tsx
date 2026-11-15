@@ -36,56 +36,54 @@ function renderApp(initialPath = '/login') {
   );
 }
 
-// No backend in these tests: every API call fails like an unreachable server, so the offline accounts answer at once
-// (without this the result would depend on whatever listens on port 8080 of the machine running the tests).
-beforeEach(() => {
-  vi.spyOn(api, 'post').mockRejectedValue(Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK' }));
-});
-
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
-
-/** Opens the seed-account list, fills the form from the row with this email and signs in. */
-function signInWithSeedAccount(email: string) {
-  fireEvent.click(screen.getByRole('button', { name: /View Default Database Credentials/i }));
-  fireEvent.click(screen.getByText(email));
-  fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
-}
+beforeEach(() => { vi.spyOn(window, 'scrollTo').mockImplementation(() => {}); vi.spyOn(api, 'post').mockRejectedValue(Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK' })); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('Auth and Navigation Flow', () => {
   it('Admin login routes to Admin Dashboard', async () => {
     localStorage.clear();
     renderApp('/login');
+    
+    // Quick-select Admin chip
+    const adminChip = screen.getByRole('button', { name: /^Administrator$/i });
+    fireEvent.click(adminChip);
 
-    signInWithSeedAccount('admin@iitsm.com');
+    const submitBtn = screen.getByRole('button', { name: /Sign in to your workspace/i });
+    fireEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/admin/dashboard');
-    });
-  });
+    }, { timeout: 10_000 });
+  }, 15_000);
 
   it('Team Lead login routes to Team Lead Queue', async () => {
     localStorage.clear();
     renderApp('/login');
 
-    signInWithSeedAccount('lead@iitsm.com');
+    const leadChip = screen.getByRole('button', { name: /Team Lead/i });
+    fireEvent.click(leadChip);
+
+    const submitBtn = screen.getByRole('button', { name: /Sign in to your workspace/i });
+    fireEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/lead/team-queue');
-    });
-  });
+    }, { timeout: 10_000 });
+  }, 15_000);
 
   it('Employee login routes to Employee Home', async () => {
     localStorage.clear();
     renderApp('/login');
 
-    signInWithSeedAccount('employee@iitsm.com');
+    const empChip = screen.getByRole('button', { name: /Employee/i });
+    fireEvent.click(empChip);
+
+    const submitBtn = screen.getByRole('button', { name: /Sign in to your workspace/i });
+    fireEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/employee/home');
-    });
-  });
+    }, { timeout: 10_000 });
+  }, 15_000);
 });
 

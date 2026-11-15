@@ -270,7 +270,7 @@ export default function ServiceGraph() {
               ? '#f59e0b'
               : isHighlighted
               ? '#3b82f6'
-              : '#e2e8f0',
+              : '#d6d0c3',
             boxShadow: isDirectOutage
               ? '0 0 16px rgba(239, 68, 68, 0.2)'
               : isCascadeRisk
@@ -278,7 +278,7 @@ export default function ServiceGraph() {
               : isHighlighted
               ? '0 8px 24px rgba(59, 130, 246, 0.15)'
               : '0 1px 3px rgba(0,0,0,0.05)',
-            bgcolor: isDirectOutage ? '#fff5f5' : isCascadeRisk ? '#fffbeb' : '#ffffff',
+            bgcolor: isDirectOutage ? '#fff5f5' : isCascadeRisk ? '#fffbeb' : '#fffcf5',
           }}
         >
           <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
@@ -293,7 +293,7 @@ export default function ServiceGraph() {
                     fontWeight: 800,
                     fontSize: '0.78rem',
                     bgcolor: isDirectOutage ? '#fecaca' : '#f1f5f9',
-                    color: isDirectOutage ? '#991b1b' : '#0f172a',
+                    color: isDirectOutage ? '#991b1b' : '#20211f',
                     border: '1px solid',
                     borderColor: isDirectOutage ? '#f87171' : '#cbd5e1',
                   }}
@@ -303,14 +303,14 @@ export default function ServiceGraph() {
 
               <Stack direction="row" alignItems="center" spacing={0.5}>
                 <StarIcon sx={{ color: '#f59e0b', fontSize: 16 }} />
-                <Typography variant="caption" fontWeight={800} color="#0f172a">
+                <Typography variant="caption" fontWeight={800} color="#20211f">
                   {svc.criticality}/5
                 </Typography>
               </Stack>
             </Stack>
 
             {/* Service Title & Owner */}
-            <Typography variant="subtitle1" fontWeight={800} color="#0f172a" lineHeight={1.3} mb={0.5}>
+            <Typography variant="subtitle1" fontWeight={800} color="#20211f" lineHeight={1.3} mb={0.5}>
               {svc.name}
             </Typography>
             <Typography variant="caption" color="text.secondary" mb={1.5} display="block">
@@ -502,7 +502,7 @@ export default function ServiceGraph() {
             >
               <AccountTreeIcon />
             </Box>
-            <Typography variant="h5" fontWeight={800} color="#0f172a">
+            <Typography variant="h5" fontWeight={800} color="#20211f">
               Service Topology & Architectural Dependency Graph
             </Typography>
           </Stack>
@@ -535,12 +535,12 @@ export default function ServiceGraph() {
       <Grid container spacing={2.5} mb={3}>
         {/* Card 1: Monitored Nodes */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Architecture Nodes
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#0f172a" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} color="#20211f" mt={0.5}>
                 {services.length}
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
@@ -552,7 +552,7 @@ export default function ServiceGraph() {
 
         {/* Card 2: Dependency Connectors */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Inter-Service Links
@@ -569,7 +569,7 @@ export default function ServiceGraph() {
 
         {/* Card 3: Active Outages */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Direct Node Outages
@@ -586,7 +586,7 @@ export default function ServiceGraph() {
 
         {/* Card 4: Cascade Risks */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #d6d0c3' }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
                 Downstream Cascade Risk
@@ -609,7 +609,7 @@ export default function ServiceGraph() {
           p: 2,
           mb: 3,
           borderRadius: 2.5,
-          border: '1px solid #e2e8f0',
+          border: '1px solid #d6d0c3',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -749,7 +749,7 @@ export default function ServiceGraph() {
                   px: 1.5,
                   py: 0.5,
                   borderRadius: 1.5,
-                  bgcolor: '#f8fafc',
+                  bgcolor: '#f5f0e5',
                   color: '#334155',
                   fontWeight: 800,
                   fontSize: '0.78rem',
@@ -774,7 +774,7 @@ export default function ServiceGraph() {
 
       {/* Dependency Link Editor Modal */}
       <Dialog open={depsModalOpen} onClose={() => setDepsModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+        <DialogTitle sx={{ fontWeight: 800, color: '#20211f' }}>
           Topology Links: {selectedService?.name}
         </DialogTitle>
         <DialogContent dividers>
@@ -804,8 +804,8 @@ export default function ServiceGraph() {
                       borderRadius: 2,
                       cursor: 'pointer',
                       border: '1px solid',
-                      borderColor: isSelected ? '#3b82f6' : '#e2e8f0',
-                      bgcolor: isSelected ? '#eff6ff' : '#ffffff',
+                      borderColor: isSelected ? '#3b82f6' : '#d6d0c3',
+                      bgcolor: isSelected ? '#eff6ff' : '#fffcf5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -819,7 +819,7 @@ export default function ServiceGraph() {
                           size="small"
                           sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem' }}
                         />
-                        <Typography variant="body2" fontWeight={700} color="#0f172a">
+                        <Typography variant="body2" fontWeight={700} color="#20211f">
                           {svc.name}
                         </Typography>
                       </Stack>
@@ -850,3 +850,4 @@ export default function ServiceGraph() {
     </Box>
   );
 }
+
