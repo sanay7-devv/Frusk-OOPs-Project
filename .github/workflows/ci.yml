@@ -190,6 +190,8 @@ jobs:
         run: npx --yes newman run deploy/postman/iitsm.postman_collection.json -e deploy/postman/local.postman_environment.json --reporters cli,json --reporter-json-export /tmp/iitsm-newman.json
       - name: Check attachment and duplicate contracts (T10 and T16)
         run: python3 deploy/handbook_contract_checks.py
+      - name: Check security boundaries and input validation
+        run: python3 deploy/security_checks.py
       - name: Save stack logs
         if: always()
         run: |
@@ -205,6 +207,7 @@ jobs:
             /tmp/iitsm-api-smoke.json
             /tmp/iitsm-newman.json
             /tmp/iitsm-handbook-contracts.json
+            /tmp/iitsm-security-checks.json
       - name: Shut down disposable stack
         if: always()
         run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo down --volumes
