@@ -36,7 +36,7 @@ That rule changes priorities:
 
 **The three workflows the video must show cannot be recorded today**: an employee can file an incident, but then cannot see it, the technician cannot act on it, and the team lead cannot assign it.
 
-The backend is complete: 119 operations, all built, including the Service Desk Simulator (`POST /admin/simulations`, built 2026-11-15; see `backend/docs/TEAM_UPDATES.md`, last section). Nothing in this guide waits on backend work.
+The backend is complete: 129 operations, all built, including the Service Desk Simulator, password reset, two-step verification and simulated push (built 2026-11-15; request and answer shapes are in `backend/docs/TEAM_UPDATES.md`, last two sections). Nothing in this guide waits on backend work.
 
 ---
 
@@ -186,6 +186,15 @@ These are the shots people remember. All data exists.
 ### P1-8. Reports that are charts
 
 See section 7.
+
+### P1-10. New screens the backend now supports (added 2026-11-15)
+
+Shapes and error cases are in `backend/docs/TEAM_UPDATES.md` (the last two sections).
+
+- **Forgot password** (public, two small screens): an e-mail form (`POST /auth/password-reset/request`, always 202, show "if that address has an account we sent a link") and the page the mailed link opens, `/reset-password?token=...`, with a new-password form (`POST /auth/password-reset/confirm`, 204 then go to login, 400 field errors on `newPassword` or `token`). Add a "Forgot password?" link on the login screen.
+- **Two-step verification:** when `POST /auth/login` answers 401 `MFA_REQUIRED`, show a six-digit field and send the same login again with `totp`; `INVALID_MFA_CODE` means wrong or reused. An "Account security" screen: `GET /auth/mfa`, `POST /auth/mfa/setup` (draw `otpauthUri` as a QR code and show `secret`), `POST /auth/mfa/enable`, `POST /auth/mfa/disable`. Administrators get a "Reset two-step verification" action on a user (`POST /admin/users/{id}/mfa/reset`).
+- **Service Desk Simulator** (administrators): `POST /admin/simulations` and `/apply`; one screen, one grouped bar chart, up to three configurations, the assumptions panel next to the chart. Good for the administrator segment of the video.
+- **Pushed notifications:** `GET /notifications?channel=PUSH_SIM` ("Pushed to my devices"), device registration `POST /notifications/devices`. The push itself is simulated.
 
 ### P1-9. Service status board for employees
 

@@ -163,7 +163,7 @@ public class NotificationService {
 
     private static ChannelType requireStored(ChannelType channel) {
         if (!channel.isStored()) {
-            throw new InputValidationException("channel", channel + " is delivered, not stored; use IN_APP or SMS_SIM");
+            throw new InputValidationException("channel", channel + " is delivered, not stored; use IN_APP, SMS_SIM or PUSH_SIM");
         }
         return channel;
     }

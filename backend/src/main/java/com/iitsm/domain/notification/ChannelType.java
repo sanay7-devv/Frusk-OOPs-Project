@@ -14,6 +14,8 @@ public enum ChannelType {
     WEBSOCKET(false, true),
     /** A simulated text message: a log line and a row. Only for P1. */
     SMS_SIM(true, true),
+    /** A simulated push to the person's registered devices (A4): a log line and a row. Not a per-user switch. */
+    PUSH_SIM(true, false),
     /** One post to a chat room; delivery only, no row, settings in app_config. */
     CHAT(false, false);
 

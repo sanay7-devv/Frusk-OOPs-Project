@@ -67,3 +67,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Prometheus scrape token (A8)
+backend/observability/metrics_token

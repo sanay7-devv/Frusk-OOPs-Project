@@ -147,6 +147,14 @@ public enum ConfigKey {
             Type.INTEGER, "1", "1440"),
 
     // Google sign-in (module M2b, session D, DEC-102)
+    // Mobile push (A4, DEC-117)
+    NOTIFICATION_PUSH_DEVICES_MAX("notification.push.devices.max", "5",
+            "How many push devices one person may register", Type.INTEGER, "1", "20"),
+
+    // Password reset (A12, DEC-116)
+    AUTH_PASSWORD_RESET_MINUTES("auth.password.reset.minutes", "30",
+            "How long a password reset link works, in minutes", Type.INTEGER, "5", "1440"),
+
     AUTH_GOOGLE_AUTOREGISTER("auth.google.autoregister", "false",
             "Whether an unknown email signing in with Google gets a new EMPLOYEE account (false: only existing accounts link)",
             Type.CHOICE, "true", "false"),

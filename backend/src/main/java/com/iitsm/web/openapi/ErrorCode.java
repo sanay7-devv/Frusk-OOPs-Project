@@ -8,6 +8,8 @@ public enum ErrorCode {
 
     VALIDATION_FAILED(400, "Invalid input; see fieldErrors"),
     INVALID_CREDENTIALS(401, "Wrong email or password (never says which)"),
+    MFA_REQUIRED(401, "Right password, but a code from the authenticator app is needed; log in again with the totp field"),
+    INVALID_MFA_CODE(401, "Right password, but the verification code is wrong, expired or already used"),
     TOKEN_EXPIRED(401, "Access token expired; refresh or log in again"),
     TOKEN_INVALID(401, "Missing, malformed, forged or revoked token; log in again"),
     UNAUTHORIZED_OPERATION(403, "Role, permission or relation to the resource does not allow this"),

@@ -23,6 +23,7 @@ import com.iitsm.domain.intelligence.TextAnalysisService;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * Wires the intelligence module: the keyword dictionary from {@code ai/keywords.json}, the two engines, the LLM
@@ -86,8 +87,9 @@ public class AiConfig {
     @Bean
     @Primary
     TextAnalysisService textAnalysisService(KeywordTextAnalysisService keyword, LlmClient client, ObjectMapper mapper,
-                                            ConfigService config, CircuitBreaker breaker, Clock clock) {
+                                            ConfigService config, CircuitBreaker breaker, Clock clock,
+                                            MeterRegistry metrics) {
         LlmTextAnalysisService llm = new LlmTextAnalysisService(client, new PromptLibrary(), keyword, mapper, config);
-        return new FallbackTextAnalysisService(llm, keyword, client, config, breaker, clock);
+        return new FallbackTextAnalysisService(llm, keyword, client, config, breaker, clock, metrics);
     }
 }

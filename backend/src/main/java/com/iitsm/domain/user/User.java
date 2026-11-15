@@ -57,6 +57,17 @@ public class User {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
+    /** Base32 secret of the authenticator app (A12). Set at setup; the codes only count once {@link #totpEnabled}. */
+    @Column(name = "totp_secret", length = 64)
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false)
+    private boolean totpEnabled;
+
+    /** The 30 second step of the last code accepted, so a code can never be used twice. */
+    @Column(name = "totp_last_step")
+    private Long totpLastStep;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -128,6 +139,46 @@ public class User {
 
     public void changePasswordHash(String newHash) {
         this.passwordHash = newHash;
+    }
+
+    // ------------------------------------------------------------------ two-step verification (A12)
+
+    public boolean isMfaEnabled() {
+        return totpEnabled;
+    }
+
+    public Optional<String> getTotpSecret() {
+        return Optional.ofNullable(totpSecret);
+    }
+
+    /** The last accepted step, or 0 when no code has been used. */
+    public long totpLastStep() {
+        return totpLastStep == null ? 0 : totpLastStep;
+    }
+
+    /** Stores a new secret; it counts only after {@link #enableMfa}. Replaces an earlier unfinished setup. */
+    public void beginMfaSetup(String base32Secret) {
+        this.totpSecret = base32Secret;
+        this.totpEnabled = false;
+        this.totpLastStep = null;
+    }
+
+    public void enableMfa(long acceptedStep) {
+        if (totpSecret == null) {
+            throw new IllegalStateException("set up two-step verification first");
+        }
+        this.totpEnabled = true;
+        this.totpLastStep = acceptedStep;
+    }
+
+    public void acceptTotpStep(long step) {
+        this.totpLastStep = step;
+    }
+
+    public void disableMfa() {
+        this.totpSecret = null;
+        this.totpEnabled = false;
+        this.totpLastStep = null;
     }
 
     public void linkGoogleAccount(String sub) {

@@ -75,6 +75,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     // one address trying many e-mails is limited too (5 x the per-account limit)
                     limiter.check("LOGIN_ADDRESS", request.getRemoteAddr(), perMinute * 5);
                     limiter.check("LOGIN", request.getRemoteAddr() + "|" + emailIn(body), perMinute);
+                } else if ((API + "/auth/password-reset/request").equals(path)) {
+                    byte[] body = request.getInputStream().readNBytes(MAX_BODY + 1);
+                    if (body.length > MAX_BODY) {
+                        errors.write(request, response, 400, "VALIDATION_FAILED", "The request body is too large.");
+                        return;
+                    }
+                    forwarded = new CachedBodyRequest(request, body);
+                    int perMinute = config.current().intValue(ConfigKey.RATELIMIT_LOGIN_PER_MINUTE);
+                    limiter.check("RESET_ADDRESS", request.getRemoteAddr(), perMinute * 5);
+                    limiter.check("RESET", request.getRemoteAddr() + "|" + emailIn(body), perMinute);
                 } else if ((API + "/auth/google").equals(path)) {
                     limiter.check("GOOGLE", request.getRemoteAddr(),
                             config.current().intValue(ConfigKey.RATELIMIT_LOGIN_PER_MINUTE));

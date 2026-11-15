@@ -44,7 +44,8 @@ public class NotificationDispatcher {
 
     /** The inbox first (the others need the id of its row), email last because it is the slowest. */
     private static final List<ChannelType> PERSONAL_ORDER =
-            List.of(ChannelType.IN_APP, ChannelType.WEBSOCKET, ChannelType.SMS_SIM, ChannelType.EMAIL);
+            List.of(ChannelType.IN_APP, ChannelType.WEBSOCKET, ChannelType.SMS_SIM, ChannelType.PUSH_SIM,
+                    ChannelType.EMAIL);
 
     /** A run that never reports its end must not hold warnings for ever. */
     private static final Duration MAX_HOLD = Duration.ofMinutes(10);
@@ -151,6 +152,10 @@ public class NotificationDispatcher {
             if (applies && allowed) {
                 wanted.add(type);
             }
+        }
+        // A4: not a per-user switch; the channel itself does nothing for someone with no registered device
+        if (NotificationRules.pushApplies(request.priority(), request.type(), request.audience())) {
+            wanted.add(ChannelType.PUSH_SIM);
         }
         return wanted;
     }
