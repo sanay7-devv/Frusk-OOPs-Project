@@ -29,6 +29,7 @@ import com.iitsm.domain.exception.SlaNotConfiguredException;
 import com.iitsm.domain.incident.Incident;
 import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.intelligence.SimilarMatch;
+import com.iitsm.domain.intelligence.SlaRiskFlags;
 import com.iitsm.domain.intelligence.SlaRiskScorer;
 import com.iitsm.domain.intelligence.TextAnalysisService;
 import com.iitsm.domain.intelligence.TextRecord;
@@ -48,7 +49,7 @@ import com.iitsm.domain.user.User;
  * Weights, threshold and interval are live settings.
  */
 @Service
-public class SlaRiskService {
+public class SlaRiskService implements SlaRiskFlags {
 
     private static final Logger log = LoggerFactory.getLogger(SlaRiskService.class);
     private static final int HISTORY_SAMPLES = 200;
@@ -97,6 +98,7 @@ public class SlaRiskService {
     }
 
     /** Ids of the incidents the last scans flagged and that are still at risk (the live dashboard, module M13). */
+    @Override
     public java.util.Set<Long> flaggedIds() {
         return java.util.Set.copyOf(flagged.keySet());
     }

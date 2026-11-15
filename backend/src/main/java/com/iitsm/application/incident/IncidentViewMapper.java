@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ import com.iitsm.application.incident.IncidentViews.ResolutionView;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.SlaNotConfiguredException;
+import com.iitsm.domain.intelligence.SlaRiskFlags;
 import com.iitsm.domain.repository.FeedbackRepository;
 import com.iitsm.domain.incident.Incident;
 import com.iitsm.domain.incident.IncidentAction;
@@ -45,9 +47,12 @@ public class IncidentViewMapper {
     private final EscalationPreviewer escalationPreviews;
     private final Clock clock;
     private final FeedbackRepository feedbackRepository;
+    private final SlaRiskFlags riskFlags;
 
     public IncidentViewMapper(SlaPolicyResolver slaPolicies, ConfigService config, IncidentAccessPolicy access,
-                              EscalationPreviewer escalationPreviews, Clock clock, FeedbackRepository feedbackRepository) {
+                              EscalationPreviewer escalationPreviews, Clock clock, FeedbackRepository feedbackRepository,
+                              SlaRiskFlags riskFlags) {
+        this.riskFlags = riskFlags;
         this.feedbackRepository = feedbackRepository;
         this.slaPolicies = slaPolicies;
         this.config = config;
@@ -61,13 +66,14 @@ public class IncidentViewMapper {
         private final Map<String, Optional<SlaPolicy>> policyCache = new HashMap<>();
         private final Instant now = clock.instant();
         private final int firstWarning = config.current().intValue(ConfigKey.SLA_WARN_FIRST_PERCENT);
+        private final Set<Long> flagged = riskFlags.flaggedIds();
 
         public IncidentSummary summary(Incident incident) {
             return new IncidentSummary(incident.getId(), incident.getCode(), incident.getTitle(),
                     incident.getStatus(), incident.getPriority(), Ref.of(incident.getCategory()),
                     Ref.of(incident.getService()), Ref.of(incident.getReporter()), Ref.of(incident.getAssignee()),
                     incident.getCreatedAt(), incident.getSla().getResponseDue(),
-                    incident.getSla().getResolutionDue(), slaState(incident, policyCache, now, firstWarning),
+                    incident.getSla().getResolutionDue(), slaState(incident, policyCache, now, firstWarning, flagged),
                     incident.isMajor(), incident.getEscalationLevel());
         }
     }
@@ -80,7 +86,7 @@ public class IncidentViewMapper {
         AppSettings settings = config.current();
         Instant now = clock.instant();
         SlaState slaState = slaState(incident, new HashMap<>(), now,
-                settings.intValue(ConfigKey.SLA_WARN_FIRST_PERCENT));
+                settings.intValue(ConfigKey.SLA_WARN_FIRST_PERCENT), riskFlags.flaggedIds());
         Resolution r = incident.getResolution();
         ResolutionView resolution = r == null ? null : new ResolutionView(r.getRootCause(), r.getNotes(),
                 r.getSteps(), r.getTimeSpentMinutes(), r.isReusable(), Ref.of(incident.getAssignee()));
@@ -117,13 +123,18 @@ public class IncidentViewMapper {
     }
 
     private SlaState slaState(Incident incident, Map<String, Optional<SlaPolicy>> cache, Instant now,
-                              int firstWarningPercent) {
+                              int firstWarningPercent, Set<Long> flagged) {
         Optional<SlaPolicy> policy = incident.getPriority() == null ? Optional.empty()
                 : cache.computeIfAbsent(incident.getService().getId() + ":" + incident.getPriority(),
                         key -> findPolicy(incident));
         SlaTargets targets = policy.map(p -> p.targets(config.current())).orElse(null);
-        return incident.getSla().stateAt(now, incident.getStatus(), incident.getAcknowledgedAt(),
+        SlaState state = incident.getSla().stateAt(now, incident.getStatus(), incident.getAcknowledgedAt(),
                 incident.getResolvedAt(), targets, firstWarningPercent);
+        // AT_RISK (module M12) is the risk scan's flag on an open, running, not yet breached incident: it replaces
+        // OK and WARNING, never VIOLATED, PAUSED, MET (finished incidents are never AT_RISK).
+        boolean notYetBreached = state == SlaState.OK || state == SlaState.WARNING;
+        return notYetBreached && incident.getSla().getResolutionDue() != null && flagged.contains(incident.getId())
+                ? SlaState.AT_RISK : state;
     }
 
     /** A policy deleted after the incident was created must not break the list: the state then ignores warnings. */
