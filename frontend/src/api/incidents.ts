@@ -1,6 +1,6 @@
 // All incident API calls live here. Components never call axios directly.
 import { api, tokenStore } from './client';
-import type { IncidentDetail, IncidentSummary, Page, Priority, IncidentStatus, SlaState } from './types';
+import type { IncidentDetail, IncidentSummary, Page, Priority, IncidentStatus, SlaState, AuditEntry, RecommendationView, SlaViolationView } from './types';
 import { PREDEFINED_SERVICES, PREDEFINED_CATEGORIES } from './services';
 
 export type IncidentFilters = Partial<{
@@ -550,28 +550,15 @@ function filterMockIncidents(f: IncidentFilters): Page<IncidentSummary> {
   return { items, page, size, totalItems, totalPages };
 }
 
-export const listIncidents = async (f: IncidentFilters): Promise<Page<IncidentSummary>> => {
+export const listIncidents = async (f: IncidentFilters = {}): Promise<Page<IncidentSummary>> => {
   if (tokenStore.getAccess()?.startsWith('mock-')) {
     return filterMockIncidents(f);
   }
-  try {
-    const res = await api.get<Page<IncidentSummary>>('/incidents', {
-      params: f,
-      paramsSerializer: { indexes: null },
-    });
-    // If backend returns empty list (first setup) or has items, return backend data
-    if (res.data && Array.isArray((res.data as any).items || (res.data as any).content)) {
-      const items = (res.data as any).items || (res.data as any).content;
-      if (items.length > 0) {
-        return res.data;
-      }
-    }
-    // If backend has 0 records yet, fallback to seed incidents so UI is populated
-    return filterMockIncidents(f);
-  } catch (err) {
-    // Graceful offline fallback
-    return filterMockIncidents(f);
-  }
+  const res = await api.get<Page<IncidentSummary>>('/incidents', {
+    params: f,
+    paramsSerializer: { indexes: null },
+  });
+  return res.data;
 };
 
 export const getIncident = async (id: number): Promise<IncidentDetail> => {
@@ -579,14 +566,8 @@ export const getIncident = async (id: number): Promise<IncidentDetail> => {
     const found = SEED_INCIDENTS.find((i) => i.id === id);
     if (found) return found;
   }
-  try {
-    const res = await api.get<IncidentDetail>(`/incidents/${id}`);
-    return res.data;
-  } catch (err) {
-    const found = SEED_INCIDENTS.find((i) => i.id === id);
-    if (found) return found;
-    throw err;
-  }
+  const res = await api.get<IncidentDetail>(`/incidents/${id}`);
+  return res.data;
 };
 
 export interface CreateIncidentPayload {
@@ -604,23 +585,8 @@ export const createIncident = async (body: CreateIncidentPayload): Promise<Incid
   if (tokenStore.getAccess()?.startsWith('mock-')) {
     return mockCreateIncident(body);
   }
-  try {
-    const res = await api.post<IncidentDetail>('/incidents', body);
-    // Also save in local SEED_INCIDENTS store so it reflects across tabs immediately
-    SEED_INCIDENTS.unshift(res.data);
-    return res.data;
-  } catch (err: any) {
-    const isNetworkError = !err?.response || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error');
-    if (isNetworkError) {
-      // If backend connection is offline, provide simulated response for demo
-      return mockCreateIncident(body);
-    }
-    // If backend responded with an error, throw the actual backend message
-    const msg = err.response?.data?.message || err.message || 'Failed to create incident on server';
-    const errorObj = new Error(msg);
-    (errorObj as any).response = err.response;
-    throw errorObj;
-  }
+  const res = await api.post<IncidentDetail>('/incidents', body);
+  return res.data;
 };
 
 function calculateMockPriority(impact: number, urgency: number, criticality: number): Priority {
@@ -705,51 +671,63 @@ export const reassignMockIncident = (id: number, technicianId: number, technicia
 
 // Generic action endpoint: acknowledge, start, request-info, provide-info, resolve, verify, close, reopen, reassign, escalate...
 export const incidentAction = async (id: number, action: string, body?: unknown) => {
-  if (tokenStore.getAccess()?.startsWith('mock-')) {
-    const inc = SEED_INCIDENTS.find((i) => i.id === id);
-    if (inc) {
-      if (action === 'acknowledge') inc.acknowledgedAt = new Date().toISOString();
-      if (action === 'resolve') {
-        inc.status = 'RESOLVED';
-        inc.resolvedAt = new Date().toISOString();
-      }
-      if (action === 'close') {
-        inc.status = 'CLOSED';
-        inc.closedAt = new Date().toISOString();
-      }
-      return inc;
-    }
-  }
-  try {
-    return await api.post<IncidentDetail>(`/incidents/${id}/${action}`, body).then((r) => r.data);
-  } catch (e) {
-    const inc = SEED_INCIDENTS.find((i) => i.id === id);
-    if (inc) return inc;
-    throw e;
-  }
+  const res = await api.post<IncidentDetail>(`/incidents/${id}/${action}`, body);
+  return res.data;
 };
 
-export const getHistory = (id: number) =>
-  api
-    .get(`/incidents/${id}/history`)
-    .then((r) => r.data)
-    .catch(() => []);
+export const provideInfo = async (id: number, message: string): Promise<IncidentDetail> => {
+  const res = await api.post<IncidentDetail>(`/incidents/${id}/provide-info`, { message });
+  return res.data;
+};
 
-export const getComments = (id: number) =>
-  api
-    .get(`/incidents/${id}/comments`)
-    .then((r) => r.data)
-    .catch(() => []);
+export const verifyIncident = async (id: number): Promise<IncidentDetail> => {
+  const res = await api.post<IncidentDetail>(`/incidents/${id}/verify`);
+  return res.data;
+};
 
-export const addComment = (id: number, body: string, visibility: 'PUBLIC' | 'INTERNAL' = 'PUBLIC') =>
-  api
-    .post(`/incidents/${id}/comments`, { body, visibility })
-    .then((r) => r.data)
-    .catch(() => ({
-      id: Date.now(),
-      incidentId: id,
-      body,
-      visibility,
-      author: { id: 1, name: 'System Administrator' },
-      createdAt: new Date().toISOString(),
-    }));
+export const reopenIncident = async (id: number, reason: string): Promise<IncidentDetail> => {
+  const res = await api.post<IncidentDetail>(`/incidents/${id}/reopen`, { reason });
+  return res.data;
+};
+
+export const withdrawIncident = async (id: number, reason: string): Promise<IncidentDetail> => {
+  const res = await api.post<IncidentDetail>(`/incidents/${id}/withdraw`, { reason });
+  return res.data;
+};
+
+export const submitFeedback = async (id: number, rating: number, comment?: string): Promise<unknown> => {
+  const res = await api.post(`/incidents/${id}/feedback`, { rating, comment });
+  return res.data;
+};
+
+export const getRecommendations = async (id: number): Promise<RecommendationView> => {
+  const res = await api.get<RecommendationView>(`/incidents/${id}/recommendations`);
+  return res.data;
+};
+
+export const assignIncident = async (id: number, technicianId?: number | null): Promise<IncidentDetail> => {
+  const res = await api.post<IncidentDetail>(`/incidents/${id}/assign`, {
+    technicianId: technicianId ?? null,
+  });
+  return res.data;
+};
+
+export const getSlaViolations = async (params?: { from?: string; to?: string; page?: number; size?: number }): Promise<Page<SlaViolationView>> => {
+  const res = await api.get<Page<SlaViolationView>>('/sla/violations', { params });
+  return res.data;
+};
+
+export const getHistory = async (id: number): Promise<AuditEntry[]> => {
+  const res = await api.get<AuditEntry[]>(`/incidents/${id}/history`);
+  return res.data;
+};
+
+export const getComments = async (id: number) => {
+  const res = await api.get(`/incidents/${id}/comments`);
+  return res.data;
+};
+
+export const addComment = async (id: number, body: string, visibility: 'PUBLIC' | 'INTERNAL' = 'PUBLIC') => {
+  const res = await api.post(`/incidents/${id}/comments`, { body, visibility });
+  return res.data;
+};

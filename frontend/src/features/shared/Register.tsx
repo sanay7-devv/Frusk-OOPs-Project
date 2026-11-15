@@ -64,30 +64,97 @@ export default function Register() {
   });
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="85vh" px={2}>
-      <Paper elevation={4} sx={{ p: 4, width: '100%', maxWidth: 480, borderRadius: 3 }}>
-        <Box textAlign="center" mb={3}>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="100vh"
+      px={2}
+      py={4}
+      sx={{
+        bgcolor: '#090d16',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-15%',
+          left: '-10%',
+          width: '500px',
+          height: '500px',
+          borderRadius: '50%',
+          bgcolor: 'rgba(99, 102, 241, 0.1)',
+          filter: 'blur(130px)',
+          pointerEvents: 'none',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: '-15%',
+          right: '-10%',
+          width: '500px',
+          height: '500px',
+          borderRadius: '50%',
+          bgcolor: 'rgba(6, 182, 212, 0.08)',
+          filter: 'blur(130px)',
+          pointerEvents: 'none',
+        },
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, sm: 4.5 },
+          width: '100%',
+          maxWidth: 480,
+          borderRadius: '16px',
+          bgcolor: 'rgba(20, 24, 36, 0.85)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.7), 0 0 24px rgba(99, 102, 241, 0.12)',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Box textAlign="center" mb={3.5}>
           <Box
             sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 3,
-              bgcolor: '#0a192f',
-              border: '1px solid rgba(0, 180, 216, 0.3)',
+              width: 58,
+              height: 58,
+              borderRadius: '14px',
+              bgcolor: '#141824',
+              border: '1px solid rgba(99, 102, 241, 0.4)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               mb: 1.5,
+              boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)',
               overflow: 'hidden',
             }}
           >
-            <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 48, height: 48, objectFit: 'contain' }} />
+            <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 46, height: 46, objectFit: 'contain' }} />
           </Box>
-          <Typography variant="h5" fontWeight="bold" color="primary">
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: 'Sora, sans-serif',
+              fontWeight: 700,
+              color: '#ffffff',
+              letterSpacing: '-0.02em',
+              mb: 0.5,
+            }}
+          >
             Create Enterprise Account
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Self-register for employee incident reporting & IT catalog services
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#94a3b8',
+              fontFamily: 'Geist, sans-serif',
+              fontSize: 13,
+            }}
+          >
+            Self-register for employee incident reporting &amp; IT catalog services
           </Typography>
         </Box>
 
@@ -139,14 +206,37 @@ export default function Register() {
               helperText={errors.confirmPassword?.message}
             />
 
-            {err && <Alert severity="error">{err}</Alert>}
+            {err && (
+              <Alert
+                severity="error"
+                sx={{
+                  bgcolor: 'rgba(244, 63, 94, 0.12)',
+                  color: '#ffdad6',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  fontSize: 13,
+                }}
+              >
+                {err}
+              </Alert>
+            )}
 
             <Button
               type="submit"
               variant="contained"
               fullWidth
               size="large"
-              sx={{ py: 1.2, fontWeight: 'bold' }}
+              sx={{
+                py: 1.3,
+                fontWeight: 700,
+                fontSize: 14,
+                background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                color: '#ffffff',
+                boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
+                  boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+                },
+              }}
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating Account...' : 'Register'}
@@ -155,9 +245,20 @@ export default function Register() {
         </form>
 
         <Box mt={3} textAlign="center">
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ color: '#94a3b8', fontSize: 13, fontFamily: 'Geist, sans-serif' }}>
             Already have an account?{' '}
-            <Link component="button" variant="body2" fontWeight="bold" onClick={() => navigate('/login')}>
+            <Link
+              component="button"
+              sx={{
+                fontWeight: 700,
+                color: '#4cd7f6',
+                textDecoration: 'none',
+                fontFamily: 'Geist, sans-serif',
+                fontSize: 13,
+                '&:hover': { textDecoration: 'underline' },
+              }}
+              onClick={() => navigate('/login')}
+            >
               Sign In
             </Link>
           </Typography>

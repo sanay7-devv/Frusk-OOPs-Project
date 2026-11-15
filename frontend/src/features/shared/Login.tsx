@@ -47,10 +47,10 @@ const schema = z.object({
 type LoginFormValues = z.infer<typeof schema>;
 
 const SEED_CREDENTIALS = [
-  { role: 'Administrator', email: 'admin@iitsm.com', pass: 'Admin@123', desc: 'Full system clearance (Admin, Tech & Employee)' },
-  { role: 'Team Lead', email: 'lead@iitsm.com', pass: 'Lead@123', desc: 'Level 1 Escalation & Team Queue triage' },
-  { role: 'Technician', email: 'tech@iitsm.com', pass: 'Tech@123', desc: 'Level 0 Workbench & incident resolution' },
-  { role: 'Employee', email: 'employee@iitsm.com', pass: 'User@123', desc: 'End-user ticketing & incident reporting' },
+  { role: 'Administrator', email: 'asha.rao@iitsm.demo', pass: 'Demo@1234', desc: 'Full system clearance (Admin, Tech & Employee)' },
+  { role: 'Team Lead', email: 'priya.nair@iitsm.demo', pass: 'Demo@1234', desc: 'Level 1 Escalation & Team Queue triage' },
+  { role: 'Technician', email: 'tech1@iitsm.demo', pass: 'Demo@1234', desc: 'Level 0 Workbench & incident resolution' },
+  { role: 'Employee', email: 'employee1@iitsm.demo', pass: 'Demo@1234', desc: 'End-user ticketing & incident reporting' },
 ];
 
 /** Accounts shown in the Google Account Chooser modal */
@@ -192,30 +192,72 @@ export default function Login() {
   };
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="85vh" px={2}>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="100vh"
+      px={2}
+      py={4}
+      sx={{
+        bgcolor: '#090d16',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-15%',
+          left: '-10%',
+          width: '500px',
+          height: '500px',
+          borderRadius: '50%',
+          bgcolor: 'rgba(99, 102, 241, 0.1)',
+          filter: 'blur(130px)',
+          pointerEvents: 'none',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: '-15%',
+          right: '-10%',
+          width: '500px',
+          height: '500px',
+          borderRadius: '50%',
+          bgcolor: 'rgba(6, 182, 212, 0.08)',
+          filter: 'blur(130px)',
+          pointerEvents: 'none',
+        },
+      }}
+    >
       <Paper
-        elevation={4}
+        elevation={0}
         sx={{
-          p: 4,
+          p: { xs: 3, sm: 4.5 },
           width: '100%',
           maxWidth: 480,
-          borderRadius: 3,
+          borderRadius: '16px',
+          bgcolor: 'rgba(20, 24, 36, 0.85)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.7), 0 0 24px rgba(99, 102, 241, 0.12)',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Header with Logo */}
-        <Box textAlign="center" mb={3}>
+        <Box textAlign="center" mb={3.5}>
           <Box
             sx={{
-              width: 64,
-              height: 64,
-              borderRadius: 3,
-              bgcolor: '#0a192f',
-              border: '1px solid rgba(0, 180, 216, 0.3)',
+              width: 60,
+              height: 60,
+              borderRadius: '14px',
+              bgcolor: '#141824',
+              border: '1px solid rgba(99, 102, 241, 0.4)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               mb: 1.5,
-              boxShadow: '0 4px 14px rgba(10, 25, 47, 0.18)',
+              boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)',
               overflow: 'hidden',
             }}
           >
@@ -223,23 +265,51 @@ export default function Login() {
               component="img"
               src={logoIcon}
               alt="IITSM Logo"
-              sx={{ width: 56, height: 56, objectFit: 'contain' }}
+              sx={{ width: 48, height: 48, objectFit: 'contain' }}
             />
           </Box>
-          <Typography variant="h5" fontWeight="bold" color="primary">
-            I-ITSM Platform
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: 'Sora, sans-serif',
+              fontWeight: 700,
+              color: '#ffffff',
+              letterSpacing: '-0.02em',
+              mb: 0.5,
+            }}
+          >
+            IITSM Platform
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Enterprise Incident & Service Management System
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#94a3b8',
+              fontFamily: 'Geist, sans-serif',
+              fontSize: 13,
+            }}
+          >
+            Enterprise Incident &amp; Service Command System
           </Typography>
         </Box>
 
         {user && workspace && (
           <Alert
             severity="success"
-            sx={{ mb: 2 }}
+            sx={{
+              mb: 2.5,
+              bgcolor: 'rgba(16, 185, 129, 0.12)',
+              color: '#6ee7b7',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              fontFamily: 'Geist, sans-serif',
+              fontSize: 13,
+            }}
             action={
-              <Button color="inherit" size="small" onClick={() => navigate(HOME[workspace])}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => navigate(HOME[workspace])}
+                sx={{ fontWeight: 600 }}
+              >
                 Continue
               </Button>
             }
@@ -274,7 +344,16 @@ export default function Login() {
           />
 
           {err && (
-            <Alert severity="error" sx={{ mt: 2 }}>
+            <Alert
+              severity="error"
+              sx={{
+                mt: 2,
+                bgcolor: 'rgba(244, 63, 94, 0.12)',
+                color: '#ffdad6',
+                border: '1px solid rgba(244, 63, 94, 0.3)',
+                fontSize: 13,
+              }}
+            >
               {err}
             </Alert>
           )}
@@ -284,15 +363,35 @@ export default function Login() {
             variant="contained"
             fullWidth
             size="large"
-            sx={{ mt: 3, py: 1.2, fontWeight: 'bold' }}
+            sx={{
+              mt: 3,
+              py: 1.3,
+              fontWeight: 700,
+              fontSize: 14,
+              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+              color: '#ffffff',
+              boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
+                boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+              },
+            }}
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Authenticating...' : 'Sign In'}
           </Button>
         </form>
 
-        <Divider sx={{ my: 2.5 }}>
-          <Typography variant="caption" color="text.secondary">
+        <Divider sx={{ my: 2.5, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <Typography
+            sx={{
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: 10,
+              color: '#64748b',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
             OR SIGN IN WITH
           </Typography>
         </Divider>
@@ -314,13 +413,17 @@ export default function Login() {
             }
             sx={{
               py: 1.2,
-              borderColor: '#dadce0',
-              color: '#3c4043',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              color: '#dfe2ef',
               textTransform: 'none',
               fontWeight: 600,
+              fontSize: 13.5,
+              borderRadius: '8px',
               '&:hover': {
-                borderColor: '#d2e3fc',
-                bgcolor: 'rgba(66, 133, 244, 0.04)',
+                borderColor: '#6366f1',
+                bgcolor: 'rgba(99, 102, 241, 0.08)',
+                color: '#c0c1ff',
               },
             }}
           >
@@ -334,37 +437,84 @@ export default function Login() {
             component="button"
             variant="caption"
             onClick={() => setShowSeed(!showSeed)}
-            sx={{ textDecoration: 'none', color: 'text.secondary', fontWeight: 600 }}
+            sx={{
+              textDecoration: 'none',
+              color: '#94a3b8',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: 11,
+              fontWeight: 600,
+              '&:hover': { color: '#4cd7f6' },
+            }}
           >
-            {showSeed ? '▲ Hide Database Accounts' : '▼ View Default Database Credentials'}
+            {showSeed ? '▲ Hide Database Credentials' : '▼ View Default Database Credentials'}
           </Link>
           <Collapse in={showSeed}>
-            <Paper variant="outlined" sx={{ mt: 1.5, p: 1.5, textAlign: 'left', bgcolor: 'background.default' }}>
-              <Typography variant="caption" fontWeight="bold" display="block" mb={1} color="text.primary">
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 1.5,
+                p: 1.8,
+                textAlign: 'left',
+                bgcolor: 'rgba(10, 14, 23, 0.9)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '10px',
+              }}
+            >
+              <Typography
+                sx={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: '#4cd7f6',
+                  mb: 1.2,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}
+              >
                 PostgreSQL Seed Accounts (Click to auto-fill):
               </Typography>
-              <Stack spacing={0.75}>
+              <Stack spacing={0.8}>
                 {SEED_CREDENTIALS.map((c) => (
                   <Box
                     key={c.email}
                     onClick={() => handleQuickFill(c.email, c.pass)}
                     sx={{
-                      p: 0.75,
-                      borderRadius: 1,
+                      p: 0.8,
+                      borderRadius: '6px',
                       cursor: 'pointer',
-                      '&:hover': { bgcolor: 'action.hover' },
+                      bgcolor: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.04)',
+                      transition: 'all 0.15s',
+                      '&:hover': {
+                        bgcolor: 'rgba(99, 102, 241, 0.12)',
+                        borderColor: 'rgba(99, 102, 241, 0.3)',
+                      },
                     }}
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="caption" fontWeight="bold">
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
                         {c.role}:
                       </Typography>
-                      <Typography variant="caption" fontFamily="monospace" color="primary.main">
+                      <Typography
+                        sx={{
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: 11.5,
+                          color: '#c0c1ff',
+                          fontWeight: 500,
+                        }}
+                      >
                         {c.email}
                       </Typography>
                     </Stack>
-                    <Typography variant="caption" color="text.secondary" display="block" fontSize={10}>
-                      Password: <code>{c.pass}</code> • {c.desc}
+                    <Typography
+                      sx={{
+                        fontFamily: 'Geist, sans-serif',
+                        color: '#94a3b8',
+                        fontSize: 11,
+                        mt: 0.2,
+                      }}
+                    >
+                      Password: <code style={{ color: '#4cd7f6' }}>{c.pass}</code> • {c.desc}
                     </Typography>
                   </Box>
                 ))}
@@ -374,13 +524,19 @@ export default function Login() {
         </Box>
 
         {/* Register Link */}
-        <Box mt={2} textAlign="center">
-          <Typography variant="caption" color="text.secondary">
+        <Box mt={2.5} textAlign="center">
+          <Typography sx={{ color: '#94a3b8', fontSize: 12.5, fontFamily: 'Geist, sans-serif' }}>
             Don't have an enterprise account?{' '}
             <Link
               component="button"
-              variant="caption"
-              fontWeight="bold"
+              sx={{
+                fontWeight: 700,
+                color: '#4cd7f6',
+                textDecoration: 'none',
+                fontFamily: 'Geist, sans-serif',
+                fontSize: 12.5,
+                '&:hover': { textDecoration: 'underline' },
+              }}
               onClick={() => navigate('/register')}
             >
               Register as Employee
@@ -397,11 +553,12 @@ export default function Login() {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            bgcolor: '#1f1f1f',
-            color: '#fff',
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#dfe2ef',
             p: 1,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.8), 0 0 24px rgba(99, 102, 241, 0.2)',
           },
         }}
       >
@@ -413,32 +570,32 @@ export default function Login() {
               <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
             </svg>
-            <Typography variant="body2" sx={{ color: '#e8eaed', fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ color: '#dfe2ef', fontWeight: 600 }}>
               Sign in with Google
             </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setGoogleModalOpen(false)} sx={{ color: '#9aa0a6' }}>
+          <IconButton size="small" onClick={() => setGoogleModalOpen(false)} sx={{ color: '#94a3b8' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
 
         <DialogContent sx={{ pt: 1, pb: 2 }}>
-          <Typography variant="h5" fontWeight="bold" sx={{ color: '#e8eaed', mb: 0.5 }}>
+          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff', mb: 0.5 }}>
             Choose an account
           </Typography>
-          <Typography variant="body2" sx={{ color: '#9aa0a6', mb: 2 }}>
-            to continue to <span style={{ color: '#8ab4f8' }}>IITSM Enterprise</span>
+          <Typography variant="body2" sx={{ color: '#94a3b8', mb: 2 }}>
+            to continue to <span style={{ color: '#4cd7f6' }}>IITSM Enterprise</span>
           </Typography>
 
-          <List disablePadding sx={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+          <List disablePadding sx={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             {DEMO_GOOGLE_ACCOUNTS.map((acc) => (
-              <ListItem key={acc.email} disablePadding sx={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <ListItem key={acc.email} disablePadding sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <ListItemButton
                   onClick={() => handleSelectGoogleAccount(acc.email, acc.name)}
                   sx={{
                     py: 1.5,
-                    borderRadius: 1,
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                    borderRadius: '8px',
+                    '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)' },
                   }}
                 >
                   <ListItemAvatar>
@@ -449,37 +606,37 @@ export default function Login() {
                   <ListItemText
                     primary={acc.name}
                     secondary={acc.email}
-                    primaryTypographyProps={{ sx: { color: '#e8eaed', fontWeight: 600, fontSize: '0.95rem' } }}
-                    secondaryTypographyProps={{ sx: { color: '#9aa0a6', fontSize: '0.82rem' } }}
+                    primaryTypographyProps={{ sx: { color: '#dfe2ef', fontWeight: 600, fontSize: '0.92rem' } }}
+                    secondaryTypographyProps={{ sx: { color: '#94a3b8', fontSize: '0.8rem' } }}
                   />
                 </ListItemButton>
               </ListItem>
             ))}
 
-            <ListItem disablePadding sx={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <ListItem disablePadding sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <ListItemButton
                 onClick={() => setShowCustomInput(!showCustomInput)}
                 sx={{
                   py: 1.5,
-                  borderRadius: 1,
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                  borderRadius: '8px',
+                  '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)' },
                 }}
               >
                 <ListItemAvatar>
-                  <Avatar sx={{ bgcolor: 'transparent', border: '1px solid #5f6368', color: '#8ab4f8' }}>
+                  <Avatar sx={{ bgcolor: 'transparent', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#4cd7f6' }}>
                     <PersonAddOutlinedIcon fontSize="small" />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
                   primary="Use another account"
-                  primaryTypographyProps={{ sx: { color: '#e8eaed', fontWeight: 500, fontSize: '0.92rem' } }}
+                  primaryTypographyProps={{ sx: { color: '#dfe2ef', fontWeight: 500, fontSize: '0.9rem' } }}
                 />
               </ListItemButton>
             </ListItem>
           </List>
 
           <Collapse in={showCustomInput}>
-            <Box mt={2} p={1.5} sx={{ bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 2 }}>
+            <Box mt={2} p={1.5} sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <TextField
                 fullWidth
                 size="small"
@@ -487,30 +644,26 @@ export default function Login() {
                 value={customEmailInput}
                 onChange={(e) => setCustomEmailInput(e.target.value)}
                 placeholder="e.g. yourname@gmail.com"
-                sx={{
-                  mb: 1.5,
-                  input: { color: '#fff' },
-                  label: { color: '#9aa0a6' },
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': { borderColor: '#5f6368' },
-                    '&:hover fieldset': { borderColor: '#8ab4f8' },
-                  },
-                }}
+                sx={{ mb: 1.5 }}
               />
               <Button
                 variant="contained"
                 fullWidth
                 disabled={!customEmailInput.trim()}
                 onClick={() => handleSelectGoogleAccount(customEmailInput, customEmailInput.split('@')[0])}
-                sx={{ bgcolor: '#8ab4f8', color: '#202124', fontWeight: 'bold' }}
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                }}
               >
-                Verify & Continue
+                Verify &amp; Continue
               </Button>
             </Box>
           </Collapse>
 
-          <Box mt={2.5} p={1.5} sx={{ bgcolor: 'rgba(66, 133, 244, 0.08)', borderRadius: 2, border: '1px solid rgba(66, 133, 244, 0.2)' }}>
-            <Typography variant="caption" sx={{ color: '#8ab4f8', display: 'block', lineHeight: 1.4 }}>
+          <Box mt={2.5} p={1.5} sx={{ bgcolor: 'rgba(6, 182, 212, 0.08)', borderRadius: '8px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+            <Typography variant="caption" sx={{ color: '#4cd7f6', display: 'block', lineHeight: 1.4, fontFamily: 'Geist, sans-serif' }}>
               💡 <b>Note:</b> Only emails registered in the database can sign in. Unregistered accounts will be prompted to register first.
             </Typography>
           </Box>

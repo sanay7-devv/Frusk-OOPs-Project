@@ -14,6 +14,23 @@ import { Refresh as RefreshIcon, Assessment as ReportIcon } from '@mui/icons-mat
 import { listIncidents } from '../../api/incidents';
 import { getAdminServices } from '../../api/admin';
 
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  secondary: '#06b6d4',
+  error: '#f43f5e',
+  success: '#10b981',
+  warning: '#f59e0b',
+};
+
 export default function Reports() {
   const { data: incidentPage, refetch } = useQuery({
     queryKey: ['admin-reports-incidents'],
@@ -39,72 +56,92 @@ export default function Reports() {
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={3} spacing={2}>
         <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Executive Analytics & SLA Reports
+          <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+            Executive Analytics &amp; SLA Reports
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mt: 0.5 }}>
             Long-term reliability trends, MTTR metrics and workload distributions
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => refetch()}>
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => refetch()}
+          sx={{
+            borderColor: COLORS.border,
+            color: COLORS.onSurfaceVariant,
+            textTransform: 'none',
+            fontWeight: 600,
+            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.2)' },
+          }}
+        >
           Refresh Data
         </Button>
       </Stack>
 
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2 }}>
+          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Resolution Compliance
               </Typography>
-              <Typography variant="h4" fontWeight="bold" color="primary.main" my={1}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.primary, my: 1, fontFamily: 'Sora, sans-serif' }}>
                 {resolutionRate}%
               </Typography>
-              <LinearProgress variant="determinate" value={resolutionRate} sx={{ height: 6, borderRadius: 3 }} />
+              <LinearProgress
+                variant="determinate"
+                value={resolutionRate}
+                sx={{
+                  height: 6,
+                  borderRadius: 3,
+                  bgcolor: COLORS.surfaceContainerHighest,
+                  '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary },
+                }}
+              />
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2 }}>
+          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Mean Time to Resolve (MTTR)
               </Typography>
-              <Typography variant="h4" fontWeight="bold" my={1}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.onSurface, my: 1, fontFamily: 'Sora, sans-serif' }}>
                 1.8 hrs
               </Typography>
-              <Typography variant="caption" color="success.main">
+              <Typography variant="caption" sx={{ color: COLORS.success, fontWeight: 600 }}>
                 -24 mins vs previous cycle
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2 }}>
+          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Mission-Critical P1 Volume
               </Typography>
-              <Typography variant="h4" fontWeight="bold" color="error.main" my={1}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.error, my: 1, fontFamily: 'Sora, sans-serif' }}>
                 {p1Count}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 {Math.round((p1Count / total) * 100)}% of total volume
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2 }}>
+          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Active Catalog Services
               </Typography>
-              <Typography variant="h4" fontWeight="bold" my={1}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.onSurface, my: 1, fontFamily: 'Sora, sans-serif' }}>
                 {services.length}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Monitored infrastructure nodes
               </Typography>
             </CardContent>
@@ -113,46 +150,62 @@ export default function Reports() {
       </Grid>
 
       {/* Priority Distribution Chart */}
-      <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" mb={2}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer, mb: 3 }}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
           Incident Volume Distribution by Priority
         </Typography>
-        <Stack spacing={2}>
+        <Stack spacing={2.5}>
           <Box>
             <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600">
+              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
                 P1 - Critical Priority
               </Typography>
-              <Typography variant="body2">{p1Count} incidents</Typography>
+              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p1Count} incidents</Typography>
             </Stack>
-            <LinearProgress variant="determinate" value={(p1Count / total) * 100} color="error" sx={{ height: 8, borderRadius: 4 }} />
+            <LinearProgress
+              variant="determinate"
+              value={(p1Count / total) * 100}
+              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.error } }}
+            />
           </Box>
           <Box>
             <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600">
+              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
                 P2 - High Priority
               </Typography>
-              <Typography variant="body2">{p2Count} incidents</Typography>
+              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p2Count} incidents</Typography>
             </Stack>
-            <LinearProgress variant="determinate" value={(p2Count / total) * 100} color="warning" sx={{ height: 8, borderRadius: 4 }} />
+            <LinearProgress
+              variant="determinate"
+              value={(p2Count / total) * 100}
+              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: '#ea580c' } }}
+            />
           </Box>
           <Box>
             <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600">
+              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
                 P3 - Medium Priority
               </Typography>
-              <Typography variant="body2">{p3Count} incidents</Typography>
+              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p3Count} incidents</Typography>
             </Stack>
-            <LinearProgress variant="determinate" value={(p3Count / total) * 100} color="info" sx={{ height: 8, borderRadius: 4 }} />
+            <LinearProgress
+              variant="determinate"
+              value={(p3Count / total) * 100}
+              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.secondary } }}
+            />
           </Box>
           <Box>
             <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600">
+              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
                 P4 - Low Priority
               </Typography>
-              <Typography variant="body2">{p4Count} incidents</Typography>
+              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p4Count} incidents</Typography>
             </Stack>
-            <LinearProgress variant="determinate" value={(p4Count / total) * 100} color="inherit" sx={{ height: 8, borderRadius: 4 }} />
+            <LinearProgress
+              variant="determinate"
+              value={(p4Count / total) * 100}
+              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary } }}
+            />
           </Box>
         </Stack>
       </Paper>

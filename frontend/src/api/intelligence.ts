@@ -5,6 +5,7 @@ export interface CategorySuggestion {
   categoryName: string | null;
   confidence: number;
   reason: string;
+  source?: string;
 }
 
 export interface IntakeSuggestion {

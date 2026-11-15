@@ -43,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const workspaces = useMemo(() => (user ? workspacesFor(user) : []), [user]);
 
   // Remember the last workspace choice; fall back to the first allowed one.
+
+  //this will be limited to some lgin numbers and then have to login again
   const signIn = useCallback((r: AuthResponse) => {
     tokenStore.setAccess(r.accessToken);
     tokenStore.setRefresh(r.refreshToken);

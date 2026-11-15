@@ -14,147 +14,65 @@ export interface PredefinedAccount {
 
 export const PREDEFINED_ACCOUNTS: PredefinedAccount[] = [
   {
-    name: 'Administrator',
-    email: 'admin@iitsm.com',
-    password: 'Admin@123',
-    roles: ['ADMINISTRATOR', 'TECHNICIAN', 'EMPLOYEE'],
+    name: 'Asha Rao (Admin)',
+    email: 'asha.rao@iitsm.demo',
+    password: 'Demo@1234',
+    roles: ['ADMINISTRATOR', 'EMPLOYEE'],
     roleLabel: 'Administrator',
-    description: 'Full access to Admin, Lead, Tech & Employee views',
-    technician: { escalationLevel: 1, availability: 'AVAILABLE' },
-    administrator: { scope: 'SYSTEM_ADMIN' },
-  },
-  {
-    name: 'Administrator',
-    email: 'admin@iitsm.local',
-    password: 'Admin@123',
-    roles: ['ADMINISTRATOR', 'TECHNICIAN', 'EMPLOYEE'],
-    roleLabel: 'Administrator',
-    description: 'Full access to Admin, Lead, Tech & Employee views',
-    technician: { escalationLevel: 1, availability: 'AVAILABLE' },
-    administrator: { scope: 'SYSTEM_ADMIN' },
-  },
-  {
-    name: 'Team Lead',
-    email: 'lead@iitsm.com',
-    password: 'Lead@123',
-    roles: ['TECHNICIAN'],
-    roleLabel: 'Team Lead',
-    description: 'Technician with Level 1 escalation: Lead queue & escalations',
-    technician: { escalationLevel: 1, availability: 'AVAILABLE' },
-    administrator: null,
-  },
-  {
-    name: 'Team Lead',
-    email: 'lead@iitsm.local',
-    password: 'Lead@123',
-    roles: ['TECHNICIAN'],
-    roleLabel: 'Team Lead',
-    description: 'Technician with Level 1 escalation: Lead queue & escalations',
-    technician: { escalationLevel: 1, availability: 'AVAILABLE' },
-    administrator: null,
-  },
-  {
-    name: 'Technician',
-    email: 'tech@iitsm.com',
-    password: 'Tech@123',
-    roles: ['TECHNICIAN'],
-    roleLabel: 'Technician',
-    description: 'Level 0 technician: Personal queue & workbench',
-    technician: { escalationLevel: 0, availability: 'AVAILABLE' },
-    administrator: null,
-  },
-  {
-    name: 'Technician',
-    email: 'tech@iitsm.local',
-    password: 'Tech@123',
-    roles: ['TECHNICIAN'],
-    roleLabel: 'Technician',
-    description: 'Level 0 technician: Personal queue & workbench',
-    technician: { escalationLevel: 0, availability: 'AVAILABLE' },
-    administrator: null,
-  },
-  {
-    name: 'Employee',
-    email: 'employee@iitsm.com',
-    password: 'User@123',
-    roles: ['EMPLOYEE'],
-    roleLabel: 'Employee',
-    description: 'Report incidents & track employee tickets',
+    description: 'Enterprise IT Administrator with system-wide privileges',
     technician: null,
+    administrator: { scope: 'SYSTEM_ADMIN' },
+  },
+  {
+    name: 'Priya Nair (Team Lead)',
+    email: 'priya.nair@iitsm.demo',
+    password: 'Demo@1234',
+    roles: ['TECHNICIAN', 'EMPLOYEE'],
+    roleLabel: 'Team Lead',
+    description: 'Level 1 escalation Lead: queue dispatch & escalations',
+    technician: { escalationLevel: 1, availability: 'AVAILABLE' },
     administrator: null,
   },
   {
-    name: 'Employee',
-    email: 'employee@iitsm.local',
-    password: 'User@123',
+    name: 'Technician 1 (tech1)',
+    email: 'tech1@iitsm.demo',
+    password: 'Demo@1234',
+    roles: ['TECHNICIAN', 'EMPLOYEE'],
+    roleLabel: 'Technician',
+    description: 'Frontline Level 0 SRE: personal queue & workbench',
+    technician: { escalationLevel: 0, availability: 'AVAILABLE' },
+    administrator: null,
+  },
+  {
+    name: 'Employee 1 (employee1)',
+    email: 'employee1@iitsm.demo',
+    password: 'Demo@1234',
     roles: ['EMPLOYEE'],
     roleLabel: 'Employee',
-    description: 'Report incidents & track employee tickets',
+    description: 'Corporate employee: report outages & track tickets',
     technician: null,
     administrator: null,
   },
 ];
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  // 1. Try real backend first if accessible
   try {
     const res = await api.post<AuthResponse>('/auth/login', { email, password });
     return res.data;
   } catch (apiError: any) {
     const isNetworkError = !apiError?.response || apiError?.code === 'ERR_NETWORK' || apiError?.message?.includes('Network Error');
-
-    // 2. Offline fallback for predefined accounts when backend is unreachable or account does not exist yet in DB
-    const matchedAccount = PREDEFINED_ACCOUNTS.find(
-      (acc) =>
-        acc.email.toLowerCase() === normalizedEmail ||
-        acc.email.toLowerCase().replace('.local', '.com') === normalizedEmail ||
-        acc.email.toLowerCase().replace('.com', '.local') === normalizedEmail
-    );
-
-    if (matchedAccount && (isNetworkError || apiError?.response?.status === 401 || apiError?.response?.status === 404)) {
-      if (matchedAccount.password !== password) {
-        const err = new Error('Email or password is incorrect.');
-        (err as unknown as { response: { data: { code: string; message: string } } }).response = {
-          data: {
-            code: 'INVALID_CREDENTIALS',
-            message: 'Invalid password. Hint for pre-decided account: ' + matchedAccount.password,
-          },
-        };
-        throw err;
-      }
-
-      const mockResponse: AuthResponse = {
-        accessToken: `mock-access-token-${matchedAccount.roles[0].toLowerCase()}`,
-        refreshToken: `mock-refresh-token-${matchedAccount.roles[0].toLowerCase()}`,
-        expiresInSeconds: 900,
-        user: {
-          id: matchedAccount.roles.includes('ADMINISTRATOR') ? 1 : 2,
-          name: matchedAccount.name,
-          email: matchedAccount.email,
-          roles: matchedAccount.roles,
-          permissions: matchedAccount.roles.includes('ADMINISTRATOR') ? ['ALL'] : [],
-          technician: matchedAccount.technician,
-          administrator: matchedAccount.administrator,
-        },
-      };
-      return mockResponse;
-    }
-
     if (isNetworkError) {
       const dbErr = new Error(
-        'Backend server/database is offline on port 8080. Start the backend or use one of the pre-decided credentials.'
+        'Cannot reach the server at http://localhost:8080. Please ensure the backend is running.'
       );
-      (dbErr as unknown as { response: { data: { code: string; message: string } } }).response = {
+      (dbErr as any).response = {
         data: {
           code: 'BACKEND_OFFLINE',
-          message: 'Backend server at localhost:8080 is unreachable. Please start the backend service.',
+          message: 'Cannot reach the server. Please verify backend service is active.',
         },
       };
       throw dbErr;
     }
-
     throw apiError;
   }
 }

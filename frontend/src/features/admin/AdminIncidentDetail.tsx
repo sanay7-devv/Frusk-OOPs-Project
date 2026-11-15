@@ -35,6 +35,23 @@ import StatusChip from '../../components/StatusChip';
 import SlaCountdown from '../../components/SlaCountdown';
 import { useToast } from '../../components/Toast';
 
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  secondary: '#06b6d4',
+  error: '#f43f5e',
+  success: '#10b981',
+  warning: '#f59e0b',
+};
+
 export default function AdminIncidentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -122,7 +139,7 @@ export default function AdminIncidentDetail() {
   if (isLoading) {
     return (
       <Box p={8} display="flex" justifyContent="center">
-        <CircularProgress />
+        <CircularProgress sx={{ color: COLORS.primary }} />
       </Box>
     );
   }
@@ -130,10 +147,13 @@ export default function AdminIncidentDetail() {
   if (!incident) {
     return (
       <Box p={4} textAlign="center">
-        <Typography variant="h6" color="text.secondary">
+        <Typography variant="h6" sx={{ color: COLORS.onSurfaceVariant }}>
           Incident not found
         </Typography>
-        <Button onClick={() => navigate('/admin/tickets')} sx={{ mt: 2 }}>
+        <Button
+          onClick={() => navigate('/admin/tickets')}
+          sx={{ mt: 2, color: COLORS.primary }}
+        >
           Back to Tickets
         </Button>
       </Box>
@@ -144,10 +164,21 @@ export default function AdminIncidentDetail() {
     <Box sx={{ p: 3, maxWidth: 1300, mx: 'auto' }}>
       {/* Top Navigation */}
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin/tickets')}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/admin/tickets')}
+          sx={{
+            color: COLORS.onSurfaceVariant,
+            '&:hover': { color: COLORS.onSurface, bgcolor: 'rgba(255, 255, 255, 0.05)' },
+          }}
+        >
           All Tickets
         </Button>
-        <Typography variant="h5" fontWeight="bold" fontFamily="monospace">
+        <Typography
+          variant="h5"
+          fontWeight="bold"
+          sx={{ fontFamily: 'JetBrains Mono, monospace', color: COLORS.primary }}
+        >
           {incident.code}
         </Typography>
         <PriorityBadge priority={incident.priority} />
@@ -157,20 +188,38 @@ export default function AdminIncidentDetail() {
       <Grid container spacing={3}>
         {/* Left Column: Details */}
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 3,
+              borderRadius: 3,
+              bgcolor: COLORS.surfaceContainer,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <Typography variant="h5" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
               {incident.title}
             </Typography>
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', mt: 2 }}>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', color: COLORS.onSurfaceVariant, mt: 2, lineHeight: 1.7 }}>
               {incident.description}
             </Typography>
 
             {incident.resolution && (
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'success.light', color: 'success.contrastText', borderRadius: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold">
-                  Root Cause & Resolution:
+              <Box
+                sx={{
+                  mt: 3,
+                  p: 2,
+                  bgcolor: 'rgba(16, 185, 129, 0.1)',
+                  color: '#34d399',
+                  borderRadius: 2,
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                }}
+              >
+                <Typography variant="subtitle2" fontWeight="bold" sx={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Root Cause &amp; Resolution:
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
                   {incident.resolution.rootCause ? `Root Cause: ${incident.resolution.rootCause}` : ''}
                   {incident.resolution.notes ? ` - ${incident.resolution.notes}` : ''}
                 </Typography>
@@ -179,9 +228,17 @@ export default function AdminIncidentDetail() {
           </Paper>
 
           {/* Incident Timeline & Comments */}
-          <Paper sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight="bold" mb={2}>
-              Admin Command Notes & Discussion
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              bgcolor: COLORS.surfaceContainer,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <Typography variant="h6" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
+              Admin Command Notes &amp; Discussion
             </Typography>
             <Stack direction="row" spacing={1.5} mb={3}>
               <TextField
@@ -190,6 +247,14 @@ export default function AdminIncidentDetail() {
                 placeholder="Post administrative note or technician guidance..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    borderRadius: 2,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                }}
               />
               <Button
                 variant="contained"
@@ -200,11 +265,17 @@ export default function AdminIncidentDetail() {
                     setNewComment('');
                   }
                 }}
+                sx={{
+                  bgcolor: COLORS.primary,
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  '&:hover': { bgcolor: '#4f46e5' },
+                }}
               >
                 Send
               </Button>
             </Stack>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
               All notes entered here are cryptographically bound to the audit log.
             </Typography>
           </Paper>
@@ -212,46 +283,59 @@ export default function AdminIncidentDetail() {
 
         {/* Right Column: Metadata & Controls */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              SLA Timers & Target
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 3,
+              borderRadius: 3,
+              bgcolor: COLORS.surfaceContainer,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+              SLA Timers &amp; Target
             </Typography>
             <Box my={2}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }} display="block">
                 Resolution SLA Deadline:
               </Typography>
               <SlaCountdown due={incident.resolutionDue || incident.responseDue} createdAt={incident.createdAt} slaState={incident.slaState} />
             </Box>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: COLORS.border }} />
 
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Assignment & Stakeholders
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+              Assignment &amp; Stakeholders
             </Typography>
             <Box mb={1.5}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Assigned Technician:
               </Typography>
-              <Typography variant="body2" fontWeight="600">
+              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
                 {incident.assignee?.name || (incident as any).assigneeName || 'Unassigned (Waiting in Queue)'}
               </Typography>
             </Box>
             <Box mb={1.5}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Reporter:
               </Typography>
-              <Typography variant="body2">{incident.reporter?.name || (incident as any).reporterName || 'Employee'}</Typography>
+              <Typography variant="body2" sx={{ color: COLORS.onSurface }}>
+                {incident.reporter?.name || (incident as any).reporterName || 'Employee'}
+              </Typography>
             </Box>
             <Box mb={1.5}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Impacted Service:
               </Typography>
-              <Typography variant="body2">{incident.service?.name || (incident as any).serviceName || 'Standard Service'}</Typography>
+              <Typography variant="body2" sx={{ color: COLORS.onSurface }}>
+                {incident.service?.name || (incident as any).serviceName || 'Standard Service'}
+              </Typography>
             </Box>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: COLORS.border }} />
 
             {/* Actions */}
-            <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: COLORS.onSurface }} mb={1.5}>
               Executive Overrides
             </Typography>
             <Stack spacing={1}>
@@ -260,6 +344,11 @@ export default function AdminIncidentDetail() {
                 fullWidth
                 startIcon={<SwapHorizIcon />}
                 onClick={() => setReassignOpen(true)}
+                sx={{
+                  borderColor: COLORS.border,
+                  color: COLORS.onSurface,
+                  '&:hover': { borderColor: COLORS.primary, bgcolor: 'rgba(99, 102, 241, 0.08)' },
+                }}
               >
                 Reassign Technician
               </Button>
@@ -269,6 +358,11 @@ export default function AdminIncidentDetail() {
                 color="warning"
                 startIcon={<PriorityHighIcon />}
                 onClick={() => setOverrideOpen(true)}
+                sx={{
+                  borderColor: 'rgba(245, 158, 11, 0.3)',
+                  color: '#fbbf24',
+                  '&:hover': { borderColor: '#f59e0b', bgcolor: 'rgba(245, 158, 11, 0.08)' },
+                }}
               >
                 Override Priority
               </Button>
@@ -279,6 +373,11 @@ export default function AdminIncidentDetail() {
                   color="error"
                   startIcon={<CheckCircleIcon />}
                   onClick={handleClose}
+                  sx={{
+                    borderColor: 'rgba(244, 63, 94, 0.3)',
+                    color: '#fb7185',
+                    '&:hover': { borderColor: '#f43f5e', bgcolor: 'rgba(244, 63, 94, 0.08)' },
+                  }}
                 >
                   Force Close Ticket
                 </Button>
@@ -289,9 +388,22 @@ export default function AdminIncidentDetail() {
       </Grid>
 
       {/* Reassign Dialog */}
-      <Dialog open={reassignOpen} onClose={() => setReassignOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Reassign Incident</DialogTitle>
-        <DialogContent dividers>
+      <Dialog
+        open={reassignOpen}
+        onClose={() => setReassignOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 'bold', fontFamily: 'Sora, sans-serif' }}>Reassign Incident</DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2} mt={1}>
             <TextField
               select
@@ -299,6 +411,14 @@ export default function AdminIncidentDetail() {
               fullWidth
               value={selectedTechId}
               onChange={(e) => setSelectedTechId(Number(e.target.value))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               {technicians.map((t) => (
                 <MenuItem key={t.id} value={t.id}>
@@ -314,21 +434,54 @@ export default function AdminIncidentDetail() {
               value={reassignReason}
               onChange={(e) => setReassignReason(e.target.value)}
               placeholder="e.g. Workload rebalancing or specialized database skill required"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setReassignOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleReassign} disabled={isSubmitting}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setReassignOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleReassign}
+            disabled={isSubmitting}
+            sx={{
+              bgcolor: COLORS.primary,
+              color: '#ffffff',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#4f46e5' },
+            }}
+          >
             Reassign Now
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Override Priority Dialog */}
-      <Dialog open={overrideOpen} onClose={() => setOverrideOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Executive Priority Override</DialogTitle>
-        <DialogContent dividers>
+      <Dialog
+        open={overrideOpen}
+        onClose={() => setOverrideOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 'bold', fontFamily: 'Sora, sans-serif' }}>Executive Priority Override</DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2} mt={1}>
             <TextField
               select
@@ -336,6 +489,14 @@ export default function AdminIncidentDetail() {
               fullWidth
               value={overridePriority}
               onChange={(e) => setOverridePriority(e.target.value as any)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="P1">P1 - Critical (Enterprise Emergency)</MenuItem>
               <MenuItem value="P2">P2 - High Priority</MenuItem>
@@ -351,12 +512,33 @@ export default function AdminIncidentDetail() {
               onChange={(e) => setOverrideReason(e.target.value)}
               placeholder="Provide exact operational reason for bypassing algorithm matrix..."
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOverrideOpen(false)}>Cancel</Button>
-          <Button variant="contained" color="warning" onClick={handleOverridePriority} disabled={isSubmitting}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setOverrideOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleOverridePriority}
+            disabled={isSubmitting}
+            sx={{
+              bgcolor: COLORS.warning,
+              color: '#000000',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#d97706' },
+            }}
+          >
             Confirm Override
           </Button>
         </DialogActions>

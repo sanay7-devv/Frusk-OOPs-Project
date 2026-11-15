@@ -42,35 +42,71 @@ export class ErrorBoundary extends Component<Props, State> {
           justifyContent="center"
           alignItems="center"
           minHeight="100vh"
-          bgcolor="#f5f5f5"
+          bgcolor="#090d16"
           p={3}
+          sx={{
+            backgroundImage:
+              'radial-gradient(circle at 50% 30%, rgba(244, 63, 94, 0.08) 0%, transparent 60%)',
+          }}
         >
           <Paper
-            elevation={4}
+            elevation={0}
             sx={{
               p: 4,
               maxWidth: 600,
               width: '100%',
-              borderRadius: 2,
+              borderRadius: '16px',
               textAlign: 'center',
+              bgcolor: '#141824',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              boxShadow: '0 16px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(244, 63, 94, 0.15)',
             }}
           >
-            <Typography variant="h5" color="error" gutterBottom fontWeight="bold">
-              Application Error
+            <Typography variant="h5" sx={{ fontFamily: 'Sora, sans-serif', color: '#ffb4ab', fontWeight: 700, mb: 1 }}>
+              Application Exception Intercepted
             </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              A runtime rendering error occurred in the application.
+            <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3 }}>
+              A runtime rendering fault occurred. State snapshot logged for diagnostics.
             </Typography>
 
-            <Alert severity="error" sx={{ textAlign: 'left', mb: 3, wordBreak: 'break-word' }}>
+            <Alert
+              severity="error"
+              sx={{
+                textAlign: 'left',
+                mb: 3,
+                wordBreak: 'break-word',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: 12,
+                bgcolor: 'rgba(244, 63, 94, 0.1)',
+                color: '#ffdad6',
+                border: '1px solid rgba(244, 63, 94, 0.25)',
+              }}
+            >
               <strong>Error:</strong> {this.state.error?.message || 'Unknown runtime error'}
             </Alert>
 
             <Box display="flex" gap={2} justifyContent="center">
-              <Button variant="outlined" color="primary" onClick={this.handleReload}>
+              <Button
+                variant="outlined"
+                onClick={this.handleReload}
+                sx={{
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                  color: '#dfe2ef',
+                  '&:hover': { borderColor: '#6366f1', color: '#c0c1ff' },
+                }}
+              >
                 Reload Page
               </Button>
-              <Button variant="contained" color="error" onClick={this.handleReset}>
+              <Button
+                variant="contained"
+                onClick={this.handleReset}
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)',
+                }}
+              >
                 Reset Session &amp; Return to Login
               </Button>
             </Box>

@@ -57,6 +57,23 @@ import {
 import { listIncidents } from '../../api/incidents';
 import { useToast } from '../../components/Toast';
 
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  secondary: '#06b6d4',
+  error: '#f43f5e',
+  success: '#10b981',
+  warning: '#f59e0b',
+};
+
 export default function Services() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -142,7 +159,6 @@ export default function Services() {
   // Filtered Services List
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
-      // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matches =
@@ -153,12 +169,10 @@ export default function Services() {
         if (!matches) return false;
       }
 
-      // Tier filter
       if (tierFilter !== 'ALL' && s.tier !== tierFilter) {
         return false;
       }
 
-      // Health filter
       if (healthFilter === 'OUTAGE') {
         const hasOutage = (activeIncidentsByService.get(s.id)?.length || 0) > 0;
         if (!hasOutage) return false;
@@ -168,7 +182,6 @@ export default function Services() {
     });
   }, [services, searchQuery, tierFilter, healthFilter, activeIncidentsByService]);
 
-  // Open Create Dialog
   const handleOpenCreate = () => {
     setFormCode('');
     setFormName('');
@@ -181,7 +194,6 @@ export default function Services() {
     setCreateOpen(true);
   };
 
-  // Open Edit Dialog
   const handleOpenEdit = (svc: AdminService) => {
     setSelectedService(svc);
     setFormCode(svc.code);
@@ -195,14 +207,12 @@ export default function Services() {
     setEditOpen(true);
   };
 
-  // Open Manage Dependencies Dialog
   const handleOpenDeps = (svc: AdminService) => {
     setSelectedService(svc);
     setFormDeps(svc.dependencyIds || svc.directDependencyIds || []);
     setDepsOpen(true);
   };
 
-  // Submit Create
   const handleCreateService = async () => {
     if (!formName.trim()) {
       toast('Please enter a service name', 'error');
@@ -232,7 +242,6 @@ export default function Services() {
     }
   };
 
-  // Submit Edit
   const handleUpdateService = async () => {
     if (!selectedService || !formName.trim()) return;
     setIsSubmitting(true);
@@ -258,7 +267,6 @@ export default function Services() {
     }
   };
 
-  // Submit Dependencies
   const handleSaveDependencies = async () => {
     if (!selectedService) return;
     setIsSubmitting(true);
@@ -274,7 +282,6 @@ export default function Services() {
     }
   };
 
-  // Deactivate / Delete Service
   const handleDeleteService = async (id: number, serviceName: string) => {
     if (!window.confirm(`Are you sure you want to retire and deactivate service "${serviceName}"?`)) return;
     try {
@@ -292,7 +299,6 @@ export default function Services() {
     toast('Service catalog synchronized with live cluster', 'info');
   };
 
-  // Render Service Tier Badge
   const renderTierBadge = (tier: string, criticality: number, alwaysP1: boolean) => {
     const effectiveTier = tier || deriveServiceTier(criticality, alwaysP1);
     switch (effectiveTier) {
@@ -304,9 +310,10 @@ export default function Services() {
             sx={{
               fontWeight: 700,
               fontSize: '0.75rem',
-              bgcolor: '#fee2e2',
-              color: '#991b1b',
-              border: '1px solid #fca5a5',
+              bgcolor: 'rgba(244, 63, 94, 0.2)',
+              color: '#fb7185',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -318,9 +325,10 @@ export default function Services() {
             sx={{
               fontWeight: 700,
               fontSize: '0.75rem',
-              bgcolor: '#e0f2fe',
-              color: '#0369a1',
-              border: '1px solid #7dd3fc',
+              bgcolor: 'rgba(6, 182, 212, 0.2)',
+              color: '#22d3ee',
+              border: '1px solid rgba(6, 182, 212, 0.3)',
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -333,9 +341,10 @@ export default function Services() {
             sx={{
               fontWeight: 600,
               fontSize: '0.75rem',
-              bgcolor: '#f1f5f9',
-              color: '#475569',
-              border: '1px solid #cbd5e1',
+              bgcolor: COLORS.surfaceContainerHighest,
+              color: COLORS.onSurfaceVariant,
+              border: `1px solid ${COLORS.border}`,
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -359,20 +368,21 @@ export default function Services() {
                 width: 40,
                 height: 40,
                 borderRadius: 2,
-                bgcolor: '#eff6ff',
-                color: '#1d4ed8',
+                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                color: COLORS.primary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
               }}
             >
               <DnsIcon />
             </Box>
-            <Typography variant="h5" fontWeight={800} color="#0f172a">
-              IT Service Catalog & Registry
+            <Typography variant="h5" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+              IT Service Catalog &amp; Registry
             </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
             Manage enterprise critical services, impact tiers, automatic P1 classifications, and live telemetry
           </Typography>
         </Box>
@@ -382,7 +392,14 @@ export default function Services() {
             variant="outlined"
             startIcon={<AccountTreeIcon />}
             onClick={() => navigate('/admin/services/graph')}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: COLORS.border,
+              color: COLORS.onSurfaceVariant,
+              '&:hover': { borderColor: COLORS.secondary, color: COLORS.secondary, bgcolor: 'rgba(6, 182, 212, 0.05)' },
+            }}
           >
             Topology Graph
           </Button>
@@ -390,7 +407,14 @@ export default function Services() {
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={handleRefresh}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: COLORS.border,
+              color: COLORS.onSurfaceVariant,
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.2)' },
+            }}
           >
             Refresh
           </Button>
@@ -398,7 +422,14 @@ export default function Services() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenCreate}
-            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#0284c7' }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              borderRadius: 2,
+              bgcolor: COLORS.primary,
+              color: '#ffffff',
+              '&:hover': { bgcolor: '#4f46e5' },
+            }}
           >
             Register Service
           </Button>
@@ -409,16 +440,16 @@ export default function Services() {
       <Grid container spacing={2.5} mb={3}>
         {/* Card 1: Total Services */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Total Managed Services
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#0f172a" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: COLORS.onSurface, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
                 {totalServices}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                {tier1Count} Tier-1 Mission Critical • {tier2Count} Tier-2 • {tier3Count} Tier-3
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
+                {tier1Count} Tier-1 • {tier2Count} Tier-2 • {tier3Count} Tier-3
               </Typography>
             </CardContent>
           </Card>
@@ -426,9 +457,9 @@ export default function Services() {
 
         {/* Card 2: Infrastructure Health */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Live Catalog Health
               </Typography>
               <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
@@ -437,15 +468,15 @@ export default function Services() {
                     width: 10,
                     height: 10,
                     borderRadius: '50%',
-                    bgcolor: servicesWithOutages.length > 0 ? '#ef4444' : '#10b981',
-                    boxShadow: servicesWithOutages.length > 0 ? '0 0 8px #ef4444' : '0 0 8px #10b981',
+                    bgcolor: servicesWithOutages.length > 0 ? COLORS.error : COLORS.success,
+                    boxShadow: servicesWithOutages.length > 0 ? `0 0 10px ${COLORS.error}` : `0 0 10px ${COLORS.success}`,
                   }}
                 />
-                <Typography variant="h4" fontWeight={800} color={servicesWithOutages.length > 0 ? '#b91c1c' : '#047857'}>
+                <Typography variant="h4" fontWeight={800} sx={{ color: servicesWithOutages.length > 0 ? '#fb7185' : '#34d399', fontFamily: 'Sora, sans-serif' }}>
                   {servicesWithOutages.length > 0 ? `${servicesWithOutages.length} Degraded` : '100% Nominal'}
                 </Typography>
               </Stack>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
                 {totalServices - servicesWithOutages.length} of {totalServices} services operational
               </Typography>
             </CardContent>
@@ -454,16 +485,16 @@ export default function Services() {
 
         {/* Card 3: Always P1 Policy */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Always P1 Critical Overrides
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#dc2626" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: '#fb7185', mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
                 {alwaysP1Count}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                Mandatory P1 classification on any declared outage
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
+                Mandatory P1 classification on declared outage
               </Typography>
             </CardContent>
           </Card>
@@ -471,15 +502,15 @@ export default function Services() {
 
         {/* Card 4: Open Active Outage Tickets */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Active Service Incidents
               </Typography>
-              <Typography variant="h4" fontWeight={800} color={totalOpenOutages > 0 ? '#d97706' : '#0f172a'} mt={0.5}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: totalOpenOutages > 0 ? '#f59e0b' : COLORS.onSurface, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
                 {totalOpenOutages}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
                 {totalOpenOutages > 0 ? 'Engineering response teams engaged' : 'Zero active outages detected'}
               </Typography>
             </CardContent>
@@ -494,7 +525,8 @@ export default function Services() {
           p: 2,
           mb: 3,
           borderRadius: 2.5,
-          border: '1px solid #e2e8f0',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: COLORS.surfaceContainer,
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           gap: 2,
@@ -507,62 +539,90 @@ export default function Services() {
           size="small"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: { xs: '100%', md: 360 } }}
+          sx={{
+            minWidth: { xs: '100%', md: 360 },
+            '& .MuiOutlinedInput-root': {
+              bgcolor: COLORS.surfaceContainerLowest,
+              color: COLORS.onSurface,
+              borderRadius: 2,
+              '& fieldset': { borderColor: COLORS.border },
+            },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#94a3b8' }} />
+                <SearchIcon sx={{ color: COLORS.onSurfaceVariant }} />
               </InputAdornment>
             ),
           }}
         />
 
         <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-          <Typography variant="caption" fontWeight={700} color="text.secondary" mr={0.5}>
+          <Typography variant="caption" fontWeight={700} sx={{ color: COLORS.onSurfaceVariant, mr: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
             TIER:
           </Typography>
           <Chip
             label={`All Tiers (${totalServices})`}
             size="small"
             clickable
-            color={tierFilter === 'ALL' ? 'primary' : 'default'}
             onClick={() => setTierFilter('ALL')}
-            sx={{ fontWeight: 600 }}
+            sx={{
+              fontWeight: 600,
+              bgcolor: tierFilter === 'ALL' ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+              color: tierFilter === 'ALL' ? COLORS.primary : COLORS.onSurfaceVariant,
+              border: `1px solid ${tierFilter === 'ALL' ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+            }}
           />
           <Chip
             label={`Tier 1 (${tier1Count})`}
             size="small"
             clickable
-            color={tierFilter === 'TIER_1' ? 'error' : 'default'}
             onClick={() => setTierFilter('TIER_1')}
-            sx={{ fontWeight: 600 }}
+            sx={{
+              fontWeight: 600,
+              bgcolor: tierFilter === 'TIER_1' ? 'rgba(244, 63, 94, 0.2)' : COLORS.surfaceContainerHighest,
+              color: tierFilter === 'TIER_1' ? '#fb7185' : COLORS.onSurfaceVariant,
+              border: `1px solid ${tierFilter === 'TIER_1' ? 'rgba(244, 63, 94, 0.4)' : COLORS.border}`,
+            }}
           />
           <Chip
             label={`Tier 2 (${tier2Count})`}
             size="small"
             clickable
-            color={tierFilter === 'TIER_2' ? 'primary' : 'default'}
             onClick={() => setTierFilter('TIER_2')}
-            sx={{ fontWeight: 600 }}
+            sx={{
+              fontWeight: 600,
+              bgcolor: tierFilter === 'TIER_2' ? 'rgba(6, 182, 212, 0.2)' : COLORS.surfaceContainerHighest,
+              color: tierFilter === 'TIER_2' ? '#22d3ee' : COLORS.onSurfaceVariant,
+              border: `1px solid ${tierFilter === 'TIER_2' ? 'rgba(6, 182, 212, 0.4)' : COLORS.border}`,
+            }}
           />
           <Chip
             label={`Tier 3 (${tier3Count})`}
             size="small"
             clickable
-            color={tierFilter === 'TIER_3' ? 'default' : 'default'}
             onClick={() => setTierFilter('TIER_3')}
-            sx={{ fontWeight: 600 }}
+            sx={{
+              fontWeight: 600,
+              bgcolor: tierFilter === 'TIER_3' ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+              color: tierFilter === 'TIER_3' ? COLORS.primary : COLORS.onSurfaceVariant,
+              border: `1px solid ${tierFilter === 'TIER_3' ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+            }}
           />
 
           {servicesWithOutages.length > 0 && (
             <Chip
-              icon={<WarningIcon fontSize="small" />}
+              icon={<WarningIcon fontSize="small" sx={{ color: '#fbbf24 !important' }} />}
               label={`Outage / Impacted (${servicesWithOutages.length})`}
               size="small"
               clickable
-              color={healthFilter === 'OUTAGE' ? 'warning' : 'default'}
               onClick={() => setHealthFilter(healthFilter === 'OUTAGE' ? 'ALL' : 'OUTAGE')}
-              sx={{ fontWeight: 700 }}
+              sx={{
+                fontWeight: 700,
+                bgcolor: 'rgba(245, 158, 11, 0.2)',
+                color: '#fbbf24',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+              }}
             />
           )}
         </Stack>
@@ -574,50 +634,50 @@ export default function Services() {
         elevation={0}
         sx={{
           borderRadius: 2.5,
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: COLORS.surfaceContainer,
           overflow: 'hidden',
         }}
       >
         {isLoadingServices || isLoadingIncidents ? (
           <Box p={8} display="flex" justifyContent="center" alignItems="center">
-            <CircularProgress size={36} />
+            <CircularProgress size={36} sx={{ color: COLORS.primary }} />
           </Box>
         ) : filteredServices.length === 0 ? (
           <Box p={6} textAlign="center">
-            <Typography variant="subtitle1" fontWeight={700} color="#334155">
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: COLORS.onSurface }}>
               No services match your search filter
             </Typography>
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
+            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mt: 0.5 }}>
               Try adjusting your search terms or tier selection
             </Typography>
           </Box>
         ) : (
           <Table>
-            <TableHead sx={{ bgcolor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+            <TableHead sx={{ bgcolor: COLORS.surfaceContainerLow, borderBottom: `1px solid ${COLORS.border}` }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                   CODE
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
-                  SERVICE NAME & SUMMARY
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
+                  SERVICE NAME &amp; SUMMARY
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                   TIER
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                   CRITICALITY (1-5)
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                   ALWAYS P1 POLICY
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                   DEPENDENCIES
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                   STATUS
                 </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2, textAlign: 'right' }}>
+                <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
                   ACTIONS
                 </TableCell>
               </TableRow>
@@ -635,8 +695,9 @@ export default function Services() {
                     key={svc.id}
                     hover
                     sx={{
-                      bgcolor: hasActiveOutage ? 'rgba(254, 242, 242, 0.45)' : 'inherit',
-                      '&:hover': { bgcolor: hasActiveOutage ? '#fef2f2 !important' : '#f8fafc !important' },
+                      bgcolor: hasActiveOutage ? 'rgba(244, 63, 94, 0.08)' : 'inherit',
+                      '& td': { borderBottom: `1px solid ${COLORS.border}` },
+                      '&:hover': { bgcolor: hasActiveOutage ? 'rgba(244, 63, 94, 0.12) !important' : 'rgba(99, 102, 241, 0.05) !important' },
                     }}
                   >
                     {/* Column 1: Monospace Service Code */}
@@ -645,12 +706,12 @@ export default function Services() {
                         label={svc.code || deriveServiceCode(svc.name, svc.id)}
                         size="small"
                         sx={{
-                          fontFamily: 'monospace',
+                          fontFamily: 'JetBrains Mono, monospace',
                           fontWeight: 800,
                           fontSize: '0.78rem',
-                          bgcolor: '#f1f5f9',
-                          color: '#0f172a',
-                          border: '1px solid #cbd5e1',
+                          bgcolor: COLORS.surfaceContainerHighest,
+                          color: COLORS.primary,
+                          border: `1px solid ${COLORS.border}`,
                           letterSpacing: 0.5,
                         }}
                       />
@@ -660,17 +721,17 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       <Stack spacing={0.5}>
                         <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="body2" fontWeight={700} color="#0f172a">
+                          <Typography variant="body2" fontWeight={700} sx={{ color: COLORS.onSurface }}>
                             {svc.name}
                           </Typography>
                           {svc.owner && (
-                            <Typography variant="caption" sx={{ color: '#64748b', bgcolor: '#f8fafc', px: 1, py: 0.2, borderRadius: 1, border: '1px solid #e2e8f0' }}>
+                            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, bgcolor: COLORS.surfaceContainerHighest, px: 1, py: 0.2, borderRadius: 1, border: `1px solid ${COLORS.border}` }}>
                               {svc.owner}
                             </Typography>
                           )}
                         </Stack>
 
-                        <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 420, display: 'block' }}>
+                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, maxWidth: 420, display: 'block' }}>
                           {svc.description || 'Enterprise platform infrastructure component'}
                         </Typography>
 
@@ -678,20 +739,26 @@ export default function Services() {
                         {hasActiveOutage ? (
                           <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
                             <Chip
-                              icon={<WarningIcon fontSize="small" />}
+                              icon={<WarningIcon fontSize="small" sx={{ color: '#fb7185 !important' }} />}
                               label={`${activeTickets.length} Active Incident: ${activeTickets[0].code} (${activeTickets[0].priority})`}
                               size="small"
-                              color="error"
-                              sx={{ fontWeight: 700, fontSize: '0.72rem', height: 22 }}
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: '0.72rem',
+                                height: 22,
+                                bgcolor: 'rgba(244, 63, 94, 0.2)',
+                                color: '#fb7185',
+                                border: '1px solid rgba(244, 63, 94, 0.3)',
+                              }}
                             />
-                            <Typography variant="caption" color="#b91c1c" fontWeight={600} noWrap sx={{ maxWidth: 220 }}>
+                            <Typography variant="caption" sx={{ color: '#fb7185', fontWeight: 600, maxWidth: 220 }} noWrap>
                               {activeTickets[0].title}
                             </Typography>
                           </Stack>
                         ) : (
                           <Stack direction="row" alignItems="center" spacing={0.75} mt={0.25}>
-                            <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981' }} />
-                            <Typography variant="caption" color="#059669" fontWeight={600}>
+                            <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: COLORS.success }} />
+                            <Typography variant="caption" sx={{ color: COLORS.success, fontWeight: 600 }}>
                               Operational • 100% telemetry nominal
                             </Typography>
                           </Stack>
@@ -699,7 +766,7 @@ export default function Services() {
                       </Stack>
                     </TableCell>
 
-                    {/* Column 3: Tier Badge (No empty pills!) */}
+                    {/* Column 3: Tier Badge */}
                     <TableCell sx={{ py: 2 }}>
                       {renderTierBadge(svc.tier, svc.criticality, svc.alwaysP1)}
                     </TableCell>
@@ -708,10 +775,10 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       <Stack direction="row" alignItems="center" spacing={0.5}>
                         <StarIcon fontSize="small" sx={{ color: '#f59e0b', fontSize: 18 }} />
-                        <Typography variant="body2" fontWeight={800} color="#0f172a">
+                        <Typography variant="body2" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                           {svc.criticality} / 5
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" ml={0.5}>
+                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, ml: 0.5 }}>
                           {svc.criticality >= 5 ? '(Critical)' : svc.criticality >= 4 ? '(High)' : '(Medium)'}
                         </Typography>
                       </Stack>
@@ -721,18 +788,19 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       {svc.alwaysP1 ? (
                         <Chip
-                          icon={<CrisisAlertIcon fontSize="small" sx={{ color: '#ffffff !important' }} />}
+                          icon={<CrisisAlertIcon fontSize="small" sx={{ color: '#fb7185 !important' }} />}
                           label="Always P1"
                           size="small"
                           sx={{
-                            bgcolor: '#dc2626',
-                            color: '#ffffff',
+                            bgcolor: 'rgba(244, 63, 94, 0.2)',
+                            color: '#fb7185',
+                            border: '1px solid rgba(244, 63, 94, 0.3)',
                             fontWeight: 800,
                             fontSize: '0.75rem',
                           }}
                         />
                       ) : (
-                        <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 500 }}>
                           Matrix Calculated
                         </Typography>
                       )}
@@ -747,19 +815,21 @@ export default function Services() {
                               <Chip
                                 label={u.code || deriveServiceCode(u.name, u.id)}
                                 size="small"
-                                variant="outlined"
                                 sx={{
-                                  fontFamily: 'monospace',
+                                  fontFamily: 'JetBrains Mono, monospace',
                                   fontSize: '0.7rem',
                                   height: 20,
-                                  borderColor: '#94a3b8',
+                                  bgcolor: COLORS.surfaceContainerHighest,
+                                  color: COLORS.onSurfaceVariant,
+                                  borderColor: COLORS.border,
+                                  border: '1px solid',
                                 }}
                               />
                             </Tooltip>
                           ))}
                         </Stack>
                       ) : (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                           Root Platform
                         </Typography>
                       )}
@@ -769,15 +839,19 @@ export default function Services() {
                     <TableCell sx={{ py: 2 }}>
                       {svc.active ? (
                         <Chip
-                          icon={<ActiveIcon fontSize="small" />}
+                          icon={<ActiveIcon fontSize="small" sx={{ color: '#34d399 !important' }} />}
                           label="Online"
                           size="small"
-                          color="success"
-                          variant="filled"
-                          sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            bgcolor: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34d399',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                          }}
                         />
                       ) : (
-                        <Chip label="Retired" color="default" size="small" variant="outlined" />
+                        <Chip label="Retired" size="small" sx={{ bgcolor: COLORS.surfaceContainerHighest, color: COLORS.onSurfaceVariant }} />
                       )}
                     </TableCell>
 
@@ -785,17 +859,17 @@ export default function Services() {
                     <TableCell sx={{ py: 2, textAlign: 'right' }}>
                       <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                         <Tooltip title="Manage Dependencies">
-                          <IconButton size="small" color="primary" onClick={() => handleOpenDeps(svc)}>
+                          <IconButton size="small" onClick={() => handleOpenDeps(svc)} sx={{ color: COLORS.primary }}>
                             <HubIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit Service">
-                          <IconButton size="small" color="default" onClick={() => handleOpenEdit(svc)}>
+                          <IconButton size="small" onClick={() => handleOpenEdit(svc)} sx={{ color: COLORS.secondary }}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Deactivate / Retire Service">
-                          <IconButton size="small" color="error" onClick={() => handleDeleteService(svc.id, svc.name)}>
+                          <IconButton size="small" onClick={() => handleDeleteService(svc.id, svc.name)} sx={{ color: COLORS.error }}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -810,9 +884,22 @@ export default function Services() {
       </TableContainer>
 
       {/* Dialog 1: Register New Service */}
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>Register New IT Service</DialogTitle>
-        <DialogContent dividers>
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>Register New IT Service</DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2.5} mt={1}>
             <Stack direction="row" spacing={2}>
               <TextField
@@ -822,6 +909,15 @@ export default function Services() {
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
                 helperText="Monospace unique identifier"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                  '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                  '& .MuiFormHelperText-root': { color: COLORS.onSurfaceVariant },
+                }}
               />
               <TextField
                 select
@@ -829,6 +925,14 @@ export default function Services() {
                 fullWidth
                 value={formTier}
                 onChange={(e) => setFormTier(e.target.value as any)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                  '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                }}
               >
                 <MenuItem value="TIER_1">Tier 1 - Mission Critical</MenuItem>
                 <MenuItem value="TIER_2">Tier 2 - Business Critical</MenuItem>
@@ -843,6 +947,14 @@ export default function Services() {
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -851,6 +963,14 @@ export default function Services() {
               fullWidth
               value={formOwner}
               onChange={(e) => setFormOwner(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -861,6 +981,14 @@ export default function Services() {
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Describe service role in enterprise architecture..."
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -869,6 +997,14 @@ export default function Services() {
               fullWidth
               value={formCriticality}
               onChange={(e) => setFormCriticality(Number(e.target.value))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value={1}>1 - Low / Non-essential</MenuItem>
               <MenuItem value={2}>2 - Minor internal tool</MenuItem>
@@ -881,10 +1017,10 @@ export default function Services() {
               control={<Checkbox checked={formAlwaysP1} onChange={(e) => setFormAlwaysP1(e.target.checked)} color="error" />}
               label={
                 <Box>
-                  <Typography variant="body2" fontWeight={700}>
+                  <Typography variant="body2" fontWeight={700} sx={{ color: COLORS.onSurface }}>
                     Always P1 Policy Override
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                     Any incident declared against this service immediately escalates to P1 Critical severity
                   </Typography>
                 </Box>
@@ -893,7 +1029,7 @@ export default function Services() {
 
             {/* Direct Upstream Dependencies Selector */}
             <Box>
-              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase" display="block" mb={1}>
+              <Typography variant="caption" fontWeight={700} sx={{ color: COLORS.onSurfaceVariant, textTransform: 'uppercase', display: 'block', mb: 1, fontFamily: 'JetBrains Mono, monospace' }}>
                 Upstream Dependencies (This service depends on)
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -903,7 +1039,6 @@ export default function Services() {
                     label={`${svc.code || deriveServiceCode(svc.name, svc.id)} - ${svc.name}`}
                     size="small"
                     clickable
-                    color={formDeps.includes(svc.id) ? 'primary' : 'default'}
                     onClick={() => {
                       if (formDeps.includes(svc.id)) {
                         setFormDeps(formDeps.filter((id) => id !== svc.id));
@@ -911,22 +1046,27 @@ export default function Services() {
                         setFormDeps([...formDeps, svc.id]);
                       }
                     }}
-                    sx={{ mb: 1 }}
+                    sx={{
+                      mb: 1,
+                      bgcolor: formDeps.includes(svc.id) ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+                      color: formDeps.includes(svc.id) ? COLORS.primary : COLORS.onSurfaceVariant,
+                      border: `1px solid ${formDeps.includes(svc.id) ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+                    }}
                   />
                 ))}
               </Stack>
             </Box>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setCreateOpen(false)} sx={{ textTransform: 'none' }}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setCreateOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleCreateService}
             disabled={isSubmitting}
-            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: '#0284c7' }}
+            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary, color: '#ffffff', '&:hover': { bgcolor: '#4f46e5' } }}
           >
             {isSubmitting ? 'Registering...' : 'Register Service'}
           </Button>
@@ -934,11 +1074,24 @@ export default function Services() {
       </Dialog>
 
       {/* Dialog 2: Edit Service */}
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
           Edit IT Service: {selectedService?.name}
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2.5} mt={1}>
             <Stack direction="row" spacing={2}>
               <TextField
@@ -946,6 +1099,14 @@ export default function Services() {
                 fullWidth
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                  '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                }}
               />
               <TextField
                 select
@@ -953,6 +1114,14 @@ export default function Services() {
                 fullWidth
                 value={formTier}
                 onChange={(e) => setFormTier(e.target.value as any)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                  '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                }}
               >
                 <MenuItem value="TIER_1">Tier 1 - Mission Critical</MenuItem>
                 <MenuItem value="TIER_2">Tier 2 - Business Critical</MenuItem>
@@ -966,6 +1135,14 @@ export default function Services() {
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -973,6 +1150,14 @@ export default function Services() {
               fullWidth
               value={formOwner}
               onChange={(e) => setFormOwner(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -982,6 +1167,14 @@ export default function Services() {
               fullWidth
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -990,6 +1183,14 @@ export default function Services() {
               fullWidth
               value={formCriticality}
               onChange={(e) => setFormCriticality(Number(e.target.value))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value={1}>1 - Low</MenuItem>
               <MenuItem value={2}>2 - Minor</MenuItem>
@@ -1000,19 +1201,19 @@ export default function Services() {
 
             <FormControlLabel
               control={<Checkbox checked={formAlwaysP1} onChange={(e) => setFormAlwaysP1(e.target.checked)} color="error" />}
-              label="Always P1: Auto-escalate incidents to P1 Critical severity"
+              label={<Typography variant="body2" sx={{ color: COLORS.onSurface }}>Always P1: Auto-escalate incidents to P1 Critical severity</Typography>}
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setEditOpen(false)} sx={{ textTransform: 'none' }}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setEditOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleUpdateService}
             disabled={isSubmitting}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
+            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary, color: '#ffffff', '&:hover': { bgcolor: '#4f46e5' } }}
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -1020,12 +1221,25 @@ export default function Services() {
       </Dialog>
 
       {/* Dialog 3: Manage Service Dependencies */}
-      <Dialog open={depsOpen} onClose={() => setDepsOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+      <Dialog
+        open={depsOpen}
+        onClose={() => setDepsOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
           Configure Dependencies: {selectedService?.name}
         </DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mb: 2 }}>
             Select the upstream services that <b>{selectedService?.name}</b> relies on. If an upstream service
             experiences an outage, this service may suffer cascade degradation.
           </Typography>
@@ -1051,8 +1265,8 @@ export default function Services() {
                       borderRadius: 2,
                       cursor: 'pointer',
                       border: '1px solid',
-                      borderColor: isSelected ? '#3b82f6' : '#e2e8f0',
-                      bgcolor: isSelected ? '#eff6ff' : '#ffffff',
+                      borderColor: isSelected ? COLORS.primary : COLORS.border,
+                      bgcolor: isSelected ? 'rgba(99, 102, 241, 0.15)' : COLORS.surfaceContainerLowest,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -1064,31 +1278,31 @@ export default function Services() {
                         <Chip
                           label={svc.code || deriveServiceCode(svc.name, svc.id)}
                           size="small"
-                          sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.72rem' }}
+                          sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '0.72rem', bgcolor: COLORS.surfaceContainerHighest, color: COLORS.primary }}
                         />
-                        <Typography variant="body2" fontWeight={700} color="#0f172a">
+                        <Typography variant="body2" fontWeight={700} sx={{ color: COLORS.onSurface }}>
                           {svc.name}
                         </Typography>
                       </Stack>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                         {svc.description}
                       </Typography>
                     </Box>
-                    <Checkbox checked={isSelected} color="primary" />
+                    <Checkbox checked={isSelected} sx={{ color: COLORS.primary, '&.Mui-checked': { color: COLORS.primary } }} />
                   </Paper>
                 );
               })}
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setDepsOpen(false)} sx={{ textTransform: 'none' }}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setDepsOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveDependencies}
             disabled={isSubmitting}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
+            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary, color: '#ffffff', '&:hover': { bgcolor: '#4f46e5' } }}
           >
             {isSubmitting ? 'Updating...' : 'Save Dependencies'}
           </Button>

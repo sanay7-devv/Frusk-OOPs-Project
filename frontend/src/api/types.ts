@@ -24,6 +24,16 @@ export interface PriorityBreakdown {
   baseScore: number; score: number; band: Priority; overrideRule: string | null;
 }
 export interface Resolution { rootCause: string; notes: string; steps: string; timeSpentMinutes: number; reusableSolution: boolean; resolvedBy: Ref }
+export interface EscalationPreview {
+  kind: string;
+  fromLevel: number;
+  toLevel: number;
+  targetRole: string;
+  dueAt: string;
+  secondsRemaining: number;
+  recipients: Ref[];
+}
+
 export interface IncidentDetail extends IncidentSummary {
   description: string; impact: number; urgency: number; affectedUsers: number;
   priorityScore: number | null; priorityBreakdown: PriorityBreakdown | null;
@@ -31,6 +41,7 @@ export interface IncidentDetail extends IncidentSummary {
   closureReason: string | null; problemId: number | null; duplicateOfId: number | null;
   reopenCount: number; pausedAt: string | null; resolution: Resolution | null;
   feedback: { rating: number; comment: string } | null; allowedActions: IncidentAction[];
+  escalationPreview?: EscalationPreview | null;
   version?: number;
 }
 export interface Page<T> { items: T[]; page: number; size: number; totalItems: number; totalPages: number }
@@ -39,3 +50,46 @@ export interface ApiError {
   fieldErrors: { field: string; message: string }[]; similar?: { id: number; code: string; title: string; similarity: number; status: IncidentStatus }[];
 }
 export interface AppNotification { id: number; eventType: string; title: string; message: string; incidentId: number | null; channel: string; read: boolean; createdAt: string }
+
+export interface AuditEntry {
+  id: number;
+  timestamp: string;
+  actor: Ref;
+  action: string;
+  incidentCode: string;
+  previousState: IncidentStatus | null;
+  newState: IncidentStatus | null;
+  description: string;
+}
+
+export interface RecommendedTechnician {
+  technicianId: number;
+  name: string;
+  score: number;
+  currentLoad: number;
+  maxLoad: number;
+  reasons: string[];
+  factors: Record<string, number>;
+}
+
+export interface ExcludedTechnician {
+  technicianId: number;
+  name: string;
+  reason: string;
+}
+
+export interface RecommendationView {
+  strategy: string;
+  recommendations: RecommendedTechnician[];
+  excluded: ExcludedTechnician[];
+}
+
+export interface SlaViolationView {
+  id: number;
+  incidentId: number;
+  incidentCode: string;
+  type: string;
+  overdueSeconds: number;
+  technician: Ref | null;
+  createdAt: string;
+}

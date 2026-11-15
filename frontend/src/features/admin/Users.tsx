@@ -52,6 +52,7 @@ import {
 
 import { useAuth, Workspace } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
+import { login } from '../../api/auth';
 import {
   getAdminUsers,
   createAdminUser,
@@ -63,17 +64,34 @@ import {
 import { listIncidents } from '../../api/incidents';
 import type { IncidentDetail, RoleType } from '../../api/types';
 
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  secondary: '#06b6d4',
+  error: '#f43f5e',
+  success: '#10b981',
+  warning: '#f59e0b',
+};
+
 // Helper to determine department primary color theme
 const getDepartmentColor = (dept?: string | null): string => {
-  if (!dept) return '#475569';
+  if (!dept) return '#64748b';
   const d = dept.toLowerCase();
-  if (d.includes('site') || d.includes('sre') || d.includes('reliability')) return '#b91c1c';
-  if (d.includes('platform')) return '#2563eb';
-  if (d.includes('network')) return '#0284c7';
-  if (d.includes('engineering') || d.includes('software')) return '#004d99';
-  if (d.includes('product') || d.includes('design')) return '#7c3aed';
-  if (d.includes('finance') || d.includes('compliance') || d.includes('operations')) return '#047857';
-  return '#475569';
+  if (d.includes('site') || d.includes('sre') || d.includes('reliability')) return '#f43f5e';
+  if (d.includes('platform')) return '#3b82f6';
+  if (d.includes('network')) return '#06b6d4';
+  if (d.includes('engineering') || d.includes('software')) return '#6366f1';
+  if (d.includes('product') || d.includes('design')) return '#a855f7';
+  if (d.includes('finance') || d.includes('compliance') || d.includes('operations')) return '#10b981';
+  return '#64748b';
 };
 
 // Helper to derive workstation hardware metadata dynamically from department & role
@@ -211,22 +229,19 @@ export default function Users() {
     return { totalUsers, employeesCount, techsCount, leadsCount, adminsCount, totalActiveTickets, actionNeededCount };
   }, [users, allIncidents, userIncidentMap]);
 
-  // Filtered Users Roster (Filtering by the 4 standard roles or all)
+  // Filtered Users Roster
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      // 4-Role Filter (mutually exclusive primary tiers)
       if (selectedRole === 'ADMINISTRATOR' && !u.roles.includes('ADMINISTRATOR')) return false;
       if (selectedRole === 'LEAD' && (!u.roles.includes('TECHNICIAN') || u.technician?.escalationLevel !== 1 || u.roles.includes('ADMINISTRATOR'))) return false;
       if (selectedRole === 'TECHNICIAN' && (!u.roles.includes('TECHNICIAN') || u.technician?.escalationLevel === 1 || u.roles.includes('ADMINISTRATOR'))) return false;
       if (selectedRole === 'EMPLOYEE' && (u.roles.includes('TECHNICIAN') || u.roles.includes('ADMINISTRATOR'))) return false;
 
-      // Table Tab filter
       const userMeta = userIncidentMap.get(u.id);
       if (tableTab === 'ACTIVE_TICKETS' && (userMeta?.active.length || 0) === 0) return false;
       if (tableTab === 'TECHS_LEADS' && !u.roles.includes('TECHNICIAN')) return false;
       if (tableTab === 'ACTION_NEEDED' && !userMeta?.actionRequired) return false;
 
-      // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const designation = getDesignation(u).toLowerCase();
@@ -244,10 +259,8 @@ export default function Users() {
     });
   }, [users, selectedRole, tableTab, searchQuery, userIncidentMap]);
 
-  // Delegated Session Broker: Impersonate / Login as User
-  const handleLoginAsUser = (targetUser: AdminUser) => {
-    localStorage.setItem('admin_impersonator', 'true');
-
+  // Delegated Session Broker: Real Authentication Switcher
+  const handleLoginAsUser = async (targetUser: AdminUser) => {
     const isTech = targetUser.roles.includes('TECHNICIAN');
     const isAdmin = targetUser.roles.includes('ADMINISTRATOR');
     const isLead = isTech && targetUser.technician?.escalationLevel === 1;
@@ -266,31 +279,14 @@ export default function Users() {
       targetPath = '/tech/queue';
     }
 
-    const impersonatedAccount = {
-      accessToken: `mock-access-token-${targetUser.roles[0].toLowerCase()}-${targetUser.id}`,
-      refreshToken: `mock-refresh-token-${targetUser.roles[0].toLowerCase()}-${targetUser.id}`,
-      expiresInSeconds: 900,
-      user: {
-        id: targetUser.id,
-        name: targetUser.name,
-        email: targetUser.email,
-        roles: targetUser.roles as RoleType[],
-        permissions: isAdmin ? ['ALL'] : isTech ? ['INCIDENT_ASSIGN', 'INCIDENT_RESOLVE'] : ['REPORT_INCIDENT', 'VIEW_OWN'],
-        technician: targetUser.technician
-          ? {
-              escalationLevel: (targetUser.technician.escalationLevel === 1 ? 1 : 0) as 0 | 1,
-              availability: targetUser.technician.availability as any,
-              maxActiveIncidents: targetUser.technician.maxActiveIncidents || 6,
-              activeIncidentCount: targetUser.technician.activeIncidentCount || 0,
-            }
-          : null,
-        administrator: targetUser.administrator ? { scope: 'SYSTEM_ADMIN' } : null,
-      },
-    };
-
-    signIn(impersonatedAccount);
-    toast(`Authenticated as ${targetUser.name}. Switched directly into their ${targetWorkspace.toUpperCase()} portal.`, 'success');
-    navigate(targetPath);
+    try {
+      const authRes = await login(targetUser.email, 'Demo@1234');
+      signIn(authRes);
+      toast(`Authenticated as ${targetUser.name}. Switched directly into their ${targetWorkspace.toUpperCase()} portal.`, 'success');
+      navigate(targetPath);
+    } catch {
+      toast(`Could not authenticate as ${targetUser.email}. Please use their configured credentials.`, 'error');
+    }
   };
 
   // Role Action Handlers
@@ -393,8 +389,8 @@ export default function Users() {
           p: 2.5,
           mb: 3.5,
           borderRadius: 3,
-          border: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: COLORS.surfaceContainer,
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
@@ -408,21 +404,22 @@ export default function Users() {
               width: 44,
               height: 44,
               borderRadius: 2,
-              bgcolor: '#dee8ff',
-              color: '#004d99',
+              bgcolor: 'rgba(99, 102, 241, 0.15)',
+              color: COLORS.primary,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              border: '1px solid rgba(99, 102, 241, 0.3)',
             }}
           >
             <GroupIcon sx={{ fontSize: 26 }} />
           </Box>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#111c2d', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, letterSpacing: '-0.01em', fontFamily: 'Sora, sans-serif' }}>
               Enterprise Workforce &amp; User Directory
             </Typography>
-            <Typography sx={{ fontSize: 13, color: '#64748b' }}>
+            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
               Inspect staff accounts, audit active queue metrics, manage security clearances, and assume delegated sessions.
             </Typography>
           </Box>
@@ -442,9 +439,9 @@ export default function Users() {
               fontWeight: 600,
               fontSize: 13,
               borderRadius: 2,
-              borderColor: '#cbd5e1',
-              color: '#334155',
-              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' },
+              borderColor: COLORS.border,
+              color: COLORS.onSurfaceVariant,
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.2)' },
             }}
           >
             Refresh
@@ -455,7 +452,7 @@ export default function Users() {
             onClick={() => setProvisionOpen(true)}
             startIcon={<AddIcon />}
             sx={{
-              bgcolor: '#004d99',
+              bgcolor: COLORS.primary,
               color: '#ffffff',
               fontWeight: 700,
               fontSize: 13,
@@ -463,7 +460,7 @@ export default function Users() {
               px: 2,
               py: 1,
               textTransform: 'none',
-              '&:hover': { bgcolor: '#00337c' },
+              '&:hover': { bgcolor: '#4f46e5' },
             }}
           >
             Provision User
@@ -474,28 +471,28 @@ export default function Users() {
       {/* 2. TOP METRIC STREAM */}
       <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
         <Grid item xs={12} sm={6} lg={3}>
-          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
               Total Directory Accounts
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
               {metrics.totalUsers}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: '#004d99', mt: 0.5, fontWeight: 600 }}>
-              {metrics.employeesCount} Employees • {metrics.techsCount} Technicians • {metrics.leadsCount} Team Leads • {metrics.adminsCount} Administrators
+            <Typography sx={{ fontSize: 12, color: COLORS.primary, mt: 0.5, fontWeight: 600 }}>
+              {metrics.employeesCount} Employees • {metrics.techsCount} Techs • {metrics.leadsCount} Leads • {metrics.adminsCount} Admins
             </Typography>
           </Paper>
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
-          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
               Active Open Tickets
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
               {metrics.totalActiveTickets}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
+            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5 }}>
               Across active services &amp; engineering queues
             </Typography>
           </Paper>
@@ -507,34 +504,34 @@ export default function Users() {
             sx={{
               p: 2.5,
               borderRadius: 3,
-              border: metrics.actionNeededCount > 0 ? '2px solid #ed6c02' : '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: metrics.actionNeededCount > 0 ? '1px solid rgba(245, 158, 11, 0.4)' : `1px solid ${COLORS.border}`,
+              bgcolor: metrics.actionNeededCount > 0 ? 'rgba(245, 158, 11, 0.05)' : COLORS.surfaceContainer,
             }}
           >
-            <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#ed6c02', textTransform: 'uppercase' }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
               Awaiting Action / Critical
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#ed6c02', mt: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#f59e0b', mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
               {metrics.actionNeededCount}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
+            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5 }}>
               Accounts with pending user info or SLA risk
             </Typography>
           </Paper>
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
-          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
               Delegated Session Broker
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#16a34a' }} />
-              <Typography sx={{ fontSize: 15, fontWeight: 800, color: '#111c2d' }}>
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: COLORS.success, boxShadow: `0 0 10px ${COLORS.success}` }} />
+              <Typography sx={{ fontSize: 15, fontWeight: 800, color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                 READY
               </Typography>
             </Box>
-            <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.8 }}>
+            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.8 }}>
               Click &ldquo;Login as User&rdquo; to assume role workspace
             </Typography>
           </Paper>
@@ -542,7 +539,7 @@ export default function Users() {
       </Grid>
 
       {/* 3. SEARCH & 4-ROLE FILTER */}
-      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={5} md={5}>
             <TextField
@@ -554,21 +551,24 @@ export default function Users() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                    <SearchIcon sx={{ color: COLORS.onSurfaceVariant, fontSize: 20 }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
-                bgcolor: '#f8fafc',
-                borderRadius: 2,
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
               }}
             />
           </Grid>
 
           <Grid item xs={12} sm={7} md={7}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: { sm: 'flex-end' } }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', mr: 0.5 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', mr: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Role:
               </Typography>
               {(
@@ -588,12 +588,13 @@ export default function Users() {
                     onClick={() => setSelectedRole(isSelected ? null : rf.key)}
                     sx={{
                       fontWeight: isSelected ? 800 : 500,
-                      bgcolor: isSelected ? '#004d99' : '#f1f5f9',
-                      color: isSelected ? '#ffffff' : '#334155',
+                      bgcolor: isSelected ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+                      color: isSelected ? COLORS.primary : COLORS.onSurfaceVariant,
+                      border: `1px solid ${isSelected ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
                       cursor: 'pointer',
                       borderRadius: 1.5,
                       px: 0.5,
-                      '&:hover': { bgcolor: isSelected ? '#00337c' : '#e2e8f0' },
+                      '&:hover': { bgcolor: isSelected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)' },
                     }}
                   />
                 );
@@ -604,13 +605,13 @@ export default function Users() {
       </Paper>
 
       {/* 4. WORKFORCE & USERS DIRECTORY TABLE */}
-      <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff', overflow: 'hidden' }}>
+      <Paper elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer, overflow: 'hidden' }}>
         {/* Table Filter Action Strip */}
         <Box
           sx={{
             p: 2,
-            bgcolor: '#f8fafc',
-            borderBottom: '1px solid #e2e8f0',
+            bgcolor: COLORS.surfaceContainerLow,
+            borderBottom: `1px solid ${COLORS.border}`,
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
@@ -618,7 +619,7 @@ export default function Users() {
             gap: 1.5,
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 15, color: '#111c2d' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 15, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
             Corporate Workforce &amp; Staff Directory ({filteredUsers.length} Accounts)
           </Typography>
 
@@ -631,9 +632,9 @@ export default function Users() {
                 fontSize: 11.5,
                 textTransform: 'none',
                 borderRadius: 1.5,
-                bgcolor: tableTab === 'ALL' ? '#004d99' : 'transparent',
-                borderColor: '#cbd5e1',
-                color: tableTab === 'ALL' ? '#ffffff' : '#475569',
+                bgcolor: tableTab === 'ALL' ? COLORS.primary : 'transparent',
+                borderColor: COLORS.border,
+                color: tableTab === 'ALL' ? '#ffffff' : COLORS.onSurfaceVariant,
               }}
             >
               All ({users.length})
@@ -646,9 +647,9 @@ export default function Users() {
                 fontSize: 11.5,
                 textTransform: 'none',
                 borderRadius: 1.5,
-                bgcolor: tableTab === 'ACTIVE_TICKETS' ? '#004d99' : 'transparent',
-                borderColor: '#cbd5e1',
-                color: tableTab === 'ACTIVE_TICKETS' ? '#ffffff' : '#475569',
+                bgcolor: tableTab === 'ACTIVE_TICKETS' ? COLORS.primary : 'transparent',
+                borderColor: COLORS.border,
+                color: tableTab === 'ACTIVE_TICKETS' ? '#ffffff' : COLORS.onSurfaceVariant,
               }}
             >
               With Active Tickets
@@ -661,9 +662,9 @@ export default function Users() {
                 fontSize: 11.5,
                 textTransform: 'none',
                 borderRadius: 1.5,
-                bgcolor: tableTab === 'TECHS_LEADS' ? '#004d99' : 'transparent',
-                borderColor: '#cbd5e1',
-                color: tableTab === 'TECHS_LEADS' ? '#ffffff' : '#475569',
+                bgcolor: tableTab === 'TECHS_LEADS' ? COLORS.primary : 'transparent',
+                borderColor: COLORS.border,
+                color: tableTab === 'TECHS_LEADS' ? '#ffffff' : COLORS.onSurfaceVariant,
               }}
             >
               Technicians &amp; Leads ({metrics.techsCount + metrics.leadsCount})
@@ -676,9 +677,10 @@ export default function Users() {
                 fontSize: 11.5,
                 textTransform: 'none',
                 borderRadius: 1.5,
-                bgcolor: tableTab === 'ACTION_NEEDED' ? '#ed6c02' : 'transparent',
-                color: tableTab === 'ACTION_NEEDED' ? '#ffffff' : '#ed6c02',
-                borderColor: '#ed6c02',
+                bgcolor: tableTab === 'ACTION_NEEDED' ? '#f59e0b' : 'transparent',
+                color: tableTab === 'ACTION_NEEDED' ? '#000000' : '#f59e0b',
+                borderColor: '#f59e0b',
+                fontWeight: 700,
               }}
             >
               Action Required ({metrics.actionNeededCount})
@@ -688,30 +690,30 @@ export default function Users() {
 
         {usersLoading ? (
           <Box p={6} display="flex" justifyContent="center" alignItems="center" gap={2}>
-            <CircularProgress size={28} />
-            <Typography sx={{ color: '#64748b', fontSize: 14 }}>Loading directory accounts...</Typography>
+            <CircularProgress size={28} sx={{ color: COLORS.primary }} />
+            <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 14 }}>Loading directory accounts...</Typography>
           </Box>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
             <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <Box component="thead">
-                <Box component="tr" sx={{ bgcolor: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
-                  <Box component="th" sx={{ py: 1.2, px: 2.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                <Box component="tr" sx={{ bgcolor: COLORS.surfaceContainerLow, borderBottom: `1px solid ${COLORS.border}` }}>
+                  <Box component="th" sx={{ py: 1.2, px: 2.5, fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     User / Profile
                   </Box>
-                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Department &amp; Location
                   </Box>
-                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Clearance Roles
                   </Box>
-                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Workload / Tickets
                   </Box>
-                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Status
                   </Box>
-                  <Box component="th" sx={{ py: 1.2, px: 2.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>
+                  <Box component="th" sx={{ py: 1.2, px: 2.5, fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', textAlign: 'right' }}>
                     Administrative Actions
                   </Box>
                 </Box>
@@ -720,7 +722,7 @@ export default function Users() {
               <Box component="tbody">
                 {filteredUsers.length === 0 ? (
                   <Box component="tr">
-                    <Box component="td" colSpan={6} sx={{ p: 4, textAlign: 'center', color: '#64748b' }}>
+                    <Box component="td" colSpan={6} sx={{ p: 4, textAlign: 'center', color: COLORS.onSurfaceVariant }}>
                       No staff accounts match your selected search or filter criteria.
                     </Box>
                   </Box>
@@ -741,8 +743,8 @@ export default function Users() {
                         component="tr"
                         key={u.id}
                         sx={{
-                          borderBottom: '1px solid #e2e8f0',
-                          '&:hover': { bgcolor: '#f8fafc' },
+                          borderBottom: `1px solid ${COLORS.border}`,
+                          '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.05)' },
                           transition: 'background-color 0.15s ease',
                         }}
                       >
@@ -753,10 +755,11 @@ export default function Users() {
                               sx={{
                                 width: 40,
                                 height: 40,
-                                bgcolor: deptColor,
+                                bgcolor: `${deptColor}30`,
                                 fontSize: 14,
                                 fontWeight: 700,
-                                color: '#ffffff',
+                                color: deptColor,
+                                border: `1px solid ${deptColor}60`,
                               }}
                             >
                               {u.name
@@ -767,13 +770,13 @@ export default function Users() {
                                 .join('')}
                             </Avatar>
                             <Box>
-                              <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#111c2d' }}>
+                              <Typography sx={{ fontSize: 14, fontWeight: 700, color: COLORS.onSurface }}>
                                 {u.name}
                               </Typography>
-                              <Typography sx={{ fontSize: 11.5, color: '#64748b' }}>
+                              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
                                 {designation}
                               </Typography>
-                              <Typography sx={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
+                              <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
                                 {u.email}
                               </Typography>
                             </Box>
@@ -788,13 +791,13 @@ export default function Users() {
                             sx={{
                               fontSize: 11,
                               fontWeight: 700,
-                              bgcolor: `${deptColor}15`,
+                              bgcolor: `${deptColor}20`,
                               color: deptColor,
-                              border: `1px solid ${deptColor}30`,
+                              border: `1px solid ${deptColor}40`,
                               mb: 0.5,
                             }}
                           />
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#64748b' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: COLORS.onSurfaceVariant }}>
                             <LocationOnIcon sx={{ fontSize: 13 }} />
                             <Typography sx={{ fontSize: 11.5 }}>{u.location || 'Remote'}</Typography>
                           </Box>
@@ -807,26 +810,26 @@ export default function Users() {
                               <Chip
                                 label="ADMIN"
                                 size="small"
-                                sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }}
+                                sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: 'rgba(244, 63, 94, 0.2)', color: '#fb7185', border: '1px solid rgba(244, 63, 94, 0.3)' }}
                               />
                             )}
                             {isLead ? (
                               <Chip
                                 label="LEAD SRE (L1)"
                                 size="small"
-                                sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe' }}
+                                sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}
                               />
                             ) : isTech ? (
                               <Chip
                                 label="TECH (L0)"
                                 size="small"
-                                sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' }}
+                                sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.3)' }}
                               />
                             ) : null}
                             <Chip
                               label="EMPLOYEE"
                               size="small"
-                              sx={{ height: 20, fontSize: 10, fontWeight: 600, bgcolor: '#f1f5f9', color: '#475569' }}
+                              sx={{ height: 20, fontSize: 10, fontWeight: 600, bgcolor: COLORS.surfaceContainerHighest, color: COLORS.onSurfaceVariant, border: `1px solid ${COLORS.border}` }}
                             />
                           </Stack>
                         </Box>
@@ -834,7 +837,7 @@ export default function Users() {
                         {/* Workload / Active Tickets */}
                         <Box component="td" sx={{ py: 2, px: 1.5 }}>
                           {activeCount === 0 ? (
-                            <Typography sx={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
+                            <Typography sx={{ fontSize: 12, color: COLORS.success, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
                               ✓ 0 Open Tickets
                             </Typography>
                           ) : (
@@ -843,11 +846,12 @@ export default function Users() {
                                 label={`${activeCount} Active`}
                                 size="small"
                                 sx={{
-                                  bgcolor: highestPriority === 'P1' ? '#fee2e2' : '#f0f3ff',
-                                  color: highestPriority === 'P1' ? '#991b1b' : '#004d99',
+                                  bgcolor: highestPriority === 'P1' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+                                  color: highestPriority === 'P1' ? '#fb7185' : COLORS.primary,
                                   fontWeight: 700,
                                   fontSize: 11,
-                                  border: highestPriority === 'P1' ? '1px solid #fca5a5' : '1px solid #cbd5e1',
+                                  border: highestPriority === 'P1' ? '1px solid rgba(244, 63, 94, 0.4)' : '1px solid rgba(99, 102, 241, 0.4)',
+                                  fontFamily: 'JetBrains Mono, monospace',
                                 }}
                               />
                               {highestPriority && (
@@ -858,15 +862,16 @@ export default function Users() {
                                     height: 20,
                                     fontSize: 10,
                                     fontWeight: 800,
-                                    bgcolor: highestPriority === 'P1' ? '#991b1b' : highestPriority === 'P2' ? '#c65102' : '#004d99',
+                                    bgcolor: highestPriority === 'P1' ? COLORS.error : highestPriority === 'P2' ? '#ea580c' : COLORS.primary,
                                     color: '#ffffff',
+                                    fontFamily: 'JetBrains Mono, monospace',
                                   }}
                                 />
                               )}
                             </Box>
                           )}
                           {isTech && u.technician && (
-                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.4 }}>
+                            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.4, fontFamily: 'JetBrains Mono, monospace' }}>
                               Load: {u.technician.activeIncidentCount || activeCount} / {u.technician.maxActiveIncidents || 6}
                             </Typography>
                           )}
@@ -875,32 +880,34 @@ export default function Users() {
                         {/* Status */}
                         <Box component="td" sx={{ py: 2, px: 1.5 }}>
                           {!u.active ? (
-                            <Chip label="DEACTIVATED" size="small" sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: 10 }} />
+                            <Chip label="DEACTIVATED" size="small" sx={{ bgcolor: COLORS.surfaceContainerHighest, color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 10 }} />
                           ) : actionNeeded ? (
                             <Chip
-                              icon={<WarningIcon sx={{ fontSize: '13px !important', color: '#c65102 !important' }} />}
+                              icon={<WarningIcon sx={{ fontSize: '13px !important', color: '#fbbf24 !important' }} />}
                               label="ACTION NEEDED"
                               size="small"
                               sx={{
-                                bgcolor: '#fff3e0',
-                                color: '#c65102',
+                                bgcolor: 'rgba(245, 158, 11, 0.15)',
+                                color: '#fbbf24',
                                 fontWeight: 800,
                                 fontSize: 10,
                                 letterSpacing: '0.04em',
-                                border: '1px solid #ffe0b2',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                fontFamily: 'JetBrains Mono, monospace',
                               }}
                             />
                           ) : (
                             <Chip
-                              icon={<CheckCircleIcon sx={{ fontSize: '13px !important', color: '#16a34a !important' }} />}
+                              icon={<CheckCircleIcon sx={{ fontSize: '13px !important', color: '#34d399 !important' }} />}
                               label="ACTIVE"
                               size="small"
                               sx={{
-                                bgcolor: '#dcfce7',
-                                color: '#166534',
+                                bgcolor: 'rgba(16, 185, 129, 0.15)',
+                                color: '#34d399',
                                 fontWeight: 700,
                                 fontSize: 10,
-                                border: '1px solid #bbf7d0',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                fontFamily: 'JetBrains Mono, monospace',
                               }}
                             />
                           )}
@@ -915,13 +922,13 @@ export default function Users() {
                               onClick={() => setInspectUser(u)}
                               startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
                               sx={{
-                                borderColor: '#cbd5e1',
-                                color: '#475569',
+                                borderColor: COLORS.border,
+                                color: COLORS.onSurfaceVariant,
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 fontSize: 12,
                                 borderRadius: 1.5,
-                                '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8', color: '#004d99' },
+                                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.2)', color: COLORS.onSurface },
                               }}
                             >
                               Inspect User
@@ -933,14 +940,14 @@ export default function Users() {
                               onClick={() => handleLoginAsUser(u)}
                               startIcon={<LoginIcon sx={{ fontSize: 15 }} />}
                               sx={{
-                                bgcolor: '#004d99',
+                                bgcolor: COLORS.primary,
                                 color: '#ffffff',
                                 textTransform: 'none',
                                 fontWeight: 700,
                                 fontSize: 12,
                                 borderRadius: 1.5,
                                 boxShadow: 'none',
-                                '&:hover': { bgcolor: '#00337c' },
+                                '&:hover': { bgcolor: '#4f46e5' },
                               }}
                             >
                               Login as User
@@ -952,7 +959,7 @@ export default function Users() {
                                 setActionAnchorEl(e.currentTarget);
                                 setActionTargetUser(u);
                               }}
-                              sx={{ color: '#64748b' }}
+                              sx={{ color: COLORS.onSurfaceVariant }}
                             >
                               <MoreVertIcon fontSize="small" />
                             </IconButton>
@@ -973,7 +980,15 @@ export default function Users() {
         anchor="right"
         open={Boolean(inspectUser)}
         onClose={() => setInspectUser(null)}
-        PaperProps={{ sx: { width: { xs: '100%', sm: 560 }, p: 3, bgcolor: '#ffffff' } }}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 560 },
+            p: 3,
+            bgcolor: COLORS.surfaceContainer,
+            color: COLORS.onSurface,
+            borderLeft: `1px solid ${COLORS.border}`,
+          },
+        }}
       >
         {inspectUser && (() => {
           const meta = userIncidentMap.get(inspectUser.id);
@@ -986,53 +1001,53 @@ export default function Users() {
           return (
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Drawer Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2, borderBottom: '1px solid #e2e8f0' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2, borderBottom: `1px solid ${COLORS.border}` }}>
                 <Box>
-                  <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#004d99', letterSpacing: '0.04em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: COLORS.primary, letterSpacing: '0.04em' }}>
                     USER &amp; WORKSPACE INSPECTION // ID #{inspectUser.id}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', mt: 0.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 0.2, fontFamily: 'Sora, sans-serif' }}>
                     {inspectUser.name}
                   </Typography>
                 </Box>
-                <IconButton onClick={() => setInspectUser(null)} size="small">
+                <IconButton onClick={() => setInspectUser(null)} size="small" sx={{ color: COLORS.onSurfaceVariant }}>
                   <CloseIcon />
                 </IconButton>
               </Box>
 
               {/* Profile Overview Card */}
               <Box sx={{ py: 2.5, overflowY: 'auto', flexGrow: 1 }}>
-                <Paper sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2.5, mb: 2.5 }}>
+                <Paper sx={{ p: 2, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}`, borderRadius: 2.5, mb: 2.5 }}>
                   <Grid container spacing={1.5}>
                     <Grid item xs={6}>
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                         Designation
                       </Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#111c2d' }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: COLORS.onSurface }}>
                         {getDesignation(inspectUser)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                         Department
                       </Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#111c2d' }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: COLORS.onSurface }}>
                         {inspectUser.department || 'General Staff'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12}>
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                         Workstation Hardware &amp; MDM
                       </Typography>
-                      <Typography sx={{ fontSize: 12.5, color: '#1e293b', fontFamily: 'monospace' }}>
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                         {getWorkstation(inspectUser)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12}>
-                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                         Reporting Manager
                       </Typography>
-                      <Typography sx={{ fontSize: 12.5, color: '#1e293b' }}>
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
                         {getReportingManager(inspectUser)}
                       </Typography>
                     </Grid>
@@ -1040,8 +1055,8 @@ export default function Users() {
                 </Paper>
 
                 {/* Role Clearance & Admin Controls */}
-                <Paper sx={{ p: 2, mb: 2.5, borderRadius: 2.5, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#111c2d', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
+                <Paper sx={{ p: 2, mb: 2.5, borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainerLowest }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em', fontFamily: 'Sora, sans-serif' }}>
                     Security Clearance &amp; Role Management
                   </Typography>
 
@@ -1051,17 +1066,21 @@ export default function Users() {
                         key={r}
                         label={r}
                         size="small"
-                        color={r === 'ADMINISTRATOR' ? 'error' : r === 'TECHNICIAN' ? 'primary' : 'default'}
-                        variant="filled"
-                        sx={{ fontWeight: 700, fontSize: 10.5 }}
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 10.5,
+                          fontFamily: 'JetBrains Mono, monospace',
+                          bgcolor: r === 'ADMINISTRATOR' ? 'rgba(244, 63, 94, 0.2)' : r === 'TECHNICIAN' ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+                          color: r === 'ADMINISTRATOR' ? '#fb7185' : r === 'TECHNICIAN' ? COLORS.primary : COLORS.onSurfaceVariant,
+                          border: `1px solid ${r === 'ADMINISTRATOR' ? 'rgba(244, 63, 94, 0.3)' : r === 'TECHNICIAN' ? 'rgba(99, 102, 241, 0.3)' : COLORS.border}`,
+                        }}
                       />
                     ))}
                     {inspectUser.technician && (
                       <Chip
                         label={`Escalation Level ${inspectUser.technician.escalationLevel}`}
                         size="small"
-                        variant="outlined"
-                        sx={{ fontSize: 10.5, fontWeight: 600 }}
+                        sx={{ fontSize: 10.5, fontWeight: 600, color: COLORS.secondary, borderColor: 'rgba(6, 182, 212, 0.3)', border: '1px solid' }}
                       />
                     )}
                   </Box>
@@ -1070,10 +1089,15 @@ export default function Users() {
                     <Button
                       size="small"
                       variant={isTech ? 'contained' : 'outlined'}
-                      color="primary"
-                      startIcon={<TechIcon sx={{ fontSize: 16 }} />}
                       onClick={() => handleToggleRole(inspectUser, 'TECHNICIAN')}
-                      sx={{ textTransform: 'none', fontSize: 12, borderRadius: 1.5 }}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: 12,
+                        borderRadius: 1.5,
+                        bgcolor: isTech ? COLORS.primary : 'transparent',
+                        borderColor: COLORS.primary,
+                        color: isTech ? '#ffffff' : COLORS.primary,
+                      }}
                     >
                       {isTech ? 'Demote Tech' : 'Promote to Tech'}
                     </Button>
@@ -1081,10 +1105,15 @@ export default function Users() {
                     <Button
                       size="small"
                       variant={isAdmin ? 'contained' : 'outlined'}
-                      color="error"
-                      startIcon={<AdminIcon sx={{ fontSize: 16 }} />}
                       onClick={() => handleToggleRole(inspectUser, 'ADMINISTRATOR')}
-                      sx={{ textTransform: 'none', fontSize: 12, borderRadius: 1.5 }}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: 12,
+                        borderRadius: 1.5,
+                        bgcolor: isAdmin ? COLORS.error : 'transparent',
+                        borderColor: COLORS.error,
+                        color: isAdmin ? '#ffffff' : COLORS.error,
+                      }}
                     >
                       {isAdmin ? 'Demote Admin' : 'Promote to Admin'}
                     </Button>
@@ -1092,10 +1121,14 @@ export default function Users() {
                     <Button
                       size="small"
                       variant="outlined"
-                      color={inspectUser.active ? 'inherit' : 'success'}
-                      startIcon={<BlockIcon sx={{ fontSize: 16 }} />}
                       onClick={() => handleDeactivate(inspectUser)}
-                      sx={{ textTransform: 'none', fontSize: 12, borderRadius: 1.5 }}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: 12,
+                        borderRadius: 1.5,
+                        borderColor: COLORS.border,
+                        color: inspectUser.active ? COLORS.onSurfaceVariant : COLORS.success,
+                      }}
                     >
                       {inspectUser.active ? 'Deactivate' : 'Reactivate'}
                     </Button>
@@ -1105,21 +1138,21 @@ export default function Users() {
                 {/* Tickets Associated with User */}
                 <Box sx={{ mb: 2.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 800, color: '#111c2d', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'Sora, sans-serif' }}>
                       Associated Incidents &amp; Tickets ({tickets.length})
                     </Typography>
                     {activeTickets.length > 0 && (
-                      <Chip label={`${activeTickets.length} Active`} size="small" color="primary" sx={{ height: 20, fontSize: 10, fontWeight: 800 }} />
+                      <Chip label={`${activeTickets.length} Active`} size="small" sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: 'rgba(99, 102, 241, 0.2)', color: COLORS.primary }} />
                     )}
                   </Box>
 
                   {tickets.length === 0 ? (
-                    <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2 }}>
-                      <CheckCircleIcon sx={{ fontSize: 32, color: '#16a34a', mb: 0.5 }} />
-                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#166534' }}>
+                    <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 2 }}>
+                      <CheckCircleIcon sx={{ fontSize: 32, color: COLORS.success, mb: 0.5 }} />
+                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.success }}>
                         Zero Associated Incidents
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: '#64748b' }}>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                         No reported or assigned issues exist for this user.
                       </Typography>
                     </Paper>
@@ -1131,12 +1164,12 @@ export default function Users() {
                           p: 2,
                           mb: 1.5,
                           borderRadius: 2,
-                          border: t.priority === 'P1' ? '1px solid #fca5a5' : '1px solid #e2e8f0',
-                          bgcolor: t.priority === 'P1' ? '#fef2f2' : '#ffffff',
+                          border: t.priority === 'P1' ? '1px solid rgba(244, 63, 94, 0.4)' : `1px solid ${COLORS.border}`,
+                          bgcolor: t.priority === 'P1' ? 'rgba(244, 63, 94, 0.08)' : COLORS.surfaceContainerLowest,
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#004d99' }}>
+                          <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: COLORS.primary }}>
                             {t.code}
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -1147,8 +1180,9 @@ export default function Users() {
                                 height: 18,
                                 fontSize: 10,
                                 fontWeight: 800,
-                                bgcolor: t.priority === 'P1' ? '#991b1b' : '#c65102',
+                                bgcolor: t.priority === 'P1' ? COLORS.error : '#ea580c',
                                 color: '#ffffff',
+                                fontFamily: 'JetBrains Mono, monospace',
                               }}
                             />
                             <Chip
@@ -1157,23 +1191,23 @@ export default function Users() {
                               sx={{
                                 height: 18,
                                 fontSize: 9.5,
-                                fontFamily: 'monospace',
+                                fontFamily: 'JetBrains Mono, monospace',
                                 fontWeight: 700,
-                                bgcolor: '#dee8ff',
-                                color: '#004d99',
+                                bgcolor: 'rgba(99, 102, 241, 0.2)',
+                                color: COLORS.primary,
                               }}
                             />
                           </Box>
                         </Box>
-                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#111c2d', mb: 0.5 }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: COLORS.onSurface, mb: 0.5 }}>
                           {t.title}
                         </Typography>
-                        <Typography sx={{ fontSize: 11.5, color: '#64748b' }}>
-                          Service: <strong>{t.service?.name || 'General Platform'}</strong>
+                        <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+                          Service: <strong style={{ color: COLORS.onSurface }}>{t.service?.name || 'General Platform'}</strong>
                         </Typography>
-                        <Box sx={{ mt: 1, p: 0.8, bgcolor: '#f1f5f9', borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                          <TimerIcon sx={{ fontSize: 14, color: '#004d99' }} />
-                          <Typography sx={{ fontSize: 11, fontFamily: 'monospace', color: '#1e293b' }}>
+                        <Box sx={{ mt: 1, p: 0.8, bgcolor: COLORS.surfaceContainerHighest, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          <TimerIcon sx={{ fontSize: 14, color: COLORS.primary }} />
+                          <Typography sx={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>
                             SLA State: {t.slaState || 'OK'}
                           </Typography>
                         </Box>
@@ -1184,21 +1218,21 @@ export default function Users() {
               </Box>
 
               {/* Impersonate Button in Drawer Footer */}
-              <Box sx={{ pt: 2, borderTop: '1px solid #e2e8f0' }}>
+              <Box sx={{ pt: 2, borderTop: `1px solid ${COLORS.border}` }}>
                 <Button
                   variant="contained"
                   fullWidth
                   onClick={() => handleLoginAsUser(inspectUser)}
                   startIcon={<LoginIcon />}
                   sx={{
-                    bgcolor: '#004d99',
+                    bgcolor: COLORS.primary,
                     color: '#ffffff',
                     fontWeight: 800,
                     fontSize: 13.5,
                     py: 1.2,
                     borderRadius: 2,
                     textTransform: 'none',
-                    '&:hover': { bgcolor: '#00337c' },
+                    '&:hover': { bgcolor: '#4f46e5' },
                   }}
                 >
                   Login as {inspectUser.name} &amp; Open Portal
@@ -1217,6 +1251,13 @@ export default function Users() {
           setActionAnchorEl(null);
           setActionTargetUser(null);
         }}
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            color: COLORS.onSurface,
+          },
+        }}
       >
         {actionTargetUser && (
           <Box>
@@ -1227,9 +1268,9 @@ export default function Users() {
               }}
             >
               <ListItemIcon>
-                <TechIcon fontSize="small" color="primary" />
+                <TechIcon fontSize="small" sx={{ color: COLORS.primary }} />
               </ListItemIcon>
-              <ListItemText>
+              <ListItemText sx={{ color: COLORS.onSurface }}>
                 {actionTargetUser.roles.includes('TECHNICIAN') ? 'Revoke Technician' : 'Promote to Technician'}
               </ListItemText>
             </MenuItem>
@@ -1241,14 +1282,14 @@ export default function Users() {
               }}
             >
               <ListItemIcon>
-                <AdminIcon fontSize="small" color="error" />
+                <AdminIcon fontSize="small" sx={{ color: COLORS.error }} />
               </ListItemIcon>
-              <ListItemText>
+              <ListItemText sx={{ color: COLORS.onSurface }}>
                 {actionTargetUser.roles.includes('ADMINISTRATOR') ? 'Revoke Admin' : 'Promote to Admin'}
               </ListItemText>
             </MenuItem>
 
-            <Divider />
+            <Divider sx={{ borderColor: COLORS.border }} />
 
             <MenuItem
               onClick={() => {
@@ -1257,9 +1298,9 @@ export default function Users() {
               }}
             >
               <ListItemIcon>
-                <BlockIcon fontSize="small" color="inherit" />
+                <BlockIcon fontSize="small" sx={{ color: COLORS.onSurfaceVariant }} />
               </ListItemIcon>
-              <ListItemText>
+              <ListItemText sx={{ color: COLORS.onSurface }}>
                 {actionTargetUser.active ? 'Deactivate Account' : 'Reactivate Account'}
               </ListItemText>
             </MenuItem>
@@ -1273,17 +1314,25 @@ export default function Users() {
         onClose={() => setProvisionOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            p: 1,
+            color: COLORS.onSurface,
+          },
+        }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
             Provision Enterprise Account
           </Typography>
-          <IconButton onClick={() => setProvisionOpen(false)} size="small">
+          <IconButton onClick={() => setProvisionOpen(false)} size="small" sx={{ color: COLORS.onSurfaceVariant }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ py: 2 }}>
+        <DialogContent dividers sx={{ py: 2, borderColor: COLORS.border }}>
           <Stack spacing={2}>
             <TextField
               fullWidth
@@ -1293,6 +1342,14 @@ export default function Users() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
             <TextField
               fullWidth
@@ -1303,6 +1360,14 @@ export default function Users() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
             <TextField
               fullWidth
@@ -1310,6 +1375,14 @@ export default function Users() {
               label="Temporary Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -1319,6 +1392,14 @@ export default function Users() {
                   label="Department"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: COLORS.surfaceContainerLowest,
+                      color: COLORS.onSurface,
+                      '& fieldset': { borderColor: COLORS.border },
+                    },
+                    '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -1328,6 +1409,14 @@ export default function Users() {
                   label="Location / Office"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: COLORS.surfaceContainerLowest,
+                      color: COLORS.onSurface,
+                      '& fieldset': { borderColor: COLORS.border },
+                    },
+                    '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                  }}
                 />
               </Grid>
             </Grid>
@@ -1339,6 +1428,14 @@ export default function Users() {
               label="Primary Clearance Role"
               value={primaryRole}
               onChange={(e) => setPrimaryRole(e.target.value as any)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="EMPLOYEE">Standard Employee (End-User Portal)</MenuItem>
               <MenuItem value="TECHNICIAN">IT Operations Technician (Workbench &amp; Queue)</MenuItem>
@@ -1347,15 +1444,15 @@ export default function Users() {
             </TextField>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setProvisionOpen(false)} sx={{ textTransform: 'none' }} disabled={isSubmitting}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setProvisionOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleProvisionUser}
             disabled={isSubmitting}
-            sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
+            sx={{ bgcolor: COLORS.primary, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#4f46e5' } }}
           >
             {isSubmitting ? 'Provisioning...' : 'Provision Account'}
           </Button>
