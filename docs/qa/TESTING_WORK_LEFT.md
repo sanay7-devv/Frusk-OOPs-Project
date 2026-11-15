@@ -160,7 +160,7 @@ The handbook's class-level table names these test classes. Five of them do not e
 
 **CI:** six jobs (backend tests, frontend tests, frontend build, seed integrity for dev and demo, demo stack with snapshot round trip).
 
-**Gap in numbers:** the backend has 117 operations and over 400 classes; the unit tests above cover a handful of the rule classes. The optional catalogue in section 4 fills this.
+**Gap in numbers:** the backend has 119 operations and over 400 classes; the unit tests above cover a handful of the rule classes. The optional catalogue in section 4 fills this.
 
 ---
 

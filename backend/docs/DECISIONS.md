@@ -109,6 +109,9 @@
 | [DEC-78](#dec-78-actions-keep-answering-403-to-people-who-cannot-see-the-incident-t18) | Actions keep answering 403 to people who cannot see the incident (T18) | 2026-11-14 | M14 risk of DEC-42 | ✅ user decision |
 | [DEC-110](#dec-110-grouping-into-a-problem-record-is-not-announced) | Grouping into a problem record is not announced | 2026-11-14 | M9 + M12 | ✅ user decision |
 | [DEC-111](#dec-111-google-gemini-is-the-default-llm-provider) | Google Gemini is the default LLM provider | 2026-11-15 | M12 | ✅ user decision |
+| [DEC-112](#dec-112-the-service-desk-simulator-s1-as-built) | The Service Desk Simulator (S1) as built | 2026-11-15 | S1 | ✅ built inside the design of DEC-44 and DEC-45; details open to veto |
+| [DEC-113](#dec-113-minescalationlevel-filter-on-the-incident-list) | `minEscalationLevel` filter on the incident list | 2026-11-15 | M10 | ✅ |
+| [DEC-114](#dec-114-index-review-and-scale-out-path-a7) | Index review and scale-out path (A7) | 2026-11-15 | M14 | ✅ |
 
 ---
 
@@ -1921,6 +1924,73 @@ The bytes go through an `AttachmentStorage` port with `DiskAttachmentStorage` as
 
 **What did not change.** Prompts, redaction, strict JSON validation, timeout, circuit breaker, cache, rate limit and the no-key path; TF-IDF similarity never goes to the model.
 
-**Verified.** Offline, against a stub of the Gemini API (`smoke-tests/gemini_stub_check.py`, 10/10): URL and model, key in the header and not the URL, JSON output requested, thought parts skipped, category and intake answered with `source` LLM, a blocked prompt and an HTTP 500 fall back to KEYWORD. **Not yet verified against the real Gemini service** (needs the team's key in `.env`).
+**Verified.** Offline, against a stub of the Gemini API (`smoke-tests/gemini_stub_check.py`, 10/10): URL and model, key in the header and not the URL, JSON output requested, thought parts skipped, category and intake answered with `source` LLM, a blocked prompt and an HTTP 500 fall back to KEYWORD. **Verified against the real Gemini service on 2026-11-15** with the team's key in the git-ignored `backend/.env` (`LLM_API_KEY`): `POST /intelligence/suggest-category` on a VPN text answered category VPN at 0.99 and `POST /intelligence/suggest-intake` on an urgent finance outage answered impact 4, urgency 5, both with `source` LLM (not the keyword fallback). The key is never written to the repository, the logs or these documents.
 
 **Cross-questions.** *"Why not the Gemini SDK?"* The same reasons as for Anthropic: full control of the 8-second limit and no hidden retries. *"What if Google changes the model?"* The model is a setting (`LLM_MODEL`); the code only knows the request shape. *"Is the key safe?"* It is read from the environment, sent only in a header, and never logged.
+
+
+### DEC-112: The Service Desk Simulator (S1) as built
+
+| When | Module | Status | Decided by |
+|---|---|---|---|
+| 2026-11-15 | S1 | ✅ built inside the design approved in DEC-44 and DEC-45; the choices below were made while building and are open to veto | Backend Lead (user asked to finish the remaining work) |
+
+**What was built.** `POST /api/v1/admin/simulations` (needs `CONFIG_MANAGE`) replays the most recent N real incidents in memory through the real `AssignmentEngine` under up to three configurations and returns, per configuration: SLA violations (count and percent), mean and 90th-percentile time to resolve, mean wait, how evenly the work was spread (Jain's fairness index, 1.0 is perfectly even), incidents nobody could take, how often the simulated choice equals the technician who really got the incident, and a per-technician breakdown. `POST /api/v1/admin/simulations/apply` writes a configuration's strategy and weights to the live settings through `ConfigService` (audited as CONFIG_CHANGED), which is the "Apply" button. Nothing else is written.
+
+**Inputs.** The workload is the last 10 to 500 incidents (default 100) with their real arrival spacing, or the same arrivals compressed 1 to 20 times (`speedUp`) to imitate an outage storm. A configuration is a strategy (COMPOSITE, SKILL, LOAD, ROUND_ROBIN, EXPERIENCE_PRIORITY), any of the five composite weights (they must still add up to 1.0) and an optional number of technicians (the first N by id). Anything left out keeps the live value. As DEC-45 decided, there is no automatic search of the weight space.
+
+**The model, stated next to every result (`assumptions` in the response).** A technician works one incident at a time, always taking the waiting incident with the highest priority (then the earliest arrival). Handling time is the median acknowledged-to-resolved time per priority in the replayed history (fixed fallbacks of 45, 90, 180 and 240 minutes for P1 to P4 when a priority has no history), multiplied by 1.3 minus 0.1 times the technician's experience level: level 1 takes 20% longer, level 3 the base, level 5 20% less. The load the strategies see is the weighted load of everything assigned and not yet finished, as `WorkloadTracker` counts it live. Familiarity with a service starts at zero and grows as the replay resolves incidents. An incident nobody is eligible for waits in triage until someone frees up. The allowed time is the gap between creation and the real resolution deadline on the wall clock (business-hours calendars are not applied). Availability and maximum load are today's values. Incidents closed as duplicate or withdrawn, and ones without priority or category, are left out and counted.
+
+**Options.**
+
+| Option | For | Against |
+|---|---|---|
+| **In-memory discrete-event loop over the real domain classes** (chosen, as DEC-44) | Same code as production; nothing written; deterministic | Needs the handling-time model above |
+| Write sandbox incidents to the database | Simple | Pollutes real data and the audit trail |
+| A separate copy of the assignment rules | No coupling to entities | Two sets of rules that drift apart; defeats the point |
+
+Sub-decisions: (1) **How the replay avoids changing real data.** The engine and the eligibility filter read the real `User` and `TechnicianProfile` entities, so the loop cannot run on copies. The service runs in a read-only transaction (Hibernate never flushes it), and the only thing the replay moves, each technician's round-robin memory (`lastAssignedAt`), is restored after every scenario and in a `finally`. The smoke suite proves that the audit trail, incidents, settings, round-robin memory and notifications are unchanged afterwards. (2) **A storm is the real arrivals compressed**, not synthetic incidents: no invented data, and `IncidentFactory` is not needed. (3) **Technician count takes the first N by id**: simple and repeatable, though it can pick someone who is away (then they take nothing, which is itself part of the picture). (4) **Ordering inside the loop is fixed** (a finish before an arrival at the same instant, then first scheduled), so the same request always gives the same answer.
+
+**Verified.** `smoke-tests/s1_smoke.py` 50/50 on the Flyway seed (212 incidents): access (401, 403), the default run and every field, determinism, three configurations in request order with different results, fewer technicians never shorten the wait, a storm never shortens the wait, custom weights, validation (four configurations, weights not adding to 1, unknown strategy, too few incidents, bad speed-up), no writes, apply with audit and restore, and the escalation filter of DEC-113. Example on the seed, last 200 incidents at 8 times speed: composite 59.5% of incidents past their deadline, load-only 37.0%, round robin 65.0%.
+
+**Limits to state in the report.** It is a model, not a forecast: real technicians multitask and take breaks. The seed's assignments were generated, not chosen by the engine, so the "matches the real assignee" figure (47 to 58% on the seed) is a diagnostic and not a validation here; on a real history it would show how close the model is to what actually happened. The handling times of the seed are long because the seed generator made them long.
+
+**Cross-questions.** *"How do you know the simulation matches reality?"* The model's rules are written out beside the result, and the agreement with the real assignee is reported; replaying a real history under the configuration that was live then should mostly reproduce the real choices. *"Does simulating change anything?"* No: a read-only transaction, nothing is saved, no audit entry, no notification; the suite checks it. *"Why not machine learning?"* A simulation is explainable and needs no training data. *"Why does the load-only strategy win under a storm?"* With work arriving faster than it can be done, balancing the queue matters more than matching skills; with the real spacing the composite strategy may do better, which is what the tool lets an administrator see before changing the setting.
+
+
+### DEC-113: `minEscalationLevel` filter on the incident list
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-15 | M10 | ✅ |
+
+**Context.** The frontend review (`frontend/FRONTEND_GUIDE.md`) found that the team-lead escalations screen needs only incidents already escalated, and `GET /incidents` had no way to ask for them: the client would have to page through everything and filter.
+
+**Decision.** `GET /incidents?minEscalationLevel=` (0 to 3, inclusive: level 1 and above, and so on) added to the existing filters. It is combined with the usual role-based visibility, so an employee still sees only their own incidents. A value outside 0 to 3 is 400.
+
+| Option | For | Against |
+|---|---|---|
+| **A filter on the existing list** (chosen) | One more parameter; paging, sorting and visibility come for free | Triage escalation level 0 stays "not escalated" |
+| A separate `GET /escalations` endpoint | Could include the preview | A second list with its own paging and visibility rules to keep in step |
+| Filter in the browser | No backend change | Pages through every incident to find a few |
+
+**Verified.** `smoke-tests/s1_smoke.py` (the last section): level 0 equals no filter, level 1 and 2 return exactly the rows the database holds at that level, an employee sees only their own, 3 is empty on the seed, 4 and -1 are 400. Contract: 119 operations, `iitsm-api.*` re-exported.
+
+**Cross-question.** *"Why not include the escalation preview?"* The preview needs the policy tables per incident; the detail view already has it, and the list only needs the level.
+
+
+### DEC-114: Index review and scale-out path (A7)
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-15 | M14 | ✅ the written half; the load test with numbers is the Testing teammate's |
+
+**Decision.** A7 (DEC-43) is split as DEC-43 said: the Backend Lead writes an index review and a scale-out path (`backend/docs/SCALING.md`), the Testing teammate runs the load test and records the numbers. The review is a **desk review of the query shapes against the migrated schema**, not a measurement, because the seed (212 incidents) is too small for PostgreSQL to prefer an index; each recommended index is to be confirmed with `EXPLAIN (ANALYZE)` at 100,000 incidents before it is kept.
+
+**Findings.** Seven gaps, the most valuable first: no `created_at` index on `audit_records` for the admin audit list; no `resolved_at` index on `incidents`, which the recurring-problem detector, suggested resolutions, auto-verify and the coverage report all filter on; the SLA, risk and escalation monitors scan all incidents although they read only open ones (partial indexes); a composite index for the duplicate check and known-outage queries; the `q` search with a leading wildcard (trigram index only if the data grows); and the missing partial unique index for the global SLA default (DEC-17). The schema belongs to the Testing teammate, so these are handed over as a numbered migration to write (V10), never an edit of an applied one.
+
+**Single-instance assumptions** (a table in `SCALING.md` with the fix for each): the six scheduled jobs run on every instance (fix: an advisory lock per job, the pattern the audit seal already uses), the settings cache and the in-memory rate limiter are per instance, the STOMP broker is in memory, and attachments live on one disk (already behind the `AttachmentStorage` port).
+
+**Honest limit.** The system is built and demonstrated at one instance; the path to two or three instances is written, not run.
+
+**Cross-questions.** *"Is it scalable?"* To a point, and the page says which components assume one instance and what replaces each. *"Why no load test numbers from you?"* They are the Testing teammate's half of A7 (DEC-43); `SCALING.md` section 5 tells her what to measure.

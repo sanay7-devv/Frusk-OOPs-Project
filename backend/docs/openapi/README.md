@@ -64,10 +64,12 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | `GET /audit/verify`, `POST /audit/seal` (AUDIT_VIEW) | Audit | Sealed audit trail (S3) | DEC-91 |
 | 429 `RATE_LIMITED` with `Retry-After` on login, Google sign-in, incident creation and AI calls; 503 `SERVICE_UNAVAILABLE` on every operation when the database is down | All | M14 hardening | DEC-90, DEC-94 |
 | `POST /admin/demo/outage-drill {rootServiceId}` exists **only in the demo profile** (not in this file) | Admin | Recorded demo (D2) | DEC-76 |
+| `POST /admin/simulations` (replay recent incidents under up to three configurations, writes nothing), `POST /admin/simulations/apply` (CONFIG_MANAGE) | Admin: service desk simulator | S1 | DEC-112 |
+| `GET /incidents?minEscalationLevel=` (0 to 3) | Incidents | Escalations screen | DEC-113 |
 
 ## Still to come
 
-All features accepted on 2026-11-13 are built (see the table above) except the Service Desk Simulator (S1), which will add one operation to run a simulation. Details per role: `../TEAM_UPDATES.md`.
+All features accepted on 2026-11-13 are built (see the table above), including the Service Desk Simulator (S1, built 2026-11-15). Details per role: `../TEAM_UPDATES.md`.
 
 ## Regenerating the export
 

@@ -119,6 +119,9 @@ public class CriteriaIncidentSearch implements IncidentSearch {
         if (q.slaState() != null) {
             where.add(slaState(cb, root, q.slaState()));
         }
+        if (q.minEscalationLevel() != null) {
+            where.add(cb.greaterThanOrEqualTo(root.<Short>get("escalationLevel"), q.minEscalationLevel().shortValue()));
+        }
         return where.toArray(Predicate[]::new);
     }
 

@@ -99,6 +99,7 @@ public class IncidentController {
             @RequestParam(required = false) Long assigneeId,
             @RequestParam(required = false) Long reporterId,
             @RequestParam(required = false) SlaState slaState,
+            @RequestParam(required = false) @Min(0) @Max(3) Integer minEscalationLevel,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo,
             @RequestParam(defaultValue = "false") boolean mine,
@@ -114,7 +115,7 @@ public class IncidentController {
         boolean ascending = sortParts.length > 1 && sortParts[1].strip().equalsIgnoreCase("asc");
         IncidentQuery query = new IncidentQuery(null, status, priority, categoryId, serviceId,
                 assignedToMe ? caller.id() : assigneeId, mine ? caller.id() : reporterId, code, q, createdFrom,
-                createdTo, page, size, sortField, ascending, slaState);
+                createdTo, page, size, sortField, ascending, slaState, minEscalationLevel);
         return PageResponse.of(incidents.list(caller, query));
     }
 

@@ -36,7 +36,7 @@ That rule changes priorities:
 
 **The three workflows the video must show cannot be recorded today**: an employee can file an incident, but then cannot see it, the technician cannot act on it, and the team lead cannot assign it.
 
-The backend is complete: 117 operations, all built. Nothing in this guide waits on backend work except the Service Desk Simulator (not built yet).
+The backend is complete: 119 operations, all built, including the Service Desk Simulator (`POST /admin/simulations`, built 2026-11-15; see `backend/docs/TEAM_UPDATES.md`, last section). Nothing in this guide waits on backend work.
 
 ---
 

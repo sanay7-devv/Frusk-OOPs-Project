@@ -2,7 +2,7 @@
 
 > **Read this first.** The five handbook PDFs (dated 2026-10-15) are frozen and are not in this repository. This page lists every point where the project now differs from them, per role. Where this page and a handbook disagree, this page wins. Reasons are in `DECISIONS.md` (DEC numbers); the order of work is in `ROADMAP.md` section 5.
 
-Last updated: 2026-11-14 (M9, M10, M11, M12 core)
+Last updated: 2026-11-15 (S1 simulator, `minEscalationLevel` filter, A7 review; 119 operations)
 
 ---
 
@@ -23,7 +23,7 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 | Grading | Summary table in section 1.2 | Use the rubric in the course brief; our plan against it is `ROADMAP.md` section 8 | DEC-43 |
 
 **Built so far (backend):** every module M1 to M14 and M2b: users and login (also with Google), catalog and live settings, incidents with the full lifecycle (withdraw included), priority, five assignment strategies with explainable recommendations, SLA monitor, audit trail with tamper-evident seals, notifications, search and reports, escalation, intelligence (suggestions, duplicates, problem records, Major Incident Mode, chatbot intake), live dashboard, service graph and status board, attachments, rate limits.
-**Not built yet:** the S1 Service Desk Simulator, the A7 load test and the last-priority items (mobile push, Grafana, password reset and TOTP, cloud deployment). Every endpoint of the agreed contract exists now.
+**Not built yet:** the last-priority items (mobile push, Grafana, password reset and TOTP, cloud deployment). The S1 Service Desk Simulator was built on 2026-11-15 (see the section at the end of this page). The A7 load test with numbers is the Testing teammate's half; the index review and scale-out path are in `backend/docs/SCALING.md`. Every endpoint of the agreed contract exists now (119 operations).
 
 
 ### New features accepted on 2026-11-13 (built since: coverage risk, post-incident report, chat webhook, priority what-if, escalation preview, demo clock)
@@ -249,3 +249,34 @@ New and changed endpoints; reasons: `DECISIONS.md` DEC-70 to DEC-78; description
 - **Everyone:** the backend's LLM is now **Google Gemini** by default (`LLM_PROVIDER=gemini`, model `gemini-3.5-flash-lite`). Put a Gemini API key from Google AI Studio in `backend/.env` as `LLM_API_KEY=...` (or `GEMINI_API_KEY=...`); never commit it. With no key everything still works through the keyword engine, and `source` says `KEYWORD`.
 - **Frontend:** nothing changes: the `/intelligence/*` answers keep their shape; `source` is `LLM` when Gemini answered.
 - **Report:** the AI integration is "Google Gemini API through an Adapter (`GeminiLlmClient`) behind the `LlmClient` port; Anthropic and an offline scripted client are other adapters of the same port". Privacy rules are unchanged (only redacted title, description and category names are sent).
+
+---
+
+## S1 Service Desk Simulator, escalation filter and A7 review (2026-11-15, DEC-112 to DEC-114)
+
+The contract now has **119 operations** (two added). Reasons and details: `DECISIONS.md` DEC-112 to DEC-114; description and verified behavior: `SYSTEM_GUIDE.md` section 12i; the scale-out review: `SCALING.md`.
+
+**Frontend**
+- **New screen: Service Desk Simulator** (administrators, one screen, one chart). Two endpoints, both need `CONFIG_MANAGE`:
+  - `POST /api/v1/admin/simulations` with `{lastIncidents (10 to 500, default 100), speedUp (1 to 20, default 1), configurations: [{name, strategy, weights {skill, load, experience, priorityFit, familiarity}, technicians}]}`. At most three configurations; anything left out keeps the live value; none means "current settings". Strategy names are `COMPOSITE`, `SKILL`, `LOAD`, `ROUND_ROBIN`, `EXPERIENCE_PRIORITY`. The weights must add up to 1.0 or the answer is 400 with `fieldErrors`.
+  - Answer: `{workload {incidents, from, to, speedUp, excluded}, assumptions [text], results [{name, strategy, weights, technicians, incidents, slaViolations, slaViolationPercent, unassigned, meanResolveMinutes, p90ResolveMinutes, meanWaitMinutes, fairness (0 to 1), matchesRealAssigneePercent, perTechnician [{technicianId, name, assigned, busyMinutes, utilizationPercent}]}], best, bestReason}`.
+  - Suggested screen: the incident count and a "storm" slider (`speedUp`) on top; up to three configuration cards (strategy dropdown, five weight sliders that must total 100%, optional technician count); a **Run** button; one grouped bar chart comparing the configurations (SLA violation percent first, then mean resolve time, then fairness); the `best` one highlighted; the `assumptions` text shown in a "How this is modelled" panel next to the chart (the report relies on it); a per-technician bar chart for the selected configuration.
+  - `POST /api/v1/admin/simulations/apply` with one configuration (`{strategy, weights}`) answers 204 and changes the live settings: the **Apply** button on the best card. Ask for a confirmation first.
+  - It writes nothing when simulating (no incidents, audit entries or notifications), so it is safe to run repeatedly in the video.
+- **Incident list filter:** `GET /incidents?minEscalationLevel=` (0 to 3, level and above) for the team-lead escalations screen. Combine it with `status` to list only open work. 400 outside 0 to 3. Triage escalation starts at level 0, so a triage incident that has not climbed yet is level 0.
+- **Gemini:** the AI answers (`/intelligence/*`) are now verified against the real service with the team's key: `source` is `LLM` when Gemini answered. Nothing changes in the shapes.
+
+**Testing and DevOps**
+- **No schema change.** Class names and expected values for unit tests (all plain Java, no Spring):
+  - `ServiceTimeModel` (`com.iitsm.domain.simulation`): `fromHistory` takes the median per priority of acknowledged-to-resolved minutes (resolved minus created when nobody acknowledged); an even count averages the two middle values (10, 20, 30, 40 gives 25; 10, 30, 20 gives 20); a priority with no history uses 45, 90, 180, 240 minutes for P1 to P4. `handlingTime(priority, level)` is the base times `1.3 - 0.1 * level`: with a base of 180 minutes level 1 gives 216, level 3 gives 180, level 5 gives 144; never less than one minute.
+  - `DeskSimulation.run(workload, workers, scenario)` with a fixed list of incidents and technicians: the same inputs always give the same result; with one technician and two incidents arriving together the higher priority is served first; an incident finishing after `arrival + allowed` counts as a violation; with no eligible technician the incident stays unassigned and counts as a violation; fairness for assigned counts 3, 3, 3 is 1.0 and for 6, 0, 0 is 0.33 (Jain's index).
+  - `SimulatorService.simulate` (needs a database): fewer than 10 or more than 500 incidents, more than three configurations, an unknown strategy, an unknown weight name, weights not adding to 1.0 and a speed-up outside 1 to 20 are all 400; the round-robin memory (`technician_profiles.last_assigned_at`), `audit_records`, `incidents` and `app_config` are identical before and after.
+  - `GET /incidents?minEscalationLevel=`: level 0 returns everything; 1 returns only incidents at level 1 or above (set `escalation_level` in the fixture); an employee still sees only their own; 4 and -1 are 400.
+- Smoke script on the backend lead's machine: `s1_smoke.py` (50 checks; needs the dev profile with the Flyway seed, `SMOKE_PORT`, `SMOKE_DB`).
+- **A7 review for the migration you owe (V10):** `backend/docs/SCALING.md` section 2.2 lists seven indexes with their SQL (the audit `created_at`, `incidents.resolved_at`, the open-incident and escalation partial indexes, the composite for duplicates, an optional trigram index, and the partial unique index for the global SLA default, DEC-17). Section 5 says what the load test should measure.
+
+**Report and content**
+- **Demo segment (administrator, 13:00 on the run sheet):** open the simulator, pick three configurations, press Run, read the chart, press Apply on the winner. A strong line for the report: "the simulator replays real incidents through the same assignment engine that runs live; it writes nothing". Patterns to cite: Strategy (configurations side by side through one engine), a priority queue of timed events (data structure), an immutable settings snapshot (`AppSettings`).
+- Honest limits to state: it is a model (one incident at a time per technician, handling times from history, no multitasking); on the seed data the "matches the real assignee" figure is a diagnostic only, because the seed's assignments were generated.
+- The scale-out path (`SCALING.md`) answers "is it scalable?": which components assume one instance, and what replaces each.
+
