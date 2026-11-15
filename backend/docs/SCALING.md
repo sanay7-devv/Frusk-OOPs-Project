@@ -26,7 +26,7 @@ The schema already indexes every foreign key and the main filter columns. On `in
 | 6 | Free-text search `q` on `GET /incidents` (`lower(title) LIKE '%...%'` on title, description and code) | A leading wildcard cannot use a B-tree index, so every search reads every row. Fine up to roughly 10^5 rows | Only if the data grows: `CREATE EXTENSION pg_trgm;` and GIN trigram indexes on `lower(title)` and `lower(description)` |
 | 7 | Global SLA default per priority (`sla_policies.service_id IS NULL`) | Not a speed issue. PostgreSQL treats NULLs as distinct, so the unique key on (service, priority) cannot stop two global defaults. The code checks it (D-009); the database does not (DEC-17) | `CREATE UNIQUE INDEX uk_sla_policies_global_priority ON sla_policies (priority) WHERE service_id IS NULL;` |
 
-Items 1, 2, 5 and 7 are safe to add now. Items 3, 4 and 6 should be added after an `EXPLAIN` on realistic volume shows a benefit. **The schema belongs to the Testing teammate**: she adds these as a new numbered migration (V10), never by editing an applied one. They are listed here so she can copy them.
+Items 1, 2, 5 and 7 are safe to add now. Items 3, 4 and 6 should be added after an `EXPLAIN` on realistic volume shows a benefit. **The schema belongs to the Testing teammate**: she adds these as a new numbered migration (V11; V10 is taken by A12 and A4), never by editing an applied one. They are listed here so she can copy them.
 
 ### 2.3 Already sound
 

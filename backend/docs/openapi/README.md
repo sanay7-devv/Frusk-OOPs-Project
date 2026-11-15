@@ -66,6 +66,11 @@ Everything the backend added on top of the original contract. Frontend and Testi
 | `POST /admin/demo/outage-drill {rootServiceId}` exists **only in the demo profile** (not in this file) | Admin | Recorded demo (D2) | DEC-76 |
 | `POST /admin/simulations` (replay recent incidents under up to three configurations, writes nothing), `POST /admin/simulations/apply` (CONFIG_MANAGE) | Admin: service desk simulator | S1 | DEC-112 |
 | `GET /incidents?minEscalationLevel=` (0 to 3) | Incidents | Escalations screen | DEC-113 |
+| `POST /auth/password-reset/request` (always 202), `POST /auth/password-reset/confirm` (204; 400 on a bad link or password), public | Auth | Forgotten password (A12) | DEC-116 |
+| `POST /auth/login` takes an optional `totp`; new 401 codes `MFA_REQUIRED` and `INVALID_MFA_CODE` | Auth | Two-step verification (A12) | DEC-116 |
+| `GET /auth/mfa`, `POST /auth/mfa/setup`, `/enable`, `/disable`; `POST /admin/users/{id}/mfa/reset` (USER_MANAGE) | Auth, Admin | Two-step verification (A12) | DEC-116 |
+| `GET/POST /notifications/devices`, `DELETE /notifications/devices/{id}`; channel value `PUSH_SIM` in notification rows | Notifications | Simulated mobile push (A4) | DEC-117 |
+| `/actuator/prometheus` exists in the running app but is not in this file (it answers only to the scrape token) | Actuator | Observability (A8) | DEC-115 |
 
 ## Still to come
 

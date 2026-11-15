@@ -33,7 +33,7 @@ import jakarta.persistence.Table;
                 @Index(name = "idx_notifications_user_created", columnList = "user_id, created_at"),
                 @Index(name = "idx_notifications_user_read", columnList = "user_id, read")},
         check = @CheckConstraint(name = "ck_notifications_channel",
-                constraint = "channel IN ('IN_APP', 'EMAIL', 'WEBSOCKET', 'SMS_SIM')"))
+                constraint = "channel IN ('IN_APP', 'EMAIL', 'WEBSOCKET', 'SMS_SIM', 'PUSH_SIM')"))
 public class Notification {
 
     @Id

@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.OptionalLong;
 import java.util.HexFormat;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -25,12 +26,15 @@ import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.AccountLockedException;
 import com.iitsm.domain.exception.InputValidationException;
 import com.iitsm.domain.exception.InvalidCredentialsException;
+import com.iitsm.domain.exception.InvalidMfaCodeException;
+import com.iitsm.domain.exception.MfaRequiredException;
 import com.iitsm.domain.exception.TokenInvalidException;
 import com.iitsm.domain.event.SecurityAuditEvent;
 import com.iitsm.domain.exception.UserNotFoundException;
 import com.iitsm.domain.repository.RefreshTokenRepository;
 import com.iitsm.domain.repository.UserRepository;
 import com.iitsm.domain.user.RefreshToken;
+import com.iitsm.domain.user.Totp;
 import com.iitsm.domain.user.User;
 import com.iitsm.domain.user.UserFactory;
 
@@ -97,8 +101,17 @@ public class AuthService {
     }
 
     /** Failed attempts must be saved even though the call ends in an exception, hence noRollbackFor. */
-    @Transactional(noRollbackFor = InvalidCredentialsException.class)
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class, InvalidMfaCodeException.class})
     public AuthResult login(String email, String rawPassword) {
+        return login(email, rawPassword, null);
+    }
+
+    /**
+     * Login with an optional two-step code (A12). An account with two-step verification on answers MFA_REQUIRED to a right
+     * password without a code, and a wrong code counts as a failed login (so codes cannot be guessed).
+     */
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class, InvalidMfaCodeException.class})
+    public AuthResult login(String email, String rawPassword, String totpCode) {
         Instant now = clock.instant();
         String normalized = UserFactory.normalizeEmail(email);
         User user = users.findByEmail(normalized).orElse(null);
@@ -120,6 +133,19 @@ public class AuthService {
             loginFailed(user.getId(), !user.isActive() ? "account deactivated"
                     : user.isLockedAt(now) ? "wrong password, account now locked" : "wrong password", now);
             throw new InvalidCredentialsException();
+        }
+        if (user.isMfaEnabled()) {
+            if (totpCode == null || totpCode.isBlank()) {
+                throw new MfaRequiredException();
+            }
+            OptionalLong step = Totp.verify(user.getTotpSecret().orElseThrow(), totpCode, now, user.totpLastStep());
+            if (step.isEmpty()) {
+                user.recordFailedLogin(now, settings.lockoutAttempts(), settings.lockoutDuration());
+                loginFailed(user.getId(), user.isLockedAt(now) ? "wrong verification code, account now locked"
+                        : "wrong verification code", now);
+                throw new InvalidMfaCodeException();
+            }
+            user.acceptTotpStep(step.getAsLong());
         }
         user.recordSuccessfulLogin();
         return issueTokens(user, now);

@@ -11,6 +11,8 @@ import com.iitsm.domain.user.User;
 
 import static com.iitsm.domain.notification.NotificationEventType.INCIDENT_ASSIGNED;
 import static com.iitsm.domain.notification.NotificationEventType.INCIDENT_ESCALATED;
+import static com.iitsm.domain.notification.NotificationEventType.INCIDENT_RESOLVED;
+import static com.iitsm.domain.notification.NotificationEventType.INFO_REQUESTED;
 import static com.iitsm.domain.notification.NotificationEventType.SLA_VIOLATED;
 import static com.iitsm.domain.notification.NotificationEventType.SLA_WARNING;
 import static com.iitsm.domain.notification.NotificationEventType.TRIAGE_NEEDED;
@@ -26,6 +28,13 @@ public final class NotificationRules {
     private static final Set<NotificationEventType> SMS_EVENTS =
             EnumSet.of(INCIDENT_ASSIGNED, TRIAGE_NEEDED, SLA_WARNING, SLA_VIOLATED, INCIDENT_ESCALATED);
 
+    /** Events urgent enough for a push when the incident is P1 or P2. */
+    private static final Set<NotificationEventType> PUSH_URGENT =
+            EnumSet.of(INCIDENT_ASSIGNED, TRIAGE_NEEDED, SLA_WARNING, SLA_VIOLATED, INCIDENT_ESCALATED);
+
+    /** Events a push helps with at any priority: the reporter is asked something or the fix arrived. */
+    private static final Set<NotificationEventType> PUSH_PERSONAL = EnumSet.of(INFO_REQUESTED, INCIDENT_RESOLVED);
+
     /** Events always posted to the chat room. */
     private static final Set<NotificationEventType> CHAT_ALWAYS = EnumSet.of(SLA_VIOLATED, INCIDENT_ESCALATED);
 
@@ -39,6 +48,19 @@ public final class NotificationRules {
     public static boolean smsApplies(Priority priority, NotificationEventType type, Audience audience) {
         return priority == Priority.P1 && SMS_EVENTS.contains(type)
                 && audience != Audience.REPORTER && audience != Audience.ROOM;
+    }
+
+    /**
+     * A simulated push (A4) for the urgent events of a P1 or P2 incident, and at any priority when the reporter is asked
+     * for information or the incident is resolved. Never for the chat room. It still reaches only people who
+     * registered a device, and it is not a per-user switch.
+     */
+    public static boolean pushApplies(Priority priority, NotificationEventType type, Audience audience) {
+        if (audience == Audience.ROOM) {
+            return false;
+        }
+        boolean urgentIncident = priority == Priority.P1 || priority == Priority.P2;
+        return (urgentIncident && PUSH_URGENT.contains(type)) || PUSH_PERSONAL.contains(type);
     }
 
     /** Whether the shared chat room hears about this event. */

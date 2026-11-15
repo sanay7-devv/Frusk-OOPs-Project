@@ -32,6 +32,8 @@ import com.iitsm.domain.simulation.ServiceTimeModel;
 import com.iitsm.domain.user.TechnicianRole;
 import com.iitsm.domain.user.User;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 /**
  * The Service Desk Simulator (S1, decision DEC-112): replays the last N real incidents through the real assignment
  * engine under up to three configurations and compares what each would have done. Everything runs in memory inside
@@ -76,13 +78,15 @@ public class SimulatorService {
     private final UserRepository users;
     private final AssignmentEngine engine;
     private final ConfigService config;
+    private final MeterRegistry metrics;
 
     public SimulatorService(IncidentSearch search, UserRepository users, AssignmentEngine engine,
-                            ConfigService config) {
+                            ConfigService config, MeterRegistry metrics) {
         this.search = search;
         this.users = users;
         this.engine = engine;
         this.config = config;
+        this.metrics = metrics;
     }
 
     @Transactional(readOnly = true)
@@ -130,10 +134,15 @@ public class SimulatorService {
         Map<Long, Instant> roundRobinMemory = new HashMap<>();
         everyone.forEach(w -> roundRobinMemory.put(w.technician().getId(), w.profile().getLastAssignedAt()));
 
+        metrics.counter("iitsm.simulations").increment();
         DeskSimulation simulation = new DeskSimulation(engine, times);
         List<ConfigurationView> results = new ArrayList<>();
         try {
             for (Scenario scenario : scenarios) {
+                // The rotation starts empty: the real memory was set at today's time, the replayed incidents are
+                // weeks older, so the real values would make some technicians look "just served" for the whole
+                // replay and starve them (found by s1_smoke on a database that had real assignments).
+                everyone.forEach(w -> w.profile().markAssigned(null));
                 int limit = limits.get(scenario.name());
                 List<Worker> workers = everyone.stream().limit(limit).toList();
                 DeskSimulation.Result result = simulation.run(workload, workers, scenario);
@@ -236,8 +245,9 @@ public class SimulatorService {
         lines.add("Experience changes speed: level 1 takes 20% longer than the base, level 3 the base, level 5 20% less.");
         lines.add("The allowed time of an incident is the gap between its creation and its real resolution deadline, "
                 + "counted on the wall clock (business-hours calendars are not applied).");
-        lines.add("Technician availability and maximum load are today's values. Load starts empty; familiarity with a "
-                + "service starts at zero and grows as the replay resolves incidents.");
+        lines.add("Technician availability and maximum load are today's values. Load starts empty, the round-robin "
+                + "rotation starts empty (everyone equally due), and familiarity with a service starts at zero and grows as "
+                + "the replay resolves incidents.");
         lines.add(speedUp > 1 ? "Arrivals are compressed " + speedUp + " times to simulate an outage storm; deadlines "
                 + "are not." : "Arrivals keep their real spacing.");
         lines.add("Incidents closed as duplicates or withdrawn, and ones without a priority or category, are left out.");
