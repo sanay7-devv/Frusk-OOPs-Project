@@ -23,6 +23,8 @@ import com.iitsm.domain.intelligence.TextRecord;
 import com.iitsm.domain.intelligence.ThreadInput;
 import com.iitsm.domain.intelligence.ThreadSummary;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 /**
  * The service everything else uses (Strategy pattern with a safety net): {@code ai.primary} chooses LLM or KEYWORD
  * live. When the LLM is the primary, any exception, timeout (set by {@code ai.timeout.seconds}, default 8) or
@@ -43,15 +45,17 @@ class FallbackTextAnalysisService implements TextAnalysisService {
     private final ConfigService config;
     private final CircuitBreaker breaker;
     private final Clock clock;
+    private final MeterRegistry metrics;
 
     FallbackTextAnalysisService(TextAnalysisService llm, TextAnalysisService keyword, LlmClient client,
-                                ConfigService config, CircuitBreaker breaker, Clock clock) {
+                                ConfigService config, CircuitBreaker breaker, Clock clock, MeterRegistry metrics) {
         this.llm = llm;
         this.keyword = keyword;
         this.client = client;
         this.config = config;
         this.breaker = breaker;
         this.clock = clock;
+        this.metrics = metrics;
     }
 
     @Override
@@ -80,22 +84,31 @@ class FallbackTextAnalysisService implements TextAnalysisService {
     private <T> T attempt(String operation, Supplier<T> viaLlm, Supplier<T> viaKeyword) {
         AppSettings settings = config.current();
         if (!"LLM".equals(settings.raw(ConfigKey.AI_PRIMARY)) || !client.isAvailable()) {
+            count(operation, "keyword");
             return viaKeyword.get();
         }
         Instant now = clock.instant();
         if (!breaker.allowRequest(now)) {
+            count(operation, "keyword_breaker_open");
             return viaKeyword.get();
         }
         try {
             T result = viaLlm.get();
             breaker.recordSuccess();
+            count(operation, "llm");
             return result;
         } catch (RuntimeException ex) {
             breaker.recordFailure(now, settings.intValue(ConfigKey.AI_BREAKER_FAILURES),
                     Duration.ofSeconds(settings.intValue(ConfigKey.AI_BREAKER_COOLOFF_SECONDS)));
             log.warn("LLM {} failed ({}), using the keyword engine; breaker {} after {} failure(s)", operation,
                     ex.getMessage(), breaker.state(now), breaker.consecutiveFailures());
+            count(operation, "keyword_after_failure");
             return viaKeyword.get();
         }
+    }
+
+    /** Who answered, for Prometheus (A8): iitsm_ai_calls_total{operation, engine}. */
+    private void count(String operation, String engine) {
+        metrics.counter("iitsm.ai.calls", "operation", operation, "engine", engine).increment();
     }
 }

@@ -132,13 +132,13 @@ public class DashboardService {
         return true;
     }
 
-    Counters counters() {
+    public Counters counters() {
         ReportRows.Overview o = reports.overview(EVERYTHING);
         return new Counters(o.total(), o.open(), o.critical(), o.resolved(), o.slaViolations());
     }
 
     /** Open incidents per priority (decision DEC-81): P1 to P4 always, UNSET only when some have no priority. */
-    List<LabelCount> openByPriority() {
+    public List<LabelCount> openByPriority() {
         Map<String, Long> counts = new LinkedHashMap<>();
         for (Priority p : Priority.values()) {
             counts.put(p.name(), 0L);

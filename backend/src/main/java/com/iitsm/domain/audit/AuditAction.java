@@ -26,5 +26,10 @@ public enum AuditAction {
     USER_ROLE_CHANGED,
     CONFIG_CHANGED,
     // M14 (session C): a file attached to an incident
-    ATTACHMENT_ADDED
+    ATTACHMENT_ADDED,
+    // A12: password reset and two-step verification
+    PASSWORD_RESET_REQUESTED,
+    PASSWORD_CHANGED,
+    MFA_ENABLED,
+    MFA_DISABLED
 }

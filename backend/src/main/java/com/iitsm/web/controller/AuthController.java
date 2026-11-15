@@ -12,10 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.iitsm.application.auth.AuthService;
 import com.iitsm.application.auth.AuthenticatedUser;
 import com.iitsm.application.auth.GoogleSignInService;
+import com.iitsm.application.auth.MfaService;
+import com.iitsm.application.auth.PasswordResetService;
 import com.iitsm.web.dto.auth.AuthResponse;
 import com.iitsm.web.dto.auth.CurrentUserResponse;
 import com.iitsm.web.dto.auth.GoogleLoginRequest;
 import com.iitsm.web.dto.auth.LoginRequest;
+import com.iitsm.web.dto.auth.MfaCodeRequest;
+import com.iitsm.web.dto.auth.MfaStatusResponse;
+import com.iitsm.web.dto.auth.PasswordResetConfirmRequest;
+import com.iitsm.web.dto.auth.PasswordResetRequest;
 import com.iitsm.web.dto.auth.RefreshTokenRequest;
 import com.iitsm.web.dto.auth.RegisterRequest;
 import com.iitsm.web.openapi.ApiErrors;
@@ -34,10 +40,15 @@ public class AuthController {
 
     private final AuthService authService;
     private final GoogleSignInService googleSignIn;
+    private final PasswordResetService passwordReset;
+    private final MfaService mfa;
 
-    public AuthController(AuthService authService, GoogleSignInService googleSignIn) {
+    public AuthController(AuthService authService, GoogleSignInService googleSignIn,
+                          PasswordResetService passwordReset, MfaService mfa) {
         this.authService = authService;
         this.googleSignIn = googleSignIn;
+        this.passwordReset = passwordReset;
+        this.mfa = mfa;
     }
 
     @PostMapping("/register")
@@ -52,9 +63,9 @@ public class AuthController {
     @PostMapping("/login")
     @SecurityRequirements
     @Operation(summary = "Log in with email and password")
-    @ApiErrors({ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
+    @ApiErrors({ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED, ErrorCode.MFA_REQUIRED, ErrorCode.INVALID_MFA_CODE})
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return AuthResponse.from(authService.login(request.email(), request.password()));
+        return AuthResponse.from(authService.login(request.email(), request.password(), request.totp()));
     }
 
     @PostMapping("/google")
@@ -64,6 +75,48 @@ public class AuthController {
     @ApiErrors({ErrorCode.TOKEN_INVALID, ErrorCode.INVALID_CREDENTIALS, ErrorCode.ACCOUNT_LOCKED})
     public AuthResponse google(@Valid @RequestBody GoogleLoginRequest request) {
         return AuthResponse.from(googleSignIn.signIn(request.idToken()));
+    }
+
+    @PostMapping("/password-reset/request")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @SecurityRequirements // public: the person cannot log in
+    @Operation(summary = "Ask for a password reset link by e-mail. Always 202, whether or not the e-mail has an account")
+    public void requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        passwordReset.request(request.email());
+    }
+
+    @PostMapping("/password-reset/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @SecurityRequirements
+    @Operation(summary = "Choose a new password with the secret from the mailed link (single use; signs out every session)")
+    public void confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        passwordReset.confirm(request.token(), request.newPassword());
+    }
+
+    @GetMapping("/mfa")
+    @Operation(summary = "Whether two-step verification is turned on for me")
+    public MfaStatusResponse mfaStatus(@AuthenticationPrincipal AuthenticatedUser caller) {
+        return new MfaStatusResponse(mfa.isEnabled(caller.id()));
+    }
+
+    @PostMapping("/mfa/setup")
+    @Operation(summary = "Start two-step verification: a new secret and the otpauth address for a QR code (not active until enabled)")
+    public MfaService.MfaSetup mfaSetup(@AuthenticationPrincipal AuthenticatedUser caller) {
+        return mfa.setup(caller.id());
+    }
+
+    @PostMapping("/mfa/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Turn two-step verification on by typing one code from the app")
+    public void mfaEnable(@AuthenticationPrincipal AuthenticatedUser caller, @Valid @RequestBody MfaCodeRequest request) {
+        mfa.enable(caller.id(), request.code());
+    }
+
+    @PostMapping("/mfa/disable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Turn two-step verification off; needs a current code")
+    public void mfaDisable(@AuthenticationPrincipal AuthenticatedUser caller, @Valid @RequestBody MfaCodeRequest request) {
+        mfa.disable(caller.id(), request.code());
     }
 
     @PostMapping("/refresh")

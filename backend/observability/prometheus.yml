@@ -1,0 +1,15 @@
+# Prometheus for I-ITSM (A8, DEC-115). Scrapes the backend every 15 seconds.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: iitsm-backend
+    metrics_path: /actuator/prometheus
+    # The backend answers only to this bearer token (env METRICS_TOKEN on the backend). The file is written by
+    # `echo -n "$METRICS_TOKEN" > backend/observability/metrics_token` and is git-ignored.
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics_token
+    static_configs:
+      - targets: ["backend:8080"]

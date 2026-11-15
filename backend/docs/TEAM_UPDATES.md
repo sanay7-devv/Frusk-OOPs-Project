@@ -2,7 +2,7 @@
 
 > **Read this first.** The five handbook PDFs (dated 2026-10-15) are frozen and are not in this repository. This page lists every point where the project now differs from them, per role. Where this page and a handbook disagree, this page wins. Reasons are in `DECISIONS.md` (DEC numbers); the order of work is in `ROADMAP.md` section 5.
 
-Last updated: 2026-11-14 (M9, M10, M11, M12 core)
+Last updated: 2026-11-15 (S1 simulator, `minEscalationLevel`, A7 review, A12 password reset and TOTP, A4 push, A8 metrics, A13; 129 operations)
 
 ---
 
@@ -13,17 +13,17 @@ Last updated: 2026-11-14 (M9, M10, M11, M12 core)
 | Spring Boot | 3.x | **4.1.1** (Spring Security 7, Hibernate 7, Jackson 3) | DEC-02: 3.5 is out of free support with unpatched CVEs |
 | Repository | `iitsm/` with the Spring project at the root and `db/`, `deploy/`, `docs/` folders | `sanay7-devv/Frusk-OOPs-Project` with `backend/` and `frontend/`; backend docs in `backend/docs/`. `db/`, `deploy/` and `.github/workflows/` do not exist yet | DEC-41 |
 | Scope | Tiers 1 to 3, a cut order, a week-by-week plan and freeze dates | Everything is built, including the "Tier 3" extras; work follows module dependencies | DEC-35 |
-| API contract | Hand-edited OpenAPI file, changed first by pull request | Generated from the running code; unbuilt endpoints are listed under the tag **Planned**. Files: `backend/docs/openapi/iitsm-api.yaml` and `.json`. Today 117 operations, all built, none planned (plus the demo-profile-only clock and outage-drill endpoints, not in the export) | DEC-36 |
+| API contract | Hand-edited OpenAPI file, changed first by pull request | Generated from the running code; unbuilt endpoints are listed under the tag **Planned**. Files: `backend/docs/openapi/iitsm-api.yaml` and `.json`. Today 129 operations, all built, none planned (plus the demo-profile-only clock and outage-drill endpoints, not in the export) | DEC-36 |
 | Assignment weights | Skill 0.40, load 0.30, experience 0.20, priority fit 0.10 | Five factors: skill 0.35, load 0.25, experience 0.15, priority fit 0.10, **service familiarity 0.15** | DEC-28 |
 | Skill score | "Best skill proficiency match" | 70% best proficiency + 30% share of required skills held | DEC-29 |
 | Team lead visibility | "Team lead sees their team" | Team leads see all incidents (the schema has no team) | DEC-26 |
 | SLA calendars | Listed as a Tier 3 extra | Built: a policy is ALWAYS or BUSINESS_HOURS; one company calendar in `app_config` (`sla.business.*`) | DEC-39 |
-| Settings | 27 keys in Appendix A.5 | 76 keys (35, plus six `notification.*` with M9, six report and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with the M12 core, six with the rest of M12, two with M13, four with M14, one with M2b); defaults live in the code, so seed rows are optional | DEC-18 |
+| Settings | 27 keys in Appendix A.5 | 78 keys, two of them new on 2026-11-15 (`auth.password.reset.minutes`, `notification.push.devices.max`); the first 76 were (35, plus six `notification.*` with M9, six report and coverage keys with M10, two escalation keys with M11, 14 intelligence keys with the M12 core, six with the rest of M12, two with M13, four with M14, one with M2b); defaults live in the code, so seed rows are optional | DEC-18 |
 | Demo | Docker Compose | Unchanged: the recorded demo runs locally with Docker Compose. Cloud deployment is the last priority | DEC-45 |
 | Grading | Summary table in section 1.2 | Use the rubric in the course brief; our plan against it is `ROADMAP.md` section 8 | DEC-43 |
 
 **Built so far (backend):** every module M1 to M14 and M2b: users and login (also with Google), catalog and live settings, incidents with the full lifecycle (withdraw included), priority, five assignment strategies with explainable recommendations, SLA monitor, audit trail with tamper-evident seals, notifications, search and reports, escalation, intelligence (suggestions, duplicates, problem records, Major Incident Mode, chatbot intake), live dashboard, service graph and status board, attachments, rate limits.
-**Not built yet:** the S1 Service Desk Simulator, the A7 load test and the last-priority items (mobile push, Grafana, password reset and TOTP, cloud deployment). Every endpoint of the agreed contract exists now.
+**Not built yet:** nothing from the agreed list except the frontend screens; cloud deployment was decided against (DEC-118). Built on 2026-11-15, besides the simulator: password reset and TOTP (A12), simulated mobile push (A4), Prometheus and Grafana (A8), the traceability matrix (A13). The S1 Service Desk Simulator was built on 2026-11-15 (see the section at the end of this page). The A7 load test with numbers is the Testing teammate's half; the index review and scale-out path are in `backend/docs/SCALING.md`. Every endpoint of the agreed contract exists now (119 operations).
 
 
 ### New features accepted on 2026-11-13 (built since: coverage risk, post-incident report, chat webhook, priority what-if, escalation preview, demo clock)
@@ -249,3 +249,67 @@ New and changed endpoints; reasons: `DECISIONS.md` DEC-70 to DEC-78; description
 - **Everyone:** the backend's LLM is now **Google Gemini** by default (`LLM_PROVIDER=gemini`, model `gemini-3.5-flash-lite`). Put a Gemini API key from Google AI Studio in `backend/.env` as `LLM_API_KEY=...` (or `GEMINI_API_KEY=...`); never commit it. With no key everything still works through the keyword engine, and `source` says `KEYWORD`.
 - **Frontend:** nothing changes: the `/intelligence/*` answers keep their shape; `source` is `LLM` when Gemini answered.
 - **Report:** the AI integration is "Google Gemini API through an Adapter (`GeminiLlmClient`) behind the `LlmClient` port; Anthropic and an offline scripted client are other adapters of the same port". Privacy rules are unchanged (only redacted title, description and category names are sent).
+
+---
+
+## S1 Service Desk Simulator, escalation filter and A7 review (2026-11-15, DEC-112 to DEC-114)
+
+The contract now has **119 operations** (two added). Reasons and details: `DECISIONS.md` DEC-112 to DEC-114; description and verified behavior: `SYSTEM_GUIDE.md` section 12i; the scale-out review: `SCALING.md`.
+
+**Frontend**
+- **New screen: Service Desk Simulator** (administrators, one screen, one chart). Two endpoints, both need `CONFIG_MANAGE`:
+  - `POST /api/v1/admin/simulations` with `{lastIncidents (10 to 500, default 100), speedUp (1 to 20, default 1), configurations: [{name, strategy, weights {skill, load, experience, priorityFit, familiarity}, technicians}]}`. At most three configurations; anything left out keeps the live value; none means "current settings". Strategy names are `COMPOSITE`, `SKILL`, `LOAD`, `ROUND_ROBIN`, `EXPERIENCE_PRIORITY`. The weights must add up to 1.0 or the answer is 400 with `fieldErrors`.
+  - Answer: `{workload {incidents, from, to, speedUp, excluded}, assumptions [text], results [{name, strategy, weights, technicians, incidents, slaViolations, slaViolationPercent, unassigned, meanResolveMinutes, p90ResolveMinutes, meanWaitMinutes, fairness (0 to 1), matchesRealAssigneePercent, perTechnician [{technicianId, name, assigned, busyMinutes, utilizationPercent}]}], best, bestReason}`.
+  - Suggested screen: the incident count and a "storm" slider (`speedUp`) on top; up to three configuration cards (strategy dropdown, five weight sliders that must total 100%, optional technician count); a **Run** button; one grouped bar chart comparing the configurations (SLA violation percent first, then mean resolve time, then fairness); the `best` one highlighted; the `assumptions` text shown in a "How this is modelled" panel next to the chart (the report relies on it); a per-technician bar chart for the selected configuration.
+  - `POST /api/v1/admin/simulations/apply` with one configuration (`{strategy, weights}`) answers 204 and changes the live settings: the **Apply** button on the best card. Ask for a confirmation first.
+  - It writes nothing when simulating (no incidents, audit entries or notifications), so it is safe to run repeatedly in the video.
+- **Incident list filter:** `GET /incidents?minEscalationLevel=` (0 to 3, level and above) for the team-lead escalations screen. Combine it with `status` to list only open work. 400 outside 0 to 3. Triage escalation starts at level 0, so a triage incident that has not climbed yet is level 0.
+- **Gemini:** the AI answers (`/intelligence/*`) are now verified against the real service with the team's key: `source` is `LLM` when Gemini answered. Nothing changes in the shapes.
+
+**Testing and DevOps**
+- **No schema change.** Class names and expected values for unit tests (all plain Java, no Spring):
+  - `ServiceTimeModel` (`com.iitsm.domain.simulation`): `fromHistory` takes the median per priority of acknowledged-to-resolved minutes (resolved minus created when nobody acknowledged); an even count averages the two middle values (10, 20, 30, 40 gives 25; 10, 30, 20 gives 20); a priority with no history uses 45, 90, 180, 240 minutes for P1 to P4. `handlingTime(priority, level)` is the base times `1.3 - 0.1 * level`: with a base of 180 minutes level 1 gives 216, level 3 gives 180, level 5 gives 144; never less than one minute.
+  - `DeskSimulation.run(workload, workers, scenario)` with a fixed list of incidents and technicians: the same inputs always give the same result; with one technician and two incidents arriving together the higher priority is served first; an incident finishing after `arrival + allowed` counts as a violation; with no eligible technician the incident stays unassigned and counts as a violation; fairness for assigned counts 3, 3, 3 is 1.0 and for 6, 0, 0 is 0.33 (Jain's index).
+  - `SimulatorService.simulate` (needs a database): fewer than 10 or more than 500 incidents, more than three configurations, an unknown strategy, an unknown weight name, weights not adding to 1.0 and a speed-up outside 1 to 20 are all 400; the round-robin memory (`technician_profiles.last_assigned_at`), `audit_records`, `incidents` and `app_config` are identical before and after.
+  - `GET /incidents?minEscalationLevel=`: level 0 returns everything; 1 returns only incidents at level 1 or above (set `escalation_level` in the fixture); an employee still sees only their own; 4 and -1 are 400.
+- Smoke script on the backend lead's machine: `s1_smoke.py` (50 checks; needs the dev profile with the Flyway seed, `SMOKE_PORT`, `SMOKE_DB`).
+- **A7 review for the migration you owe (V11; V10 is taken by A12 and A4):** `backend/docs/SCALING.md` section 2.2 lists seven indexes with their SQL (the audit `created_at`, `incidents.resolved_at`, the open-incident and escalation partial indexes, the composite for duplicates, an optional trigram index, and the partial unique index for the global SLA default, DEC-17). Section 5 says what the load test should measure.
+
+**Report and content**
+- **Demo segment (administrator, 13:00 on the run sheet):** open the simulator, pick three configurations, press Run, read the chart, press Apply on the winner. A strong line for the report: "the simulator replays real incidents through the same assignment engine that runs live; it writes nothing". Patterns to cite: Strategy (configurations side by side through one engine), a priority queue of timed events (data structure), an immutable settings snapshot (`AppSettings`).
+- Honest limits to state: it is a model (one incident at a time per technician, handling times from history, no multitasking); on the seed data the "matches the real assignee" figure is a diagnostic only, because the seed's assignments were generated.
+- The scale-out path (`SCALING.md`) answers "is it scalable?": which components assume one instance, and what replaces each.
+
+---
+
+## A12, A4, A8 and A13 (2026-11-15, DEC-115 to DEC-118)
+
+The contract now has **129 operations** (ten added since the simulator). Reasons: `DECISIONS.md` DEC-115 to DEC-118; description and verified behavior: `SYSTEM_GUIDE.md` sections 12j and 12k; requirement mapping: `backend/docs/TRACEABILITY.md`.
+
+**Frontend**
+- **Two-step login.** `POST /auth/login` takes an optional `totp` (six digits). When an account has two-step verification on, a right password without it answers **401 `MFA_REQUIRED`**: show a "Enter the code from your authenticator app" field and send the same login again with `totp`. A wrong, expired or reused code is **401 `INVALID_MFA_CODE`** (and counts toward the five-failure lockout, 423). Google sign-in is not asked for a code.
+- **Forgot password screen** (public). Email form: `POST /auth/password-reset/request {email}` always answers 202 with an empty body; show "If that address has an account, we have sent a link" whatever the e-mail. The mailed link opens `<frontend>/reset-password?token=<secret>` (the base is the setting `notification.link.base.url`): a new-password form calling `POST /auth/password-reset/confirm {token, newPassword}`. 204 means done (every session was signed out, send them to login); **400 with `fieldErrors`** on `newPassword` (policy) or on `token` (invalid, used or expired: offer to ask for a new link). Asking is rate-limited (429 with `Retry-After`).
+- **Account security screen** (any logged-in user): `GET /auth/mfa` gives `{enabled}`. To turn it on: `POST /auth/mfa/setup` gives `{secret, otpauthUri}`; draw `otpauthUri` as a QR code (any QR library) and also show `secret` as text; then `POST /auth/mfa/enable {code}` (204) with the first code the app shows. To turn it off: `POST /auth/mfa/disable {code}`. 400 `fieldErrors` on `code` means wrong or expired. Setup is refused (400) while it is already on.
+- **Administrator, users screen:** a "Reset two-step verification" action calling `POST /admin/users/{id}/mfa/reset` (204) for someone who lost their phone.
+- **Push devices.** `POST /notifications/devices {token, platform WEB|ANDROID|IOS}` (201 new, 200 when the same device registers again), `GET /notifications/devices`, `DELETE /notifications/devices/{id}`. No push provider is connected: the "push" is simulated, so register any string of 8 to 255 characters in the demo; what was pushed is listed by `GET /notifications?channel=PUSH_SIM` (a good small screen: "Pushed to my devices"). The preference list is unchanged (60 switches): push is not a per-user switch.
+- **Incident list filter** `minEscalationLevel` and the simulator endpoints are in the section above.
+
+**Testing and DevOps**
+- **Migration V10 is already in the repository** (`V10__password_reset_mfa_push.sql`): `users.totp_secret`, `totp_enabled`, `totp_last_step`; tables `password_reset_tokens` and `push_devices`; the audit action CHECK now allows `PASSWORD_RESET_REQUESTED`, `PASSWORD_CHANGED`, `MFA_ENABLED`, `MFA_DISABLED`; the notifications channel CHECK allows `PUSH_SIM`. Your index migration is therefore **V11**. If a seed or test builds users with SQL, the three new `users` columns have defaults.
+- New settings (defaults in code): `auth.password.reset.minutes` 30 (5 to 1440), `notification.push.devices.max` 5 (1 to 20).
+- **Docker Compose:** pass `METRICS_TOKEN` (any 16 or more characters) to the backend only if you want the metrics endpoint; without it `/actuator/prometheus` is 404. The same compose file still does not pass `GOOGLE_CLIENT_ID`/`VITE_GOOGLE_CLIENT_ID`. The ready-made Prometheus and Grafana stack is in `backend/observability` (a compose override, `README.md` inside).
+- Class names and expected values for unit tests (plain Java unless noted):
+  - `Totp` (`com.iitsm.domain.user`): the RFC 6238 SHA-1 vectors with the secret `GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ` (the ASCII text 12345678901234567890): step 1 (time 59) gives `287082`; time 1111111109 gives `081804`; time 1111111111 gives `050471`; time 1234567890 gives `005924`; time 2000000000 gives `279037`; time 20000000000 gives `353130` (the last six digits of the RFC's eight-digit values). `verify` accepts the current step and one either side, refuses two steps away, refuses a step less than or equal to `lastAcceptedStep`, and refuses `12ab56` and a five-digit code. `newSecret` is 32 Base32 characters.
+  - `PasswordResetService` (`com.iitsm.application.auth`, needs a database): an unknown e-mail stores nothing and sends nothing; a known one stores one token with a 64-character hash and sends one mail; asking twice leaves one usable token; `confirm` with a used, expired, wrong or empty secret is `InputValidationException` on `token`; a weak password is `InputValidationException` on `newPassword` and leaves the link usable; success changes the hash, marks the link used and revokes every refresh token.
+  - `MfaService`: `setup` twice while enabled is refused; `enable` with a wrong code is refused; `disable` needs a code of a later step than the one used to enable.
+  - `AuthService.login` with MFA on: no code gives `MfaRequiredException`; a wrong code gives `InvalidMfaCodeException` and one failed login is counted; the fifth wrong code locks the account (`AccountLockedException`).
+  - `NotificationRules.pushApplies` (`com.iitsm.domain.notification`): P1 and P2 with INCIDENT_ASSIGNED, TRIAGE_NEEDED, SLA_WARNING, SLA_VIOLATED or INCIDENT_ESCALATED are true; P3 and P4 with those are false; INFO_REQUESTED and INCIDENT_RESOLVED are true at any priority; the chat room (`Audience.ROOM`) is always false.
+  - `PushDeviceService`: a sixth device is refused at the default limit; registering a token that exists moves it and answers `created = false`; `remove` of someone else's device is `ResourceNotFoundException`.
+  - `MetricsTokenFilter` (`com.iitsm.web.filter`): a token shorter than 16 characters or none means 404 on `/actuator/prometheus`; a wrong token is 401; the right token passes; other paths are untouched.
+- Smoke script on the backend lead's machine: `a12_a4_smoke.py` (72 checks; needs the dev profile with the Flyway seed and Mailpit on 8025). `s1_smoke.py` is now 51 checks.
+
+**Report and content**
+- Security section: password reset (single-use hashed links, no way to find out who has an account, all sessions signed out), TOTP two-step verification (RFC 6238, replay protection, wrong codes count toward the lockout, administrator reset), the token-guarded metrics endpoint. Honest limits: the TOTP secret is stored as text, there are no recovery codes, no role is forced to use two-step.
+- Patterns to cite: Adapter (`PasswordResetNotifier` with `PasswordResetMailer`; `PushGateway` with `SimulatedPushGateway`), Observer (`BusinessMetrics` on the domain events), Strategy-style ports. Mobile push is **simulated**: say so.
+- `TRACEABILITY.md` maps every requirement of the brief to its class, endpoint, screen and test; paste from it for the requirements document and the testing section.
+- Cloud deployment and microservices were decided against (DEC-118); the answer to "how would it evolve" is `SCALING.md`.

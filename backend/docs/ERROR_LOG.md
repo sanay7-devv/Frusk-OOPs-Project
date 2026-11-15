@@ -452,3 +452,13 @@ Entry template:
 - Verified (each on a fresh database): auth 27/27, m3 42/42, m4 54/54, m6 33/33, m7 35/35, m8 24/24, calendar 11/11, m9 72/72, m10 135/135, m11 78/78, `e034_check.py` 12/12, m12 55/55, m12b 107/107, outage drill 9/9 (demo profile), m13 72/72 (1-minute tokens), m14 81/81 (incl. the database-outage 503), m2b 32/32; `endpoint_sweep.py` 119/119 with coverage 117/117; `check_contract.py` clean (117 operations, 0 planned).
 - Prevention: Testing teammate: test and seed passwords must not contain the user's name or e-mail part; suites that count anything need their own database; when two modules share an audit action, check what the notification mapping makes of each use.
 - Status: fixed
+
+### E-036: Service Desk Simulator starved technicians in round robin when real assignments existed
+- Date: 2026-11-15
+- Area: simulator (S1)
+- Symptom: `s1_smoke.py` failed "round robin spreads work at least as evenly as composite" on a database where the earlier A12/A4 suite had created real assignments (fairness 0.36 against 0.48). The per-technician view showed round robin giving 62, 53 and 35 incidents to three technicians and none to four others who were available.
+- Cause: the replay started from each technician's real `last_assigned_at` (set today) and then moved it with simulated times that lie weeks in the past. Round robin serves the technician whose last assignment is oldest, so everyone with a recent real assignment looked "just served" for the whole replay and was skipped. On the clean seed every value was empty, which hid it.
+- Fix: every scenario now starts with an empty rotation (`SimulatorService`), and the real values are restored after each scenario as before. `s1_smoke.py` gained a check that the round-robin result is identical whatever the real rotation memory is (it sets three technicians' memory, simulates, and restores the original values).
+- Verified: `s1_smoke.py` 51/51 on the dirtied database; the "leaves round-robin memory unchanged" check still passes.
+- Prevention: a simulation must not inherit state that was written at a different point in time; test it on a database that has real activity, not only on the seed.
+- Status: fixed

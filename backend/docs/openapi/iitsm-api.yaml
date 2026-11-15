@@ -1616,6 +1616,193 @@ paths:
       summary: "Replace the services this one depends on (no self-reference, no cycles)"
       tags:
       - "Admin: catalog"
+  /api/v1/admin/simulations:
+    post:
+      operationId: simulate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: "Replay recent incidents in memory under up to three configurations\
+        \ and compare the results. Writes nothing: no incidents, audit entries or\
+        \ notifications are created"
+      tags:
+      - "Admin: service desk simulator"
+  /api/v1/admin/simulations/apply:
+    post:
+      operationId: apply
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Apply a configuration's strategy and weights to the live settings (audited
+        as CONFIG_CHANGED)
+      tags:
+      - "Admin: service desk simulator"
   /api/v1/admin/skills:
     get:
       operationId: skills
@@ -3121,6 +3308,97 @@ paths:
             \ down; try again shortly (M14, DEC-42)"
       tags:
       - "Admin: users and technicians"
+  /api/v1/admin/users/{id}/mfa/reset:
+    post:
+      operationId: reset
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "403":
+          content:
+            application/json:
+              example:
+                code: UNAUTHORIZED_OPERATION
+                fieldErrors: []
+                message: "Role, permission or relation to the resource does not allow\
+                  \ this."
+                path: /api/v1/...
+                status: 403
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `UNAUTHORIZED_OPERATION`: Role, permission or relation to\
+            \ the resource does not allow this"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Turn off a user's two-step verification (lost phone); audited as MFA_DISABLED
+      tags:
+      - "Admin: users"
   /api/v1/admin/users/{id}/roles:
     post:
       operationId: addRole
@@ -3512,6 +3790,10 @@ paths:
           - USER_ROLE_CHANGED
           - CONFIG_CHANGED
           - ATTACHMENT_ADDED
+          - PASSWORD_RESET_REQUESTED
+          - PASSWORD_CHANGED
+          - MFA_ENABLED
+          - MFA_DISABLED
       - in: query
         name: from
         required: false
@@ -3911,8 +4193,10 @@ paths:
                 timestamp: 2026-11-06T09:21:00Z
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-          description: "- `INVALID_CREDENTIALS`: Wrong email or password (never says\
-            \ which)"
+          description: |-
+            - `INVALID_CREDENTIALS`: Wrong email or password (never says which)
+            - `MFA_REQUIRED`: Right password, but a code from the authenticator app is needed; log in again with the totp field
+            - `INVALID_MFA_CODE`: Right password, but the verification code is wrong, expired or already used
         "423":
           content:
             application/json:
@@ -4104,6 +4388,397 @@ paths:
           description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
             \ down; try again shortly (M14, DEC-42)"
       summary: The logged-in user with roles and permissions
+      tags:
+      - Auth
+  /api/v1/auth/mfa:
+    get:
+      operationId: mfaStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaStatusResponse"
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Whether two-step verification is turned on for me
+      tags:
+      - Auth
+  /api/v1/auth/mfa/disable:
+    post:
+      operationId: mfaDisable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaCodeRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Turn two-step verification off; needs a current code
+      tags:
+      - Auth
+  /api/v1/auth/mfa/enable:
+    post:
+      operationId: mfaEnable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaCodeRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Turn two-step verification on by typing one code from the app
+      tags:
+      - Auth
+  /api/v1/auth/mfa/setup:
+    post:
+      operationId: mfaSetup
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaSetup"
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: "Start two-step verification: a new secret and the otpauth address\
+        \ for a QR code (not active until enabled)"
+      tags:
+      - Auth
+  /api/v1/auth/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetConfirmRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      security: []
+      summary: Choose a new password with the secret from the mailed link (single
+        use; signs out every session)
+      tags:
+      - Auth
+  /api/v1/auth/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      security: []
+      summary: "Ask for a password reset link by e-mail. Always 202, whether or not\
+        \ the e-mail has an account"
       tags:
       - Auth
   /api/v1/auth/refresh:
@@ -4465,6 +5140,14 @@ paths:
           - VIOLATED
           - PAUSED
           - MET
+      - in: query
+        name: minEscalationLevel
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 3
+          minimum: 0
       - in: query
         name: createdFrom
         required: false
@@ -8717,6 +9400,7 @@ paths:
           - EMAIL
           - WEBSOCKET
           - SMS_SIM
+          - PUSH_SIM
           - CHAT
       - in: query
         name: page
@@ -8804,6 +9488,236 @@ paths:
             \ down; try again shortly (M14, DEC-42)"
       summary: "My notifications, newest first (the inbox unless channel=SMS_SIM is\
         \ asked for)"
+      tags:
+      - Notifications
+  /api/v1/notifications/devices:
+    get:
+      operationId: devices
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeviceView"
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: My registered push devices (the token is shown only as its last six
+        characters)
+      tags:
+      - Notifications
+    post:
+      operationId: registerDevice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDeviceRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceView"
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: "Register a device for push notifications: 201 for a new one, 200 when\
+        \ it was already registered"
+      tags:
+      - Notifications
+  /api/v1/notifications/devices/{id}:
+    delete:
+      operationId: removeDevice
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              example:
+                code: VALIDATION_FAILED
+                fieldErrors:
+                - field: impact
+                  message: must be between 1 and 5
+                message: Invalid input; see fieldErrors.
+                path: /api/v1/...
+                status: 400
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `VALIDATION_FAILED`: Invalid input; see fieldErrors"
+        "401":
+          content:
+            application/json:
+              example:
+                code: TOKEN_EXPIRED
+                fieldErrors: []
+                message: Access token expired; refresh or log in again.
+                path: /api/v1/...
+                status: 401
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: |-
+            - `TOKEN_EXPIRED`: Access token expired; refresh or log in again
+            - `TOKEN_INVALID`: Missing, malformed, forged or revoked token; log in again
+        "404":
+          content:
+            application/json:
+              example:
+                code: NOT_FOUND
+                fieldErrors: []
+                message: "No such resource (category, skill, policy) or path."
+                path: /api/v1/...
+                status: 404
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `NOT_FOUND`: No such resource (category, skill, policy)\
+            \ or path"
+        "500":
+          content:
+            application/json:
+              example:
+                code: INTERNAL_ERROR
+                fieldErrors: []
+                message: "Unexpected failure; no details exposed, quote the request\
+                  \ ID."
+                path: /api/v1/...
+                status: 500
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `INTERNAL_ERROR`: Unexpected failure; no details exposed,\
+            \ quote the request ID"
+        "503":
+          content:
+            application/json:
+              example:
+                code: SERVICE_UNAVAILABLE
+                fieldErrors: []
+                message: "The database or the AI service is down; try again shortly\
+                  \ (M14, DEC-42)."
+                path: /api/v1/...
+                status: 503
+                timestamp: 2026-11-06T09:21:00Z
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: "- `SERVICE_UNAVAILABLE`: The database or the AI service is\
+            \ down; try again shortly (M14, DEC-42)"
+      summary: Stop pushing to one of my devices
       tags:
       - Notifications
   /api/v1/notifications/preferences:
@@ -12358,6 +13272,10 @@ components:
           - USER_ROLE_CHANGED
           - CONFIG_CHANGED
           - ATTACHMENT_ADDED
+          - PASSWORD_RESET_REQUESTED
+          - PASSWORD_CHANGED
+          - MFA_ENABLED
+          - MFA_DISABLED
         actor:
           $ref: "#/components/schemas/Ref"
         description:
@@ -12584,6 +13502,69 @@ components:
       required:
       - key
       - value
+    ConfigurationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 60
+          minLength: 0
+        strategy:
+          type: string
+          maxLength: 30
+          minLength: 0
+        technicians:
+          type: integer
+          format: int32
+          maximum: 50
+          minimum: 1
+        weights:
+          $ref: "#/components/schemas/WeightsRequest"
+    ConfigurationView:
+      type: object
+      properties:
+        fairness:
+          type: number
+          format: double
+        incidents:
+          type: integer
+          format: int32
+        matchesRealAssigneePercent:
+          type: number
+          format: double
+        meanResolveMinutes:
+          type: number
+          format: double
+        meanWaitMinutes:
+          type: number
+          format: double
+        name:
+          type: string
+        p90ResolveMinutes:
+          type: number
+          format: double
+        perTechnician:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkerResult"
+        slaViolationPercent:
+          type: number
+          format: double
+        slaViolations:
+          type: integer
+          format: int32
+        strategy:
+          type: string
+        technicians:
+          type: integer
+          format: int32
+        unassigned:
+          type: integer
+          format: int32
+        weights:
+          type: object
+          additionalProperties:
+            type: string
     Counters:
       type: object
       properties:
@@ -12889,31 +13870,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DashboardEvent"
-    Deadline:
-      type: object
-      properties:
-        code:
-          type: string
-        due:
-          type: string
-          format: date-time
-        incidentId:
-          type: integer
-          format: int64
-        slaState:
-          type: string
-          enum:
-          - OK
-          - WARNING
-          - AT_RISK
-          - VIOLATED
-          - PAUSED
-          - MET
-        type:
-          type: string
-          enum:
-          - RESPONSE
-          - RESOLUTION
     DependenciesRequest:
       type: object
       properties:
@@ -12926,6 +13882,22 @@ components:
           minItems: 0
       required:
       - dependencyIds
+    DeviceView:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: integer
+          format: int64
+        lastSeenAt:
+          type: string
+          format: date-time
+        platform:
+          type: string
+        tokenHint:
+          type: string
     Draft:
       type: object
       properties:
@@ -13424,6 +14396,10 @@ components:
           type: string
           maxLength: 200
           minLength: 0
+        totp:
+          type: string
+          maxLength: 10
+          minLength: 0
       required:
       - email
       - password
@@ -13435,6 +14411,27 @@ components:
           format: int64
       required:
       - duplicateOfId
+    MfaCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          pattern: "\\d{6}"
+      required:
+      - code
+    MfaSetup:
+      type: object
+      properties:
+        otpauthUri:
+          type: string
+        secret:
+          type: string
+    MfaStatusResponse:
+      type: object
+      properties:
+        enabled:
+          type: boolean
     NotificationView:
       type: object
       properties:
@@ -13445,6 +14442,7 @@ components:
           - EMAIL
           - WEBSOCKET
           - SMS_SIM
+          - PUSH_SIM
           - CHAT
         createdAt:
           type: string
@@ -13598,6 +14596,29 @@ components:
         totalPages:
           type: integer
           format: int32
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        newPassword:
+          type: string
+          maxLength: 200
+          minLength: 0
+        token:
+          type: string
+          maxLength: 200
+          minLength: 0
+      required:
+      - newPassword
+      - token
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 150
+          minLength: 0
+      required:
+      - email
     PersonInvolved:
       type: object
       properties:
@@ -13693,6 +14714,7 @@ components:
           - EMAIL
           - WEBSOCKET
           - SMS_SIM
+          - PUSH_SIM
           - CHAT
         enabled:
           type: boolean
@@ -13728,6 +14750,7 @@ components:
           - EMAIL
           - WEBSOCKET
           - SMS_SIM
+          - PUSH_SIM
           - CHAT
         enabled:
           type: boolean
@@ -13982,6 +15005,22 @@ components:
           minLength: 0
       required:
       - refreshToken
+    RegisterDeviceRequest:
+      type: object
+      properties:
+        platform:
+          type: string
+          enum:
+          - WEB
+          - ANDROID
+          - IOS
+        token:
+          type: string
+          maxLength: 255
+          minLength: 8
+      required:
+      - platform
+      - token
     RegisterRequest:
       type: object
       properties:
@@ -14463,6 +15502,42 @@ components:
       - description
       - serviceId
       - title
+    SimulationRequest:
+      type: object
+      properties:
+        configurations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigurationRequest"
+          maxItems: 3
+          minItems: 0
+        lastIncidents:
+          type: integer
+          format: int32
+          maximum: 500
+          minimum: 10
+        speedUp:
+          type: number
+          format: double
+          maximum: 20
+          minimum: 1
+    SimulationView:
+      type: object
+      properties:
+        assumptions:
+          type: array
+          items:
+            type: string
+        best:
+          type: string
+        bestReason:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigurationView"
+        workload:
+          $ref: "#/components/schemas/WorkloadView"
     SkillCoverage:
       type: object
       properties:
@@ -15030,6 +16105,34 @@ components:
         unsealedRecords:
           type: integer
           format: int64
+    WeightsRequest:
+      type: object
+      properties:
+        experience:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        familiarity:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        load:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        priorityFit:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
+        skill:
+          type: number
+          format: double
+          maximum: 1
+          minimum: 0
     WhatIfView:
       type: object
       properties:
@@ -15050,6 +16153,23 @@ components:
           $ref: "#/components/schemas/Ref"
         whatIf:
           $ref: "#/components/schemas/Scenario"
+    WorkerResult:
+      type: object
+      properties:
+        assigned:
+          type: integer
+          format: int32
+        busyMinutes:
+          type: number
+          format: double
+        name:
+          type: string
+        technicianId:
+          type: integer
+          format: int64
+        utilizationPercent:
+          type: number
+          format: double
     WorkloadReportRow:
       type: object
       properties:
@@ -15073,22 +16193,23 @@ components:
     WorkloadView:
       type: object
       properties:
-        activeIncidents:
+        excluded:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        from:
+          type: string
+          format: date-time
+        incidents:
           type: integer
           format: int32
-        load:
-          type: integer
-          format: int32
-        maxLoad:
-          type: integer
-          format: int32
-        resolvedThisWeek:
-          type: integer
-          format: int64
-        upcomingDeadlines:
-          type: array
-          items:
-            $ref: "#/components/schemas/Deadline"
+        speedUp:
+          type: number
+          format: double
+        to:
+          type: string
+          format: date-time
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT

@@ -36,6 +36,9 @@
     - [12f. M13 Real-time layer, dashboard and service graph](#12f-m13-real-time-layer-dashboard-and-service-graph)
     - [12g. M14 Hardening and the sealed audit trail](#12g-m14-hardening-and-the-sealed-audit-trail)
     - [12h. M2b Google sign-in](#12h-m2b-google-sign-in)
+    - [12i. S1 Service Desk Simulator](#12i-s1-service-desk-simulator)
+    - [12j. A8 Observability](#12j-a8-observability)
+    - [12k. A12 Password reset and two-step verification, A4 mobile push](#12k-a12-password-reset-and-two-step-verification-a4-mobile-push)
 13. [Data model built so far](#13-data-model-built-so-far)
 14. [OOP and design patterns: where to find them](#14-oop-and-design-patterns-where-to-find-them)
 15. [Configuration and running the backend](#15-configuration-and-running-the-backend)
@@ -64,7 +67,9 @@
 | **M13** Real-time, dashboard, graph (section 12f) | Live admin dashboard (`DashboardListener` after commit, `GET /dashboard/live`, `/topic/dashboard` events and coalesced counters), WebSocket permission per destination and close at token expiry, `GET /services/graph`, `/services/{id}/impact`, E1 status board `GET /services/status`, `ServiceGraph` | ✅ Done and smoke-tested (`m13_smoke.py` 72) |
 | **M14** Hardening (section 12g) | Attachments, 503 `SERVICE_UNAVAILABLE` on database or AI outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, S3 sealed audit trail (`GET /audit/verify`, `POST /audit/seal`); G4 and C3 done with M12 | ✅ Core done and smoke-tested (`m14_smoke.py` 81) · ⏳ A7 load test |
 | **M2b** Google sign-in (section 12h) | `POST /auth/google` behind a verifier port: JJWT adapter with Google's published keys, offline fake (dev, demo, test only); link by verified email, optional auto-registration | ✅ Done and smoke-tested with the fake verifier (`m2b_smoke.py` 32); the real adapter is not yet tried against Google |
-| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | 🟡 Mostly built: S2, S3, D1, D2, E1, E2, E3, E4, A1, A6, A11, G2, G3, G4, C1 to C4 done; S1 simulator, A7 load test and the last-priority items open; E5, A2 are frontend |
+| **S1** Service Desk Simulator (section 12i) | Replays the last N real incidents in memory through the real assignment engine under up to three configurations on a virtual clock; compares SLA violations, time to resolve, waiting time and fairness; `POST /admin/simulations`, `/apply` | ✅ Done and smoke-tested (`s1_smoke.py` 50) |
+| **A12, A4, A8** (sections 12j and 12k) | Password reset by mailed link and optional two-step verification (TOTP); simulated mobile push behind a gateway port; Prometheus metrics behind a scrape token and a Grafana dashboard | ✅ Done; `a12_a4_smoke.py` 72 checks, the 40 automated tests pass on migration V10 |
+| Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | 🟡 Mostly built: S1, S2, S3, D1, D2, E1, E2, E3, E4, A1, A6, A11, G2, G3, G4, C1 to C4 done; A7 index review and scale-out path written (`SCALING.md`), its load test is the Testing teammate's; A4, A8, A12, A13 done (sections 12j, 12k and `TRACEABILITY.md`); A5 cloud deployment decided against (DEC-118); E5, A2 are frontend |
 
 **Tech stack:** Java 21 · Spring Boot 4.1.1 (Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3) · PostgreSQL 16 · Flyway · JJWT 0.12 · springdoc OpenAPI (Swagger UI).
 
@@ -134,7 +139,7 @@ com.iitsm
 ├── web
 │   ├── controller                   AuthController, CatalogController, IncidentController, TechnicianController,
 │   │                                AdminUserController, AdminCatalogController, AdminSlaController,
-│   │                                AdminConfigController, SlaController, AuditController, NotificationController,
+│   │                                AdminConfigController, AdminSimulatorController (S1), SlaController, AuditController, NotificationController,
 │   │                                ReportController, PostIncidentReportController, FeedbackController,
 │   │                                SavedFilterController, PriorityController, IntelligenceController,
 │   │                                ProblemController (M12), DashboardController, ServiceGraphController (M13),
@@ -166,6 +171,7 @@ com.iitsm
 │   ├── dashboard                    DashboardService, DashboardListener (Observer), DashboardPublisher (port),
 │   │                                DashboardViews (M13)
 │   ├── graph                        ServiceGraphService, ServiceGraphViews (M13: graph, impact, E1 status board)
+│   ├── simulation                   SimulatorService (S1: replays recent incidents under up to three configurations)
 │   ├── report                       ReportService, ReportExportService, CsvWriter, CoverageRiskService (E3),
 │   │                                PostIncidentReportService (E4), PostIncidentPdfRenderer (port)
 │   ├── feedback                     FeedbackService
@@ -213,16 +219,20 @@ com.iitsm
 │   │                                Dashboard)
 │   ├── service                      ItService (IT services and their dependency graph), ServiceGraph (impact,
 │   │                                upstream and common-upstream walks, M13)
+│   ├── simulation                   DeskSimulation (discrete-event replay over the real AssignmentEngine),
+│   │                                ServiceTimeModel (S1)
 │   ├── sla                          SlaPolicy, EscalationPolicy, CalendarType, SlaPolicyResolver, SlaViolation
 │   └── user                         User, Role hierarchy, profiles, SkillSet, RefreshToken, UserFactory,
-│                                    PasswordPolicy (M14), enums
+│                                    PasswordPolicy (M14), Totp (A12), PasswordResetToken (A12), enums
 └── infrastructure
     ├── config                       ClockConfig (not demo), DemoClockConfig (demo only), CorsConfig, DomainConfig
     ├── persistence                  Spring Data implementations of the domain repositories, CriteriaIncidentSearch,
     │                                NativeReportRepository, NativeDashboardRepository (SQL aggregates),
     │                                JpaIncidentTextRepository (M12 texts)
     ├── notification                 InAppChannel, EmailChannel, WebSocketChannel, SmsSimulatedChannel,
-    │                                ChatWebhookChannel, GlobalTeamResolver, NotificationAsyncConfig, WebSocketConfig
+    │                                ChatWebhookChannel, GlobalTeamResolver, NotificationAsyncConfig, WebSocketConfig,
+    │                                PushSimulatedChannel, SimulatedPushGateway (A4), PasswordResetMailer (A12)
+    ├── observability                BusinessMetrics, BusinessGauges (A8, Prometheus)
     ├── realtime                     StompDashboardPublisher (Adapter), StompDestinationPolicy, StompPrincipal,
     │                                WebSocketSessions (closes a socket at token expiry), RealtimeConfig (M13)
     ├── ai                           AiConfig, FallbackTextAnalysisService (@Primary), LlmTextAnalysisService,
@@ -1440,6 +1450,7 @@ A **team lead** is a technician with escalation level 1; one global pool behind 
 | `IN_APP` | inserts the inbox row | row, channel IN_APP | always |
 | `WEBSOCKET` | pushes the same Notification object (with the inbox row id) to `/user/queue/notifications` | no | unless switched off |
 | `SMS_SIM` | log line and a row (channel SMS_SIM, 160 characters) | row | P1 only, staff only (assigned, triage, SLA warning and violation, escalation) |
+| `PUSH_SIM` | a simulated push to every device the person registered (A4, DEC-117): log line plus a row with channel PUSH_SIM; not a per-user switch | row | urgent events of P1 and P2 incidents; "information requested" and "resolved" for the reporter at any priority; only for people with a registered device |
 | `EMAIL` | HTML mail through SMTP (Mailpit on 1025); first try plus `notification.email.retries` retries, wait `notification.email.backoff.seconds` doubling; then dropped and logged | no | unless switched off |
 | `CHAT` | one JSON POST (`text`, `content`) to `notification.chat.webhook.url`; empty URL means only logged | no | SLA violations and escalations always; assigned, triage and SLA warning for P1 |
 
@@ -1458,6 +1469,7 @@ Each channel is tried alone; a failure is logged and the others still run. The w
 | `GET /api/v1/notifications/unread-count` | `{count}` |
 | `POST /api/v1/notifications/{id}/read` | 204; someone else's id is 404 |
 | `POST /api/v1/notifications/read-all` | 204 |
+| `GET /api/v1/notifications/devices`, `POST /api/v1/notifications/devices {token, platform}`, `DELETE /api/v1/notifications/devices/{id}` | my push devices (201 new or 200 again, the token shown only as its last six characters), A4 |
 | `GET /api/v1/notifications/preferences` | 60 switches `{eventType, channel, enabled, locked}` (15 types x IN_APP, EMAIL, WEBSOCKET, SMS_SIM) |
 | `PUT /api/v1/notifications/preferences` | body: list of `{eventType, channel, enabled}`; returns the 60 switches |
 
@@ -1512,7 +1524,7 @@ flowchart LR
 
 ### 12b.1 Search: all filters of Appendix B
 
-`GET /incidents` takes `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `slaState`, `createdFrom`, `createdTo`, `mine`, `assignedToMe`, `page`, `size` (max 100) and `sort` (`createdAt`, `priority`, `status`, `code`, `resolutionDue`, `,asc|desc`). Everything is one dynamic Criteria query (DEC-24); visibility (own and assigned incidents for everyone except team leads and administrators) is added by `IncidentService` and cannot be chosen by the client.
+`GET /incidents` takes `q`, `code`, `status` (repeatable), `priority` (repeatable), `categoryId`, `serviceId`, `assigneeId`, `reporterId`, `slaState`, `minEscalationLevel` (0 to 3, level and above; DEC-113), `createdFrom`, `createdTo`, `mine`, `assignedToMe`, `page`, `size` (max 100) and `sort` (`createdAt`, `priority`, `status`, `code`, `resolutionDue`, `,asc|desc`). Everything is one dynamic Criteria query (DEC-24); visibility (own and assigned incidents for everyone except team leads and administrators) is added by `IncidentService` and cannot be chosen by the client.
 
 **`slaState` (DEC-61).** The shown state needs business-hours elapsed time, which SQL cannot compute, so the filter reads the flags the SLA monitor stores plus the status:
 
@@ -2126,6 +2138,171 @@ Every failure writes a `LOGIN_FAILED` audit entry ("Failed Google login: ...") i
 
 ---
 
+## 12i. S1 Service Desk Simulator
+
+Built 2026-11-15 (decisions DEC-44, DEC-45 and DEC-112). An administrator picks how many recent incidents to replay and up to three configurations, and sees on one screen what each configuration would have done: SLA violations, time to resolve, waiting time and how evenly the work was spread. One button applies the winner to the live settings.
+
+### 12i.1 What it answers and how
+
+*"If the last 100 incidents had arrived under a different assignment strategy or different weights, how many would have missed their deadline?"* The answer comes from the **real** `AssignmentEngine` (the same eligibility filter, strategies and weights as production), driven by a discrete-event loop over a virtual timeline. It is not a copy of the rules.
+
+```mermaid
+flowchart TD
+    A["POST /admin/simulations<br/>last N incidents, up to 3 configurations"] --> B["SimulatorService (read-only transaction)<br/>load the incidents, today's technicians,<br/>build one AppSettings per configuration"]
+    B --> C["ServiceTimeModel<br/>median handling time per priority<br/>from the replayed history"]
+    B --> D["for each configuration:<br/>DeskSimulation.run(...)"]
+    D --> E{"next event on the timeline<br/>(PriorityQueue by time)"}
+    E -->|ARRIVAL| F["AssignmentEngine.recommend<br/>(candidates with simulated load)"]
+    F -->|best technician| G["queue at that technician<br/>start if idle"]
+    F -->|nobody eligible| H["wait in triage"]
+    E -->|FINISH| I["free the technician,<br/>start their next incident,<br/>retry the triage list"]
+    G --> E
+    H --> E
+    I --> E
+    E -->|no events left| J["measure: violations, mean and p90 resolve time,<br/>wait, fairness, matches real assignee,<br/>per-technician work"]
+    J --> K["SimulationView<br/>results + best + assumptions"]
+```
+
+### 12i.2 Endpoints (need `CONFIG_MANAGE`)
+
+| Method and path | Purpose |
+|---|---|
+| `POST /api/v1/admin/simulations` | Run a simulation. Writes nothing. |
+| `POST /api/v1/admin/simulations/apply` | Write a configuration's strategy and weights to the live settings (204). Audited as CONFIG_CHANGED. |
+
+Request of the first: `{lastIncidents (10 to 500, default 100), speedUp (1 to 20, default 1), configurations: [{name, strategy, weights {skill, load, experience, priorityFit, familiarity}, technicians}]}` with at most three configurations. Anything left out keeps the live value; with no configurations the current settings are replayed alone. Strategy names: `COMPOSITE`, `SKILL`, `LOAD`, `ROUND_ROBIN`, `EXPERIENCE_PRIORITY`. Weights must still add up to 1.0, as in `PUT /admin/config` (a 400 with field errors otherwise).
+
+Answer: `{workload {incidents, from, to, speedUp, excluded}, assumptions [text], results [...], best, bestReason}`. Each result has the configuration (`name`, `strategy`, `weights`, `technicians`), `incidents`, `slaViolations`, `slaViolationPercent`, `unassigned`, `meanResolveMinutes`, `p90ResolveMinutes`, `meanWaitMinutes`, `fairness`, `matchesRealAssigneePercent` and `perTechnician [{technicianId, name, assigned, busyMinutes, utilizationPercent}]`. `best` is the configuration with the fewest violations, then the lowest mean resolve time.
+
+### 12i.3 The model (shown to the user as `assumptions`)
+
+| Rule | Detail |
+|---|---|
+| Workload | The last N incidents by creation, oldest first, with their real spacing, or the same spacing divided by `speedUp` to imitate an outage storm. Duplicates, withdrawn incidents and ones without priority or category are left out and counted in `excluded`. |
+| Technicians | Everyone with the technician role, with today's availability and maximum load. `technicians: n` keeps the first n by id. |
+| Work | One incident at a time per technician, always the waiting incident with the highest priority, then the earliest arrival. |
+| Handling time | Median acknowledged-to-resolved minutes per priority in the replayed history (fallbacks 45, 90, 180, 240 for P1 to P4), times 1.3 minus 0.1 times the experience level (level 1 is 20% slower, level 3 the base, level 5 20% faster). |
+| What the strategies see | Load is the weighted load of everything assigned and not finished (P1 4, P2 3, P3 2, P4 1). Familiarity starts at zero and grows with the replayed resolutions. |
+| Nobody eligible | The incident waits in triage and is offered again whenever a technician finishes. |
+| Allowed time | Gap between creation and the real resolution deadline, counted on the wall clock. An incident that finishes later, or is never assigned, counts as a violation. |
+| Fairness | Jain's index over incidents per technician: 1.0 is perfectly even, 1 divided by the number of technicians is one person doing everything. |
+
+It is a model, not a forecast: real technicians multitask and take breaks, and the report says so next to the numbers.
+
+### 12i.4 Why simulating changes nothing
+
+The engine and the eligibility filter read the real `User` and `TechnicianProfile` entities, so the loop cannot run on copies. `SimulatorService.simulate` is `@Transactional(readOnly = true)`, so Hibernate never flushes, and the one thing the replay moves (each technician's round-robin memory) is restored after every scenario and in a `finally`. The smoke suite checks that the audit trail, incidents, settings, round-robin memory and notifications are unchanged afterwards. Applying a configuration is a separate call that goes through `ConfigService.update`, so it is validated as a whole and audited like any settings change.
+
+### 12i.5 Classes and patterns
+
+| Class | Package | Role |
+|---|---|---|
+| `DeskSimulation`, `ServiceTimeModel` | `domain.simulation` | The event loop (a `PriorityQueue` of timed events, finish before arrival at the same instant) and the handling-time model. No Spring or web imports. |
+| `SimulatorService` | `application.simulation` | Loads the history and technicians, builds one settings snapshot per configuration, runs each, restores state, picks the best. |
+| `AdminSimulatorController`, `SimulationRequest`, `ConfigurationRequest`, `WeightsRequest` | `web.controller`, `web.dto.simulation` | The two endpoints and their validation. |
+
+Patterns shown: **Strategy** (configurations compared side by side through the same `AssignmentEngine`), a **priority queue of timed events** (the brief's "appropriate data structures"), immutable records for results, and the settings snapshot (`AppSettings`, DEC-18) that makes a what-if possible without touching live settings.
+
+### 12i.6 Verified behavior (2026-11-15)
+
+`smoke-tests/s1_smoke.py` 50/50 on the Flyway seed (212 incidents, 18 users): 401 without a token and 403 for an employee; every field present; assigned counts add up; the same request gives the same result; three configurations come back in request order with different results; fewer technicians never shorten the wait; a ten-times storm never shortens the wait; custom weights echoed; four configurations, weights not adding to 1, an unknown strategy, fewer than 10 incidents and a speed-up below 1 are all 400; **audit records, incidents, settings, round-robin memory and notifications are unchanged after simulating**; apply answers 204, changes the live strategy, is audited once and is restored. Example, last 200 incidents at 8 times speed: composite 59.5% of incidents past their deadline, load-only 37.0%, round robin 65.0%.
+
+Limits: the seed's assignments were generated, not chosen by the engine, so `matchesRealAssigneePercent` (47 to 58% on the seed) is a diagnostic here, not a validation; business-hours calendars are not applied to the allowed time.
+
+---
+
+## 12j. A8 Observability
+
+Built 2026-11-15 (decision DEC-115). The backend exposes Prometheus metrics and ships a Grafana dashboard, so the desk's state and the API's health can be shown on a screen.
+
+```mermaid
+flowchart LR
+    E["Domain events<br/>IncidentChanged, SlaViolated,<br/>IncidentEscalated, TriageNeeded"] --> BM["BusinessMetrics<br/>(Observer, after commit)"]
+    D["DashboardService<br/>counters"] --> BG["BusinessGauges<br/>(snapshot, 10 s)"]
+    AI["FallbackTextAnalysisService"] -->|"engine used"| REG
+    SIM["SimulatorService"] -->|"runs"| REG
+    BM --> REG["Micrometer registry<br/>+ HTTP, JVM, Hikari"]
+    BG --> REG
+    REG --> EP["/actuator/prometheus<br/>MetricsTokenFilter"]
+    EP -->|"Bearer METRICS_TOKEN"| P["Prometheus :9090"] --> G["Grafana :3001<br/>dashboard I-ITSM service desk"]
+```
+
+| Part | Detail |
+|---|---|
+| Endpoint | `GET /actuator/prometheus`. Closed (404) unless `METRICS_TOKEN` (16 or more characters) is set; then only `Authorization: Bearer <token>` (401 otherwise). Compared in constant time. |
+| Gauges | `iitsm_incidents_all`, `_open`, `_critical`, `_resolved_current`, `iitsm_sla_violations_recorded`, `iitsm_incidents_open_by_priority{priority}`; the same numbers as the live dashboard. |
+| Counters | `iitsm_incidents_reported_total`, `iitsm_incidents_resolved_total`, `iitsm_sla_warnings_total`, `iitsm_sla_violations_total` (by priority and clock), `iitsm_escalations_total{to_level}`, `iitsm_escalations_exhausted_total`, `iitsm_triage_needed_total`, `iitsm_simulations_total`, `iitsm_ai_calls_total{operation,engine}`. |
+| Free metrics | `http_server_requests_seconds` (histogram by `uri` and `status`), `jvm_*`, `hikaricp_*`, `process_cpu_usage`. All carry `application="iitsm-backend"`. |
+| Files | `backend/observability/`: `prometheus.yml`, `docker-compose.observability.yml`, Grafana provisioning, `grafana/dashboards/iitsm.json` (15 panels), `README.md`. |
+| Classes | `web.filter.MetricsTokenFilter`, `infrastructure.observability`: `BusinessMetrics`, `BusinessGauges`. |
+
+The dashboard panels: six stat tiles (open, critical, SLA violations, resolved, all, simulator runs), open incidents by priority, incidents reported and resolved per hour, SLA warnings and violations per hour, escalations per hour, API request rate and 5xx, API latency p50 and p95, who answered the AI calls, JVM heap, database connections.
+
+Verified (2026-11-15): the endpoint's 401 and 200 answers, the gauges equal the dashboard's numbers, the counters move with real traffic, every metric name in the dashboard's queries exists in the live output. The Prometheus and Grafana containers were not run in the session that built it (the images were not downloaded).
+
+---
+
+## 12k. A12 Password reset and two-step verification, A4 mobile push
+
+Built 2026-11-15 (decisions DEC-116 and DEC-117, schema in migration V10).
+
+### 12k.1 Password reset
+
+```mermaid
+sequenceDiagram
+    participant U as Person
+    participant API as AuthController
+    participant S as PasswordResetService
+    participant DB as password_reset_tokens
+    participant M as PasswordResetMailer (SMTP)
+    U->>API: POST /auth/password-reset/request {email}
+    API->>S: request(email)
+    alt the account exists and is active
+        S->>DB: cancel older links, store SHA-256(secret), expiry
+        S->>M: mail the link (reset-password?token=secret)
+    end
+    API-->>U: 202 (the same for every e-mail)
+    U->>API: POST /auth/password-reset/confirm {token, newPassword}
+    API->>S: confirm(token, newPassword)
+    S->>DB: find by hash, usable? (unused, not expired)
+    S->>S: PasswordPolicy, new BCrypt hash, revoke every refresh token, clear lock
+    API-->>U: 204 (a wrong, used or expired link: 400 on `token`)
+```
+
+Both endpoints are public. Asking is rate-limited per address and e-mail like a login (429). Audit actions `PASSWORD_RESET_REQUESTED` and `PASSWORD_CHANGED`. The link base is the setting `notification.link.base.url`; the lifetime is `auth.password.reset.minutes`.
+
+### 12k.2 Two-step verification
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /auth/mfa` | `{enabled}` for the caller |
+| `POST /auth/mfa/setup` | New secret: `{secret, otpauthUri}`; not active yet; 400 if already on |
+| `POST /auth/mfa/enable {code}` | Proves the app works, turns it on (204) |
+| `POST /auth/mfa/disable {code}` | Turns it off; needs a current code |
+| `POST /auth/login {email, password, totp?}` | 401 `MFA_REQUIRED` without a code; 401 `INVALID_MFA_CODE` with a wrong one (counts as a failed login) |
+| `POST /admin/users/{id}/mfa/reset` | Administrator turns it off for a lost phone (USER_MANAGE) |
+
+`Totp` (`domain.user`, pure Java) implements RFC 6238: six digits, 30-second step, HMAC-SHA1, accepted for the step and one either side, never twice (`users.totp_last_step`). Checked against the RFC test vectors. Audit actions `MFA_ENABLED` and `MFA_DISABLED`. Limits: the secret is stored as text, there are no recovery codes, no role is forced to use it.
+
+### 12k.3 Simulated mobile push
+
+A sixth notification channel, `PUSH_SIM`, behind the port `PushGateway` (the shipped adapter logs; a real provider would be another implementation).
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /notifications/devices {token, platform}` | Register a device: 201 new, 200 when it was already registered (it then moves to the caller) |
+| `GET /notifications/devices` | My devices (token shown only as its last six characters) |
+| `DELETE /notifications/devices/{id}` | Remove one of mine (404 for anyone else's) |
+| `GET /notifications?channel=PUSH_SIM` | What was pushed to me |
+
+`NotificationRules.pushApplies`: urgent events of a P1 or P2 incident (assigned, triage needed, SLA warning, SLA violated, escalated) and, at any priority, "information requested" and "resolved" for the reporter. Not a per-user switch: the preference list stays 60 switches. Limit per person: `notification.push.devices.max` (default 5).
+
+### 12k.4 Verified (2026-11-15)
+
+`smoke-tests/a12_a4_smoke.py` 72/72 on the Flyway seed with Mailpit (reset mail read from the real mail catcher, TOTP codes from an independent Python implementation, push rows for a real P1); the existing 40 automated tests pass on the V10 schema; Hibernate `validate` accepts the entities against V10.
+
+---
+
 ## 13. Data model built so far
 
 Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
@@ -2487,16 +2664,18 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-14 | The four parallel branches and the E-034 fix merged on `backend/integrate-m12-m14` (order M2b, M13, M14, M12, E-034): `ConfigKey` blocks joined (76 settings), `planned-endpoints.json` merged by key (now empty: every agreed endpoint is built), sections 12a to 12h put in order, this guide's sections 1, 3 and 18 updated. |
 | 2026-11-14 | Regression of the merged build (ERROR_LOG E-035): every suite green on fresh databases after test-script fixes; DEC-110 (grouping into a problem record is not announced, `NotificationRules.announced`); endpoint sweep covers all 117 operations, contract re-exported with 0 planned. |
 | 2026-11-15 | Gemini adapter (DEC-111): `GeminiLlmClient` behind the `LlmClient` port is the default LLM (`LLM_PROVIDER=gemini`, model `gemini-3.5-flash-lite`, key `LLM_API_KEY` or `GEMINI_API_KEY`); Anthropic and the fake client stay selectable. Checked offline against a stub of the Gemini API (`gemini_stub_check.py` 10/10). |
+| 2026-11-15 | S1 Service Desk Simulator built (section 12i, DEC-112): `POST /admin/simulations` and `/apply`, `domain.simulation` (`DeskSimulation`, `ServiceTimeModel`), read-only transaction with the round-robin memory restored, `s1_smoke.py` 50/50 on the Flyway seed. `GET /incidents?minEscalationLevel=` (DEC-113). Index review and scale-out path written in `SCALING.md` (DEC-114, A7 half). Gemini checked against the real service (DEC-111). Contract: 119 operations. |
+| 2026-11-15 | A8 observability (section 12j, DEC-115): `/actuator/prometheus` behind a scrape token, 16 business and system metrics, Grafana dashboard in `backend/observability`. A12 (section 12k, DEC-116): password reset by mailed link and TOTP two-step verification. A4 (DEC-117): simulated mobile push behind the `PushGateway` port. Migration V10. A13 `TRACEABILITY.md` (DEC-118); cloud deployment decided against. Simulator bug fixed (ERROR_LOG E-036). Contract: 129 operations. |
 
 ---
 
 ## 18. Planned work beyond the handbook
 
-Accepted on 2026-11-13. Built by 2026-11-14: everything below except S1 (still to come), E5 and A2 (frontend). Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
+Accepted on 2026-11-13. Built by 2026-11-15: everything below except E5 and A2 (frontend). Reasoning: `docs/DECISIONS.md` DEC-43 to DEC-47. Order of work: `docs/ROADMAP.md` section 5.
 
 | Id | Feature | What the user will see | Built with |
 |---|---|---|---|
-| S1 | Service Desk Simulator | An administrator replays a workload under up to three configurations on a virtual clock and compares SLA violations, time to resolve and workload spread | after M13 |
+| S1 | Service Desk Simulator (built 2026-11-15, section 12i) | An administrator replays a workload under up to three configurations on a virtual clock and compares SLA violations, time to resolve and workload spread | after M13 |
 | S2 | Major Incident Mode (built 2026-11-14, section 12e) | Related incidents are grouped, the common upstream service is named as probable root cause, employees join a known outage with one click, and the priority climbs as they join | M12, M13 |
 | S3 | Sealed audit trail (built 2026-11-14, section 12g) | A Verify action proves the audit log is intact or names the first altered record | M14 |
 | E1 | Service status board (built 2026-11-14, section 12f) | Every service as Healthy, Degraded or Outage, derived from reported incidents | M13 |
