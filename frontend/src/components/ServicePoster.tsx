@@ -66,9 +66,9 @@ export default function ServicePoster({ initialStage = 0, compact = false }: { i
                 <circle cx="389" cy="249" r="31" fill="var(--blue)" stroke="var(--ink)" strokeWidth="2" /><path d="m375 249 10 10 20-23" stroke="var(--paper)" strokeWidth="5" />
               </>}
             </g>
-            <path d="M63 237h47v47H63z" fill="var(--blue)" stroke="var(--ink)" strokeWidth="2" />
-            <circle cx="513" cy="135" r="27" fill="var(--yellow)" stroke="var(--ink)" strokeWidth="2" />
-            <path d="m510 219 35 52h-61Z" fill="var(--red)" stroke="var(--ink)" strokeWidth="2" />
+            <path className="poster-shape poster-shape--square" d="M63 237h47v47H63z" fill="var(--blue)" stroke="var(--ink)" strokeWidth="2" />
+            <circle className="poster-shape poster-shape--circle" cx="513" cy="135" r="27" fill="var(--yellow)" stroke="var(--ink)" strokeWidth="2" />
+            <path className="poster-shape poster-shape--triangle" d="m510 219 35 52h-61Z" fill="var(--red)" stroke="var(--ink)" strokeWidth="2" />
           </svg>
         </div>
         <span className="poster-swipe-hint">← SWIPE THE STORY →</span>

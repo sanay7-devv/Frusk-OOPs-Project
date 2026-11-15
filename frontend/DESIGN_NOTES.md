@@ -1,10 +1,11 @@
 # Frusk service studio
 
-Bauhaus colour and geometry, with a bento layout for incident cards. The complaint form keeps a quiet background and clear field hierarchy. The shared theme carries the palette into existing technician, lead and administrator views.
+Bauhaus colour and geometry, with rounded bento cards, soft pastel artwork backgrounds and open spacing. The complaint form keeps a quiet background and clear field hierarchy. The shared theme carries the palette into existing technician, lead and administrator views.
 
 ## Interactions
 
 - The original SVG laptop changes from report to repair to audit. Drag/swipe horizontally, use the stage buttons, or focus the artwork and press left/right arrow keys. There is no autoplay. Reduced-motion settings remove movement.
+- Scroll-triggered reveals and short card staggers use IntersectionObserver and the native Web Animations API. Content remains visible if those APIs are unavailable. Geometry drifts around the laptop; the Motion toggle cancels movement, and system reduced-motion preferences disable it automatically. The top edge tracks scroll progress. Observers, animations and listeners are cleaned up on route changes.
 - Employee, admin and technician home pages use the illustrated hero. Navigation has a mobile disclosure, Escape handling, visible focus and a skip link. The sign-in form appears before artwork on phones.
 - My incidents and administrator incidents use a searchable, filterable card board with ticket previews. Administrator previews link to the incident audit view.
 - Audit search accepts an incident ID or code and filters events by people/system. The API timestamp field is used for live events.
