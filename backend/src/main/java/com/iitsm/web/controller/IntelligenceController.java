@@ -86,7 +86,7 @@ public class IntelligenceController {
 
     @PostMapping("/intelligence/similar")
     @PreAuthorize("hasAuthority('INCIDENT_CREATE')")
-    @Operation(summary = "Similar open incidents on the same service inside the look-back window (TF-IDF)")
+    @Operation(summary = "Similar open incidents on the same service inside the look-back window; each says its source (EMBEDDING or KEYWORD)")
     @ApiErrors({ErrorCode.SERVICE_NOT_FOUND, ErrorCode.RATE_LIMITED})
     public List<SimilarIncidentView> similarToDraft(@AuthenticationPrincipal AuthenticatedUser caller,
                                                     @Valid @RequestBody SimilarRequest request) {
@@ -95,7 +95,7 @@ public class IntelligenceController {
 
     @GetMapping("/incidents/{id}/similar")
     @PreAuthorize(PARTICIPANT)
-    @Operation(summary = "Similar open incidents for an existing incident")
+    @Operation(summary = "Similar open incidents for an existing incident; each says its source (EMBEDDING or KEYWORD)")
     @ApiErrors({ErrorCode.INCIDENT_NOT_FOUND})
     public List<SimilarIncidentView> similar(@AuthenticationPrincipal AuthenticatedUser caller,
                                              @PathVariable Long id) {

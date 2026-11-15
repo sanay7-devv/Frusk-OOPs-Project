@@ -30,6 +30,14 @@ public interface TextAnalysisService {
     List<SimilarMatch> findSimilar(String title, String description, List<TextRecord> candidates,
                                    List<String> corpus);
 
+    /**
+     * The same scoring with an embedding when it can be used: if {@code queryVector} and every candidate's vector
+     * exist, the cosine of the vectors (source EMBEDDING); otherwise TF-IDF (source KEYWORD). The caller applies the
+     * threshold pair that belongs to the returned source.
+     */
+    SimilarResult findSimilarScored(String title, String description, double[] queryVector,
+                                    List<TextRecord> candidates, List<String> corpus);
+
     /** A short summary of an incident's comments and audit entries, with handover notes. */
     ThreadSummary summarize(ThreadInput input);
 }

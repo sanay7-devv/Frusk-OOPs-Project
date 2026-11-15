@@ -235,6 +235,12 @@ public class KeywordTextAnalysisService implements TextAnalysisService {
         return matches;
     }
 
+    @Override
+    public SimilarResult findSimilarScored(String title, String description, double[] queryVector,
+                                           List<TextRecord> candidates, List<String> corpus) {
+        return new SimilarResult(findSimilar(title, description, candidates, corpus), AnalysisSource.KEYWORD);
+    }
+
     // ------------------------------------------------------------------ summary
 
     @Override
