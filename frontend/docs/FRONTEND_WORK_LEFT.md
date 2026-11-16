@@ -38,7 +38,40 @@
 
 ## D. Order of work
 
-1. A1 and B (pull request, security). 2. Remove every mock and fake (section E, first bullets; G and the "invented" items). 3. The P0 bugs listed in each role's "Bugs found". 4. Missing features in the order of the video run sheet (`FRONTEND_GUIDE.md` section 10): employee, technician, team lead, admin. 5. Declutter, theme tokens, 12 px minimum.
+1. A1 and B (pull request, security), then the "Confirmed broken" list in D2. 2. Remove every mock and fake (section E, first bullets; G and the "invented" items). 3. The P0 bugs listed in each role's "Bugs found". 4. Missing features in the order of the video run sheet (`FRONTEND_GUIDE.md` section 10): employee, technician, team lead, admin. 5. Declutter, theme tokens, 12 px minimum.
+
+## D2. Tested in the browser (2026-11-16)
+
+Run: your branch `1ea86cc` with `npm run dev`, against `main` (`3988cb8`) in the `demo` profile on a fresh database with the Flyway seed; accounts `employee1`, `priya.nair` (team lead), `asha.rao` (admin), password `Demo@1234`; desktop 1440x900. Every route of the app was opened and its API calls and console errors recorded; the main flows were clicked through.
+
+**Works end to end (keep it working):**
+- [x] Login with the seed accounts lands on the right home for each role; a full page reload keeps the session (refresh token works).
+- [x] Employee reports an incident (`POST /incidents` 201): auto-categorised (VPN), priority P3 with the "why this priority" text, assigned to Priya Nair; success dialog and "View Incident Detail" work.
+- [x] Technician workbench: Acknowledge, Start, Request Info (SLA paused), Resolve all succeed, and the buttons change with `allowedActions`.
+- [x] Employee sees the technician's question, answers with Provide Information (clock resumes), then Verify Fix and Rate Resolution (`feedback` 201).
+- [x] "Generate AI Handover" returns a real summary from the backend.
+- [x] All 26 routes load without a JavaScript crash; the only failing request on any screen is `GET /ping` (404, twice per dashboard refresh).
+
+**Confirmed broken in the browser (fix these first):**
+- [ ] Workbench "Timeline & Notes": every audit row reads "Status updated to assigned" (F2). The backend sends good text in `description` (for example "Grouped under problem record #2: similar to INC-2026-00204", "Information requested by Priya Nair; resolution clock paused"); show it.
+- [ ] The incident above was grouped under a problem record by the backend; no screen shows that (`problemId`, Major Incident, F/G sections).
+- [ ] Notifications shows 8 hardcoded items and makes no API call at all (E7).
+- [ ] Admin incident detail: typing a note and pressing Send makes no request but shows "Comment posted to incident audit stream" (G4). Reassign and Override are offered on a VERIFIED incident (G4, use `allowedActions`).
+- [ ] Admin Config: change a value, press Reset: the edited value stays (G11).
+- [ ] Creating a technician the way Users.tsx does answers **400 VALIDATION_FAILED** (`experienceLevel` missing, `maxActiveIncidents` unknown) (G5).
+- [ ] Reassign as TechQueue sends it: without a technician or with a reason under 10 characters, **400** (F1). Reassign through `/assign` as Escalations does: **409** (F5).
+- [ ] Filter `escalationLevel=3` is ignored: it returned all 213 incidents, `minEscalationLevel=3` returned 0 (E9, F5, G3).
+- [ ] Category create with `description`/`defaultPriority`: 201, but both fields are dropped (G10).
+- [ ] "Force Close" on an IN_PROGRESS incident: **409** "Action CLOSE is not allowed in status IN_PROGRESS" (G4).
+- [ ] Tech Workload: React warning "two children with the same key" (F3, `key={d.code}`).
+- [ ] Login page: React "type is invalid" warning at `Login.tsx:597` and `:646` (the fake Google dialog, B).
+- [ ] Report form labels the urgency buttons "Low (<7d) ... Immediate (<15m)": invented SLA times; the real ones come from the SLA policies.
+- [ ] Verify Fix closes the loop with one click and no confirmation; add a confirm step (it cannot be undone by the employee except through Reopen).
+
+**Could not be shown with the seed (test again after the fixes):**
+- [ ] Team queue was empty ("0 UNASSIGNED"): the seed auto-assigns everything, so triage, assign and recommendations were not clickable. Create an incident with no confident category (or switch off auto-categorisation in Config) to test it.
+- [ ] Escalations was empty: use the demo clock (`POST /admin/demo/clock/advance`) on a P1/P2 to get escalated incidents, then test the dossier and the reassign fix.
+- [ ] Phone and tablet widths, the dark theme at video resolution, and the WebSocket live updates were not checked.
 
 ## E. Employee screens and everything shared (login, register, notifications, shell, routes, api layer, auth, realtime, components, theme)
 
@@ -166,7 +199,7 @@ Contract mismatches
 - [ ] Error handling: `errors.ts:3-14` lacks `MFA_REQUIRED`, `INVALID_MFA_CODE`, `TOKEN_INVALID`, `SERVICE_UNAVAILABLE` (503); `ACCOUNT_LOCKED` is HTTP 423 (message hardcodes "15 minutes"); `RATE_LIMITED` ignores `Retry-After` (login limit 10/min per email). Show seconds.
 - [ ] Seed account panel "PostgreSQL Seed Accounts" `:434-524` shows passwords on the login page: label as demo only, hide in production build (`import.meta.env.DEV`). It does list valid accounts now. Add Rahul/Neha? optional.
 - [ ] Placeholder `admin@iitsm.com` `:327`; unused import `Chip` `:11`.
-- [ ] Guide P4: React warning "invalid element type" at old lines 440/489 (`Link component="button"` / `Typography` inside Collapse): verify in browser, not reproducible by reading.
+- [ ] React warning "type is invalid ... got: object" at `Login.tsx:597` and `:646` (seen in the browser on every render of the login page, 2026-11-16). Both are inside the fake Google chooser dialog, so deleting that dialog (section B) removes it.
 - [ ] `api/auth.ts:15-56` `PREDEFINED_ACCOUNTS` unused dead code (duplicate of `SEED_CREDENTIALS`).
 
 ### E6. `features/shared/Register.tsx` (`/register`)
@@ -311,7 +344,7 @@ useRealtime
 5. `MyIncidents.tsx:71,79` VERIFIED counted as active (Home counts it resolved).
 6. `ReportIncident.tsx`: 409 `similar` uses `id` but UI reads `incidentId`; "Join" buttons join nothing; priority preview formula invented; attachments never uploaded; title max 250 vs 200; form not reset after submit; stale async suggestions.
 7. `Login.tsx:156-175` forges unsigned Google tokens; fake accounts "not_open"; `api/auth.ts:87-111` mock Google session on network error.
-8. `AuthContext.tsx:118` second refresh call outside single-flight (+StrictMode) can trigger refresh-token reuse revocation; `:120-138` offline restore leaves user logged in without token.
+8. `AuthContext.tsx:118` second refresh call outside single-flight (+StrictMode) can trigger refresh-token reuse revocation (not reproduced in the browser: three full page reloads kept the session; still worth routing through `refresh()`); `:120-138` offline restore leaves user logged in without token.
 9. `useRealtime.ts:34` invalidates `['incidents']` which no employee screen uses -> no live updates; socket not reconnected after token refresh (4001).
 10. `navConfig.ts:9` hardcoded `/tech/incidents/INC-2026-00095`; label `'Tickets'` has no icon mapping `AppShell.tsx:63-85`; exact-match nav highlight `:565`.
 11. `AppRoutes.tsx:31-36` `RootRedirect` ignores `loading`.
@@ -823,7 +856,7 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 ### G12. Audit log (`/admin/audit`, `AuditLog.tsx`, 190 lines)
 
 - [x] Real `GET /audit?page=0&size=50` (newest first); table with time, action chip, actor, incident, description; loading + empty state (~:82-95).
-- [ ] **"INCIDENT ID" column is always "-"**: the normaliser in `api/admin.ts:647-657` drops it. Audit entries now carry `incidentId` and `incidentCode` (section C): show the code as a link to `/admin/incidents/{incidentId}`.
+- [ ] **Incident column**: since the backend added `incidentId` (section C) the column shows `INC #213` (the database id). Show `incidentCode` (`INC-2026-00213`) instead, as a link to `/admin/incidents/{incidentId}`.
 - [ ] Time shown via `toLocaleString()` but the header says "(UTC)".
 - [ ] Fixed `size: 50`, no paging controls (`totalItems/totalPages` available).
 - [ ] **No filters** (P1-6): API has `incidentId`, `actorId`, `action`, `from`, `to`. Add action multi-select (28 actions in the enum), actor, incident code, date range.
