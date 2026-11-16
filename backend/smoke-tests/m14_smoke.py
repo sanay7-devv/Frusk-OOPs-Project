@@ -348,33 +348,46 @@ check("verify across the seals: intact", s == 200 and b["intact"] and b["sealsCh
 
 mid = int(sql(f"select id from audit_records where id between {seal1['fromId']} and {seal1['toId']} order by id offset 2 limit 1"))
 orig = sql(f"select description from audit_records where id={mid}")
-sql(f"update audit_records set description = description || ' (tampered)' where id={mid}")
+# audit_records is append-only (trigger from V7): lift it for the test-only tamper and its restore
+sql(f"alter table audit_records disable trigger audit_records_no_update_delete; "
+    f"update audit_records set description = description || ' (tampered)' where id={mid}; "
+    f"alter table audit_records enable trigger audit_records_no_update_delete")
 s, b = call("GET", "/audit/verify", token=A)
 check("tampered record is named: first problem RECORD_CHANGED with that record and its seal",
       s == 200 and not b["intact"] and b["firstProblem"]["recordId"] == mid and b["firstProblem"]["problem"] == "RECORD_CHANGED"
       and b["firstProblem"]["sealId"] == seal1["id"] and b["problemCount"] == 1, b)
-sql(f"update audit_records set description = $${orig}$$ where id={mid}")
+sql(f"alter table audit_records disable trigger audit_records_no_update_delete; "
+    f"update audit_records set description = $${orig}$$ where id={mid}; "
+    f"alter table audit_records enable trigger audit_records_no_update_delete")
 s, b = call("GET", "/audit/verify", token=A)
 check("restoring the text makes the chain intact again", s == 200 and b["intact"], b)
 
 victim = int(sql(f"select id from audit_records where id between {seal2['fromId']} and {seal2['toId']} order by id limit 1"))
 sql(f"create table audit_records_keep as select * from audit_records where id={victim}")
-sql(f"delete from audit_records where id={victim}")
+def seal_tamper(statement):
+    """audit_seals is append-only too (trigger from V8): lift it for one test-only statement."""
+    return sql("alter table audit_seals disable trigger audit_seals_no_update_delete; " + statement
+               + "; alter table audit_seals enable trigger audit_seals_no_update_delete")
+
+
+# A sealed record is protected twice: the append-only trigger (V7) and the foreign key from audit_seal_entries (V8).
+# The replica role (the test container user is a superuser) switches both off for this one test-only delete.
+delete_out = sql(f"set session_replication_role = replica; delete from audit_records where id={victim}")
 s, b = call("GET", "/audit/verify", token=A)
 check("a deleted record is named RECORD_MISSING", s == 200 and not b["intact"] and b["firstProblem"]["recordId"] == victim
-      and b["firstProblem"]["problem"] == "RECORD_MISSING", b)
+      and b["firstProblem"]["problem"] == "RECORD_MISSING", (sql(f"select count(*) from audit_records where id={victim}"), victim, seal2["fromId"], seal2["toId"], b))
 sql("insert into audit_records select * from audit_records_keep")
 sql("drop table audit_records_keep")
 s, b = call("GET", "/audit/verify", token=A)
 check("re-inserting the saved row makes the chain intact again", s == 200 and b["intact"], b)
-sql(f"update audit_seals set record_count = record_count + 1 where id={seal2['id']}")
+seal_tamper(f"update audit_seals set record_count = record_count + 1 where id={seal2['id']}")
 s, b = call("GET", "/audit/verify", token=A)
 check("an edited seal row is caught (SEAL_ALTERED)", not b["intact"] and any(p["problem"] == "SEAL_ALTERED" for p in b["problems"]), b)
-sql(f"update audit_seals set record_count = record_count - 1 where id={seal2['id']}")
-sql(f"update audit_seals set prev_hash = '{'a' * 64}' where id={seal2['id']}")
+seal_tamper(f"update audit_seals set record_count = record_count - 1 where id={seal2['id']}")
+seal_tamper(f"update audit_seals set prev_hash = '{'a' * 64}' where id={seal2['id']}")
 s, b = call("GET", "/audit/verify", token=A)
 check("a broken chain link is caught (SEAL_CHAIN_BROKEN)", not b["intact"] and any(p["problem"] == "SEAL_CHAIN_BROKEN" for p in b["problems"]), b)
-sql(f"update audit_seals set prev_hash = '{seal1['hash']}' where id={seal2['id']}")
+seal_tamper(f"update audit_seals set prev_hash = '{seal1['hash']}' where id={seal2['id']}")
 s, b = call("GET", "/audit/verify", token=A)
 check("chain restored: intact", s == 200 and b["intact"], b)
 if os.environ.get("M14_LOG"):

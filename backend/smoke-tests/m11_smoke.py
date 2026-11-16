@@ -141,6 +141,9 @@ check("new settings listed with defaults (escalation.exhausted.minutes 15, verif
       keys.get("escalation.exhausted.minutes", {}).get("defaultValue") == "15"
       and keys.get("verify.monitor.interval.seconds", {}).get("defaultValue") == "300", s)
 
+# The Flyway seed has its own team leads and administrators; the recipient checks below count exactly the people this
+# suite creates, so the seeded holders of levels 1 to 3 are deactivated (a throwaway database, recreated per run)
+sql(f"update users set active = false where email not like '%.{RUN}@iitsm.demo'")
 sql("delete from escalation_policies")
 for lvl in (1, 2, 3):
     s, _ = call("POST", "/admin/escalation-policies", {"priority": "P1", "level": lvl, "timeoutMinutes": 10}, token=A)
@@ -408,8 +411,8 @@ def resolved_incident(title):
 g1, g2, g3 = (resolved_incident(f"Auto verify {n} {RUN}") for n in "123")
 check("G: three incidents RESOLVED", all(status(i) == "RESOLVED" for i in (g1, g2, g3)), [status(i) for i in (g1, g2, g3)])
 age_resolution(g1, 4)
+s, _ = call("POST", f"/incidents/{g3}/verify", token=E)  # by hand first: an aged one would be auto-closed before this call
 age_resolution(g3, 4)
-s, _ = call("POST", f"/incidents/{g3}/verify", token=E)
 check("G: the reporter verifies one of them by hand", s == 200, s)
 check("G: the old unconfirmed one is closed as AUTO_VERIFIED",
       wait_for(lambda: status(g1) == "CLOSED", 330), status(g1))

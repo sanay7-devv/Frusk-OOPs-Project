@@ -18,6 +18,7 @@ Settings by environment variable (defaults in brackets):
   SMOKE_DB_PREFIX   database name prefix; each group uses <prefix>_<group> [smoke]
   SMOKE_OUT         folder for per-suite output and backend logs [./_run]
   SMOKE_CONTRACT_OUT  folder check_contract.py exports the OpenAPI files to [./_run/contract]
+  SMOKE_KEEP_DB     1 = do not drop the group databases afterwards (for debugging)
   SMOKE_ALLOW_OUTAGE  1 = let m14 stop the Postgres container for its 503 check (throwaway container only)
   SMOKE_MAIL_CONTAINER  Mailpit container, only used by m9 [iitsm-mail]
 """
@@ -48,8 +49,8 @@ GROUPS = [
         ("m10_smoke",), ("s1_smoke",), ("a12_a4_smoke",), ("m9_smoke", "ENVLOG:SMOKE_LOG", {"MAIL": 1}),
     ]),
     ("m7", "dev", {}, [("m7_smoke", "LOG")]),
-    ("m11", "dev", {}, [("m11_smoke", "LOG")]),
-    ("m11demo", "dev,demo", {}, [("m11_smoke", "LOG"), ("e034_check",)]),
+    ("m11", "dev", {}, [("m11_smoke", "LOG"), ("e034_check",)]),
+    ("m11demo", "dev,demo", {}, [("m11_smoke", "LOG")]),
     ("m12", "dev", {}, [("m12_smoke", "ENVLOG:M12_LOG")]),
     ("m12b", "dev", {}, [("m12b_smoke",)]),
     ("m12demo", "dev,demo", {}, [("m12b_drill",)]),
@@ -180,7 +181,8 @@ def main():
                 print("   ", row, flush=True)
         finally:
             stop_backend(proc, work)
-            psql(f'drop database if exists "{db}"')
+            if not os.environ.get("SMOKE_KEEP_DB"):
+                psql(f'drop database if exists "{db}"')
     print("\n%-9s %-24s %6s %6s  %s" % ("group", "suite", "PASS", "FAIL", "note"))
     bad = 0
     for g, name, p, f, note in rows:

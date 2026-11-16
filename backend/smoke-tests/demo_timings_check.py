@@ -61,10 +61,14 @@ p1 = incident(f"Demo timing P1 {RUN}", svc_p1, 5, 5, 150)
 check("B: the incident is P1 and assigned to the technician (level 0)",
       p1.get("priority") == "P1" and p1.get("status") == "ASSIGNED" and p1.get("escalationLevel") == 0, p1)
 low = incident(f"Demo timing resolved {RUN}", svc_low, 1, 1, 1)
-call("POST", f"/incidents/{low['id']}/acknowledge", token=T)
-call("POST", f"/incidents/{low['id']}/start", token=T)
-call("POST", f"/incidents/{low['id']}/resolve", {"rootCause": "Toner empty", "notes": "Changed the toner",
-                                                 "steps": "Swapped cartridge", "timeSpentMinutes": 5}, token=T)
+# the assignment strategy may pick the team lead or the technician: act as whoever got it
+_who = w["L"] if (low.get("assignee") or {}).get("id") == w["lead_id"] else T
+_steps = [call("POST", f"/incidents/{low['id']}/acknowledge", token=_who)[0],
+          call("POST", f"/incidents/{low['id']}/start", token=_who)[0],
+          call("POST", f"/incidents/{low['id']}/resolve", {"rootCause": "Toner empty", "notes": "Changed the toner",
+                                                         "steps": "Swapped cartridge", "timeSpentMinutes": 5}, token=_who)[0]]
+check("B: the low-priority incident was acknowledged, started and resolved (200 each)", _steps == [200, 200, 200],
+      (_steps, low.get("status"), low.get("assignee")))
 late = incident(f"Demo timing overdue {RUN}", svc_low, 1, 1, 1)
 sql(f"update incidents set response_due = now() - interval '5 seconds' where id={late['id']}")
 t_overdue = time.time()

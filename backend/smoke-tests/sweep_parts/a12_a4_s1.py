@@ -74,7 +74,8 @@ if _mail_up:
                 _hit = _re.search(r"reset-password\?token=([A-Za-z0-9_-]+)", _text)
                 _found = _hit.group(1) if _hit else None
         _tm.sleep(0.5)
-    s, _ = call("POST", "/auth/password-reset/confirm", {"token": _found or "x" * 43, "newPassword": "Zq7-Sweep-" + RUN + "-9"})
+    # the password policy refuses words of the user's name (here "Sweep"), so the new password has none
+    s, _ = call("POST", "/auth/password-reset/confirm", {"token": _found or "x" * 43, "newPassword": "Ab9-Zq" + RUN + "7Kd"})
     ok("POST /auth/password-reset/confirm -> 204", s == 204, (s, _found is not None))
 else:
     ok("POST /auth/password-reset/confirm skipped (no Mailpit on 8025)", True)

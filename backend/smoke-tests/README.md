@@ -42,7 +42,7 @@ All suites read the same three variables: `SMOKE_PORT` (backend port, default 80
 | `m9_smoke.py` | dev | M9 notifications (Mailpit on 1025/8025; optional `SMOKE_LOG`, `SMOKE_MAIL_CONTAINER`) |
 | `m10_smoke.py` | dev | M10 search, reports, CSV and PDF export, slaState AT_RISK |
 | `m11_smoke.py` | dev, also dev,demo | M11 escalation, auto-verify, escalation preview, demo clock (argv[1] = backend log; the clock answers 404 on dev, works on demo) |
-| `e034_check.py` | dev,demo | E-034 escalation notifications; run right after `m11_smoke.py` on the same database |
+| `e034_check.py` | dev | E-034 escalation notifications; run right after `m11_smoke.py` on the same database |
 | `m12_calibrate.py` | dev | Prints TF-IDF similarity of a labelled set and the best thresholds (not pass/fail, not run by `run_all.py`) |
 | `m12_smoke.py` | dev | M12 intelligence: duplicates, summarizer, LLM paths, AT_RISK (`M12_MODE=nokey` for the no-key path, `M12_LOG`, `M12_STATE`) |
 | `m12b_smoke.py` | dev | Rest of M12: withdraw, problems, Major Incident Mode, recurring problems, chatbot; checks the drill path is 404 on dev |
@@ -64,7 +64,7 @@ All suites read the same three variables: `SMOKE_PORT` (backend port, default 80
 - Suites are independent unless stated. Use a fresh database per group (that is what `run_all.py` does): some suites change seeded users' passwords or settings, and a few count rows in the whole database.
 - Settings a suite relies on are set and restored by the suite itself through the admin API (`smoke_setup.py`): `autocat.apply.confidence=1` (otherwise DEC-70 assigns confident incidents on creation and nothing waits in triage) and `ratelimit.incident.create.per.minute` / `ratelimit.login.per.minute` raised to 1000 (the M14 limits answer 429 on bursts). m4, m6 and m9 do this; m11 sets its own monitor intervals.
 - The monitors read their interval after each run: the first run comes 10 s after start and the next one a whole default interval later, so a suite that sets 5 s intervals (m10, m11) first waits until the backend is about 75 s old (`smoke_setup.settle_monitors`).
-- `m11_smoke.py` then `e034_check.py`: same database. `run_all.py` runs them on `dev,demo`.
+- `m11_smoke.py` then `e034_check.py`: same database. `run_all.py` runs them on `dev`, and `m11_smoke.py` once more on `dev,demo` (demo clock endpoint). Both suites move timers in the database: `audit_records` and `audit_seals` are append-only (triggers V7, V8, and a foreign key from the seal entries), so the suites lift the trigger, or use `session_replication_role = replica`, for those test-only statements; m11 also deactivates the seeded team leads and administrators so its recipient counts are exact.
 - `m12_smoke.py` writes `m12_state.txt` (git-ignored; `run_all.py` keeps it in the output folder and deletes it first). Delete it by hand when you restart on a new database.
 - `m12b_smoke.py` expects the `dev` profile (the drill endpoint must answer 404); `m12b_drill.py` needs `dev,demo`.
 - `m14_smoke.py` stops its Postgres container briefly for the 503 check: only against a throwaway container.
