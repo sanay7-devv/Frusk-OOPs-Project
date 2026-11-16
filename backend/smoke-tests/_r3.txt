@@ -1,6 +1,0 @@
---- m11demo: profile dev,demo, database rc_m11demo
-    ('m11_smoke', 88, 0, '249s, exit 0')
-
-group     suite                      PASS   FAIL  note
-m11demo   m11_smoke                    88      0  249s, exit 0
-TOTAL PASS 88 FAIL 0

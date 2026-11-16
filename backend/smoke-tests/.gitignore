@@ -5,3 +5,5 @@ _run*.txt
 _contract_out/
 m12_state.txt
 __pycache__/
+_r[0-9]*.txt
+_run_*/

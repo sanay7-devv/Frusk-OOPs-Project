@@ -1,8 +1,0 @@
---- m11: profile dev, database ra_m11
-    ('m11_smoke', 78, 0, '239s, exit 0')
-    ('e034_check', 12, 0, '12s, exit 0')
-
-group     suite                      PASS   FAIL  note
-m11       m11_smoke                    78      0  239s, exit 0
-m11       e034_check                   12      0  12s, exit 0
-TOTAL PASS 90 FAIL 0

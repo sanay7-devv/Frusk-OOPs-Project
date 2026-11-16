@@ -1,6 +1,0 @@
---- m14: profile dev, database rb_m14
-    ('m14_smoke', 73, 1, '33s, exit 0')
-
-group     suite                      PASS   FAIL  note
-m14       m14_smoke                    73      1  33s, exit 0
-TOTAL PASS 73 FAIL 1
