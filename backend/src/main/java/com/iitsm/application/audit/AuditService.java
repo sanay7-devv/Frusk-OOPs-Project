@@ -21,13 +21,15 @@ public class AuditService {
 
     /** One audit entry as the API shows it; actor null means the system. */
     public record AuditEntryView(Long id, Instant timestamp, Ref actor, AuditAction action, String incidentCode,
-                                 IncidentStatus previousState, IncidentStatus newState, String description) {
+                                 Long incidentId, IncidentStatus previousState, IncidentStatus newState,
+                                 String description) {
 
         public static AuditEntryView of(AuditRecord r) {
             User actor = r.getActor();
             return new AuditEntryView(r.getId(), r.getCreatedAt(),
                     actor == null ? null : new Ref(actor.getId(), actor.getName()), r.getAction(),
-                    r.getIncident() == null ? null : r.getIncident().getCode(), r.getPreviousState(),
+                    r.getIncident() == null ? null : r.getIncident().getCode(),
+                    r.getIncident() == null ? null : r.getIncident().getId(), r.getPreviousState(),
                     r.getNewState(), r.getDescription());
         }
     }

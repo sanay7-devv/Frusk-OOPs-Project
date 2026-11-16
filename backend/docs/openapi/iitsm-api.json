@@ -17629,6 +17629,10 @@
           "incidentCode": {
             "type": "string"
           },
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
           "newState": {
             "type": "string",
             "enum": [
@@ -18426,6 +18430,40 @@
             "items": {
               "$ref": "#/components/schemas/DashboardEvent"
             }
+          }
+        }
+      },
+      "Deadline": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "due": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "incidentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "slaState": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "WARNING",
+              "AT_RISK",
+              "VIOLATED",
+              "PAUSED",
+              "MET"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "RESPONSE",
+              "RESOLUTION"
+            ]
           }
         }
       },
@@ -20339,6 +20377,25 @@
           }
         }
       },
+      "SealProblemView": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "problem": {
+            "type": "string"
+          },
+          "recordId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sealId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "SealView": {
         "type": "object",
         "properties": {
@@ -20713,6 +20770,34 @@
           "title"
         ]
       },
+      "SimulatedWorkloadView": {
+        "type": "object",
+        "properties": {
+          "excluded": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "incidents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "speedUp": {
+            "type": "number",
+            "format": "double"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "SimulationRequest": {
         "type": "object",
         "properties": {
@@ -20760,7 +20845,7 @@
             }
           },
           "workload": {
-            "$ref": "#/components/schemas/WorkloadView"
+            "$ref": "#/components/schemas/SimulatedWorkloadView"
           }
         }
       },
@@ -21510,7 +21595,7 @@
         "type": "object",
         "properties": {
           "firstProblem": {
-            "$ref": "#/components/schemas/ProblemView"
+            "$ref": "#/components/schemas/SealProblemView"
           },
           "intact": {
             "type": "boolean"
@@ -21529,7 +21614,7 @@
           "problems": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ProblemView"
+              "$ref": "#/components/schemas/SealProblemView"
             }
           },
           "recordsChecked": {
@@ -21666,28 +21751,27 @@
       "WorkloadView": {
         "type": "object",
         "properties": {
-          "excluded": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          "from": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "incidents": {
+          "activeIncidents": {
             "type": "integer",
             "format": "int32"
           },
-          "speedUp": {
-            "type": "number",
-            "format": "double"
+          "load": {
+            "type": "integer",
+            "format": "int32"
           },
-          "to": {
-            "type": "string",
-            "format": "date-time"
+          "maxLoad": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resolvedThisWeek": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "upcomingDeadlines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Deadline"
+            }
           }
         }
       }

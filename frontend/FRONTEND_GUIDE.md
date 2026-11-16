@@ -2,6 +2,8 @@
 
 Reviewed on 2026-11-15 against `main` (`8a4eadb`), with the real backend and the Flyway seed data.
 
+> **Newer:** the item-by-item checklist against Sanay's latest commit (`1ea86cc` on `sanay-branch`, 2026-11-16) is `docs/FRONTEND_WORK_LEFT.md`. This guide keeps the reasons and the video plan.
+
 ## 0. How to read this
 
 **The viewer is a camera, not a user.** Nobody will use this site day to day. It is graded from a 15 to 20 minute recorded video (plus the PDF report). So every decision here follows one rule:

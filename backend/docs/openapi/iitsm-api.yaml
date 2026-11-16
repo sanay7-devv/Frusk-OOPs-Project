@@ -13295,6 +13295,9 @@ components:
           format: int64
         incidentCode:
           type: string
+        incidentId:
+          type: integer
+          format: int64
         newState:
           type: string
           enum:
@@ -13881,6 +13884,31 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DashboardEvent"
+    Deadline:
+      type: object
+      properties:
+        code:
+          type: string
+        due:
+          type: string
+          format: date-time
+        incidentId:
+          type: integer
+          format: int64
+        slaState:
+          type: string
+          enum:
+          - OK
+          - WARNING
+          - AT_RISK
+          - VIOLATED
+          - PAUSED
+          - MET
+        type:
+          type: string
+          enum:
+          - RESPONSE
+          - RESOLUTION
     DependenciesRequest:
       type: object
       properties:
@@ -15256,6 +15284,19 @@ components:
         urgency:
           type: integer
           format: int32
+    SealProblemView:
+      type: object
+      properties:
+        message:
+          type: string
+        problem:
+          type: string
+        recordId:
+          type: integer
+          format: int64
+        sealId:
+          type: integer
+          format: int64
     SealView:
       type: object
       properties:
@@ -15521,6 +15562,26 @@ components:
       - description
       - serviceId
       - title
+    SimulatedWorkloadView:
+      type: object
+      properties:
+        excluded:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        from:
+          type: string
+          format: date-time
+        incidents:
+          type: integer
+          format: int32
+        speedUp:
+          type: number
+          format: double
+        to:
+          type: string
+          format: date-time
     SimulationRequest:
       type: object
       properties:
@@ -15556,7 +15617,7 @@ components:
           items:
             $ref: "#/components/schemas/ConfigurationView"
         workload:
-          $ref: "#/components/schemas/WorkloadView"
+          $ref: "#/components/schemas/SimulatedWorkloadView"
     SkillCoverage:
       type: object
       properties:
@@ -16101,7 +16162,7 @@ components:
       type: object
       properties:
         firstProblem:
-          $ref: "#/components/schemas/ProblemView"
+          $ref: "#/components/schemas/SealProblemView"
         intact:
           type: boolean
         lastSealHash:
@@ -16115,7 +16176,7 @@ components:
         problems:
           type: array
           items:
-            $ref: "#/components/schemas/ProblemView"
+            $ref: "#/components/schemas/SealProblemView"
         recordsChecked:
           type: integer
           format: int32
@@ -16213,23 +16274,22 @@ components:
     WorkloadView:
       type: object
       properties:
-        excluded:
-          type: object
-          additionalProperties:
-            type: integer
-            format: int32
-        from:
-          type: string
-          format: date-time
-        incidents:
+        activeIncidents:
           type: integer
           format: int32
-        speedUp:
-          type: number
-          format: double
-        to:
-          type: string
-          format: date-time
+        load:
+          type: integer
+          format: int32
+        maxLoad:
+          type: integer
+          format: int32
+        resolvedThisWeek:
+          type: integer
+          format: int64
+        upcomingDeadlines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deadline"
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT
