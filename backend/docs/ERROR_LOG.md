@@ -394,7 +394,7 @@ Entry template:
 - Cause: the script's password starts with "Smoke", a word of the name; the new rule (DEC-92) refuses passwords that contain a name word of 4 or more characters.
 - Fix: none in code (the rule is intended). The script's password prefix has to change (for example `PW = "Ab9-Zq" + secrets.token_hex(4) + "9"`); with that change it passes 27/27. The shared script was not edited by session C (reported to the supervisor).
 - Prevention: test passwords must not contain the test user's name or e-mail part.
-- Status: open until the shared script is changed
+- Status: fixed (PR #24: `auth_smoke.py` on `main` uses `PW = "Ab9-Zq" + secrets.token_hex(4) + "9"` and passes 27/27)
 
 ### E-M12B-1: The reporter edit lock answered 403 for a closed incident
 

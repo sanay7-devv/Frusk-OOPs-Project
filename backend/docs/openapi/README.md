@@ -1,6 +1,6 @@
 # I-ITSM API contract (OpenAPI)
 
-The contract is **generated from the running code**, so it can never drift from what the backend actually does. Endpoints of modules not built yet came from `src/main/resources/openapi/planned-endpoints.json` (written from Appendices B and C of the API Data Dictionary) and carried the tag **Planned**; when a module was built its planned entries were deleted. Since 2026-11-14 every agreed endpoint is built (129 operations on 2026-11-16; the code has 132 endpoint methods, the 3 extra exist only in the `demo` profile), the planned file is empty.
+The contract is **generated from the running code**, so it can never drift from what the backend actually does. Endpoints of modules not built yet came from `src/main/resources/openapi/planned-endpoints.json` (written from Appendices B and C of the API Data Dictionary) and carried the tag **Planned**; when a module was built its planned entries were deleted. Since 2026-11-14 every agreed endpoint is built (129 operations on 2026-11-16; the code has 132 endpoint methods, the 3 extra exist only in the `demo` profile), the planned file is kept on purpose: its `paths` is empty (every agreed endpoint is built) but it still supplies shared schemas to the contract (DEC-36).
 
 Files here (exported from the running backend):
 

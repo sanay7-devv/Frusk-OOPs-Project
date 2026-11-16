@@ -2109,7 +2109,7 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 
 **Options.** Keep TF-IDF only and document the deviation (the earlier choice); embeddings through a second paid provider; **embeddings on the existing Gemini key with TF-IDF fallback** ✔; store embeddings and compare in the database (pgvector, a new extension and migration: not worth it at a few hundred incidents).
 
-**Why 0.93 and 0.90, not the handbook's 0.80 and 0.65.** Gemini vectors are bunched: on the 212 seed incidents unrelated pairs had a median cosine of 0.85 and same-issue pairs 0.95. At 0.80 almost everything would be a "duplicate". The pair was calibrated on the seed data and both values are live settings.
+**Why 0.93 and 0.90, not the handbook's 0.80 and 0.65.** Gemini vectors are bunched. The pair was calibrated during B3 on the 212 seed incidents (DEC-M12-10); at that time unrelated pairs had a median cosine near 0.85 and same-issue pairs near 0.95 (not re-measured since). At 0.80 almost everything would be a "duplicate". Both values are live settings.
 
 **Trade-off.** An external call per new incident and per search (kept inside the free tier by the cap and the cache); a few seconds after creation an incident has no vector and the check uses TF-IDF; scores of the two engines are not comparable, hence `source`.
 
