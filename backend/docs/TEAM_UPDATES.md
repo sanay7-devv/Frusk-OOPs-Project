@@ -88,6 +88,13 @@ Last updated: 2026-11-15 (run profile is Flyway now, `schema-auto` obsolete; S1 
 
 ## 3. Testing and DevOps
 
+- **Regression facts for the Testing teammate (2026-11-16):**
+  - Suites set and restore the settings they assume (auto-categorisation off, rate limits raised) through `smoke_setup.py` and read counts from the API instead of assuming them. There are now **83** live settings.
+  - `autocat.apply.confidence` (DEC-70) makes the backend apply an AI category and so auto-assign incidents, unless it is set to 1; tests that expect an unassigned incident must set it.
+  - The M14 rate limits trip fast scripted runs; raise them for a script (as `smoke_setup.py` does) and restore them afterwards.
+  - Audit rows are protected by append-only triggers (V7) and a seal foreign key (V8), so a test that tampers with them must lift the trigger or use `session_replication_role = replica`. Your Flyway migrations and seed must keep those triggers.
+  - `./mvnw test` needs the database environment variables and a UTC JVM; CI already sets both (PR #21).
+
 - **Smoke suites are now in the repo (2026-11-15):** the Python smoke and contract scripts are at `backend/smoke-tests/` (README there: prerequisites, run order, state files). Use them as the base for regression runs and the test catalogue; they need a running backend and the Docker Postgres container.
 - **Migrations V1 to V10 are in place** (V1 to V9 from you, PR #12; V10 is the backend lead's). The backend runs with Flyway and `ddl-auto=validate` in the normal profiles (`dev`, `demo`, `test`); the temporary `schema-auto` profile (DEC-07) is obsolete and must not be used (a database made with it must be dropped and recreated once). Differences from Appendix A that the migrations carry:
   - `users.password_hash` nullable and `users.google_sub VARCHAR(100) NULL UNIQUE` (DEC-04).
@@ -334,6 +341,6 @@ Description and verified behavior: `SYSTEM_GUIDE.md` sections 12b.1, 12b.3 and 1
   - B3 needs no migration: it uses `incident_embeddings` from your V7. With no key, nothing changes: similarity stays TF-IDF (0.55 and 0.35) and the existing tests and CI do not call Google. If you want to test the embedding path, set `EMBEDDING_API_KEY` (or `LLM_API_KEY` with `LLM_PROVIDER=gemini`); the handbook's T16 thresholds of 0.80 and 0.65 do not apply to embeddings (0.93 and 0.90, see DEC-M12-10).
   - Settings are now **83** (five embedding keys). If a seed or test counts `app_config` keys, update it.
   - New classes you may want to cover (domain, no Spring): `EmbeddingSimilarity` (ranks by cosine; empty if any vector is missing or has another length; scores at or below 0 are dropped), `SlaRiskFlags`. Application: `ReportExportService.requireFormat` (csv, pdf, any case; else `InputValidationException`).
-  - **B5 placeholder:** `[[B5-RESULTS: the regression and smoke-suite numbers for this build are added here by the supervisor]]`.
+  - **Smoke suites (PR #30, 2026-11-16):** `backend/smoke-tests/` now has `run_all.py` (runs every suite on a fresh database and backend) and a README with one line per suite. All 25 suites pass and no backend bug was found; every earlier failure was a stale suite assumption.
 - **Report and content:** similarity now has two engines. Say in the report: "Gemini embeddings when the key and quota allow, TF-IDF cosine otherwise; each answer names its source." Thresholds differ because Gemini vectors are bunched together (unrelated pairs median 0.85, same-issue pairs 0.95 on the 212 seed incidents); DEC-M12-10 has the reasoning and cross-questions. Report PDF export now exists for all eight report types.
 - **Everyone:** the count to quote for the API is **129 operations** in the contract; do not quote 132 (that includes three demo-only methods).

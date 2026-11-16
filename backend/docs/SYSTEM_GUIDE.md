@@ -1728,7 +1728,7 @@ flowchart LR
 * **Settings added (5, total 83).** `dup.embedding.threshold.duplicate`, `dup.embedding.threshold.related`, `embedding.rate.per.minute`, `embedding.backfill.batch`, `embedding.backfill.interval.seconds`.
 * **Environment.** `EMBEDDING_API_KEY`, `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_BASE_URL` (all optional, see `.env.example`).
 
-**Verified behavior.** (B5 placeholder, filled after the regression run) `[[B5-RESULTS: embedding smoke and regression numbers go here]]`
+**Verified behavior.** The 25 smoke suites pass on a fresh database (PR #30, 2026-11-16); no check count specific to embeddings was recorded in that run, so none is claimed here. Without a key the embedding path is off and TF-IDF answers, which is what the suites exercise.
 
 ---
 
@@ -2716,7 +2716,7 @@ Full reasoning, alternatives and likely cross-questions (for the PDF report and 
 | 2026-11-15 | Smoke suites handed over to the Testing teammate: the Python suites (one per module, plus the contract and endpoint sweep checks) now live in `backend/smoke-tests/` with a README (prerequisites, run order, state dependencies); no script logic changed. |
 | 2026-11-15 | Docs brought up to date with `main`: the run profile is `dev` with Flyway (migrations V1 to V10 landed, PR #12 and V10), `schema-auto` (D-006, DEC-07) marked superseded and its file obsolete (the file was removed later, see the 2026-11-16 row); operation count 129 stated everywhere as current; "viva" wording replaced by the PDF report and recorded video; ROADMAP and rubric ticks corrected (S1, G3, G4, Docker and CI, 26 cases, A13, A8). |
 | 2026-11-16 | B1 to B4 merged and documented (PRs #26, #27, #28, #29): `slaState=AT_RISK` from the SLA risk scan (`SlaRiskFlags`, section 12b.1, DEC-M12-11); report export as PDF (`format=csv|pdf`, `ExportSink`, `ReportPdfRenderer`, `OpenPdfReportRenderer`, section 12b.3, DEC-M12-12); Gemini embeddings for similarity with TF-IDF fallback (section 12c.9, DEC-M12-10, five new settings, 83 in total, `source` on similar matches); the `schema-auto` profile and `SchemaAutoSupport` removed. Doc fixes: six notification channels, 25 repository interfaces, 129 contract operations versus 132 endpoint methods, a pointer to `frontend/FRONTEND_GUIDE.md` for the screens. |
-| 2026-11-16 | `[[B5-RESULTS]]` Regression run and smoke-suite results (placeholder: the supervisor adds the numbers, the date and the commit here). |
+| 2026-11-16 | Smoke suites brought up to date (PR #30): `run_all.py` runs every suite on a fresh database and backend; `smoke_setup.py` sets and restores the autocat and rate-limit settings; `demo_timings_check.py` measures demo timings in real time; the endpoint sweep now hits all 129 operations. All 25 suites pass and no backend bug was found; every earlier failure was a stale suite assumption. |
 
 ---
 
