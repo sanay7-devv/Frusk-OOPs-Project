@@ -54,7 +54,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -163,6 +163,8 @@ check("setup: resolve, verify, in progress, request-info worked", r1[0] == 200 a
 # SLA flags: i2 overdue (violation), i3 at ~88 percent (first warning). The monitor runs every 5 s.
 sql(f"update incidents set resolution_due = now() - interval '2 hours' where id = {i2['id']}")
 sql(f"update incidents set resolution_due = now() + interval '30 minutes' where id = {i3['id']}")
+import smoke_setup  # noqa: E402
+smoke_setup.settle_monitors(sql, DB)  # the 5 s interval only applies after the first 60 s tick
 time.sleep(14)
 
 # ---------------------------------------------------------------- search: filters alone, against direct SQL counts
@@ -209,17 +211,28 @@ flag_where = {
     "MET": "(i.status in ('RESOLVED','VERIFIED','CLOSED') and i.resolved_at is not null "
            "and i.resolved_at <= i.resolution_due and not i.resp_violated and not i.res_violated)",
 }
+# B1: the risk scan's flagged incidents are AT_RISK and leave OK and WARNING, so those two are checked together
+at_risk_total = listing(A, "&slaState=AT_RISK")["totalItems"]
 for state, where in flag_where.items():
     got = listing(A, f"&slaState={state}")
+    if state in ("OK", "WARNING"):
+        continue
     check(f"slaState={state} = direct count on the stored flags", got["totalItems"] == count(where),
           (got["totalItems"], count(where)))
+ok_warn = listing(A, "&slaState=OK")["totalItems"] + listing(A, "&slaState=WARNING")["totalItems"] + at_risk_total
+check("slaState OK + WARNING + AT_RISK = direct count of the OK and WARNING flags (AT_RISK takes over from both)",
+      ok_warn == count(flag_where["OK"]) + count(flag_where["WARNING"]), (ok_warn, count(flag_where["OK"]),
+                                                                             count(flag_where["WARNING"])))
 check("slaState VIOLATED finds the overdue incident", i2["id"] in ids(A, "&slaState=VIOLATED"))
 check("slaState WARNING finds the incident at 88 percent", i3["id"] in ids(A, "&slaState=WARNING"),
       sql(f"select res_warn75_sent, res_violated from incidents where id={i3['id']}"))
 check("slaState PAUSED finds the one waiting for user info", i6["id"] in ids(A, "&slaState=PAUSED"))
 check("slaState MET finds the resolved incident", i1["id"] in ids(A, "&slaState=MET"))
 check("slaState bad value is 400", call("GET", "/incidents?slaState=NOPE", token=A)[0] == 400)
-check("slaState AT_RISK is accepted and empty until M12", listing(A, "&slaState=AT_RISK")["totalItems"] == 0)
+check("slaState AT_RISK is accepted; only open, running, not violated incidents can match",
+      call("GET", "/incidents?slaState=AT_RISK", token=A)[0] == 200
+      and all(i["status"] not in ("RESOLVED", "VERIFIED", "CLOSED") and i["slaState"] == "AT_RISK"
+              for i in listing(A, "&slaState=AT_RISK&size=100")["items"]))
 
 # combinations, paging, sorting
 combo = listing(A, f"&serviceId={svc_a}&status=RESOLVED&status=VERIFIED&priority=P1&priority=P2&priority=P3&priority=P4")
@@ -238,7 +251,8 @@ check("bad sort field is 400", call("GET", "/incidents?sort=nope,asc", token=A)[
 # visibility in the query
 check("employee sees only own incidents", ids(E1) == sqlids(f"i.reporter_id = {emp1} or i.assignee_id = {emp1}"))
 check("technician sees assigned or own", ids(T1) == sqlids(f"i.reporter_id = {tech1} or i.assignee_id = {tech1}"))
-check("team lead and admin see all", ids(L) == ids(A) and len(ids(A)) == count("true"))
+check("team lead and admin see all (the seed holds more than one page, so compare totals)",
+      ids(L) == ids(A) and listing(A)["totalItems"] == listing(L)["totalItems"] == count("true"))
 check("employee slaState filter stays inside their own incidents",
       ids(E2, "&slaState=VIOLATED") <= sqlids(f"i.reporter_id = {emp2}"))
 
@@ -324,6 +338,30 @@ for t in ("overview", "services", "trends", "priority-distribution", "category-d
 check("export workload: admin 200, employee 403",
       raw("GET", "/reports/export?type=workload", token=A)[0] == 200 and raw("GET", "/reports/export?type=workload", token=E1)[0] == 403)
 check("export unknown type is 400", raw("GET", "/reports/export?type=secrets", token=A)[0] == 400)
+# PDF format (gap B2)
+for t in ("incidents", "overview", "services", "trends", "priority-distribution", "category-distribution", "sla-compliance", "workload"):
+    s, h, body = raw("GET", f"/reports/export?type={t}&format=pdf", token=A)
+    check(f"export pdf type {t}: 200, application/pdf, %PDF magic, filename",
+          s == 200 and h.get("Content-Type", "").startswith("application/pdf") and body[:5] == b"%PDF-"
+          and f'{t}.pdf' in h.get("Content-Disposition", ""), (s, h.get("Content-Type"), body[:20]))
+check("export pdf: format is case-insensitive and csv stays the default",
+      raw("GET", "/reports/export?type=overview&format=PDF", token=A)[2][:4] == b"%PDF"
+      and raw("GET", "/reports/export?type=overview&format=csv", token=A)[1].get("Content-Type", "").startswith("text/csv")
+      and raw("GET", "/reports/export?type=overview", token=A)[1].get("Content-Type", "").startswith("text/csv"))
+s, body = call("GET", "/reports/export?type=overview&format=docx", token=A)
+check("export unknown format is 400 VALIDATION_FAILED with fieldErrors on format",
+      s == 400 and body["code"] == "VALIDATION_FAILED" and any(f.get("field") == "format" for f in body["fieldErrors"]), (s, body))
+s, body = call("GET", "/reports/export?type=secrets&format=pdf", token=A)
+check("export pdf unknown type is 400 VALIDATION_FAILED on type",
+      s == 400 and body["code"] == "VALIDATION_FAILED" and any(f.get("field") == "type" for f in body["fieldErrors"]), (s, body))
+check("export pdf: employee workload 403, employee own incidents 200, no login 401",
+      raw("GET", "/reports/export?type=workload&format=pdf", token=E1)[0] == 403
+      and raw("GET", "/reports/export?type=incidents&format=pdf", token=E1)[2][:4] == b"%PDF"
+      and raw("GET", "/reports/export?type=overview&format=pdf")[0] == 401)
+check("export pdf: range parameters accepted",
+      raw("GET", "/reports/export?type=services&format=pdf&from=2020-01-01T00:00:00Z&to=2099-01-01T00:00:00Z", token=A)[2][:4] == b"%PDF"
+      and raw("GET", "/reports/export?type=trends&format=pdf&from=2020-01-01T00:00:00Z&to=2099-01-01T00:00:00Z", token=A)[0] in (200, 400),
+      raw("GET", "/reports/export?type=services&format=pdf&from=2020-01-01T00:00:00Z&to=2099-01-01T00:00:00Z", token=A)[:2])
 call("PUT", "/admin/config", [{"key": "report.export.max.rows", "value": "3"}], token=A)
 s, _, body = raw("GET", "/reports/export?type=incidents", token=A)
 check("export row cap (setting report.export.max.rows) is honoured", len(body.decode().strip().split("\r\n")) == 4)
@@ -381,7 +419,7 @@ check("post-incident: a stranger gets 404, the reporter 200",
       call("GET", f"/incidents/{i1['id']}/post-incident-report", token=E2)[0] == 404
       and call("GET", f"/incidents/{i1['id']}/post-incident-report", token=E1)[0] == 200)
 s, h, pdf = raw("GET", f"/incidents/{i1['id']}/post-incident-report/pdf", token=A)
-pdf_path = os.path.join(os.environ.get("TEMP", "."), f"m10_{RUN}.pdf")
+pdf_path = os.path.join(__import__("tempfile").gettempdir(), f"m10_{RUN}.pdf")
 open(pdf_path, "wb").write(pdf)
 txt = subprocess.run(["pdftotext", "-layout", pdf_path, "-"], capture_output=True, text=True).stdout
 check("PDF: 200, application/pdf, starts with %PDF", s == 200 and "pdf" in h.get("Content-Type", "") and pdf[:4] == b"%PDF")

@@ -45,7 +45,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 

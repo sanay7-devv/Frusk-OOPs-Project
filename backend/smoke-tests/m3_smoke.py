@@ -35,7 +35,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", os.environ.get("SMOKE_DB", "iitsm"), "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -163,7 +163,7 @@ check("update timeout -> 200", s == 200 and b["timeoutMinutes"] == 1, (s, b))
 
 # ---------------------------------------------------------------- configuration
 s, cfg = call("GET", "/admin/config", token=A)
-check("GET /admin/config lists all 76 settings with defaults", s == 200 and len(cfg) == 76
+check("GET /admin/config lists all 83 settings with defaults", s == 200 and len(cfg) == 83
       and {"key", "value", "defaultValue", "description"} == set(cfg[0].keys()), (s, len(cfg) if s == 200 else cfg))
 s, b = call("PUT", "/admin/config", [{"key": "assignment.weight.skill", "value": "0.9"}], token=A)
 check("weights not summing to 1.0 -> 400 keyed by config key", s == 400 and field_error(b, "assignment.weight.skill"), (s, b))

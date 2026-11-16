@@ -65,7 +65,7 @@ def check(name, ok, detail=""):
 
 
 def sql(statement):
-    out = subprocess.run(["docker", "exec", "iitsm-db", "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
+    out = subprocess.run(["docker", "exec", os.environ.get("SMOKE_CONTAINER", "iitsm-db"), "psql", "-U", "iitsm", "-d", DB, "-tAc", statement],
                          capture_output=True, text=True)
     return out.stdout.strip() or out.stderr.strip()
 
@@ -244,6 +244,9 @@ s, _ = call("PUT", "/admin/config", [
     {"key": "notification.digest.threshold", "value": "5"},
     {"key": "notification.chat.webhook.url", "value": f"http://localhost:{HOOK_PORT}/hook"}], token=A)
 check("config: M9 settings accepted (webhook URL, retries, backoff, threshold)", s == 200, s)
+# Settings this suite assumes (restored at exit): untitled incidents stay in triage, no 429 on bursts
+import smoke_setup  # noqa: E402
+smoke_setup.tune_with(PORT, A, {**smoke_setup.NO_AUTOCAT, **smoke_setup.NO_RATE_LIMITS})
 s, b = call("PUT", "/admin/config", [{"key": "notification.chat.webhook.url", "value": "ftp://x"}], token=A)
 check("config: a webhook that is not http(s) -> 400 on the key", s == 400 and "notification.chat.webhook.url" in fe(b), (s, b))
 s, b = call("PUT", "/admin/config", [{"key": "notification.email.from", "value": "nope"}], token=A)
@@ -537,7 +540,8 @@ check("violation: the technician hears too (SLA_VIOLATED), the reporter and the 
       count(asha, "IN_APP", "SLA_VIOLATED", v1["id"]) == 1 and count(emp, event="SLA_VIOLATED") == 0
       and count(lead, event="SLA_VIOLATED") == 0, "")
 check("violation: the administrator also gets one mail per violation",
-      wait_for(lambda: len([m for m in mails_to(mail("root")) if "SLA violated" in m["Subject"]]) == 2, 15),
+      wait_for(lambda: len([m for m in mails_to(mail("root"))
+                            if "SLA violated" in m["Subject"] and (v1["code"] in m["Subject"] or v2["code"] in m["Subject"])]) == 2, 15),
       [m["Subject"] for m in mails_to(mail("root"))])
 check("violation: the chat room hears of both (always, whatever the priority)",
       wait_for(lambda: sum(v1["code"] in h.get("text", "") or v2["code"] in h.get("text", "") for h in hooked) >= 2, 10),
