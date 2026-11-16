@@ -349,7 +349,7 @@ Entry template:
 
 - M1 verified over HTTP (2026-11-06): an unauthenticated request returns 401 `TOKEN_INVALID` in the standard body (so `ApiErrorWriter` and its `ObjectMapper` work), unknown paths return 404 `NOT_FOUND` in the standard body, and `X-Request-Id` and `X-Frame-Options: DENY` headers are present.
 - IDE inspection warnings in `GlobalExceptionHandler` are accepted, not errors: "Not annotated parameter overrides @NullMarked parameter" (Spring 7 uses JSpecify null annotations; only matters with a strict null checker such as NullAway, which we do not use), "Parameter 'ex' is never used" (the exception parameter is required so Spring can route to the handler method), and the spell checker flagging `Itsm` (add it to the IDE dictionary).
-- Flyway `No migrations found` in the default profile is expected until V1 arrives (with `schema-auto` Flyway is off). The `Using generated security password` line is gone since M2: `UserDetailsServiceAutoConfiguration` is excluded in `application.properties`.
+- Flyway `No migrations found` in the default profile was expected before V1 arrived (history: with `schema-auto` Flyway was off). Since 2026-11-15 the migrations exist and this line no longer appears. The `Using generated security password` line is gone since M2: `UserDetailsServiceAutoConfiguration` is excluded in `application.properties`.
 - Since M2 the JWT filter is active: requests with a valid Bearer token are authenticated; a bad token gives 401 TOKEN_INVALID, an expired one 401 TOKEN_EXPIRED, only on endpoints that need a login. Health, Swagger UI and `/api/v1/auth/{register,login,refresh}` are public.
 - Deleting a skill that a category or technician still uses logs Hibernate `WARN ... violates foreign key constraint` and `SQLState: 23503`. Expected: `CatalogService.deleteSkill` flushes, catches the violation and returns 400 "the skill is still used". Not an error.
 - If seeded `app_config` values break a rule (for example assignment weights not summing to 1.0), the app refuses to start with VALIDATION_FAILED naming the key; fix the row, not the code.
@@ -394,7 +394,7 @@ Entry template:
 - Cause: the script's password starts with "Smoke", a word of the name; the new rule (DEC-92) refuses passwords that contain a name word of 4 or more characters.
 - Fix: none in code (the rule is intended). The script's password prefix has to change (for example `PW = "Ab9-Zq" + secrets.token_hex(4) + "9"`); with that change it passes 27/27. The shared script was not edited by session C (reported to the supervisor).
 - Prevention: test passwords must not contain the test user's name or e-mail part.
-- Status: open until the shared script is changed
+- Status: fixed (PR #24: `auth_smoke.py` on `main` uses `PW = "Ab9-Zq" + secrets.token_hex(4) + "9"` and passes 27/27)
 
 ### E-M12B-1: The reporter edit lock answered 403 for a closed incident
 

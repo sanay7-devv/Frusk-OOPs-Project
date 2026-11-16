@@ -1,6 +1,6 @@
 # I-ITSM Backend: System Guide
 
-> **What this is.** A living, plain-language guide to everything the backend does and why it is built the way it is. It is updated with every module, so it always describes the code as it really is. It feeds the project report, the demo walkthrough and the viva.
+> **What this is.** A living, plain-language guide to everything the backend does and why it is built the way it is. It is updated with every module, so it always describes the code as it really is. It feeds the project report (PDF), the recorded video and the demo walkthrough. The screens are the Frontend teammate's: how far each one is wired to this API is in `frontend/FRONTEND_GUIDE.md` (several still run on hardcoded data), so this guide describes the backend only.
 >
 > **How to read it.** Sections 1 to 4 give the big picture. Section 5 onwards has one chapter per module, each with *what it does*, *how it works* (with diagrams), *the classes involved* and *the rules it enforces*. Diagrams are written in Mermaid and render on GitHub and in IntelliJ.
 
@@ -9,7 +9,7 @@
 | **Project** | I-ITSM: Intelligent IT Service Management and Incident Resolution System (CS F213 OOP, BITS Pilani Hyderabad, Sem I 2026-27) |
 | **Component** | Backend (Spring Boot REST API) |
 | **Owner** | Backend Lead |
-| **Last updated** | 2026-11-14 (M12 rest, M13, M14 core and M2b merged; every agreed endpoint built) |
+| **Last updated** | 2026-11-16 (everything agreed is built; 129 contract operations (132 endpoint methods, 3 demo-only); 83 live settings; Flyway V1 to V10; B1 `AT_RISK`, B2 report PDF, B3 Gemini embeddings and B4 removal of `schema-auto` merged) |
 | **Source of truth for scope** | Backend Lead Handbook (modules M1 to M14) and the API Data Dictionary |
 
 ---
@@ -60,14 +60,14 @@
 | **M6** Assignment | Five strategies (Composite with service familiarity), eligibility with reasons, auto-assign on creation, triage, explainable recommendations, technician workload and queue | ✅ Done and smoke-tested (33/33) |
 | **M7** SLA engine | Scheduled monitor: warnings at 75 % and 90 %, violations at 100 %, each exactly once; `sla_violations`; `SlaWarning` / `SlaViolated` events; `GET /sla/violations` | ✅ Done and smoke-tested, incl. the business-hours calendar; its events become notifications (M9) |
 | **M8** Events and audit | Domain events (Observer); append-only audit trail of every incident action, SLA alert, failed login, refused request, role and settings change; incident history; admin audit search | ✅ Done and smoke-tested |
-| **M9** Notifications | Five channels (inbox, WebSocket push, mail, simulated SMS for P1, chat webhook), after-commit async listener, per-user preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints | ✅ Done and smoke-tested (72 checks, needs Mailpit) |
-| **M12** Intelligence (core) | Category and intake suggestions, TF-IDF similar incidents, suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Core done and smoke-tested (55 + scan + no-key); the rest (section 12e) done 2026-11-14: duplicate check on create, applied AI category, mark-duplicate, problem records with correlation, Major Incident Mode (S2: known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem), recurring-problem detector (E2), chatbot intake (A1), outage drill (D2, demo); `m12b_smoke.py` 107 |
-| **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV export; E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12b) | ✅ Done and smoke-tested (135 checks); the reporter withdraw action (G3) followed with M12 |
+| **M9** Notifications | Six channels (inbox, WebSocket push, mail, simulated SMS for P1, simulated mobile push (A4), chat webhook), after-commit async listener, per-user preferences with locked critical alerts, digest for SLA warning storms, `/notifications` endpoints | ✅ Done and smoke-tested (72 checks, needs Mailpit) |
+| **M12** Intelligence (core) | Category and intake suggestions, similar incidents (Gemini embeddings when available, TF-IDF otherwise, section 12c.9), suggested resolutions, thread summary, SLA risk score with a scheduled scan; offline keyword engine by default, optional LLM with redaction, fallback and circuit breaker (section 12c) | ✅ Done and smoke-tested (`m12_smoke.py` 61, `m12b_smoke.py` 107, `m12b_drill.py` 9, `m12c_embedding_smoke.py` 26); the rest (section 12e) done 2026-11-14: duplicate check on create, applied AI category, mark-duplicate, problem records with correlation, Major Incident Mode (S2: known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem), recurring-problem detector (E2), chatbot intake (A1), outage drill (D2, demo); `m12b_smoke.py` 107 |
+| **M10** Search and reports | All search filters incl. `slaState`; reports (overview, workload, services, trends, distributions, SLA compliance) and CSV or PDF export (`format=csv|pdf`, section 12b.3); `slaState=AT_RISK` from the SLA risk scan (section 12b.1); E3 coverage risk; E4 post-incident report with PDF; feedback; saved views; priority what-if (section 12b) | ✅ Done and smoke-tested (147 checks, 2026-11-16); the reporter withdraw action (G3) followed with M12 |
 | **M11** Escalation (section 12d) | Chain of Responsibility (technician, team lead, system admin, IT manager), escalation monitor with triage escalation and one final exhausted alert, manual `POST /incidents/{id}/escalate`, escalation preview, auto-verify job, demo-only adjustable clock | ✅ Done and smoke-tested (`m11_smoke.py`); its events are notified by M9 since the E-034 fix (each hop to the holders of the level it reached, the exhausted alert to every administrator, `e034_check.py`) |
 | **M13** Real-time, dashboard, graph (section 12f) | Live admin dashboard (`DashboardListener` after commit, `GET /dashboard/live`, `/topic/dashboard` events and coalesced counters), WebSocket permission per destination and close at token expiry, `GET /services/graph`, `/services/{id}/impact`, E1 status board `GET /services/status`, `ServiceGraph` | ✅ Done and smoke-tested (`m13_smoke.py` 72) |
-| **M14** Hardening (section 12g) | Attachments, 503 `SERVICE_UNAVAILABLE` on database or AI outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, S3 sealed audit trail (`GET /audit/verify`, `POST /audit/seal`); G4 and C3 done with M12 | ✅ Core done and smoke-tested (`m14_smoke.py` 81) · ⏳ A7 load test |
+| **M14** Hardening (section 12g) | Attachments, 503 `SERVICE_UNAVAILABLE` on database or AI outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, S3 sealed audit trail (`GET /audit/verify`, `POST /audit/seal`); G4 and C3 done with M12 | ✅ Core done and smoke-tested (`m14_smoke.py` 74) · ⏳ A7 load test |
 | **M2b** Google sign-in (section 12h) | `POST /auth/google` behind a verifier port: JJWT adapter with Google's published keys, offline fake (dev, demo, test only); link by verified email, optional auto-registration | ✅ Done and smoke-tested with the fake verifier (`m2b_smoke.py` 32); the real adapter is not yet tried against Google |
-| **S1** Service Desk Simulator (section 12i) | Replays the last N real incidents in memory through the real assignment engine under up to three configurations on a virtual clock; compares SLA violations, time to resolve, waiting time and fairness; `POST /admin/simulations`, `/apply` | ✅ Done and smoke-tested (`s1_smoke.py` 50) |
+| **S1** Service Desk Simulator (section 12i) | Replays the last N real incidents in memory through the real assignment engine under up to three configurations on a virtual clock; compares SLA violations, time to resolve, waiting time and fairness; `POST /admin/simulations`, `/apply` | ✅ Done and smoke-tested (`s1_smoke.py` 51) |
 | **A12, A4, A8** (sections 12j and 12k) | Password reset by mailed link and optional two-step verification (TOTP); simulated mobile push behind a gateway port; Prometheus metrics behind a scrape token and a Grafana dashboard | ✅ Done; `a12_a4_smoke.py` 72 checks, the 40 automated tests pass on migration V10 |
 | Accepted additions | Signature features S1 to S3, demo aids D1 and D2, challenge features E1 to E5, additions A1 to A14, review fixes (section 18) | 🟡 Mostly built: S1, S2, S3, D1, D2, E1, E2, E3, E4, A1, A6, A11, G2, G3, G4, C1 to C4 done; A7 index review and scale-out path written (`SCALING.md`), its load test is the Testing teammate's; A4, A8, A12, A13 done (sections 12j, 12k and `TRACEABILITY.md`); A5 cloud deployment decided against (DEC-118); E5, A2 are frontend |
 
@@ -1420,7 +1420,7 @@ flowchart LR
     C3 --> N
 ```
 
-Patterns: **Observer** (`NotificationListener`), **Adapter** (`NotificationChannel` and its five adapters), **Factory** (`NotificationFactory`), a small seam for later teams (`TeamResolver`), **Repository**.
+Patterns: **Observer** (`NotificationListener`), **Adapter** (`NotificationChannel` and its six adapters), **Factory** (`NotificationFactory`), a small seam for later teams (`TeamResolver`), **Repository**.
 
 ### 12a.2 Who hears what
 
@@ -1478,7 +1478,7 @@ WebSocket: connect to `/ws`, send the access token as the STOMP `Authorization: 
 ### 12a.6 Settings (live, `app_config`) and tables
 
 `notification.digest.threshold` (5), `notification.email.retries` (3), `notification.email.backoff.seconds` (2), `notification.email.from` (`no-reply@iitsm.local`), `notification.link.base.url` (`http://localhost:5173`), `notification.chat.webhook.url` (empty).
-Tables `notifications` and `notification_preferences` as in Appendix A.4 (column `read` is `seen` in the entity). Under `schema-auto` Hibernate adds a CHECK that also allows `CHAT`; the migration should keep the four values of the appendix.
+Tables `notifications` and `notification_preferences` as in Appendix A.4 (column `read` is `seen` in the entity). Under the removed `schema-auto` profile Hibernate added a CHECK that also allowed `CHAT`; the real migrations (V5, V10) own the CHECK now.
 
 ### 12a.7 Verified behavior (2026-11-13)
 
@@ -1535,7 +1535,7 @@ flowchart LR
 | `VIOLATED` | open, not paused, and a response or resolution violation flag is set; or finished (RESOLVED, VERIFIED, CLOSED) but not met |
 | `PAUSED` | open and the resolution clock is paused (PENDING_USER_INFO) |
 | `MET` | finished, resolved no later than the resolution deadline, and no violation flag |
-| `AT_RISK` | nothing until the SLA risk score exists (M12) |
+| `AT_RISK` | open, running, not yet violated, and flagged by the SLA risk scan (M12, DEC-M12-11). It replaces `OK` and `WARNING` for that incident; `VIOLATED`, `PAUSED` and `MET` are never replaced. The detail, the list and the filter read the same flags (`SlaRiskFlags`), so they agree |
 
 Consequence: the list can trail the detail view by up to one monitor interval (60 s by default). The detail view computes the state live; the list filter reports what the monitor has recorded.
 
@@ -1553,13 +1553,13 @@ Every report covers the incidents the caller may see (employee: own; technician:
 | `GET /reports/sla-compliance?from&to&groupBy=priority\|service\|technician` | `[{label, total, met, violated, compliancePercent}]` |
 | `GET /reports/workload` (TEAM_VIEW) | `[{technicianId, name, active, load, maxLoad, avgResolutionMinutes}]` |
 | `GET /reports/coverage-risk?onlyFlagged` (TEAM_VIEW) | E3, section 12b.4 |
-| `GET /reports/export?type&from&to&format=csv` | CSV, section 12b.3 |
+| `GET /reports/export?type&from&to&format=csv|pdf` | CSV (default) or PDF, section 12b.3; any other `format` is 400 `VALIDATION_FAILED` |
 
 Definitions shared by all reports (one place, `NativeReportRepository`): **open** = NEW to REOPENED, **resolved** = RESOLVED, VERIFIED or CLOSED, so open + resolved = total. **Violated** = the incident has an `sla_violations` row, or was resolved after its resolution deadline. **Judged** = has a deadline, was not closed as duplicate or withdrawn, and is finished or violated. **Met** = judged and not violated, so met + violated = total in every compliance row, and `overview.slaViolations` equals the sum of `violated`. `from`/`to` limit by creation time (trends: created by creation time, resolved by resolution time); `to` is exclusive and must be after `from`.
 
-### 12b.3 CSV export
+### 12b.3 CSV and PDF export
 
-`GET /reports/export?type=` with `incidents`, `overview`, `services`, `trends`, `priority-distribution`, `category-distribution`, `sla-compliance` or `workload` (TEAM_VIEW). The rows are written straight to the response (no async dispatch, so the JWT check stays valid), the incident export walks through the list 200 rows at a time, and the number of rows is capped by the setting `report.export.max.rows` (default 10000). **Formula injection (DEC-62):** a text cell starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe; numbers are never altered; cells with commas, quotes or line breaks are quoted (RFC 4180).
+`GET /reports/export?type=` with `incidents`, `overview`, `services`, `trends`, `priority-distribution`, `category-distribution`, `sla-compliance` or `workload` (TEAM_VIEW). The rows are written straight to the response (no async dispatch, so the JWT check stays valid), the incident export walks through the list 200 rows at a time, and the number of rows is capped by the setting `report.export.max.rows` (default 10000). **Formula injection (DEC-62):** a text cell starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe; numbers are never altered; cells with commas, quotes or line breaks are quoted (RFC 4180). **PDF (B2, DEC-M12-12):** `format=pdf` returns `application/pdf` (`attachment; filename=<type>.pdf`). `ReportExportService` writes the same rows into an `ExportSink` (`header`, `row`): `CsvWriter` for CSV, a collector for PDF. The collector hands a `ReportDocument` (title, range, generated-at time, headers, rows, and `capped`) to the `ReportPdfRenderer` port; `OpenPdfReportRenderer` (OpenPDF, landscape A4, header row repeated on every page, same look as the post-incident PDF) draws it. The same row cap `report.export.max.rows` applies and the PDF says when it cut the table short. The format is checked first (`requireFormat`, any case); anything but `csv` or `pdf` is 400 `VALIDATION_FAILED` and nothing is written. Permissions are the same as for CSV.
 
 ### 12b.4 E3 Coverage risk report
 
@@ -1579,7 +1579,7 @@ A service has no category of its own, so the report ties them through history (D
 
 ### 12b.7 Verified behavior (2026-11-14)
 
-Smoke test `m10_smoke.py` (135 checks) against the running app: each of the ten filters alone equals a direct database count, combinations and paging and sorting, `slaState` against the stored flags (OK, WARNING, VIOLATED, PAUSED, MET), visibility for employee, technician, team lead and administrator; every report total equals a direct count for five users and open + resolved = total, distributions and services sum to the total, compliance met + violated = total, trends equal creation and resolution counts, employees count only their own incidents; CSV neutralises a `=HYPERLINK` title, is capped by the setting and refuses an unknown type and a non-staff workload export; coverage flags a single holder, gives NO_COVERAGE when that holder goes OFF_DUTY and leaves a two-holder minor service unflagged; the post-incident report and its PDF (text extracted with `pdftotext`) show the timeline, SLA outcome, durations and people; feedback follows reporter-only, once, status rules; saved views are private, validated and limited; the what-if matches a real incident's priority and changes nothing.
+Smoke test `m10_smoke.py` (147 checks since 2026-11-16, with the PDF and `AT_RISK` checks) against the running app: each of the ten filters alone equals a direct database count, combinations and paging and sorting, `slaState` against the stored flags (OK, WARNING, VIOLATED, PAUSED, MET), visibility for employee, technician, team lead and administrator; every report total equals a direct count for five users and open + resolved = total, distributions and services sum to the total, compliance met + violated = total, trends equal creation and resolution counts, employees count only their own incidents; CSV neutralises a `=HYPERLINK` title, is capped by the setting and refuses an unknown type and a non-staff workload export; coverage flags a single holder, gives NO_COVERAGE when that holder goes OFF_DUTY and leaves a two-holder minor service unflagged; the post-incident report and its PDF (text extracted with `pdftotext`) show the timeline, SLA outcome, durations and people; feedback follows reporter-only, once, status rules; saved views are private, validated and limited; the what-if matches a real incident's priority and changes nothing.
 
 ---
 
@@ -1601,7 +1601,7 @@ flowchart LR
     P --> G[GeminiLlmClient<br/>default, HTTP, 8 s timeout]
     P --> A[AnthropicLlmClient<br/>optional]
     F -->|key missing, KEYWORD primary,<br/>failure, timeout, bad JSON, breaker open| K[KeywordTextAnalysisService<br/>TF-IDF + dictionary]
-    L -.->|findSimilar is always TF-IDF| K
+    L -.->|findSimilar: embeddings when every vector exists, else TF-IDF| K
 ```
 
 The data is loaded first (a few milliseconds, then the connection is released), the engine runs with no database connection held, and the answer carries `source` (`LLM` or `KEYWORD`).
@@ -1612,7 +1612,7 @@ The data is loaded first (a few milliseconds, then the connection is released), 
 |---|---|---|
 | `POST /intelligence/suggest-category` `{title, description, serviceId?}` | any signed-in user | `{categoryId, categoryName, confidence, reason, source}`; category null and reason empty when confidence is below `autocat.min.confidence` (0.60) |
 | `POST /intelligence/suggest-intake` `{description}` | any | `{categoryId, categoryName, impact, urgency, confidence, reason, source}` |
-| `POST /intelligence/similar` `{title, description, serviceId}` | any | `[{incidentId, code, title, similarity, status, match}]`: open incidents of that service created inside `dup.window.hours`; `match` is `DUPLICATE` or `RELATED` (addition to the contract) |
+| `POST /intelligence/similar` `{title, description, serviceId}` | any | `[{incidentId, code, title, similarity, status, match, source}]`: open incidents of that service created inside `dup.window.hours`; `match` is `DUPLICATE` or `RELATED` (addition to the contract); `source` is `EMBEDDING` or `KEYWORD`, the engine whose scale the score is on (the thresholds differ, section 12c.9) |
 | `GET /incidents/{id}/similar` | reporter, assignee, team lead, admin | the same list for an existing incident (window counted either side of its creation) |
 | `GET /incidents/{id}/suggested-resolutions` | assignee, team lead, admin | `[{fromIncidentId, code, title, similarity, rootCause, notes, steps, reusable}]` from resolved incidents |
 | `POST /incidents/{id}/summary` | assignee, team lead, admin | `{summary, handoverNotes, source}` |
@@ -1623,7 +1623,7 @@ A caller who may not see the incident gets 404 `INCIDENT_NOT_FOUND`; a viewer wh
 ### 12c.3 The keyword engine (the default, fully offline)
 
 * **Similarity: TF-IDF cosine.** Text becomes word stems (lower case, filler words dropped, a light stemmer so "disconnects" and "disconnected" meet). A word weighs more the rarer it is across incidents of the last `ai.idf.window.days` (90) days; the title counts double; two texts are compared by the cosine of their weight vectors (1.0 identical wording, 0.0 nothing in common). Candidates are open incidents of the same service inside the window.
-* **Thresholds are its own, not the embedding ones.** The handbook's 0.80 and 0.65 were written for embeddings; TF-IDF scores lower for the same pair, so there are separate keys `dup.tfidf.threshold.duplicate` (0.55) and `.related` (0.35), plus `resolution.min.similarity` (0.30) for suggested fixes. Calibration below.
+* **Thresholds are its own, not the embedding ones.** The handbook's 0.80 and 0.65 were written for embeddings; TF-IDF scores lower for the same pair, so there are separate keys `dup.tfidf.threshold.duplicate` (0.55) and `.related` (0.35), plus `resolution.min.similarity` (0.30) for suggested fixes. Calibration below. When embeddings are available the pair `dup.embedding.threshold.*` (0.93 and 0.90) applies instead (section 12c.9).
 * **Category: two witnesses.** (1) A dictionary (`ai/keywords.json`, editable by the Report teammate): a category is linked to every topic whose name words appear in the category's name, and each matched word adds its weight `w`; the dictionary confidence is `1 - 0.5^(sum of w)`, so one strong word (1.5) gives 0.65 and two normal words 0.75. (2) The five nearest past incidents that people categorised, with TF-IDF: share of the neighbours in the category times its best similarity. Combined as `1 - (1 - dictionary)(1 - history)`, capped at 0.95. A single weak word stays below 0.60 and nothing is shown.
 * **Impact and urgency:** phrase cues from the same file (`everyone`, `outage`, `only me`, `not urgent`, `asap`, ...); the longest matching phrase wins, so "not urgent" beats "urgent"; a number of people named ("150 users") also sets impact. Neutral 3 and 3 when no cue.
 * **Summary:** a template over the thread: status, priority, assignee, counts, latest note, resolution, and handover notes (next step for the status, due time, last three notes, last four recorded actions).
@@ -1670,7 +1670,7 @@ Precision of DUPLICATE is 100 % on this set and recall 87.5 %; lowering the dupl
 
 ### 12c.8 Verified behavior (2026-11-14)
 
-`m12_smoke.py` (55 checks, scripted client) plus its scan phase (1) and no-key phase (3), against a running app:
+`m12_smoke.py` (61 checks, scripted client) plus its scan phase (1) and no-key phase (3), against a running app:
 
 | Area | Checked |
 |---|---|
@@ -1684,6 +1684,51 @@ Precision of DUPLICATE is 100 % on this set and recall 87.5 %; lowering the dupl
 | No key | With the real provider and no key: suggest-category, suggest-intake and similar answer from the keyword engine |
 
 Earlier suites run against this build: auth 27/27, M3 42/42, M6 33/33, M7 35/35, M8 24/24, calendar 11/11, M4 53/54 (the one failure expects `GIVE_FEEDBACK`, an M10 feature that is not in this branch), endpoint sweep 72/72 (65 earlier operations plus the 7 new ones; the M10 checks added to the shared sweep were removed from the copy used for this branch).
+
+---
+
+### 12c.9 Gemini embeddings for similarity (B3, DEC-M12-10)
+
+**What it does.** Similar-incident search and the duplicate check on create compare the meaning of two texts, not only shared words ("VPN keeps dropping" and "cannot stay connected to the VPN"). Each incident gets a vector from the Gemini embedding model; two incidents are compared by the cosine of their vectors. When anything is missing, TF-IDF (the keyword engine above) answers instead, so nothing breaks without a key. DEC-M12-10 supersedes DEC-M12-3 ("no embeddings").
+
+```mermaid
+flowchart LR
+    C[Incident created] -->|after commit, own thread| L[EmbeddingListener]
+    L --> E[EmbeddingService<br/>cap, breaker, redaction]
+    J[EmbeddingBackfillJob<br/>every 60 s, batch of 20] --> E
+    E --> P[EmbeddingClient port]
+    P --> G[GeminiEmbeddingClient]
+    P --> D[DisabledEmbeddingClient<br/>no key]
+    E --> R[(incident_embeddings<br/>vector, model)]
+    Q[Similar or duplicate check] --> I[IntelligenceService]
+    I -->|every vector present| S[EmbeddingSimilarity cosine<br/>source EMBEDDING, 0.93 / 0.90]
+    I -->|otherwise| K[TF-IDF<br/>source KEYWORD, 0.55 / 0.35]
+```
+
+**Pieces (all on `main`).**
+
+| Piece | Class | Role |
+|---|---|---|
+| Port | `EmbeddingClient` (`application/intelligence`) | texts in, one L2-normalised vector per text out; `enabled()`, `model()` |
+| Adapters | `GeminiEmbeddingClient`, `DisabledEmbeddingClient` (`infrastructure/ai`) | the Google call (default model `gemini-embedding-001`, 768 dimensions); a null object when there is no key |
+| Settings | `EmbeddingProperties` (`app.embedding.*`) | provider `gemini` or `none`, key, model, dimensions, base URL |
+| Orchestration | `EmbeddingService` | the per-minute cap, the circuit breaker, a 10-minute cache of query vectors, redaction (`TextRedactor`) before text leaves the system, text cut at 6000 characters |
+| Observer | `EmbeddingListener` | embeds a new incident after commit on its own single thread (`embeddingExecutor`); a failure is logged and the backfill picks it up |
+| Job | `EmbeddingBackfillJob` | every `embedding.backfill.interval.seconds` (60), embeds up to `embedding.backfill.batch` (20) newest incidents with no vector or a vector from another model; does nothing without a key or with `ai.primary=KEYWORD`; never throws |
+| Repository | `EmbeddingRepository` (domain), `JdbcEmbeddingRepository` | table `incident_embeddings` (from V7: `incident_id`, `vector`, `model`, `created_at`); no new migration |
+| Scoring | `EmbeddingSimilarity` (domain), `SimilarResult` | all or nothing: if the query or any candidate has no vector of the same length, the whole request uses TF-IDF, so two scales are never mixed |
+
+**Rules.**
+
+* **Key.** `EMBEDDING_API_KEY`; if it is empty and the LLM provider is Gemini, the LLM key (`LLM_API_KEY`) is used, so one free Google key does both. The Anthropic key is never sent to Google. No key, `EMBEDDING_PROVIDER=none` or `ai.primary=KEYWORD` means embeddings are off and TF-IDF answers.
+* **Cost control (free tier).** An incident is embedded once (the model name is stored with the vector, so a changed model recomputes). A search embeds only the query, once, and the vector is kept for 10 minutes so the incident created right after its duplicate check costs no second call. All callers share one cap of `embedding.rate.per.minute` (60) texts per sliding minute; a call over the cap is skipped and the backfill catches up later.
+* **Circuit breaker.** A failure, a 429 or a timeout opens the same kind of breaker as the LLM (`ai.breaker.*` settings); while it is open nothing is called and similarity silently uses TF-IDF.
+* **Thresholds.** `dup.embedding.threshold.duplicate` 0.93 and `.related` 0.90 (validated: duplicate must be greater than related). The handbook's 0.80 and 0.65 do not fit Gemini vectors: the pair was calibrated during B3 on the 212 seed incidents (DEC-M12-10); at that time unrelated pairs had a median cosine near 0.85 and same-issue pairs near 0.95 (not re-measured since), so 0.80 would call nearly everything a duplicate. TF-IDF keeps 0.55 and 0.35.
+* **Answer.** Every similar match carries `source` (`EMBEDDING` or `KEYWORD`), because the two scores are on different scales. Suggested resolutions and the SLA-risk history stay on TF-IDF.
+* **Settings added (5, total 83).** `dup.embedding.threshold.duplicate`, `dup.embedding.threshold.related`, `embedding.rate.per.minute`, `embedding.backfill.batch`, `embedding.backfill.interval.seconds`.
+* **Environment.** `EMBEDDING_API_KEY`, `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_BASE_URL` (all optional, see `.env.example`).
+
+**Verified behavior.** Verified by running suites on 2026-11-16 (fresh database each): `m12c_embedding_smoke.py` 26/26 (the embedding path, including the TF-IDF fallback) and `m10_smoke.py` 147/147 (includes the PDF export and the `AT_RISK` checks); the whole set of 25 suites passes (PR #30).
 
 ---
 
@@ -2042,7 +2087,7 @@ Demo (two minutes): create an incident, press Seal, edit one audit row in SQL (`
 
 ### 12g.8 Verified behavior (2026-11-14)
 
-`m14_smoke.py` (81 checks, own database): attachments (good PNG, log, PDF, JPEG, GIF; a program renamed `.png`, a PDF named `.png`, binary named `.txt`, empty, 5 MB + 1 byte, 8 MB, wrong content type refused; exactly 5 MB accepted; path and special characters cleaned; 11th file refused; stranger gets 404 on list, upload and download; bytes and headers equal on download; 10 audit entries; missing file on disk is 404), outage (Postgres container stopped: GET, login and attachments answer 503 in the standard body without trace and with `Retry-After`; the next request after the restart succeeds), password policy (7 refusals, 2 acceptances, including 42 accented letters), input limits, rate limits (login 5 then 429 with `Retry-After`, creation 4 then 429, a second user unaffected, reads unlimited, AI 3 then 429, 30 forbidden calls write 5 + 1 audit entries), and the seal chain (seal, nothing new gives 204, a second seal chains to the first, a tampered row is named `RECORD_CHANGED`, a deleted row `RECORD_MISSING`, an edited seal `SEAL_ALTERED`, an edited link `SEAL_CHAIN_BROKEN`, each restored state is intact again, seal hashes appear in the log). `auth_smoke.py` (27, after changing its password prefix), `m4_smoke.py` (54/54) and `m8_smoke.py` (24/24) pass against the same build.
+`m14_smoke.py` (74 checks, own database): attachments (good PNG, log, PDF, JPEG, GIF; a program renamed `.png`, a PDF named `.png`, binary named `.txt`, empty, 5 MB + 1 byte, 8 MB, wrong content type refused; exactly 5 MB accepted; path and special characters cleaned; 11th file refused; stranger gets 404 on list, upload and download; bytes and headers equal on download; 10 audit entries; missing file on disk is 404), outage (Postgres container stopped: GET, login and attachments answer 503 in the standard body without trace and with `Retry-After`; the next request after the restart succeeds), password policy (7 refusals, 2 acceptances, including 42 accented letters), input limits, rate limits (login 5 then 429 with `Retry-After`, creation 4 then 429, a second user unaffected, reads unlimited, AI 3 then 429, 30 forbidden calls write 5 + 1 audit entries), and the seal chain (seal, nothing new gives 204, a second seal chains to the first, a tampered row is named `RECORD_CHANGED`, a deleted row `RECORD_MISSING`, an edited seal `SEAL_ALTERED`, an edited link `SEAL_CHAIN_BROKEN`, each restored state is intact again, seal hashes appear in the log). `auth_smoke.py` (27, after changing its password prefix), `m4_smoke.py` (54/54) and `m8_smoke.py` (24/24) pass against the same build.
 
 ---
 
@@ -2205,7 +2250,7 @@ Patterns shown: **Strategy** (configurations compared side by side through the s
 
 ### 12i.6 Verified behavior (2026-11-15)
 
-`smoke-tests/s1_smoke.py` 50/50 on the Flyway seed (212 incidents, 18 users): 401 without a token and 403 for an employee; every field present; assigned counts add up; the same request gives the same result; three configurations come back in request order with different results; fewer technicians never shorten the wait; a ten-times storm never shortens the wait; custom weights echoed; four configurations, weights not adding to 1, an unknown strategy, fewer than 10 incidents and a speed-up below 1 are all 400; **audit records, incidents, settings, round-robin memory and notifications are unchanged after simulating**; apply answers 204, changes the live strategy, is audited once and is restored. Example, last 200 incidents at 8 times speed: composite 59.5% of incidents past their deadline, load-only 37.0%, round robin 65.0%.
+`smoke-tests/s1_smoke.py` 51/51 on the Flyway seed (212 incidents, 18 users): 401 without a token and 403 for an employee; every field present; assigned counts add up; the same request gives the same result; three configurations come back in request order with different results; fewer technicians never shorten the wait; a ten-times storm never shortens the wait; custom weights echoed; four configurations, weights not adding to 1, an unknown strategy, fewer than 10 incidents and a speed-up below 1 are all 400; **audit records, incidents, settings, round-robin memory and notifications are unchanged after simulating**; apply answers 204, changes the live strategy, is audited once and is restored. Example, last 200 incidents at 8 times speed: composite 59.5% of incidents past their deadline, load-only 37.0%, round robin 65.0%.
 
 Limits: the seed's assignments were generated, not chosen by the engine, so `matchesRealAssigneePercent` (47 to 58% on the seed) is a diagnostic here, not a validation; business-hours calendars are not applied to the allowed time.
 
@@ -2305,7 +2350,7 @@ A sixth notification channel, `PUSH_SIM`, behind the port `PushGateway` (the shi
 
 ## 13. Data model built so far
 
-Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). Until the Flyway migrations arrive they are generated from the entities (temporary profile `schema-auto`, decision D-006) and were checked column by column against Appendix A.
+Tables follow the locked schema in Appendix A of the handbook (snake_case, plural names, `TIMESTAMPTZ` in UTC). They are created by the Flyway migrations V1 to V10 (`src/main/resources/db/migration`; V1 to V9 from the Testing teammate, V10 from the backend lead) and Hibernate only validates them (`ddl-auto=validate`). Until 2026-11-15 they were generated from the entities (temporary profile `schema-auto`, decision D-006, removed on 2026-11-15 in PR #26 together with `SchemaAutoSupport`).
 
 ```mermaid
 erDiagram
@@ -2540,8 +2585,8 @@ New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 1
 | Pattern | Status | Where |
 |---|---|---|
 | **Factory** | ✅ in use | `UserFactory` (every user starts as EMPLOYEE) and `IncidentFactory` (validates, takes the next code, creates in NEW and classifies). `NotificationFactory` (M9) builds notification wording from templates. |
-| **Repository** | ✅ in use | Ten domain interfaces (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
-| **Adapter** | ✅ in use | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with five adapters (in-app, email, WebSocket, simulated SMS, chat webhook, M9); `LlmClient` port with `GeminiLlmClient` (default), `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c); `PostIncidentPdfRenderer` with OpenPDF (M10); `DashboardPublisher` with `StompDashboardPublisher` (M13); `AttachmentStorage` with `DiskAttachmentStorage` (M14); `GoogleIdTokenVerifier` with `JjwtGoogleIdTokenVerifier` and the offline `FakeGoogleIdTokenVerifier` (M2b, section 12h). |
+| **Repository** | ✅ in use | 25 domain interfaces (plus the helper types `PageSlice` and `IncidentSearch`) (`UserRepository`, `ItServiceRepository`, `SlaPolicyRepository`, ...) implemented by Spring Data in `infrastructure/persistence`. |
+| **Adapter** | ✅ in use | `AccessTokenIssuer` port with the JWT adapter `JwtService`; `NotificationChannel` with six adapters (in-app, email, WebSocket, simulated SMS, simulated mobile push, chat webhook; M9, A4); `EmbeddingClient` with the Gemini and disabled adapters (B3); `ReportPdfRenderer` with `OpenPdfReportRenderer` (B2); `LlmClient` port with `GeminiLlmClient` (default), `AnthropicLlmClient` (HTTP) and `ScriptedLlmClient`, and `LlmTextAnalysisService` adapting it to `TextAnalysisService` (section 12c); `PostIncidentPdfRenderer` with OpenPDF (M10); `DashboardPublisher` with `StompDashboardPublisher` (M13); `AttachmentStorage` with `DiskAttachmentStorage` (M14); `GoogleIdTokenVerifier` with `JjwtGoogleIdTokenVerifier` and the offline `FakeGoogleIdTokenVerifier` (M2b, section 12h). |
 | **State** | ✅ in use | `IncidentState` with ten subclasses (`NewState` ... `ReopenedState`) and `StateFactory`; illegal moves throw `InvalidStateTransitionException` (section 8.2). |
 | **Strategy** | ✅ in use (priority and assignment) | `PriorityStrategy` / `WeightedPriorityStrategy` (by `priority.strategy`) with `PriorityOverrideRule` objects; `AssignmentStrategy` with Composite, Skill, Load, RoundRobin and ExperiencePriority (by `assignment.strategy`, switchable at runtime). `FactorStrategy` adds a small template method. M12: `TextAnalysisService` with `KeywordTextAnalysisService`, `LlmTextAnalysisService` and the `FallbackTextAnalysisService` that chooses by `ai.primary` (section 12c). |
 | **Observer** | ✅ in use | Services publish events (`IncidentChanged`, `SlaWarning`, `SlaViolated`, `TriageNeeded`, `IncidentEscalated`, `EscalationExhausted`, `SecurityAuditEvent`, ...); `AuditListener` records them in the action's transaction; `NotificationListener` (M9) and `DashboardListener` (M13) react after commit, asynchronously. |
@@ -2569,19 +2614,23 @@ New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 1
 | Database user / password | `DB_USER` / `DB_PASSWORD` | `iitsm` / `iitsm` |
 | JWT secret (32+ bytes) | `JWT_SECRET` | none in production; a throwaway value in `dev` and `demo` |
 | Frontend origin for CORS | `CORS_ORIGIN` | `http://localhost:5173` |
+| Embedding key (optional; falls back to `LLM_API_KEY` when `LLM_PROVIDER=gemini`) | `EMBEDDING_API_KEY` | empty = embeddings off, TF-IDF answers |
 | Active profiles | `SPRING_PROFILES_ACTIVE` | `dev` |
 | HTTP port | `SERVER_PORT` | `8080` |
 
 | Profile | Purpose |
 |---|---|
-| `dev` | Development: seed data (once available), debug logging |
-| `demo` | Recorded demo: short timers (SLA monitor 30 s, escalation 1 min, auto-verify 2 min) |
+| `dev` | Development (the default): Flyway migrations plus seed data (`db/seed`, V100 to V102), debug logging |
+| `demo` | Recorded demo: migrations, seed and `db/demo`; short timers (SLA monitor 30 s, escalation 1 min, auto-verify 2 min) |
 | `test` | Automated tests with Testcontainers PostgreSQL |
-| `schema-auto` | **Temporary**: Hibernate creates the tables until the Flyway migrations arrive (use as `dev,schema-auto`) |
 
-**Run locally:** start PostgreSQL (`docker start iitsm-db`, host port 5433), then run `IitsmBackendApplication` from IntelliJ with `SPRING_PROFILES_ACTIVE=dev,schema-auto`. Swagger UI: `http://localhost:8080/swagger-ui.html`. On this machine, MiniTool ShadowMaker's agent takes port 8080 at boot: `net stop MTAgentService` (Administrator) frees it, or use `SERVER_PORT=8081`.
+**Smoke suites:** `backend/smoke-tests/run_all.py` runs them with plain `dev`, or `dev,demo` for the demo groups (`m12b_drill.py`, the demo part of `m11_smoke.py`, `demo_timings_check.py`).
+
+**Run locally:** start PostgreSQL (`docker start iitsm-db`, host port 5433), with an empty `iitsm` database, then run `IitsmBackendApplication` from IntelliJ with `SPRING_PROFILES_ACTIVE=dev` (the default). Flyway creates the tables (V1 to V10) and loads the reference data and demo seed; Hibernate only validates. A database made earlier with `schema-auto` must be dropped and recreated once (`docker exec iitsm-db psql -U iitsm -d postgres -c "DROP DATABASE iitsm" -c "CREATE DATABASE iitsm"`). Swagger UI: `http://localhost:8080/swagger-ui.html`. On this machine, MiniTool ShadowMaker's agent takes port 8080 at boot: `net stop MTAgentService` (Administrator) frees it, or use `SERVER_PORT=8081`.
 
 ### 15.1 The API contract
+
+**Counts.** The contract (`docs/openapi/iitsm-api.json`) has **129 operations**. The code has **132** mapped endpoint methods: 3 exist only in the `demo` profile (`GET /admin/demo/clock`, `POST /admin/demo/clock/advance`, `POST /admin/demo/outage-drill`), so they are not in the contract. Live settings: **83** (`ConfigKey`).
 
 The OpenAPI contract is generated from the running code (D-013): controllers and DTOs describe the implemented endpoints, each with the error codes it can return (`@ApiErrors`, `ErrorCode`), and `PlannedEndpointsCustomizer` adds the agreed endpoints of modules not built yet under the tag **Planned** (`x-module` names the module). Exported copies, how to view them and the list of additions to Appendices B/C: `docs/openapi/` and its `README.md`.
 
@@ -2601,7 +2650,7 @@ flowchart LR
 
 ## 16. Key decisions
 
-Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.md`**. Short index: `docs/ROADMAP.md`, section 6.
+Full reasoning, alternatives and likely cross-questions (for the PDF report and the recorded video): **`docs/DECISIONS.md`**. Short index: `docs/ROADMAP.md`, section 6.
 
 | ID | Decision | In one line |
 |---|---|---|
@@ -2609,7 +2658,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | D-003 | Package `com.iitsm`, four layers | Web / Application / Domain / Infrastructure |
 | D-004 | Spring Boot 4.1.1 instead of 3.x | Boot 3.5 is out of free support with unpatched CVEs |
 | D-005 | One error handler, request ID in a header, generic codes for framework errors | Every failure has the same shape |
-| D-006 | Temporary `schema-auto` profile | Backend work does not wait for the pending migrations |
+| D-006 | Temporary `schema-auto` profile (superseded by the Flyway migrations; the profile was removed 2026-11-15, PR #26) | Backend work did not wait for the migrations |
 | D-007 | Role mapping: single-table hierarchy + one profile table per role | Real OOP while keeping the agreed schema |
 | D-008 | Auth design | Permission-based authorities, stateless access tokens, rotating hashed refresh tokens with theft detection |
 | D-009 | Catalog and configuration design | Soft delete for services and categories, cycle-free service graph, global SLA uniqueness checked in code, settings as a validated immutable snapshot swapped after commit |
@@ -2640,7 +2689,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-06 | M3 Catalog and configuration built and smoke-tested (42/42): services with dependency graph, category tree, skills, SLA and escalation policies, SLA resolver, live `app_config` with validation. Lockout limits moved from properties to `app_config`. |
 | 2026-11-06 | M4 incidents (State pattern, factory, creation pipeline, manual assignment, SLA clocks, comments, lists) and M5 priority engine built and smoke-tested (54/54, covering T01, T03, T05, T06, T08, T09, T11, T12, T14, T15, T18, T21, T24, T25). Fixed during testing: empty resolution wrote NULL into `reusable_solution`; status-based refusals now always return 409, not 403. |
 | 2026-11-06 | M6 assignment built and smoke-tested (33/33): five strategies, Composite with service familiarity, skill = best + coverage, explainable recommendations with excluded list (team decisions DEC-28 to DEC-30), auto-assign on creation, triage, technician workload and queue. Admin user, role and skill management completes M2. M2, M3, M4 suites re-run green (156 checks). |
-| 2026-11-07 | Scope rule D-012: every handbook feature is built, including business-hours calendars (M7), notification preferences (M9), PDF export and saved views (M10), thread summarizer (M12) and the dependency graph (M13); no timeline or scope tiers. |
+| 2026-11-07 | Scope rule D-012: every handbook feature is built, including business-hours calendars (M7), notification preferences (M9), saved views and CSV report export (M10; a PDF exists only for the post-incident report, E4), thread summarizer (M12) and the dependency graph (M13); no timeline or scope tiers. |
 | 2026-11-07 | API contract published (D-013): 98 operations (62 implemented, 36 planned), error codes on every implemented operation, export and README in `docs/openapi`. |
 | 2026-11-07 | M7 SLA monitor built and smoke-tested (section 11, D-014): fire-once warnings and violations, `sla_violations`, `SlaWarning` / `SlaViolated` events, `GET /sla/violations`; sections 11 to 15 renumbered to 12 to 16. |
 | 2026-11-07 | M8 events and audit trail built and smoke-tested (section 12, D-015): `IncidentChanged`, `TriageNeeded`, `SecurityAuditEvent`, `AuditListener`, `audit_records`, `GET /incidents/{id}/history`, `GET /audit`; LOGIN_FAILED, ACCESS_DENIED, USER_ROLE_CHANGED, CONFIG_CHANGED audited. Fixed E-021 (optional booleans rejected by Jackson 3). Sections renumbered again (M8 is 12). |
@@ -2659,7 +2708,7 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-14 | E-034 fixed: escalation notices come from `IncidentEscalated` / `EscalationExhausted` (exact recipients per hop, exhausted alert to every administrator with its own wording and SMS for P1, manual escalator not told); `IncidentEscalated` gained `actorId`; the ESCALATED audit action no longer notifies. `m11_smoke.py` 78/78, `e034_check.py` 12/12. |
 | 2026-11-14 | M2b Google sign-in (section 12h, DEC-100 to DEC-103, session D): `POST /auth/google` behind the `GoogleIdTokenVerifier` port, JJWT adapter with Google's published keys, offline fake for dev, demo and test, link by verified email, optional auto-registration (`auth.google.autoregister`). `m2b_smoke.py` 32/32, `auth_smoke.py` 27/27. |
 | 2026-11-14 | M13 real-time layer, dashboard, service graph (section 12f, DEC-80 to DEC-84, session B): live admin dashboard (`DashboardListener` after commit, `GET /dashboard/live`, `/topic/dashboard` events plus coalesced counters), WebSocket permission per destination and close at token expiry (4001), `GET /services/graph`, `/services/{id}/impact`, E1 status board `GET /services/status`, `ServiceGraph` domain class. Two settings. `m13_smoke.py` 72/72. |
-| 2026-11-14 | M14 hardening and S3 (section 12g, DEC-90 to DEC-94, session C): attachments (upload, list, download), 503 `SERVICE_UNAVAILABLE` on database outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, sealed audit trail (`GET /audit/verify`, `POST /audit/seal`). Four settings; new tables `audit_seals`, `audit_seal_entries` (plus `incident_attachments` of Appendix A). `m14_smoke.py` 81/81. |
+| 2026-11-14 | M14 hardening and S3 (section 12g, DEC-90 to DEC-94, session C): attachments (upload, list, download), 503 `SERVICE_UNAVAILABLE` on database outage, one shared sliding-window rate limiter (login, Google sign-in, incident creation, AI, denied-audit flood guard), password policy, input limits, sealed audit trail (`GET /audit/verify`, `POST /audit/seal`). Four settings; new tables `audit_seals`, `audit_seal_entries` (plus `incident_attachments` of Appendix A). `m14_smoke.py` 74/74. |
 | 2026-11-14 | M12 rest (section 12e, DEC-70 to DEC-78, session A): duplicate check on create (409 with `similar`, `confirmNotDuplicate`), applied AI category, `mark-duplicate`, problem records with correlation (text and dependency graph), Major Incident Mode (known outages, one-click join, crowd-driven priority, root cause from the graph, Resolve whole problem; resolving the lead only leaves notes, DEC-72 changed by the user), E2 recurring-problem detector, A1 chatbot intake, D2 outage drill (demo); G3 withdraw, G4 reporter edit lock, C3 security-category setting and internal-audit factory. Six settings. `m12b_smoke.py` 107/107, `m10_smoke.py` 135/135. |
 | 2026-11-14 | The four parallel branches and the E-034 fix merged on `backend/integrate-m12-m14` (order M2b, M13, M14, M12, E-034): `ConfigKey` blocks joined (76 settings), `planned-endpoints.json` merged by key (now empty: every agreed endpoint is built), sections 12a to 12h put in order, this guide's sections 1, 3 and 18 updated. |
 | 2026-11-14 | Regression of the merged build (ERROR_LOG E-035): every suite green on fresh databases after test-script fixes; DEC-110 (grouping into a problem record is not announced, `NotificationRules.announced`); endpoint sweep covers all 117 operations, contract re-exported with 0 planned. |
@@ -2667,6 +2716,9 @@ Full reasoning, alternatives and likely viva cross-questions: **`docs/DECISIONS.
 | 2026-11-15 | S1 Service Desk Simulator built (section 12i, DEC-112): `POST /admin/simulations` and `/apply`, `domain.simulation` (`DeskSimulation`, `ServiceTimeModel`), read-only transaction with the round-robin memory restored, `s1_smoke.py` 50/50 on the Flyway seed. `GET /incidents?minEscalationLevel=` (DEC-113). Index review and scale-out path written in `SCALING.md` (DEC-114, A7 half). Gemini checked against the real service (DEC-111). Contract: 119 operations. |
 | 2026-11-15 | A8 observability (section 12j, DEC-115): `/actuator/prometheus` behind a scrape token, 16 business and system metrics, Grafana dashboard in `backend/observability`. A12 (section 12k, DEC-116): password reset by mailed link and TOTP two-step verification. A4 (DEC-117): simulated mobile push behind the `PushGateway` port. Migration V10. A13 `TRACEABILITY.md` (DEC-118); cloud deployment decided against. Simulator bug fixed (ERROR_LOG E-036). Contract: 129 operations. |
 | 2026-11-15 | Smoke suites handed over to the Testing teammate: the Python suites (one per module, plus the contract and endpoint sweep checks) now live in `backend/smoke-tests/` with a README (prerequisites, run order, state dependencies); no script logic changed. |
+| 2026-11-15 | Docs brought up to date with `main`: the run profile is `dev` with Flyway (migrations V1 to V10 landed, PR #12 and V10), `schema-auto` (D-006, DEC-07) marked superseded and its file obsolete (the file was removed later, see the 2026-11-16 row); operation count 129 stated everywhere as current; "viva" wording replaced by the PDF report and recorded video; ROADMAP and rubric ticks corrected (S1, G3, G4, Docker and CI, 26 cases, A13, A8). |
+| 2026-11-16 | B1 to B4 merged and documented (PRs #26, #27, #28, #29): `slaState=AT_RISK` from the SLA risk scan (`SlaRiskFlags`, section 12b.1, DEC-M12-11); report export as PDF (`format=csv|pdf`, `ExportSink`, `ReportPdfRenderer`, `OpenPdfReportRenderer`, section 12b.3, DEC-M12-12); Gemini embeddings for similarity with TF-IDF fallback (section 12c.9, DEC-M12-10, five new settings, 83 in total, `source` on similar matches); the `schema-auto` profile and `SchemaAutoSupport` removed. Doc fixes: six notification channels, 25 repository interfaces, 129 contract operations versus 132 endpoint methods, a pointer to `frontend/FRONTEND_GUIDE.md` for the screens. |
+| 2026-11-16 | Smoke suites brought up to date (PR #30): `run_all.py` runs every suite on a fresh database and backend; `smoke_setup.py` sets and restores the autocat and rate-limit settings; `demo_timings_check.py` measures demo timings in real time; the endpoint sweep now hits all 129 operations. All 25 suites pass and no backend bug was found; every earlier failure was a stale suite assumption. |
 
 ---
 

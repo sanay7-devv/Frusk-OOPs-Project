@@ -31,7 +31,7 @@ That rule changes priorities:
 | Employee: home, my incidents, incident detail | Home is fake data; the other two are empty stubs |
 | Technician: queue, workbench, workload | Entirely fake data, zero API calls |
 | Team lead: team queue, escalations | Entirely fake data, zero API calls |
-| Notifications | Fake list; only the unread count is real |
+| Notifications | Fake list; the unread badge in the shell is real; mark read and mark all read call the API but ignore the result (the first always sends id 1) |
 | Theme | Fine. Keep it. The screens ignore it (section 6) |
 
 **The three workflows the video must show cannot be recorded today**: an employee can file an incident, but then cannot see it, the technician cannot act on it, and the team lead cannot assign it.
@@ -69,7 +69,7 @@ The backend is complete: 129 operations, all built, including the Service Desk S
 | `/tech/workload` | none | **Fake** | Slot diagram for "Marcus Chen" |
 | `/lead/team-queue` | none | **Fake** | "POD-AMER-L1", fake auto-assign |
 | `/lead/escalations` | none | **Fake** | "DEFCON-3 ACTIVE" |
-| `/notifications` | `/notifications/unread-count` only | **Fake** | 8 hardcoded notifications |
+| `/notifications` | `/notifications/unread-count` (shell badge); `POST /notifications/1/read` and `/read-all`, result ignored | **Fake** | 8 hardcoded notifications |
 
 ---
 

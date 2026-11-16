@@ -61,7 +61,7 @@ Written 2026-11-15 (decision DEC-118). Every requirement of the course brief (`O
 | Manage IT services | `/admin/services`, `/admin/services/{id}/dependencies` | services `real`, dependency graph `real` (cards, not a drawn graph) |
 | Configure SLA policies | `/admin/sla-policies`, `/admin/escalation-policies` | SLA `real`, escalation `real` |
 | Configure categories | `/admin/categories` | categories `real` |
-| Configure assignment strategies | `PUT /admin/config` (78 settings), simulator `POST /admin/simulations` and `/apply` | config `real`; simulator `none` |
+| Configure assignment strategies | `PUT /admin/config` (83 settings), simulator `POST /admin/simulations` and `/apply` | config `real`; simulator `none` |
 | Monitor incidents | `GET /incidents`, `GET /dashboard/live`, STOMP `/topic/dashboard`, `GET /services/status` | dashboard `real`, tickets `real` |
 | View reports | `GET /reports/overview`, `/services`, `/trends`, `/priority-distribution`, `/category-distribution`, `/sla-compliance`, `/workload`, `/coverage-risk`, `/export` | reports `real` (computed in the browser, not from these endpoints) |
 | View audit logs | `GET /audit`, `/audit/verify`, `POST /audit/seal` | audit log `real` |
