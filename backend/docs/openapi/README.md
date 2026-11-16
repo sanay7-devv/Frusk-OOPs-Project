@@ -1,6 +1,6 @@
 # I-ITSM API contract (OpenAPI)
 
-The contract is **generated from the running code**, so it can never drift from what the backend actually does. Endpoints of modules not built yet came from `src/main/resources/openapi/planned-endpoints.json` (written from Appendices B and C of the API Data Dictionary) and carried the tag **Planned**; when a module was built its planned entries were deleted. Since 2026-11-14 every agreed endpoint is built: 117 operations, the planned file is empty.
+The contract is **generated from the running code**, so it can never drift from what the backend actually does. Endpoints of modules not built yet came from `src/main/resources/openapi/planned-endpoints.json` (written from Appendices B and C of the API Data Dictionary) and carried the tag **Planned**; when a module was built its planned entries were deleted. Since 2026-11-14 every agreed endpoint is built (129 operations on 2026-11-16; the code has 132 endpoint methods, the 3 extra exist only in the `demo` profile), the planned file is empty.
 
 Files here (exported from the running backend):
 
@@ -78,7 +78,7 @@ All features accepted on 2026-11-13 are built (see the table above), including t
 
 ## Regenerating the export
 
-With the backend running on port 8081 (`SERVER_PORT=8081`, profiles `dev,schema-auto`), from the project folder that contains `IITSM_Backend` and `smoke-tests`:
+With the backend running on port 8081 (`SERVER_PORT=8081`, profile `dev`, Flyway builds the schema), from the project folder that contains `IITSM_Backend` and `smoke-tests`:
 
 ```bash
 python -I smoke-tests/check_contract.py IITSM_Backend/backend/docs/openapi

@@ -1,6 +1,6 @@
 # I-ITSM Backend: Decision Record
 
-> **Purpose.** Every significant design decision, in the order it was taken: *when* (date and module), *what* we chose, *which alternatives* we weighed, *why*, the *trade-off* we accept, and the **cross-questions an examiner is likely to ask**, with short answers. Use it to prepare for the demo and viva.
+> **Purpose.** Every significant design decision, in the order it was taken: *when* (date and module), *what* we chose, *which alternatives* we weighed, *why*, the *trade-off* we accept, and the **cross-questions a reader of the report or a viewer of the video is likely to ask**, with short answers. Use it for the PDF report and the recorded video.
 >
 > **How it relates to other docs.** `ROADMAP.md` section 6 keeps the short index (D-numbers); this file holds the full reasoning. `SYSTEM_GUIDE.md` explains *what* the system does; this file explains *why* it is built that way.
 >
@@ -20,7 +20,7 @@
 | [DEC-04](#dec-04-google-sign-in-as-an-extra-not-a-replacement) | Google sign-in as an extra, not a replacement | 2026-10-15 | M2b | ✅ built 2026-11-14 |
 | [DEC-05](#dec-05-one-global-error-handler-and-one-error-shape) | One global error handler and one error shape | 2026-10-16 | M1 | ✅ |
 | [DEC-06](#dec-06-request-id-in-a-header-not-in-the-error-body) | Request ID in a header, not in the error body | 2026-10-16 | M1 | ✅ |
-| [DEC-07](#dec-07-temporary-schema-auto-profile) | Temporary `schema-auto` profile | 2026-11-06 | M2 | ⏳ |
+| [DEC-07](#dec-07-temporary-schema-auto-profile) | Temporary `schema-auto` profile | 2026-11-06 | M2 | 🔁 Superseded 2026-11-15 by the Flyway migrations |
 | [DEC-08](#dec-08-user-composed-of-roles-single-table-role-hierarchy) | User composed of roles; single-table role hierarchy | 2026-11-06 | M2 | ✅ |
 | [DEC-09](#dec-09-authorize-by-permission-not-by-role-name) | Authorize by permission, not by role name | 2026-11-06 | M2 | ✅ |
 | [DEC-10](#dec-10-stateless-jwt-access-tokens-carrying-permissions) | Stateless JWT access tokens carrying permissions | 2026-11-06 | M2 | ✅ |
@@ -70,7 +70,7 @@
 | [DEC-54](#dec-54-m9-notifications-mapping-delivery-storm-control-and-the-websocket-seam) | M9 notifications: mapping, delivery, storm control and the WebSocket seam | 2026-11-13 | M9 | ✅ |
 | [DEC-M12-1](#dec-m12-1-tf-idf-similarity-with-its-own-calibrated-thresholds) | TF-IDF similarity with its own calibrated thresholds | 2026-11-14 | M12 | ✅ |
 | [DEC-M12-2](#dec-m12-2-category-suggestion-blends-a-dictionary-with-past-categorised-incidents) | Category suggestion blends a dictionary with past categorised incidents | 2026-11-14 | M12 | ✅ user decision |
-| [DEC-M12-3](#dec-m12-3-no-embeddings-in-this-part) | No embeddings in this part | 2026-11-14 | M12 | ✅ user decision |
+| [DEC-M12-3](#dec-m12-3-no-embeddings-in-this-part) | No embeddings in this part | 2026-11-14 | M12 | 🔁 Superseded 2026-11-16 by DEC-M12-10 |
 | [DEC-M12-4](#dec-m12-4-the-llm-is-an-http-adapter-behind-a-port-with-redaction-and-strict-json) | The LLM is an HTTP adapter behind a port, with redaction and strict JSON | 2026-11-14 | M12 | ✅ |
 | [DEC-M12-5](#dec-m12-5-fallback-wrapper-and-circuit-breaker) | Fallback wrapper and circuit breaker | 2026-11-14 | M12 | ✅ |
 | [DEC-M12-6](#dec-m12-6-the-summary-is-post-as-in-the-contract) | The summary is POST, as in the contract | 2026-11-14 | M12 | ✅ user decision |
@@ -229,9 +229,9 @@
 
 | When | Module | Status | Also in |
 |---|---|---|---|
-| 2026-11-06, start of M2 | M2 | ⏳ until the V1 to V6 migrations arrive | ROADMAP D-006 |
+| 2026-11-06, start of M2 | M2 | 🔁 Superseded on 2026-11-15: the migrations landed (PR #12, V1 to V9; V10 is ours); the profile file and `SchemaAutoSupport` were removed on 2026-11-15 (PR #26) | ROADMAP D-006 |
 
-**Decision.** A separate profile lets Hibernate create the tables from the entities while the migration files (owned by the Testing teammate) have not arrived. Entities are written strictly to Appendix A, so the switch back is: delete the profile, drop the local database once, start with Flyway and `validate`.
+**Decision (historical; superseded on 2026-11-15, the profile is no longer used).** A separate profile lets Hibernate create the tables from the entities while the migration files (owned by the Testing teammate) have not arrived. Entities are written strictly to Appendix A, so the switch back is: delete the profile, drop the local database once, start with Flyway and `validate`.
 
 **Options considered.** Wait for the migrations · write the SQL ourselves (outside our ownership) · **temporary Hibernate profile** ✔.
 
@@ -926,7 +926,7 @@ Smaller rules the handbook left open:
 |---|---|---|
 | 2026-11-13 | M10 to M13 | ✅ Approved by the user on condition that they suit the demo video; they do, with the changes in DEC-45 (S1 is one screen with one chart; the weight search is dropped) |
 
-**Context.** Most teams will show an LLM that suggests a category or chats. These three are deterministic, explainable, and each one only works because of design decisions already taken, so they double as proof of the architecture in the viva. None depends on an API key.
+**Context.** Most teams will show an LLM that suggests a category or chats. These three are deterministic, explainable, and each one only works because of design decisions already taken, so they double as proof of the architecture in the report and the recorded video. None depends on an API key.
 
 #### S1. Service Desk Simulator (the desk in fast-forward)
 
@@ -1243,9 +1243,9 @@ Smaller rules the handbook left open:
 
 | When | Module | Status |
 |---|---|---|
-| 2026-11-14 | M12 | ✅ user decision |
+| 2026-11-14 | M12 | 🔁 Superseded 2026-11-16 by DEC-M12-10 (embeddings built) |
 
-**Decision.** The embeddings path (`incident_embeddings`, asynchronous computation after commit, hourly backfill) is not built. The table stays unused. `TextAnalysisService.findSimilar` is the interface an embedding engine would implement; the fallback wrapper already routes similarity to one place.
+**Decision (historical).** The embeddings path (`incident_embeddings`, asynchronous computation after commit, hourly backfill) is not built. The table stays unused. `TextAnalysisService.findSimilar` is the interface an embedding engine would implement; the fallback wrapper already routes similarity to one place.
 
 **Why.** The Anthropic API has no embeddings endpoint, so real embeddings need a second provider, a second key and a second failure mode, and cannot be verified offline. TF-IDF is the default in DEC-42 anyway.
 
@@ -2089,3 +2089,54 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **A5 cloud deployment: not doing it** (user decision 2026-11-15). The demonstration runs locally with Docker Compose (`deploy/`). The report says so, and the scale-out path in `SCALING.md` is the answer to "how would it evolve". **Microservices** are likewise not built: a modular monolith with a documented path.
 
 **Cross-question.** *"Why no cloud deployment?"* It adds an account, cost and a failure mode to the recording and earns no marks that the local stack does not; the Docker images and the environment variables are the same ones a cloud service would use.
+
+### DEC-M12-10: Gemini embeddings for similarity, TF-IDF as the fallback (B3)
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-15 (PR #29) | M12 | ✅ built; supersedes DEC-M12-3 |
+
+**Context.** DEC-M12-3 left embeddings out because the Anthropic API has no embeddings endpoint and a second provider looked like too much. Since DEC-111 the default LLM is Google Gemini, which also offers an embedding model on the same free key, so the objection no longer holds, and the handbook (M12, job table 2.7) asks for embeddings, `incident_embeddings` and an `EmbeddingBackfill` job.
+
+**Decision.** Embeddings score similarity when every vector exists; otherwise TF-IDF scores, as before.
+* An `EmbeddingClient` port (Adapter) with `GeminiEmbeddingClient` and a null-object `DisabledEmbeddingClient`; model `gemini-embedding-001`, 768 dimensions.
+* `EmbeddingListener` embeds a new incident after commit on its own thread; `EmbeddingBackfillJob` fills the gaps (and recomputes vectors of another model) every 60 seconds, 20 at a time.
+* Vectors are stored in the existing table `incident_embeddings` with the model name (no new migration).
+* One cap of 60 texts per minute for everything, a circuit breaker like the LLM one, a 10-minute cache of query vectors, redaction before sending.
+* Scoring is all or nothing (`EmbeddingSimilarity`): one missing vector sends the whole request to TF-IDF, so two score scales are never mixed.
+* Thresholds `dup.embedding.threshold.duplicate` 0.93 and `.related` 0.90; TF-IDF stays 0.55 and 0.35. Each match says its `source` (`EMBEDDING` or `KEYWORD`).
+* Key: `EMBEDDING_API_KEY`, else `LLM_API_KEY` when the LLM provider is Gemini; the Anthropic key is never sent to Google.
+
+**Options.** Keep TF-IDF only and document the deviation (the earlier choice); embeddings through a second paid provider; **embeddings on the existing Gemini key with TF-IDF fallback** ✔; store embeddings and compare in the database (pgvector, a new extension and migration: not worth it at a few hundred incidents).
+
+**Why 0.93 and 0.90, not the handbook's 0.80 and 0.65.** Gemini vectors are bunched: on the 212 seed incidents unrelated pairs had a median cosine of 0.85 and same-issue pairs 0.95. At 0.80 almost everything would be a "duplicate". The pair was calibrated on the seed data and both values are live settings.
+
+**Trade-off.** An external call per new incident and per search (kept inside the free tier by the cap and the cache); a few seconds after creation an incident has no vector and the check uses TF-IDF; scores of the two engines are not comparable, hence `source`.
+
+**Cross-questions.** *"What happens with no internet or no key?"* The disabled adapter or the breaker sends everything to TF-IDF; nothing fails. *"Why not mix the two?"* The scales differ (median 0.85 for unrelated pairs against near 0 for TF-IDF), so a mixed ranking would be meaningless. *"Is user text sent to Google?"* Only title and description, after redaction of emails, IP addresses and secrets.
+
+### DEC-M12-11: `AT_RISK` replaces OK and WARNING, from one shared source (B1)
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-15 (PR #28) | M12, M10 | ✅ |
+
+**Decision.** `slaState` can now be `AT_RISK`. The SLA risk scan (`SlaRiskService`) implements a small domain port, `SlaRiskFlags.flaggedIds()`, which the view mapper (`IncidentViewMapper`) and the search (`CriteriaIncidentSearch`) both read. An incident is `AT_RISK` when it is open, its resolution clock is running, it is not violated and its id is flagged; it takes over from `OK` and `WARNING` (so those two filters leave flagged ids out). `VIOLATED`, `PAUSED` and `MET` are never replaced.
+
+**Options.** Compute the score on every list read (too slow); store a flag column (a migration and a second writer); **read the scan's flags through one port** ✔.
+
+**Trade-off.** The flags are as fresh as the last scan (every `sla.risk.scan.interval.seconds`), so a list can trail the detail by one interval.
+
+**Cross-question.** *"Can the list and the detail disagree?"* No: both read the same port.
+
+### DEC-M12-12: Report export as PDF through a sink and a renderer port (B2)
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-15 (PR #27) | M10 | ✅ |
+
+**Decision.** `GET /reports/export` takes `format=csv|pdf` (default csv). `ReportExportService` writes rows into an `ExportSink`, so one code path produces the numbers for both formats; the PDF is drawn by an `OpenPdfReportRenderer` behind the `ReportPdfRenderer` port (Adapter). The row cap and permissions are unchanged. Any other `format` is 400 `VALIDATION_FAILED` before anything is written (earlier the value was silently ignored).
+
+**Options.** A second service for PDF (two copies of every report query); **one sink, two writers** ✔; PDF only for the post-incident report (the old state, a gap against the handbook's Tier 3 "PDF export").
+
+**Trade-off.** A PDF is built in memory, bounded by the row cap, and says when it cut the table short.
