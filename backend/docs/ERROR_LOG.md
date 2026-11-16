@@ -462,3 +462,13 @@ Entry template:
 - Verified: `s1_smoke.py` 51/51 on the dirtied database; the "leaves round-robin memory unchanged" check still passes.
 - Prevention: a simulation must not inherit state that was written at a different point in time; test it on a database that has real activity, not only on the seed.
 - Status: fixed
+
+### E-037: Three contract schemas showed the wrong shape (found by the frontend audit)
+- Date: 2026-11-16
+- Area: OpenAPI export (springdoc), audit
+- Symptom: in `docs/openapi/iitsm-api.json`, `GET /technicians/me/workload` pointed at a `WorkloadView` with `{incidents, from, to, speedUp, excluded}` (the simulator's workload), and the `problems` of `GET /audit/verify` pointed at the problem-record `ProblemView`. The frontend matched the real responses, not the contract. Separately, audit entries carried only `incidentCode`, so the audit screen and the dashboard feed could not link a row to its incident.
+- Cause: springdoc names schemas by the simple class name. `TechnicianWorkService.WorkloadView` and `SimulatorService.WorkloadView`, and `ProblemViews.ProblemView` and `AuditSealService.ProblemView`, had the same simple names, so one schema silently replaced the other.
+- Fix: renamed the simulator's record to `SimulatedWorkloadView` and the seal problem to `SealProblemView` (JSON bodies unchanged); added `incidentId` to `AuditEntryView` (additive). Contract regenerated: 129 operations, no structural problems.
+- Verified: `GET /audit` on the dev seed returns `incidentId` beside `incidentCode`; `check_contract.py` clean; the contract now shows `WorkloadView {load, maxLoad, activeIncidents, resolvedThisWeek, upcomingDeadlines}` and `SealProblemView {recordId, sealId, problem, message}`.
+- Prevention: no two records exposed by the API may share a simple name. Before exporting, run `grep -rhoE "record [A-Z][A-Za-z0-9]*" src/main/java | sort | uniq -d`; the remaining duplicates (`TrendPoint`, `LabelCount`, `AdministratorView`, `TechnicianView`, `Ref`, `Scenario`) are either identical in JSON or not exposed.
+- Status: fixed

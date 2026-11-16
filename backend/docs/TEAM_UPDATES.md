@@ -2,7 +2,7 @@
 
 > **Read this first.** The five handbook PDFs (dated 2026-10-15) are frozen and are not in this repository. This page lists every point where the project now differs from them, per role. Where this page and a handbook disagree, this page wins. Reasons are in `DECISIONS.md` (DEC numbers); the order of work is in `ROADMAP.md` section 5.
 
-Last updated: 2026-11-15 (run profile is Flyway now, `schema-auto` obsolete; S1 simulator, `minEscalationLevel`, A7 review, A12 password reset and TOTP, A4 push, A8 metrics, A13; 129 operations)
+Last updated: 2026-11-16 (contract fixes for the frontend: workload and audit-verify schemas, `incidentId` on audit entries; run profile is Flyway now, `schema-auto` obsolete; S1 simulator, `minEscalationLevel`, A7 review, A12 password reset and TOTP, A4 push, A8 metrics, A13; 129 operations)
 
 ---
 
@@ -48,6 +48,8 @@ Last updated: 2026-11-15 (run profile is Flyway now, `schema-auto` obsolete; S1 
 ---
 
 ## 2. Frontend developer
+
+- **Contract fixes (2026-11-16, ERROR_LOG E-037):** `GET /technicians/me/workload` is `WorkloadView {load, maxLoad, activeIncidents, resolvedThisWeek, upcomingDeadlines[{incidentId, code, type, due, slaState}]}` (the export showed the simulator's shape before; the response itself did not change). The `firstProblem`/`problems` of `GET /audit/verify` are `SealProblemView {recordId, sealId, problem, message}`. Every audit entry (`GET /audit`, `GET /incidents/{id}/history`) now also has `incidentId`, so a row can link to its incident. The full list of frontend work left is `frontend/docs/FRONTEND_WORK_LEFT.md`.
 
 - **Most screens are not connected to the backend yet.** Eleven are placeholders (admin: all incidents, audit log, categories, config, reports, service graph, services, SLA policies, users; employee: my incidents, incident detail). Six run on hardcoded data (admin dashboard, team queue, escalations, technician queue, technician workload, employee home). Login, register and the report form call the API.
 - **Suggested order, following the three demo workflows:**

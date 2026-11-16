@@ -50,7 +50,7 @@ public class SimulatorService {
     public record ConfigurationSpec(String name, String strategy, Map<String, Double> weights, Integer technicians) {
     }
 
-    public record WorkloadView(int incidents, Instant from, Instant to, double speedUp, Map<String, Integer> excluded) {
+    public record SimulatedWorkloadView(int incidents, Instant from, Instant to, double speedUp, Map<String, Integer> excluded) {
     }
 
     public record ConfigurationView(String name, String strategy, Map<String, String> weights, int technicians,
@@ -60,7 +60,7 @@ public class SimulatorService {
                                     List<DeskSimulation.WorkerResult> perTechnician) {
     }
 
-    public record SimulationView(WorkloadView workload, List<String> assumptions, List<ConfigurationView> results,
+    public record SimulationView(SimulatedWorkloadView workload, List<String> assumptions, List<ConfigurationView> results,
                                  String best, String bestReason) {
     }
 
@@ -153,7 +153,7 @@ public class SimulatorService {
             everyone.forEach(w -> w.profile().markAssigned(roundRobinMemory.get(w.technician().getId())));
         }
 
-        WorkloadView view = new WorkloadView(replayed.size(),
+        SimulatedWorkloadView view = new SimulatedWorkloadView(replayed.size(),
                 replayed.isEmpty() ? null : replayed.get(0).getCreatedAt(),
                 replayed.isEmpty() ? null : replayed.get(replayed.size() - 1).getCreatedAt(), factor, excluded);
         return new SimulationView(view, assumptions(times, factor), results, bestOf(results),

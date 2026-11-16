@@ -47,13 +47,13 @@ public class AuditSealService {
     }
 
     /** One finding of the verification, with the plain-language meaning of its kind. */
-    public record ProblemView(Long recordId, Long sealId, String problem, String message) {
+    public record SealProblemView(Long recordId, Long sealId, String problem, String message) {
     }
 
     /** Result of {@code GET /audit/verify}. */
     public record VerifyView(boolean intact, int sealsChecked, int recordsChecked, long unsealedRecords,
-                             Long lastSealId, String lastSealHash, int problemCount, ProblemView firstProblem,
-                             List<ProblemView> problems) {
+                             Long lastSealId, String lastSealHash, int problemCount, SealProblemView firstProblem,
+                             List<SealProblemView> problems) {
     }
 
     private final AuditSealRepository seals;
@@ -98,13 +98,13 @@ public class AuditSealService {
         AuditChainVerifier.Result result = AuditChainVerifier.verify(all, seal -> seals.entries(seal.getId()), seals::factsBetween);
         AuditSeal last = all.isEmpty() ? null : all.get(all.size() - 1);
         long unsealed = seals.countAfter(last == null ? 0 : last.getToId());
-        List<ProblemView> problems = result.problems().stream().map(AuditSealService::view).toList();
+        List<SealProblemView> problems = result.problems().stream().map(AuditSealService::view).toList();
         return new VerifyView(result.intact(), result.sealsChecked(), result.recordsChecked(), unsealed,
                 last == null ? null : last.getId(), last == null ? null : last.getHash(), result.problemCount(),
                 result.firstProblem() == null ? null : view(result.firstProblem()), problems);
     }
 
-    private static ProblemView view(AuditChainVerifier.Problem p) {
-        return new ProblemView(p.recordId(), p.sealId(), p.kind().name(), p.message());
+    private static SealProblemView view(AuditChainVerifier.Problem p) {
+        return new SealProblemView(p.recordId(), p.sealId(), p.kind().name(), p.message());
     }
 }
