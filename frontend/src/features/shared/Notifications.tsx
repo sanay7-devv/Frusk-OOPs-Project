@@ -17,9 +17,10 @@ import {
   Switch,
   FormControlLabel,
   Divider,
+  CircularProgress,
+  Stack,
 } from '@mui/material';
 import {
-  Notifications as NotificationsIcon,
   DoneAll as DoneAllIcon,
   Settings as SettingsIcon,
   Search as SearchIcon,
@@ -29,155 +30,58 @@ import {
   AssignmentInd as AssignmentIndIcon,
   ConfirmationNumber as ConfirmationNumberIcon,
   Schedule as ScheduleIcon,
-  Lan as LanIcon,
-  Devices as DevicesIcon,
-  Hub as HubIcon,
-  EventNote as EventNoteIcon,
-  Badge as BadgeIcon,
-  SmartToy as SmartToyIcon,
   Reply as ReplyIcon,
   RateReview as RateReviewIcon,
-  Visibility as VisibilityIcon,
   Close as CloseIcon,
   NotificationsPaused as NotificationsPausedIcon,
   ChevronRight as ChevronRightIcon,
   ChevronLeft as ChevronLeftIcon,
-  Speed as SpeedIcon,
   Security as SecurityIcon,
-  Build as BuildIcon,
   Home as HomeIcon,
 } from '@mui/icons-material';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
-import { markRead as markReadApi, markAllRead as markAllReadApi } from '../../api/notifications';
+import {
+  listNotifications,
+  unreadCount as getUnreadCount,
+  markRead as markReadApi,
+  markAllRead as markAllReadApi,
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  PreferenceView,
+} from '../../api/notifications';
+import { provideInfo, verifyIncident, submitFeedback } from '../../api/incidents';
+import type { AppNotification } from '../../api/types';
 
-export interface NotificationItem {
-  id: string;
-  category: 'action' | 'sla' | 'assigned' | 'submitted' | 'system';
-  status: 'unread' | 'read';
-  group: 'today' | 'earlier';
-  title: string;
-  incidentCode?: string;
-  badgeLabel?: string;
-  badgeType?: 'action' | 'pending' | 'sla' | 'info';
-  message: string;
-  sender?: string;
-  timeAgo: string;
-  service: string;
-  priority?: 'P1' | 'P2' | 'P3' | 'P4';
-  actions: ('reply' | 'verify' | 'runbook' | 'read')[];
+function formatTimeAgo(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString();
+  } catch {
+    return isoString;
+  }
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    category: 'action',
-    status: 'unread',
-    group: 'today',
-    title: 'Clarification Requested on',
-    incidentCode: 'INC-2026-00104',
-    badgeLabel: 'Action Required',
-    badgeType: 'action',
-    sender: 'Marcus Chen (Support SRE)',
-    message: 'Could you attach the latest AnyConnect diagnostic bundle from /var/log/cisco? We noticed intermittent TLS handshake drops.',
-    timeAgo: '18 mins ago',
-    service: 'Corporate VPN',
-    priority: 'P2',
-    actions: ['reply', 'read'],
-  },
-  {
-    id: 'notif-2',
-    category: 'action',
-    status: 'unread',
-    group: 'today',
-    title: 'Incident Resolved:',
-    incidentCode: 'INC-2026-00082',
-    badgeLabel: 'Pending Verification',
-    badgeType: 'pending',
-    sender: 'Priya Patel',
-    message: 'DisplayLink firmware patch v3.8.1 deployed to your device. Please verify your dual monitor setup.',
-    timeAgo: '1 hour ago',
-    service: 'Hardware Support',
-    priority: 'P4',
-    actions: ['verify', 'read'],
-  },
-  {
-    id: 'notif-3',
-    category: 'sla',
-    status: 'unread',
-    group: 'today',
-    title: 'SLA Warning: Response Due in 15 Minutes',
-    incidentCode: 'INC-2026-00095',
-    badgeLabel: 'Critical SLA',
-    badgeType: 'sla',
-    message: 'Incident INC-2026-00095 has entered the critical SLA window (<25% margin remaining). Tier-2 Lead SRE has been automatically notified and incident escalation protocol initiated.',
-    timeAgo: '2 hours ago',
-    service: 'Payment Ingress',
-    priority: 'P1',
-    actions: ['runbook', 'read'],
-  },
-  {
-    id: 'notif-4',
-    category: 'assigned',
-    status: 'read',
-    group: 'earlier',
-    title: 'Incident Assigned:',
-    incidentCode: 'INC-2026-00108',
-    message: 'Your report “SSO Login Loop for West Coast remote workers” has been assigned to Identity Squad (Lead: Marcus Chen).',
-    timeAgo: 'Yesterday at 16:42',
-    service: 'Identity & SSO',
-    actions: ['read'],
-  },
-  {
-    id: 'notif-5',
-    category: 'submitted',
-    status: 'read',
-    group: 'earlier',
-    title: 'Incident Submitted:',
-    incidentCode: 'INC-2026-00108',
-    message: 'Incident successfully logged with AI triage score P2 High. Estimated initial response within 15 minutes.',
-    timeAgo: 'Yesterday at 16:30',
-    service: 'Auto-Triage Complete',
-    priority: 'P2',
-    actions: ['read'],
-  },
-  {
-    id: 'notif-6',
-    category: 'sla',
-    status: 'read',
-    group: 'earlier',
-    title: 'SLA Restored:',
-    incidentCode: 'INC-2026-00072',
-    message: 'Incident INC-2026-00072 recovery confirmed under MTTR SLA targets.',
-    timeAgo: 'Feb 23 at 11:15',
-    service: 'DevOps Platform Team',
-    actions: ['read'],
-  },
-  {
-    id: 'notif-7',
-    category: 'system',
-    status: 'read',
-    group: 'earlier',
-    title: 'Policy Update: Multi-Factor Authentication',
-    message: 'Mandatory FIDO2 WebAuthn authentication policy enforced for all internal subnets.',
-    timeAgo: 'Feb 22 at 09:00',
-    service: 'Global SecOps',
-    actions: ['read'],
-  },
-  {
-    id: 'notif-8',
-    category: 'system',
-    status: 'read',
-    group: 'earlier',
-    title: 'Scheduled Maintenance Window',
-    message: 'Core Kubernetes cluster rolling upgrade scheduled for Sunday 02:00 IST.',
-    timeAgo: 'Feb 21 at 14:00',
-    service: 'Infrastructure Fleet',
-    actions: ['read'],
-  },
-];
+function isToday(isoString: string): boolean {
+  try {
+    const d = new Date(isoString);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  } catch {
+    return false;
+  }
+}
 
 export default function Notifications() {
   const { user } = useAuth();
@@ -185,169 +89,207 @@ export default function Notifications() {
   const toast = useToast();
   const queryClient = useQueryClient();
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [page, setPage] = useState(0);
   const [filterTab, setFilterTab] = useState<'ALL' | 'UNREAD' | 'ACTION' | 'SLA'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
-  const [replyItem, setReplyItem] = useState<NotificationItem | null>(null);
+  const [replyItem, setReplyItem] = useState<AppNotification | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [verifyItem, setVerifyItem] = useState<NotificationItem | null>(null);
+  const [verifyItem, setVerifyItem] = useState<AppNotification | null>(null);
   const [ratingVal, setRatingVal] = useState<number | null>(5);
   const [ratingComment, setRatingComment] = useState('');
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [runbookItem, setRunbookItem] = useState<NotificationItem | null>(null);
+  const [localPrefs, setLocalPrefs] = useState<PreferenceView[]>([]);
 
-  // Preference switches
-  const [p1Alerts, setP1Alerts] = useState(true);
-  const [techMsg, setTechMsg] = useState(true);
-  const [slaAlerts, setSlaAlerts] = useState(true);
-  const [emailDigest, setEmailDigest] = useState(false);
+  // Real backend queries
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: ['notifications', page, filterTab === 'UNREAD'],
+    queryFn: () => listNotifications({ page, unread: filterTab === 'UNREAD' ? true : undefined, size: 30 }),
+  });
 
-  const unreadCount = notifications.filter((n) => n.status === 'unread').length;
-  const actionCount = notifications.filter((n) => n.category === 'action').length;
-  const slaCount = notifications.filter((n) => n.category === 'sla').length;
+  const { data: unreadTotal = 0 } = useQuery({
+    queryKey: ['notifications-unread-count'],
+    queryFn: getUnreadCount,
+  });
 
-  // Mark single read
-  const handleMarkRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: 'read' as const } : n))
-    );
-    markReadApi(1).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ['unread'] });
+  const { data: remotePrefs = [] } = useQuery({
+    queryKey: ['notification-preferences'],
+    queryFn: getNotificationPreferences,
+    enabled: prefsOpen,
+  });
+
+  // Sync remote preferences when loaded
+  if (prefsOpen && remotePrefs.length > 0 && localPrefs.length === 0) {
+    setLocalPrefs(remotePrefs);
+  }
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: number) => markReadApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['unread'] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => markAllReadApi(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['unread'] });
+      toast('All notifications marked as read.', 'success');
+    },
+  });
+
+  const savePrefsMutation = useMutation({
+    mutationFn: (prefs: PreferenceView[]) =>
+      updateNotificationPreferences(
+        prefs.map((p) => ({ channel: p.channel, eventType: p.eventType, enabled: p.enabled }))
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
+      toast('Notification preferences saved.', 'success');
+      setPrefsOpen(false);
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Failed to save preferences.', 'error');
+    },
+  });
+
+  const handleMarkRead = (id: number) => {
+    markReadMutation.mutate(id);
     toast('Notification marked as read.', 'info');
   };
 
-  // Mark all read
-  const handleMarkAllRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, status: 'read' as const }))
-    );
-    markAllReadApi().catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ['unread'] });
-    toast('All notifications marked as read.', 'success');
+  const handleSendReply = async () => {
+    if (!replyItem || !replyItem.incidentId || !replyText.trim()) return;
+    try {
+      await provideInfo(replyItem.incidentId, replyText.trim());
+      await markReadApi(replyItem.id);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      toast('Clarification delivered to technician.', 'success');
+      setReplyItem(null);
+      setReplyText('');
+    } catch (err: any) {
+      toast(err?.response?.data?.message || 'Failed to send reply.', 'error');
+    }
   };
 
-  // Send reply
-  const handleSendReply = () => {
-    if (!replyItem) return;
-    handleMarkRead(replyItem.id);
-    toast(`Reply and clarification delivered for ${replyItem.incidentCode}.`, 'success');
-    setReplyItem(null);
-    setReplyText('');
+  const handleConfirmVerification = async () => {
+    if (!verifyItem || !verifyItem.incidentId) return;
+    try {
+      await verifyIncident(verifyItem.incidentId);
+      if (ratingVal) {
+        await submitFeedback(verifyItem.incidentId, ratingVal, ratingComment.trim() || undefined);
+      }
+      await markReadApi(verifyItem.id);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      toast('Verification confirmed. Thank you for your feedback!', 'success');
+      setVerifyItem(null);
+      setRatingComment('');
+    } catch (err: any) {
+      toast(err?.response?.data?.message || 'Failed to verify incident.', 'error');
+    }
   };
 
-  // Confirm verification & rating
-  const handleConfirmVerification = () => {
-    if (!verifyItem) return;
-    handleMarkRead(verifyItem.id);
-    toast(`Verification submitted for ${verifyItem.incidentCode} with ${ratingVal} stars. Thanks!`, 'success');
-    setVerifyItem(null);
-    setRatingComment('');
-  };
+  const allItems: AppNotification[] = pageData?.items || [];
 
-  // Filtered notifications
-  const filteredNotifications = notifications.filter((n) => {
-    if (filterTab === 'UNREAD' && n.status !== 'unread') return false;
-    if (filterTab === 'ACTION' && n.category !== 'action') return false;
-    if (filterTab === 'SLA' && n.category !== 'sla') return false;
+  const filteredNotifications = allItems.filter((n) => {
+    if (filterTab === 'ACTION' && n.eventType !== 'INFO_REQUESTED' && n.eventType !== 'INCIDENT_RESOLVED') {
+      return false;
+    }
+    if (filterTab === 'SLA' && n.eventType !== 'SLA_WARNING' && n.eventType !== 'SLA_VIOLATED' && n.eventType !== 'INCIDENT_ESCALATED') {
+      return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         n.title.toLowerCase().includes(q) ||
         n.message.toLowerCase().includes(q) ||
-        (n.incidentCode && n.incidentCode.toLowerCase().includes(q)) ||
-        n.service.toLowerCase().includes(q)
+        (n.incidentId && String(n.incidentId).includes(q))
       );
     }
     return true;
   });
 
-  const todayNotifications = filteredNotifications.filter((n) => n.group === 'today');
-  const earlierNotifications = filteredNotifications.filter((n) => n.group === 'earlier');
+  const todayNotifications = filteredNotifications.filter((n) => isToday(n.createdAt));
+  const earlierNotifications = filteredNotifications.filter((n) => !isToday(n.createdAt));
+
+  const actionCount = allItems.filter(
+    (n) => n.eventType === 'INFO_REQUESTED' || n.eventType === 'INCIDENT_RESOLVED'
+  ).length;
+
+  const slaCount = allItems.filter(
+    (n) => n.eventType === 'SLA_WARNING' || n.eventType === 'SLA_VIOLATED' || n.eventType === 'INCIDENT_ESCALATED'
+  ).length;
+
+  const homePath = user?.roles.includes('ADMINISTRATOR')
+    ? '/admin/dashboard'
+    : user?.roles.includes('TECHNICIAN')
+    ? '/tech/queue'
+    : '/employee/home';
+
+  const incidentPath = (incidentId: number) => {
+    if (user?.roles.includes('ADMINISTRATOR')) return `/admin/tickets/${incidentId}`;
+    if (user?.roles.includes('TECHNICIAN')) return `/tech/incidents/${incidentId}`;
+    return `/employee/incidents/${incidentId}`;
+  };
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto', pb: 6, pt: 1 }}>
-      {/* 1. BREADCRUMB & TOP UTILITY STRIP */}
+    <Box sx={{ maxWidth: 960, mx: 'auto', pb: 6, pt: 1 }}>
+      {/* 1. BREADCRUMB */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, color: '#424752', fontSize: 13, fontWeight: 500 }}>
-          <NavLink to="/employee/home" style={{ color: '#004d99', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, color: '#94a3b8', fontSize: 13, fontWeight: 500 }}>
+          <NavLink to={homePath} style={{ color: '#4cd7f6', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
             <HomeIcon sx={{ fontSize: 16 }} />
-            <span>Portal</span>
+            <span>Home</span>
           </NavLink>
-          <ChevronRightIcon sx={{ fontSize: 16, color: '#727783' }} />
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#111c2d' }}>
+          <ChevronRightIcon sx={{ fontSize: 16, color: '#64748b' }} />
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
             Notification Center
-          </Typography>
-        </Box>
-
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.5,
-            py: 0.5,
-            bgcolor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 3,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          }}
-        >
-          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 10, height: 10 }}>
-            <Box
-              sx={{
-                position: 'absolute',
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                bgcolor: '#2b5bb5',
-                opacity: 0.6,
-                animation: 'pulse 1.5s infinite',
-              }}
-            />
-            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#004d99', position: 'relative' }} />
-          </Box>
-          <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#425059' }}>
-            STREAM_SYNCED • LIVE
           </Typography>
         </Box>
       </Box>
 
-      {/* 2. HEADER SECTION WITH TITLE, UNREAD COUNTER & ACTIONS */}
+      {/* 2. HEADER SECTION */}
       <Paper
         elevation={0}
         sx={{
           p: 3,
           mb: 2.5,
-          borderRadius: 3,
-          border: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          bgcolor: '#141824',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
           justifyContent: 'space-between',
           gap: 2,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
         }}
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#111c2d', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
               Notification Center
             </Typography>
-            {unreadCount > 0 ? (
+            {unreadTotal > 0 ? (
               <Chip
-                label={`${unreadCount} New`}
+                label={`${unreadTotal} Unread`}
                 size="small"
                 sx={{
-                  bgcolor: '#ffdad6',
-                  color: '#93000a',
+                  bgcolor: 'rgba(247, 81, 161, 0.15)',
+                  color: '#ffb0cd',
+                  border: '1px solid rgba(247, 81, 161, 0.35)',
                   fontWeight: 800,
                   fontSize: 11,
                   height: 22,
-                  borderRadius: 1.5,
-                  letterSpacing: '0.04em',
+                  borderRadius: '6px',
+                  fontFamily: 'JetBrains Mono, monospace',
                 }}
               />
             ) : (
@@ -355,18 +297,20 @@ export default function Notifications() {
                 label="All Caught Up"
                 size="small"
                 sx={{
-                  bgcolor: '#dcfce7',
-                  color: '#166534',
+                  bgcolor: 'rgba(16, 185, 129, 0.15)',
+                  color: '#6ee7b7',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
                   fontWeight: 700,
                   fontSize: 11,
                   height: 22,
-                  borderRadius: 1.5,
+                  borderRadius: '6px',
+                  fontFamily: 'JetBrains Mono, monospace',
                 }}
               />
             )}
           </Box>
-          <Typography sx={{ fontSize: 13.5, color: '#424752', maxWidth: 580 }}>
-            Real-time updates on your incident reports, SLA countdown alerts, and technician communications.
+          <Typography sx={{ fontSize: 13.5, color: '#94a3b8', maxWidth: 580 }}>
+            Live notifications on your incident reports, SLA countdown alerts, and technician communications.
           </Typography>
         </Box>
 
@@ -374,19 +318,20 @@ export default function Notifications() {
           <Button
             size="small"
             variant="outlined"
-            onClick={handleMarkAllRead}
-            disabled={unreadCount === 0}
+            onClick={() => markAllReadMutation.mutate()}
+            disabled={unreadTotal === 0 || markAllReadMutation.isPending}
             startIcon={<DoneAllIcon sx={{ fontSize: 16 }} />}
             sx={{
-              borderColor: '#cbd5e1',
-              color: '#004d99',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              color: '#dfe2ef',
               fontWeight: 700,
               fontSize: 12.5,
               textTransform: 'none',
-              borderRadius: 2,
+              borderRadius: '8px',
               px: 1.8,
               py: 0.6,
-              '&:hover': { bgcolor: '#f0f3ff', borderColor: '#94a3b8' },
+              '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)', borderColor: '#6366f1', color: '#c0c1ff' },
             }}
           >
             Mark All as Read
@@ -396,12 +341,12 @@ export default function Notifications() {
             onClick={() => setPrefsOpen(true)}
             title="Notification Preferences"
             sx={{
-              border: '1px solid #cbd5e1',
-              borderRadius: 2,
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
               p: 0.8,
-              bgcolor: '#ffffff',
-              color: '#424752',
-              '&:hover': { bgcolor: '#f0f3ff', color: '#004d99' },
+              bgcolor: 'rgba(18, 22, 34, 0.7)',
+              color: '#94a3b8',
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)', color: '#dfe2ef' },
             }}
           >
             <SettingsIcon sx={{ fontSize: 18 }} />
@@ -415,23 +360,22 @@ export default function Notifications() {
         sx={{
           p: 1.8,
           mb: 3,
-          borderRadius: 3,
-          border: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          bgcolor: '#141824',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
           gap: 1.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
         }}
       >
-        {/* Tabs */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, overflowX: 'auto', pb: { xs: 0.5, md: 0 } }}>
           {(
             [
-              { id: 'ALL', label: `All Notifications (${notifications.length})` },
-              { id: 'UNREAD', label: `Unread (${unreadCount})` },
+              { id: 'ALL', label: `All Notifications (${allItems.length})` },
+              { id: 'UNREAD', label: `Unread (${unreadTotal})` },
               { id: 'ACTION', label: `Action Required (${actionCount})` },
               { id: 'SLA', label: `SLA Alerts (${slaCount})` },
             ] as const
@@ -443,16 +387,17 @@ export default function Notifications() {
                 size="small"
                 onClick={() => setFilterTab(tab.id)}
                 sx={{
-                  fontWeight: isSelected ? 800 : 600,
+                  fontWeight: isSelected ? 700 : 500,
                   fontSize: 12,
-                  color: isSelected ? '#ffffff' : '#424752',
-                  bgcolor: isSelected ? '#004d99' : 'transparent',
-                  borderRadius: 2,
+                  color: isSelected ? '#ffffff' : '#94a3b8',
+                  bgcolor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                  border: isSelected ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent',
+                  borderRadius: '8px',
                   px: 1.5,
                   py: 0.5,
                   textTransform: 'none',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: isSelected ? '#00337c' : '#f0f3ff' },
+                  '&:hover': { bgcolor: isSelected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.04)', color: '#dfe2ef' },
                 }}
               >
                 {tab.label}
@@ -461,7 +406,6 @@ export default function Notifications() {
           })}
         </Box>
 
-        {/* Search */}
         <TextField
           size="small"
           value={searchQuery}
@@ -470,33 +414,34 @@ export default function Notifications() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#727783', fontSize: 18 }} />
+                <SearchIcon sx={{ color: '#64748b', fontSize: 18 }} />
               </InputAdornment>
             ),
           }}
           sx={{
             width: { xs: '100%', md: 240 },
             '& .MuiOutlinedInput-root': {
-              bgcolor: '#f0f3ff',
-              borderRadius: 2,
+              bgcolor: 'rgba(18, 22, 34, 0.7)',
+              borderRadius: '8px',
               fontSize: 12.5,
-              '& fieldset': { borderColor: 'transparent' },
-              '&:hover fieldset': { borderColor: '#cbd5e1' },
-              '&.Mui-focused': { bgcolor: '#ffffff' },
             },
           }}
         />
       </Paper>
 
       {/* 4. CHRONOLOGICAL FEED */}
-      {filteredNotifications.length === 0 ? (
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress sx={{ color: '#6366f1' }} />
+        </Box>
+      ) : filteredNotifications.length === 0 ? (
         <Paper
           elevation={0}
           sx={{
             p: 6,
-            borderRadius: 3,
-            border: '1px solid #e2e8f0',
-            bgcolor: '#ffffff',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            bgcolor: '#141824',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -510,8 +455,8 @@ export default function Notifications() {
               width: 52,
               height: 52,
               borderRadius: '50%',
-              bgcolor: '#f0f3ff',
-              color: '#424752',
+              bgcolor: 'rgba(255, 255, 255, 0.04)',
+              color: '#64748b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -519,11 +464,11 @@ export default function Notifications() {
           >
             <NotificationsPausedIcon sx={{ fontSize: 28 }} />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#111c2d', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff', fontSize: 16 }}>
             No notifications found
           </Typography>
-          <Typography sx={{ fontSize: 13, color: '#64748b', maxWidth: 360 }}>
-            No active items match your selected filter criteria. You can clear filters or adjust search parameters.
+          <Typography sx={{ fontSize: 13, color: '#94a3b8', maxWidth: 360 }}>
+            No active items match your selected filter criteria.
           </Typography>
           <Button
             size="small"
@@ -534,11 +479,12 @@ export default function Notifications() {
             }}
             sx={{
               mt: 1,
-              borderColor: '#cbd5e1',
-              color: '#004d99',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              color: '#4cd7f6',
               textTransform: 'none',
               fontWeight: 700,
-              borderRadius: 2,
+              borderRadius: '8px',
+              '&:hover': { borderColor: '#06b6d4', bgcolor: 'rgba(6, 182, 212, 0.1)' },
             }}
           >
             Reset Filters
@@ -546,17 +492,16 @@ export default function Notifications() {
         </Paper>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* GROUP: TODAY */}
           {todayNotifications.length > 0 && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, px: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Today
                   </Typography>
-                  <Box sx={{ width: 32, height: 1, bgcolor: '#cbd5e1' }} />
+                  <Box sx={{ width: 32, height: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
                 </Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#727783' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
                   {todayNotifications.length} items
                 </Typography>
               </Box>
@@ -566,27 +511,26 @@ export default function Notifications() {
                   <NotificationCard
                     key={notif.id}
                     notif={notif}
-                    onMarkRead={handleMarkRead}
+                    onMarkRead={() => handleMarkRead(notif.id)}
                     onReply={() => setReplyItem(notif)}
                     onVerify={() => setVerifyItem(notif)}
-                    onRunbook={() => setRunbookItem(notif)}
+                    onClickIncident={() => notif.incidentId && navigate(incidentPath(notif.incidentId))}
                   />
                 ))}
               </Box>
             </Box>
           )}
 
-          {/* GROUP: EARLIER THIS WEEK */}
           {earlierNotifications.length > 0 && (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, px: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Earlier this week
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Earlier
                   </Typography>
-                  <Box sx={{ width: 32, height: 1, bgcolor: '#cbd5e1' }} />
+                  <Box sx={{ width: 32, height: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
                 </Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#727783' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
                   {earlierNotifications.length} items
                 </Typography>
               </Box>
@@ -596,10 +540,10 @@ export default function Notifications() {
                   <NotificationCard
                     key={notif.id}
                     notif={notif}
-                    onMarkRead={handleMarkRead}
+                    onMarkRead={() => handleMarkRead(notif.id)}
                     onReply={() => setReplyItem(notif)}
                     onVerify={() => setVerifyItem(notif)}
-                    onRunbook={() => setRunbookItem(notif)}
+                    onClickIncident={() => notif.incidentId && navigate(incidentPath(notif.incidentId))}
                   />
                 ))}
               </Box>
@@ -608,34 +552,44 @@ export default function Notifications() {
         </Box>
       )}
 
-      {/* 5. FOOTER SUMMARY */}
-      {filteredNotifications.length > 0 && (
+      {/* 5. FOOTER PAGINATION */}
+      {pageData && pageData.totalPages > 1 && (
         <Paper
           elevation={0}
           sx={{
             mt: 3,
             p: 2,
-            borderRadius: 3,
-            border: '1px solid #e2e8f0',
-            bgcolor: '#ffffff',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            bgcolor: '#141824',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            color: '#424752',
+            color: '#94a3b8',
             fontSize: 12.5,
           }}
         >
           <Typography sx={{ fontSize: 12.5 }}>
-            Showing <strong>{filteredNotifications.length}</strong> of <strong>{notifications.length}</strong> notifications
+            Showing page <strong>{page + 1}</strong> of <strong>{pageData.totalPages}</strong> ({pageData.totalItems} total)
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" disabled sx={{ color: '#94a3b8' }}>
+            <IconButton
+              size="small"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              sx={{ color: '#64748b' }}
+            >
               <ChevronLeftIcon sx={{ fontSize: 18 }} />
             </IconButton>
-            <Box sx={{ px: 1.2, py: 0.2, bgcolor: '#dee8ff', borderRadius: 1, fontSize: 11, fontFamily: 'monospace', fontWeight: 800, color: '#111c2d' }}>
-              1
+            <Box sx={{ px: 1.2, py: 0.2, bgcolor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '4px', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: '#c0c1ff' }}>
+              {page + 1}
             </Box>
-            <IconButton size="small" disabled sx={{ color: '#94a3b8' }}>
+            <IconButton
+              size="small"
+              disabled={page >= pageData.totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              sx={{ color: '#64748b' }}
+            >
               <ChevronRightIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
@@ -648,29 +602,37 @@ export default function Notifications() {
         onClose={() => setReplyItem(null)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            p: 1,
+            color: '#ffffff',
+          },
+        }}
       >
         {replyItem && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11.5, fontWeight: 700, color: '#004d99' }}>
-                  REPLY TO SRE // {replyItem.incidentCode}
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#4cd7f6' }}>
+                  REPLY TO INCIDENT #{replyItem.incidentId}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
-                  {replyItem.title} {replyItem.incidentCode}
+                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+                  {replyItem.title}
                 </Typography>
               </Box>
-              <IconButton onClick={() => setReplyItem(null)} size="small">
+              <IconButton onClick={() => setReplyItem(null)} size="small" sx={{ color: '#94a3b8' }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2 }}>
-              <Paper sx={{ p: 2, bgcolor: '#f0f3ff', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#004d99' }}>
-                  {replyItem.sender || 'Technician Request'}:
+            <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+              <Paper sx={{ p: 1.8, bgcolor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '10px', mb: 2 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: '#c0c1ff' }}>
+                  Technician Request:
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#111c2d', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 13, color: '#dfe2ef', mt: 0.3 }}>
                   &ldquo;{replyItem.message}&rdquo;
                 </Typography>
               </Paper>
@@ -680,63 +642,74 @@ export default function Notifications() {
                 rows={4}
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Enter diagnostic details, upload trace snippets, or respond to the technician..."
+                placeholder="Type your clarification or additional information here..."
                 sx={{
-                  bgcolor: '#f8fafc',
-                  borderRadius: 2,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  borderRadius: '10px',
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setReplyItem(null)} sx={{ textTransform: 'none' }}>
+              <Button onClick={() => setReplyItem(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 onClick={handleSendReply}
                 disabled={!replyText.trim()}
-                sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  color: '#ffffff',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                }}
               >
-                Send Reply &amp; Resolve Action
+                Send Clarification
               </Button>
             </DialogActions>
           </>
         )}
       </Dialog>
 
-      {/* DIALOG 2: VERIFY & RATE RESOLUTION */}
+      {/* DIALOG 2: VERIFICATION & CSAT RATING */}
       <Dialog
         open={Boolean(verifyItem)}
         onClose={() => setVerifyItem(null)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            p: 1,
+            color: '#ffffff',
+          },
+        }}
       >
         {verifyItem && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#004d99' }}>
-                  RESOLUTION VERIFICATION // {verifyItem.incidentCode}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
-                  Rate Incident Experience
-                </Typography>
-              </Box>
-              <IconButton onClick={() => setVerifyItem(null)} size="small">
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+                Verify Resolution
+              </Typography>
+              <IconButton onClick={() => setVerifyItem(null)} size="small" sx={{ color: '#94a3b8' }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2.5, textAlign: 'center' }}>
-              <Typography sx={{ fontSize: 13, color: '#425059', mb: 2 }}>
-                Please confirm that the solution provided by <strong>{verifyItem.sender}</strong> has fully restored your service.
+            <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+              <Typography sx={{ fontSize: 13, color: '#dfe2ef', mb: 2 }}>
+                Please confirm that incident #{verifyItem.incidentId} has been resolved to your satisfaction:
               </Typography>
-              <Box sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', mb: 1, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  Rate Support Experience
+                </Typography>
                 <Rating
                   value={ratingVal}
                   onChange={(_, val) => setRatingVal(val)}
                   size="large"
+                  sx={{ color: '#4cd7f6' }}
                 />
               </Box>
               <TextField
@@ -745,22 +718,26 @@ export default function Notifications() {
                 rows={2}
                 value={ratingComment}
                 onChange={(e) => setRatingComment(e.target.value)}
-                placeholder="Optional feedback for IT Service delivery..."
+                placeholder="Optional feedback for the resolution engineering team..."
                 sx={{
-                  bgcolor: '#f8fafc',
-                  borderRadius: 2,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  borderRadius: '10px',
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setVerifyItem(null)} sx={{ textTransform: 'none' }}>
+              <Button onClick={() => setVerifyItem(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 onClick={handleConfirmVerification}
-                sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  color: '#ffffff',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                }}
               >
                 Confirm Verified &amp; Rate
               </Button>
@@ -773,130 +750,88 @@ export default function Notifications() {
       <Dialog
         open={prefsOpen}
         onClose={() => setPrefsOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            p: 1,
+            color: '#ffffff',
+          },
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff' }}>
             Notification Preferences
           </Typography>
-          <IconButton onClick={() => setPrefsOpen(false)} size="small">
+          <IconButton onClick={() => setPrefsOpen(false)} size="small" sx={{ color: '#94a3b8' }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ py: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <FormControlLabel
-              control={<Switch checked={p1Alerts} onChange={(e) => setP1Alerts(e.target.checked)} color="primary" />}
-              label={<Typography sx={{ fontSize: 13, fontWeight: 600 }}>P1 / P2 Major Incident Alerts</Typography>}
-            />
-            <Typography sx={{ fontSize: 11.5, color: '#727783', mt: -1, ml: 4 }}>
-              Immediate push alerts for enterprise wide degradation.
-            </Typography>
-
-            <Divider sx={{ my: 0.5 }} />
-
-            <FormControlLabel
-              control={<Switch checked={techMsg} onChange={(e) => setTechMsg(e.target.checked)} color="primary" />}
-              label={<Typography sx={{ fontSize: 13, fontWeight: 600 }}>Technician Clarification Prompts</Typography>}
-            />
-            <Typography sx={{ fontSize: 11.5, color: '#727783', mt: -1, ml: 4 }}>
-              Alerts when SRE on-call engineers request diagnostic logs.
-            </Typography>
-
-            <Divider sx={{ my: 0.5 }} />
-
-            <FormControlLabel
-              control={<Switch checked={slaAlerts} onChange={(e) => setSlaAlerts(e.target.checked)} color="primary" />}
-              label={<Typography sx={{ fontSize: 13, fontWeight: 600 }}>SLA Countdown Reminders</Typography>}
-            />
-            <Typography sx={{ fontSize: 11.5, color: '#727783', mt: -1, ml: 4 }}>
-              Warnings when an active incident approaches target breach time.
-            </Typography>
-
-            <Divider sx={{ my: 0.5 }} />
-
-            <FormControlLabel
-              control={<Switch checked={emailDigest} onChange={(e) => setEmailDigest(e.target.checked)} color="primary" />}
-              label={<Typography sx={{ fontSize: 13, fontWeight: 600 }}>Daily Email Incident Digest</Typography>}
-            />
-            <Typography sx={{ fontSize: 11.5, color: '#727783', mt: -1, ml: 4 }}>
-              Summary of tickets submitted and closed by your department.
-            </Typography>
-          </Box>
+        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <Typography sx={{ fontSize: 13, color: '#94a3b8', mb: 2 }}>
+            Manage notification preferences across communication channels. Critical alerts and in-app system channels are locked.
+          </Typography>
+          <Stack spacing={1}>
+            {localPrefs.map((pref, idx) => (
+              <Box
+                key={`${pref.channel}-${pref.eventType}`}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 1.2,
+                  borderRadius: '8px',
+                  bgcolor: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#dfe2ef' }}>
+                    {pref.eventType.replace(/_/g, ' ')}
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: '#64748b' }}>
+                    Channel: {pref.channel} {pref.locked ? '(Locked by Policy)' : ''}
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={pref.enabled}
+                  disabled={pref.locked}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setLocalPrefs((prev) =>
+                      prev.map((p, i) => (i === idx ? { ...p, enabled: checked } : p))
+                    );
+                  }}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#4cd7f6' },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#06b6d4' },
+                  }}
+                />
+              </Box>
+            ))}
+          </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setPrefsOpen(false)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+            Cancel
+          </Button>
           <Button
             variant="contained"
-            fullWidth
-            onClick={() => {
-              toast('Notification preferences saved.', 'success');
-              setPrefsOpen(false);
+            disabled={savePrefsMutation.isPending}
+            onClick={() => savePrefsMutation.mutate(localPrefs)}
+            sx={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+              color: '#ffffff',
+              fontWeight: 700,
+              textTransform: 'none',
             }}
-            sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
           >
             Save Preferences
           </Button>
         </DialogActions>
-      </Dialog>
-
-      {/* DIALOG 4: LIVE RUNBOOK QUICK VIEW */}
-      <Dialog
-        open={Boolean(runbookItem)}
-        onClose={() => setRunbookItem(null)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
-      >
-        {runbookItem && (
-          <>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#ba1a1a' }}>
-                  CRITICAL SLA RUNBOOK // {runbookItem.incidentCode}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
-                  {runbookItem.title}
-                </Typography>
-              </Box>
-              <IconButton onClick={() => setRunbookItem(null)} size="small">
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers sx={{ py: 2 }}>
-              <Paper sx={{ p: 2, bgcolor: '#ffdad6', border: '1px solid #ffcdd2', borderRadius: 2, mb: 2 }}>
-                <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: '#93000a' }}>
-                  Auto-Escalation Active:
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: '#ba1a1a', mt: 0.5 }}>
-                  {runbookItem.message}
-                </Typography>
-              </Paper>
-              <Typography sx={{ fontSize: 13, color: '#111c2d', mb: 1, fontWeight: 600 }}>
-                Service: {runbookItem.service} • Priority: {runbookItem.priority}
-              </Typography>
-              <Typography sx={{ fontSize: 12.5, color: '#425059' }}>
-                Tier-2 on-call engineers are monitoring response telemetry. You will receive an updated webhook notification as soon as the initial containment patch is verified.
-              </Typography>
-            </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setRunbookItem(null)} sx={{ textTransform: 'none' }}>
-                Close
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  handleMarkRead(runbookItem.id);
-                  setRunbookItem(null);
-                }}
-                sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
-              >
-                Acknowledge Alert
-              </Button>
-            </DialogActions>
-          </>
-        )}
       </Dialog>
     </Box>
   );
@@ -908,47 +843,60 @@ function NotificationCard({
   onMarkRead,
   onReply,
   onVerify,
-  onRunbook,
+  onClickIncident,
 }: {
-  notif: NotificationItem;
-  onMarkRead: (id: string) => void;
+  notif: AppNotification;
+  onMarkRead: () => void;
   onReply: () => void;
   onVerify: () => void;
-  onRunbook: () => void;
+  onClickIncident: () => void;
 }) {
-  const isUnread = notif.status === 'unread';
+  const isUnread = !notif.read;
 
-  // Category Icon
   let iconComp = <ForumIcon sx={{ fontSize: 20 }} />;
-  let iconBg = '#d6e5ef';
-  let iconColor = '#0f1d25';
+  let iconBg = 'rgba(99, 102, 241, 0.15)';
+  let iconColor = '#c0c1ff';
+  let badgeLabel = '';
+  let badgeColor = '#c0c1ff';
+  let badgeBg = 'rgba(99, 102, 241, 0.15)';
 
-  if (notif.category === 'action') {
-    if (notif.badgeType === 'pending') {
-      iconComp = <TaskAltIcon sx={{ fontSize: 20 }} />;
-      iconBg = '#dee8ff';
-      iconColor = '#004d99';
-    } else {
-      iconComp = <ForumIcon sx={{ fontSize: 20 }} />;
-      iconBg = '#dee8ff';
-      iconColor = '#004d99';
-    }
-  } else if (notif.category === 'sla') {
+  if (notif.eventType === 'INFO_REQUESTED') {
+    iconComp = <ForumIcon sx={{ fontSize: 20 }} />;
+    iconBg = 'rgba(247, 81, 161, 0.15)';
+    iconColor = '#ffb0cd';
+    badgeLabel = 'Action Required';
+    badgeColor = '#ffb0cd';
+    badgeBg = 'rgba(247, 81, 161, 0.15)';
+  } else if (notif.eventType === 'INCIDENT_RESOLVED') {
+    iconComp = <TaskAltIcon sx={{ fontSize: 20 }} />;
+    iconBg = 'rgba(16, 185, 129, 0.15)';
+    iconColor = '#6ee7b7';
+    badgeLabel = 'Pending Verification';
+    badgeColor = '#6ee7b7';
+    badgeBg = 'rgba(16, 185, 129, 0.15)';
+  } else if (notif.eventType === 'SLA_WARNING' || notif.eventType === 'SLA_VIOLATED' || notif.eventType === 'INCIDENT_ESCALATED') {
     iconComp = <SaveAsIcon sx={{ fontSize: 20 }} />;
-    iconBg = '#ffdad6';
-    iconColor = '#93000a';
-  } else if (notif.category === 'assigned') {
+    iconBg = 'rgba(244, 63, 94, 0.15)';
+    iconColor = '#f43f5e';
+    badgeLabel = notif.eventType.replace(/_/g, ' ');
+    badgeColor = '#f43f5e';
+    badgeBg = 'rgba(244, 63, 94, 0.15)';
+  } else if (notif.eventType === 'INCIDENT_ASSIGNED') {
     iconComp = <AssignmentIndIcon sx={{ fontSize: 20 }} />;
-    iconBg = '#e7eeff';
-    iconColor = '#2b5bb5';
-  } else if (notif.category === 'submitted') {
+    iconBg = 'rgba(6, 182, 212, 0.15)';
+    iconColor = '#4cd7f6';
+    badgeLabel = 'Assigned';
+    badgeColor = '#4cd7f6';
+    badgeBg = 'rgba(6, 182, 212, 0.15)';
+  } else if (notif.eventType === 'INCIDENT_CREATED') {
     iconComp = <ConfirmationNumberIcon sx={{ fontSize: 20 }} />;
-    iconBg = '#f0f3ff';
-    iconColor = '#425059';
-  } else if (notif.category === 'system') {
+    iconBg = 'rgba(99, 102, 241, 0.12)';
+    iconColor = '#c0c1ff';
+    badgeLabel = 'Created';
+  } else {
     iconComp = <SecurityIcon sx={{ fontSize: 20 }} />;
-    iconBg = '#f1f5f9';
-    iconColor = '#475569';
+    iconBg = 'rgba(255, 255, 255, 0.05)';
+    iconColor = '#94a3b8';
   }
 
   return (
@@ -956,19 +904,19 @@ function NotificationCard({
       elevation={0}
       sx={{
         p: 2.5,
-        borderRadius: 3,
-        border: isUnread ? '1px solid #c2c6d4' : '1px solid #e2e8f0',
-        bgcolor: isUnread ? '#f0f3ff' : '#ffffff',
+        borderRadius: '16px',
+        border: isUnread ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(255, 255, 255, 0.06)',
+        bgcolor: isUnread ? 'rgba(99, 102, 241, 0.05)' : '#141824',
         position: 'relative',
-        transition: 'all 0.15s ease',
+        transition: 'all 0.18s ease',
         '&:hover': {
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          borderColor: isUnread ? '#94a3b8' : '#cbd5e1',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+          borderColor: isUnread ? 'rgba(99, 102, 241, 0.6)' : 'rgba(255, 255, 255, 0.12)',
         },
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-        {/* Unread indicator dot */}
+        {/* Unread dot */}
         {isUnread && (
           <Box
             sx={{
@@ -978,24 +926,25 @@ function NotificationCard({
               width: 8,
               height: 8,
               borderRadius: '50%',
-              bgcolor: '#004d99',
+              bgcolor: '#06b6d4',
+              boxShadow: '0 0 8px #06b6d4',
             }}
           />
         )}
 
-        {/* Category Icon Badge */}
+        {/* Icon */}
         <Box
           sx={{
             width: 40,
             height: 40,
-            borderRadius: 2.5,
+            borderRadius: '10px',
             bgcolor: iconBg,
             color: iconColor,
+            border: `1px solid ${iconColor}30`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
         >
           {iconComp}
@@ -1004,188 +953,120 @@ function NotificationCard({
         {/* Content */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#111c2d' }}>
-              {notif.title}{' '}
-              {notif.incidentCode && (
-                <span style={{ color: '#004d99', fontFamily: 'monospace' }}>
-                  {notif.incidentCode}
-                </span>
-              )}
+            <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
+              {notif.title}
             </Typography>
 
-            {notif.badgeLabel && (
+            {badgeLabel && (
               <Chip
-                label={notif.badgeLabel}
+                label={badgeLabel}
                 size="small"
                 sx={{
                   height: 20,
-                  fontSize: 10.5,
+                  fontSize: 10,
                   fontWeight: 700,
-                  borderRadius: 1,
-                  bgcolor:
-                    notif.badgeType === 'sla'
-                      ? '#ffdad6'
-                      : notif.badgeType === 'action'
-                      ? '#d8e3fb'
-                      : '#d9e2ff',
-                  color:
-                    notif.badgeType === 'sla'
-                      ? '#93000a'
-                      : notif.badgeType === 'action'
-                      ? '#00429c'
-                      : '#001945',
-                  border:
-                    notif.badgeType === 'sla' ? '1px solid #ffcdd2' : 'none',
+                  borderRadius: '4px',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  bgcolor: badgeBg,
+                  color: badgeColor,
+                  border: `1px solid ${badgeColor}40`,
                 }}
               />
             )}
           </Box>
 
-          <Typography sx={{ fontSize: 13, color: '#424752', lineHeight: 1.5, mb: 1 }}>
-            {notif.sender && (
-              <strong style={{ color: '#111c2d' }}>{notif.sender}: </strong>
-            )}
+          <Typography sx={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5, mb: 1 }}>
             {notif.message}
           </Typography>
 
-          {/* Metadata Strip */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              flexWrap: 'wrap',
-              fontSize: 11.5,
-              color: '#727783',
-              fontFamily: 'monospace',
-              mb: notif.actions.length > 0 ? 1.5 : 0,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <ScheduleIcon sx={{ fontSize: 13 }} />
-              <span>{notif.timeAgo}</span>
+          {/* Metadata & Actions */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography sx={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <ScheduleIcon sx={{ fontSize: 13 }} />
+                {formatTimeAgo(notif.createdAt)}
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: '#64748b' }}>
+                Channel: {notif.channel}
+              </Typography>
             </Box>
-            <span>•</span>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <LanIcon sx={{ fontSize: 13 }} />
-              <span>{notif.service}</span>
-            </Box>
-            {notif.priority && (
-              <>
-                <span>•</span>
-                <Chip
-                  label={notif.priority}
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {notif.eventType === 'INFO_REQUESTED' && notif.incidentId && (
+                <Button
                   size="small"
+                  variant="contained"
+                  onClick={onReply}
+                  startIcon={<ReplyIcon sx={{ fontSize: 14 }} />}
                   sx={{
-                    height: 18,
-                    fontSize: 9.5,
-                    fontWeight: 800,
-                    bgcolor:
-                      notif.priority === 'P1'
-                        ? '#ba1a1a'
-                        : notif.priority === 'P2'
-                        ? '#ed6c02'
-                        : '#e2e8f0',
-                    color:
-                      notif.priority === 'P1' || notif.priority === 'P2'
-                        ? '#ffffff'
-                        : '#111c2d',
+                    background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
+                    color: '#ffffff',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: '6px',
+                    px: 1.5,
                   }}
-                />
-              </>
-            )}
-          </Box>
+                >
+                  Reply
+                </Button>
+              )}
 
-          {/* Quick Action Bar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            {notif.actions.includes('reply') && (
-              <Button
-                size="small"
-                variant="contained"
-                onClick={onReply}
-                startIcon={<ReplyIcon sx={{ fontSize: 15 }} />}
-                sx={{
-                  bgcolor: '#004d99',
-                  color: '#ffffff',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  borderRadius: 1.5,
-                  px: 1.5,
-                  py: 0.4,
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: '#00337c' },
-                }}
-              >
-                Reply Now
-              </Button>
-            )}
+              {notif.eventType === 'INCIDENT_RESOLVED' && notif.incidentId && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={onVerify}
+                  startIcon={<TaskAltIcon sx={{ fontSize: 14 }} />}
+                  sx={{
+                    bgcolor: '#10b981',
+                    color: '#ffffff',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: '6px',
+                    px: 1.5,
+                    '&:hover': { bgcolor: '#059669' },
+                  }}
+                >
+                  Verify Fix
+                </Button>
+              )}
 
-            {notif.actions.includes('verify') && (
-              <Button
-                size="small"
-                variant="contained"
-                onClick={onVerify}
-                startIcon={<RateReviewIcon sx={{ fontSize: 15 }} />}
-                sx={{
-                  bgcolor: '#dee8ff',
-                  color: '#004d99',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  borderRadius: 1.5,
-                  px: 1.5,
-                  py: 0.4,
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: '#d4e3ff' },
-                }}
-              >
-                Verify &amp; Rate Resolution
-              </Button>
-            )}
+              {notif.incidentId && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={onClickIncident}
+                  sx={{
+                    borderColor: 'rgba(255, 255, 255, 0.12)',
+                    color: '#4cd7f6',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: '6px',
+                    px: 1.2,
+                  }}
+                >
+                  View Ticket #{notif.incidentId}
+                </Button>
+              )}
 
-            {notif.actions.includes('runbook') && (
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={onRunbook}
-                startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />}
-                sx={{
-                  borderColor: '#cbd5e1',
-                  color: '#111c2d',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 1.5,
-                  px: 1.5,
-                  py: 0.4,
-                  '&:hover': { bgcolor: '#f0f3ff' },
-                }}
-              >
-                View Incident Live Runbook
-              </Button>
-            )}
-
-            {isUnread && (
-              <Button
-                size="small"
-                onClick={() => onMarkRead(notif.id)}
-                sx={{
-                  color: '#64748b',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 1.5,
-                  px: 1.5,
-                  py: 0.4,
-                  bgcolor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  '&:hover': { bgcolor: '#f8fafc', color: '#111c2d' },
-                }}
-              >
-                Mark as Read
-              </Button>
-            )}
+              {isUnread && (
+                <Button
+                  size="small"
+                  onClick={onMarkRead}
+                  sx={{
+                    color: '#94a3b8',
+                    fontSize: 11.5,
+                    textTransform: 'none',
+                    '&:hover': { color: '#ffffff' },
+                  }}
+                >
+                  Mark Read
+                </Button>
+              )}
+            </Box>
           </Box>
         </Box>
       </Box>

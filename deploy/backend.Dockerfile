@@ -1,9 +1,10 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /build
 COPY backend/ .
+RUN tr -d '\r' < ./mvnw > ./mvnw_fixed && mv ./mvnw_fixed ./mvnw && chmod +x ./mvnw
 RUN bash ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jdk
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 app

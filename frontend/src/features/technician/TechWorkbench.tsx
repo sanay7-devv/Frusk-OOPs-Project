@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -21,6 +22,9 @@ import {
   MenuItem,
   FormControlLabel,
   Switch,
+  CircularProgress,
+  Alert,
+  Divider,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -47,348 +51,298 @@ import {
   Security as SecurityIcon,
   Hub as HubIcon,
   DoneAll as DoneAllIcon,
+  Psychology as PsychologyIcon,
 } from '@mui/icons-material';
 
 import { useToast } from '../../components/Toast';
+import { useAuth } from '../../auth/AuthContext';
+import { getIncident, getHistory, getComments, addComment } from '../../api/incidents';
+import {
+  acknowledgeIncident,
+  startIncident,
+  requestInfo,
+  resolveIncident,
+  escalateIncident,
+  getSuggestedResolutions,
+  getSimilarIncidents,
+  summarizeIncident,
+  getSlaRisk,
+  type SuggestedResolutionView,
+  type SimilarIncidentView,
+  type SlaRiskView,
+  type ThreadSummaryView,
+} from '../../api/technicians';
 
-// Design System Tokens (Reliant Slate)
+// Design System Tokens (Luminary Kinetic Dark)
 const COLORS = {
-  surface: '#f9f9ff',
-  surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f0f3ff',
-  surfaceContainer: '#e7eeff',
-  surfaceContainerHigh: '#dee8ff',
-  surfaceContainerHighest: '#d8e3fb',
-  onSurface: '#111c2d',
-  onSurfaceVariant: '#425059',
-  outlineVariant: '#c2c6d4',
-  border: '#cbd5e1',
-  primary: '#004d99',
-  primaryContainer: '#1565c0',
-  secondary: '#2b5bb5',
-  secondaryContainer: '#759efd',
-  error: '#ba1a1a',
-  errorContainer: '#ffdad6',
-  onErrorContainer: '#93000a',
-  success: '#107c41',
-  successContainer: '#d1e7dd',
-  tertiary: '#425059',
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  outlineVariant: 'rgba(255, 255, 255, 0.08)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  primaryContainer: '#4f46e5',
+  secondary: '#06b6d4',
+  secondaryContainer: 'rgba(6, 182, 212, 0.2)',
+  error: '#f43f5e',
+  errorContainer: 'rgba(244, 63, 94, 0.15)',
+  onErrorContainer: '#ffdad6',
+  success: '#10b981',
+  successContainer: 'rgba(16, 185, 129, 0.15)',
+  tertiary: '#f751a1',
 };
 
-interface IncidentData {
-  id: string;
-  priority: 'P1' | 'P2' | 'P3' | 'P4';
-  title: string;
-  service: string;
-  serviceTag: string;
-  reporter: string;
-  reportedTimeAgo: string;
-  details: string;
-  node: string;
-  status: 'NEEDS_ACK' | 'IN_PROGRESS' | 'WAIT_USER_INFO' | 'RESOLVED';
-  breachWindow: string;
-  breachPercent: number;
-  breachStatus: 'critical' | 'warning' | 'safe' | 'paused';
-  runbookML?: string;
-  warRoom?: string;
-  affectedUsers?: string;
-  financialImpact?: string;
+function formatTimeRemaining(targetIso: string | null): { text: string; percent: number; status: 'critical' | 'warning' | 'safe' | 'paused' } {
+  if (!targetIso) return { text: 'N/A', percent: 100, status: 'safe' };
+  const target = new Date(targetIso).getTime();
+  const now = Date.now();
+  const diffMinutes = Math.round((target - now) / 60000);
+
+  if (diffMinutes <= 0) {
+    return { text: 'BREACHED', percent: 0, status: 'critical' };
+  }
+  const hours = Math.floor(diffMinutes / 60);
+  const mins = diffMinutes % 60;
+  const text = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+  if (diffMinutes < 15) return { text, percent: 15, status: 'critical' };
+  if (diffMinutes < 60) return { text, percent: 35, status: 'warning' };
+  return { text, percent: Math.min(100, Math.round((diffMinutes / 240) * 100)), status: 'safe' };
 }
-
-const MOCK_INCIDENTS: Record<string, IncidentData> = {
-  'INC-2026-00095': {
-    id: 'INC-2026-00095',
-    priority: 'P1',
-    title: 'Payment Gateway Webhook 504 Timeout',
-    service: 'Payment Gateway',
-    serviceTag: 'Core Payments Ingress',
-    reporter: 'Alex Rivera (SecOps)',
-    reportedTimeAgo: '4m ago',
-    details: 'Automated alert: 1,420 checkout failures in 3m across Stripe ingress routes.',
-    node: 'ingress-edge-us-east-04',
-    status: 'NEEDS_ACK',
-    breachWindow: '08m 14s',
-    breachPercent: 18,
-    breachStatus: 'critical',
-    runbookML: 'Runbook #PAY-99 (Stripe Webhook Deadlock Recovery)',
-    warRoom: 'War Room #09 Active (7 participants)',
-    affectedUsers: '1,420 customers',
-    financialImpact: '$42,600 pending transactions',
-  },
-  'INC-2026-00042': {
-    id: 'INC-2026-00042',
-    priority: 'P1',
-    title: 'Production Kubernetes Cluster API Latency & Gateway 504 Timeouts',
-    service: 'Kubernetes Cluster',
-    serviceTag: 'Core Billing API',
-    reporter: 'David Miller (DevOps)',
-    reportedTimeAgo: '28m ago',
-    details: 'p99 response time degraded to 6,240ms on prod-aks-eastus2 node pool.',
-    node: 'Cluster: prod-aks-eastus2',
-    status: 'IN_PROGRESS',
-    breachWindow: '14m 19s',
-    breachPercent: 28,
-    breachStatus: 'warning',
-    warRoom: 'War Room #09 Active (7 participants)',
-    affectedUsers: '4,800 active sessions',
-    financialImpact: '$18,400 pending checkout orders',
-  },
-  'INC-2026-00108': {
-    id: 'INC-2026-00108',
-    priority: 'P2',
-    title: 'SSO Login Loop for West Coast Remote Workers',
-    service: 'Identity & SSO',
-    serviceTag: 'Okta Enterprise IdP',
-    reporter: 'Marcus Vance',
-    reportedTimeAgo: '45m ago',
-    details: 'Okta SAML ACS token verification failure on region redirect.',
-    node: 'Okta Enterprise IdP Node 02',
-    status: 'IN_PROGRESS',
-    breachWindow: '1h 42m',
-    breachPercent: 65,
-    breachStatus: 'safe',
-    affectedUsers: '86 corporate users',
-    financialImpact: 'Internal productivity impact',
-  },
-  'INC-2026-00088': {
-    id: 'INC-2026-00088',
-    priority: 'P2',
-    title: 'VPN Gateway Handshake Error 0x8007274c on macOS Sequoia',
-    service: 'Corporate VPN',
-    serviceTag: 'GlobalProtect Perimeter',
-    reporter: 'Elena Vance',
-    reportedTimeAgo: '2h ago',
-    details: 'Handshake drops during TLS session ticket re-negotiation. Client packet dump provided.',
-    node: 'GlobalProtect Perimeter Gateway 01',
-    status: 'WAIT_USER_INFO',
-    breachWindow: 'PAUSED',
-    breachPercent: 45,
-    breachStatus: 'paused',
-    affectedUsers: '12 remote engineers',
-    financialImpact: 'Engineering velocity impact',
-  },
-  'INC-2026-00094': {
-    id: 'INC-2026-00094',
-    priority: 'P3',
-    title: 'Jira Cloud Webhook Delivery Latency',
-    service: 'Workplace Tools',
-    serviceTag: 'Developer Integrations',
-    reporter: 'Sarah Jenkins',
-    reportedTimeAgo: '1h 10m ago',
-    details: 'Retrying queue backlog at rate limit (HTTP 429 slow down from Atlassian API).',
-    node: 'Atlassian Event Mesh',
-    status: 'IN_PROGRESS',
-    breachWindow: '3h 15m',
-    breachPercent: 82,
-    breachStatus: 'safe',
-    affectedUsers: '34 engineers',
-    financialImpact: 'Non-blocking backlog',
-  },
-};
-
-interface LogEntry {
-  timestamp: string;
-  level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG';
-  source: string;
-  message: string;
-}
-
-const INITIAL_LOGS: LogEntry[] = [
-  { timestamp: '14:22:01.104', level: 'ERROR', source: 'ingress-edge-04', message: 'HTTP 504 Gateway Timeout upstream=stripe-webhook-svc:8080 latency=15002ms' },
-  { timestamp: '14:22:02.418', level: 'ERROR', source: 'stripe-webhook-svc', message: 'ConnectionPoolTimeoutException: Timeout waiting for connection from pool [max: 200, pending: 84]' },
-  { timestamp: '14:22:03.011', level: 'WARN', source: 'k8s-kubelet', message: 'Readiness probe failed: HTTP probe failed with statuscode: 503' },
-  { timestamp: '14:22:04.550', level: 'INFO', source: 'envoy-proxy', message: 'Circuit breaker tripped for cluster stripe_webhook_egress' },
-  { timestamp: '14:22:05.892', level: 'DEBUG', source: 'redis-lock-mgr', message: 'Acquiring lock lock:stripe:webhook:event_9921 expired after 30000ms' },
-  { timestamp: '14:22:06.120', level: 'ERROR', source: 'ingress-edge-04', message: 'Dropping ingress frame: socket backlog buffer full (1,024 packets queued)' },
-];
 
 export default function TechWorkbench() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const incidentId = id || 'INC-2026-00095';
-  const initialIncident = MOCK_INCIDENTS[incidentId] || {
-    id: incidentId,
-    priority: 'P1',
-    title: `Incident ${incidentId} - System Diagnostics Cockpit`,
-    service: 'Core Platform Engine',
-    serviceTag: 'Core Services',
-    reporter: 'Marcus Chen (Senior SRE)',
-    reportedTimeAgo: 'Just now',
-    details: 'Investigating degraded responsiveness on production services.',
-    node: 'prod-edge-node-01',
-    status: 'IN_PROGRESS',
-    breachWindow: '25m 00s',
-    breachPercent: 40,
-    breachStatus: 'warning',
-    runbookML: 'Runbook #GEN-01 (General Service Restart & Health Verification)',
-    affectedUsers: '250 users',
-    financialImpact: 'Under evaluation',
-  };
+  const incidentId = Number(id);
 
-  const [incident, setIncident] = useState<IncidentData>(initialIncident);
   const [activeTab, setActiveTab] = useState(0);
 
-  // Diagnostics Terminal
-  const [logs, setLogs] = useState<LogEntry[]>(INITIAL_LOGS);
-  const [logFilter, setLogFilter] = useState<'ALL' | 'ERROR' | 'WARN' | 'INFO'>('ALL');
-  const [isLiveStreaming, setIsLiveStreaming] = useState(true);
-
-  // Runbook Automation Steps
-  const [runbookSteps, setRunbookSteps] = useState([
-    {
-      id: 1,
-      title: 'Drain unresponsive pods on ingress node',
-      command: 'kubectl drain ingress-edge-04 --ignore-daemonsets --delete-emptydir-data',
-      status: 'COMPLETED',
-      output: 'node/ingress-edge-us-east-04 cordoned, 3 pods evicted successfully.',
-    },
-    {
-      id: 2,
-      title: 'Flush Redis webhook deadlocks & stale lock keys',
-      command: 'redis-cli -h cache.prod DEL lock:stripe:webhook:*',
-      status: 'IDLE',
-      output: '',
-    },
-    {
-      id: 3,
-      title: 'Trigger automated TCP health check probe',
-      command: 'curl -s -o /dev/null -w "%{http_code}" https://api.internal/webhook/healthz',
-      status: 'IDLE',
-      output: '',
-    },
-    {
-      id: 4,
-      title: 'Reset circuit breaker & restore auto-scaling pool',
-      command: 'kubectl scale deployment/stripe-webhook-svc --replicas=8',
-      status: 'IDLE',
-      output: '',
-    },
-  ]);
-
-  // Timeline / Notes
-  const [timelineNotes, setTimelineNotes] = useState([
-    {
-      id: 'note-1',
-      author: 'System Telemetry',
-      time: '4m ago',
-      type: 'ALERT',
-      content: 'Prometheus alert FIRING: P1 Payment Ingress HTTP 504 threshold exceeded (> 5% in 3m).',
-    },
-    {
-      id: 'note-2',
-      author: 'Marcus Chen (Senior SRE)',
-      time: '2m ago',
-      type: 'ACTION',
-      content: 'Acknowledged incident. Identified connection pool exhaustion on stripe-webhook-svc. Initiated Runbook #PAY-99.',
-    },
-  ]);
-  const [newNoteText, setNewNoteText] = useState('');
-  const [isInternalOnly, setIsInternalOnly] = useState(true);
-
-  // Modals
+  // Modals & form state
   const [isResolveOpen, setIsResolveOpen] = useState(false);
-  const [resolveCategory, setResolveCategory] = useState('Configuration / Pool Overflow');
-  const [resolveSummary, setResolveSummary] = useState(
-    'Connection pool exhaustion cleared by evicting wedged ingress pods and flushing stale redis distributed mutex locks. Upstream p99 response time returned to 42ms.'
-  );
+  const [resolveRootCause, setResolveRootCause] = useState('');
+  const [resolveNotes, setResolveNotes] = useState('');
+  const [resolveSteps, setResolveSteps] = useState('');
+  const [resolveTimeSpent, setResolveTimeSpent] = useState<number>(30);
+  const [resolveReusable, setResolveReusable] = useState(true);
 
   const [isEscalateOpen, setIsEscalateOpen] = useState(false);
-  const [escalateLead, setEscalateLead] = useState('Sarah Jenkins (Tier-3 Lead)');
-  const [escalateReason, setEscalateReason] = useState('Persistent kernel socket buffer drop on ingress network interface.');
+  const [escalateReason, setEscalateReason] = useState('');
 
-  const [isWarRoomOpen, setIsWarRoomOpen] = useState(false);
+  const [isRequestInfoOpen, setIsRequestInfoOpen] = useState(false);
+  const [requestInfoText, setRequestInfoText] = useState('');
 
-  // Auto log stream simulation
-  useEffect(() => {
-    if (!isLiveStreaming) return;
-    const interval = setInterval(() => {
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
-      const messages = [
-        { level: 'INFO' as const, msg: `Health probe probe_id=${Math.floor(Math.random() * 9000 + 1000)} pinged 200 OK (18ms)` },
-        { level: 'DEBUG' as const, msg: `Active goroutines: 382, GC pause: 0.8ms, Memory RSS: 412MB` },
-        { level: 'WARN' as const, msg: `Slow query log: SELECT * FROM payment_intents WHERE status = 'PENDING' (240ms)` },
-      ];
-      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-      setLogs((prev) => [
-        ...prev.slice(-30),
-        { timestamp: timeStr, level: randomMsg.level, source: incident.node, message: randomMsg.msg },
-      ]);
-    }, 4500);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [noteVisibility, setNoteVisibility] = useState<'PUBLIC' | 'INTERNAL'>('INTERNAL');
 
-    return () => clearInterval(interval);
-  }, [isLiveStreaming, incident.node]);
+  const [summaryData, setSummaryData] = useState<ThreadSummaryView | null>(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
-  // Handlers
-  const handleAcknowledge = () => {
-    setIncident((prev) => ({ ...prev, status: 'IN_PROGRESS', breachStatus: 'warning' }));
-    toast(`Incident ${incident.id} acknowledged. Ownership confirmed under Tier-2 SRE queue.`, 'success');
-  };
-
-  const handleExecuteRunbookStep = (stepId: number) => {
-    setRunbookSteps((prev) =>
-      prev.map((step) =>
-        step.id === stepId
-          ? {
-              ...step,
-              status: 'RUNNING',
-            }
-          : step
-      )
-    );
-
-    setTimeout(() => {
-      setRunbookSteps((prev) =>
-        prev.map((step) =>
-          step.id === stepId
-            ? {
-                ...step,
-                status: 'COMPLETED',
-                output:
-                  stepId === 2
-                    ? '14 keys removed. Redis distributed lock state restored to zero mutexes.'
-                    : stepId === 3
-                    ? 'HTTP 200 OK returned in 34ms. Health check passed.'
-                    : 'Replicas successfully updated to 8. All pods ready in 12s.',
-              }
-            : step
-        )
-      );
-      toast(`Runbook Step ${stepId} executed successfully.`, 'success');
-    }, 1200);
-  };
-
-  const handleAddNote = () => {
-    if (!newNoteText.trim()) return;
-    const newNote = {
-      id: `note-${Date.now()}`,
-      author: 'Marcus Chen (Senior SRE)',
-      time: 'Just now',
-      type: isInternalOnly ? 'INTERNAL_NOTE' : 'PUBLIC_UPDATE',
-      content: newNoteText.trim(),
-    };
-    setTimelineNotes((prev) => [newNote, ...prev]);
-    setNewNoteText('');
-    toast('Investigation note appended to timeline.', 'success');
-  };
-
-  const handleResolveIncident = () => {
-    setIncident((prev) => ({ ...prev, status: 'RESOLVED', breachStatus: 'safe', breachWindow: 'FULFILLED' }));
-    setIsResolveOpen(false);
-    toast(`Incident ${incident.id} marked as RESOLVED. Root cause audit logged.`, 'success');
-  };
-
-  const handleEscalateIncident = () => {
-    setIsEscalateOpen(false);
-    toast(`Incident ${incident.id} escalated to ${escalateLead}. High-priority notification dispatched.`, 'warning');
-  };
-
-  const filteredLogs = logs.filter((log) => {
-    if (logFilter === 'ALL') return true;
-    return log.level === logFilter;
+  // 1. Fetch incident details
+  const {
+    data: incident,
+    isLoading,
+    error,
+    refetch: refetchIncident,
+  } = useQuery({
+    queryKey: ['incident-detail', incidentId],
+    queryFn: () => getIncident(incidentId),
+    enabled: !isNaN(incidentId),
   });
+
+  // 2. Fetch history
+  const { data: history = [], refetch: refetchHistory } = useQuery({
+    queryKey: ['incident-history', incidentId],
+    queryFn: () => getHistory(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  // 3. Fetch comments
+  const { data: comments = [], refetch: refetchComments } = useQuery({
+    queryKey: ['incident-comments', incidentId],
+    queryFn: () => getComments(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  // 4. Fetch Suggested Resolutions
+  const { data: suggestedResolutions = [] } = useQuery({
+    queryKey: ['incident-suggested', incidentId],
+    queryFn: () => getSuggestedResolutions(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  // 5. Fetch Similar Incidents
+  const { data: similarIncidents = [] } = useQuery({
+    queryKey: ['incident-similar', incidentId],
+    queryFn: () => getSimilarIncidents(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  // 6. Fetch SLA Risk
+  const { data: slaRisk } = useQuery({
+    queryKey: ['incident-sla-risk', incidentId],
+    queryFn: () => getSlaRisk(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  const allowedActions = incident?.allowedActions || [];
+
+  // Actions
+  const handleAcknowledge = async () => {
+    try {
+      await acknowledgeIncident(incidentId);
+      toast('Incident acknowledged. Response SLA clock stopped.', 'success');
+      refetchIncident();
+      refetchHistory();
+    } catch (err: any) {
+      toast(err.message || 'Failed to acknowledge', 'error');
+    }
+  };
+
+  const handleStartWork = async () => {
+    try {
+      await startIncident(incidentId);
+      toast('Work started on incident. Status moved to IN_PROGRESS.', 'success');
+      refetchIncident();
+      refetchHistory();
+    } catch (err: any) {
+      toast(err.message || 'Failed to start work', 'error');
+    }
+  };
+
+  const handleRequestInfo = async () => {
+    if (!requestInfoText.trim() || requestInfoText.trim().length < 10) {
+      toast('Message must be at least 10 characters long.', 'warning');
+      return;
+    }
+    try {
+      await requestInfo(incidentId, requestInfoText.trim());
+      toast('Clarification request sent to reporter. SLA clock is PAUSED.', 'warning');
+      setIsRequestInfoOpen(false);
+      setRequestInfoText('');
+      refetchIncident();
+      refetchHistory();
+      refetchComments();
+    } catch (err: any) {
+      toast(err.message || 'Failed to request info', 'error');
+    }
+  };
+
+  const handleResolveIncident = async () => {
+    if (!resolveRootCause.trim() || resolveRootCause.trim().length < 10) {
+      toast('Root cause must be at least 10 characters long.', 'warning');
+      return;
+    }
+    if (!resolveNotes.trim() || resolveNotes.trim().length < 10) {
+      toast('Resolution notes must be at least 10 characters long.', 'warning');
+      return;
+    }
+    try {
+      await resolveIncident(incidentId, {
+        rootCause: resolveRootCause.trim(),
+        notes: resolveNotes.trim(),
+        steps: resolveSteps.trim() || undefined,
+        timeSpentMinutes: resolveTimeSpent || 30,
+        reusableSolution: resolveReusable,
+      });
+      toast(`Incident marked as RESOLVED. Concurrency capacity released.`, 'success');
+      setIsResolveOpen(false);
+      refetchIncident();
+      refetchHistory();
+    } catch (err: any) {
+      toast(err.message || 'Failed to resolve incident', 'error');
+    }
+  };
+
+  const handleEscalateIncident = async () => {
+    if (!escalateReason.trim() || escalateReason.trim().length < 10) {
+      toast('Escalation reason must be at least 10 characters long.', 'warning');
+      return;
+    }
+    try {
+      await escalateIncident(incidentId, escalateReason.trim());
+      toast('Incident escalation level raised. High-priority alert dispatched.', 'warning');
+      setIsEscalateOpen(false);
+      setEscalateReason('');
+      refetchIncident();
+      refetchHistory();
+    } catch (err: any) {
+      toast(err.message || 'Failed to escalate', 'error');
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!newNoteText.trim()) return;
+    try {
+      await addComment(incidentId, newNoteText.trim(), noteVisibility);
+      toast('Investigation note appended to timeline.', 'success');
+      setNewNoteText('');
+      refetchComments();
+      refetchHistory();
+    } catch (err: any) {
+      toast(err.message || 'Failed to add note', 'error');
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    setIsSummarizing(true);
+    try {
+      const result = await summarizeIncident(incidentId);
+      setSummaryData(result);
+      toast('AI thread summary and handover notes generated.', 'success');
+    } catch (err: any) {
+      toast(err.message || 'Failed to generate AI summary', 'error');
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const applySuggestedResolution = (res: SuggestedResolutionView) => {
+    setResolveRootCause(res.rootCause || `Issue caused by duplicate root cause matching ${res.code}`);
+    setResolveNotes(res.notes || `Applied proven fix from incident ${res.code}: ${res.title}`);
+    setResolveSteps(res.steps || 'Verified configuration rollback and restored service traffic.');
+    setResolveReusable(true);
+    setIsResolveOpen(true);
+    toast(`Pre-filled resolution modal from ${res.code}.`, 'info');
+  };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ p: 6, textAlign: 'center', bgcolor: COLORS.surface, minHeight: '100vh' }}>
+        <CircularProgress size={40} sx={{ color: COLORS.primary, mb: 2 }} />
+        <Typography variant="h6" sx={{ color: COLORS.onSurface }}>Loading Incident Diagnosis Workbench...</Typography>
+      </Box>
+    );
+  }
+
+  if (error || !incident) {
+    return (
+      <Box sx={{ p: 4, bgcolor: COLORS.surface, minHeight: '100vh' }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Failed to load incident: {error ? (error as Error).message : 'Incident not found'}
+        </Alert>
+        <Button variant="outlined" onClick={() => navigate('/tech/queue')} sx={{ color: COLORS.primary }}>
+          Back to Queue
+        </Button>
+      </Box>
+    );
+  }
+
+  const isCritical = incident.priority === 'P1';
+  const isHigh = incident.priority === 'P2';
+  const isPaused = incident.status === 'PENDING_USER_INFO' || incident.slaState === 'PAUSED';
+  const targetDue = incident.status === 'ASSIGNED' ? incident.responseDue : incident.resolutionDue;
+  const slaInfo = isPaused
+    ? { text: 'PAUSED', percent: 50, status: 'paused' as const }
+    : formatTimeRemaining(targetDue);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
@@ -417,7 +371,7 @@ export default function TechWorkbench() {
             </Button>
             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>/</Typography>
             <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: COLORS.primary }}>
-              {incident.id}
+              {incident.code}
             </Typography>
           </Box>
 
@@ -438,11 +392,11 @@ export default function TechWorkbench() {
             >
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: COLORS.primary, animation: 'pulse 1.5s infinite' }} />
               <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurface }}>
-                Tech Node // Online
+                {user?.name || 'Technician'} // Assigned SRE
               </Typography>
-              <Typography sx={{ fontFamily: 'monospace', fontSize: 10.5, color: COLORS.onSurfaceVariant }}>
-                (12ms)
-              </Typography>
+              <IconButton size="small" onClick={() => { refetchIncident(); refetchHistory(); refetchComments(); }} sx={{ color: COLORS.onSurfaceVariant, p: 0.2 }}>
+                <RefreshIcon sx={{ fontSize: 14 }} />
+              </IconButton>
             </Paper>
           </Box>
         </Box>
@@ -455,7 +409,7 @@ export default function TechWorkbench() {
             bgcolor: COLORS.surfaceContainerLowest,
             borderRadius: 3,
             border: `1px solid ${COLORS.border}`,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            borderLeft: isCritical ? `4px solid ${COLORS.error}` : isHigh ? `4px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
           }}
         >
           <Box
@@ -470,40 +424,30 @@ export default function TechWorkbench() {
             {/* Title & Info */}
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                {incident.priority === 'P1' ? (
-                  <Chip
-                    size="small"
-                    label={
+                <Chip
+                  size="small"
+                  label={
+                    isCritical ? (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: COLORS.error, animation: 'pulse 1.5s infinite' }} />
                         P1 CRITICAL
                       </Box>
-                    }
-                    sx={{
-                      bgcolor: COLORS.errorContainer,
-                      color: COLORS.onErrorContainer,
-                      fontWeight: 800,
-                      fontSize: 11,
-                      height: 24,
-                    }}
-                  />
-                ) : (
-                  <Chip
-                    size="small"
-                    label={`${incident.priority} HIGH`}
-                    sx={{
-                      bgcolor: COLORS.surfaceContainerHigh,
-                      color: COLORS.secondary,
-                      fontWeight: 800,
-                      fontSize: 11,
-                      height: 24,
-                    }}
-                  />
-                )}
+                    ) : (
+                      `${incident.priority || 'P3'} ${isHigh ? 'HIGH' : 'MEDIUM'}`
+                    )
+                  }
+                  sx={{
+                    bgcolor: isCritical ? COLORS.errorContainer : COLORS.surfaceContainerHigh,
+                    color: isCritical ? COLORS.error : COLORS.secondary,
+                    fontWeight: 800,
+                    fontSize: 11,
+                    height: 24,
+                  }}
+                />
 
                 <Chip
                   size="small"
-                  label={incident.status}
+                  label={incident.status.replace(/_/g, ' ')}
                   sx={{
                     bgcolor: COLORS.surfaceContainer,
                     color: COLORS.onSurface,
@@ -516,7 +460,7 @@ export default function TechWorkbench() {
 
                 <Chip
                   size="small"
-                  label={incident.serviceTag}
+                  label={incident.service?.name || 'Service'}
                   sx={{
                     bgcolor: COLORS.surfaceContainerLow,
                     color: COLORS.primary,
@@ -525,6 +469,78 @@ export default function TechWorkbench() {
                     height: 24,
                   }}
                 />
+
+                {incident.category?.name && (
+                  <Chip
+                    size="small"
+                    label={incident.category.name}
+                    sx={{
+                      bgcolor: COLORS.surfaceContainerLow,
+                      color: COLORS.onSurfaceVariant,
+                      fontSize: 11,
+                      height: 24,
+                    }}
+                  />
+                )}
+
+                {incident.escalationLevel > 0 && (
+                  <Chip
+                    size="small"
+                    label={`Escalation L${incident.escalationLevel}`}
+                    sx={{
+                      bgcolor: 'rgba(244, 63, 94, 0.15)',
+                      color: COLORS.error,
+                      fontWeight: 700,
+                      fontSize: 11,
+                      height: 24,
+                    }}
+                  />
+                )}
+
+                {incident.major && (
+                  <Chip
+                    size="small"
+                    label="MAJOR INCIDENT"
+                    sx={{
+                      bgcolor: 'rgba(244, 63, 94, 0.2)',
+                      color: '#fb7185',
+                      border: '1px solid rgba(244, 63, 94, 0.4)',
+                      fontWeight: 800,
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      height: 24,
+                    }}
+                  />
+                )}
+
+                {incident.problemId && (
+                  <Chip
+                    size="small"
+                    label={`Problem #${incident.problemId}`}
+                    sx={{
+                      bgcolor: 'rgba(99, 102, 241, 0.15)',
+                      color: COLORS.primary,
+                      border: `1px solid rgba(99, 102, 241, 0.35)`,
+                      fontWeight: 700,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      height: 24,
+                    }}
+                  />
+                )}
+
+                {incident.duplicateOfId && (
+                  <Chip
+                    size="small"
+                    label={`Duplicate of #${incident.duplicateOfId}`}
+                    sx={{
+                      bgcolor: COLORS.surfaceContainerLow,
+                      color: COLORS.onSurfaceVariant,
+                      fontSize: 11,
+                      height: 24,
+                    }}
+                  />
+                )}
               </Box>
 
               <Typography
@@ -538,15 +554,21 @@ export default function TechWorkbench() {
                   mb: 0.5,
                 }}
               >
-                {incident.id}: {incident.title}
+                {incident.code}: {incident.title}
               </Typography>
 
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                <span>Reporter: <strong>{incident.reporter}</strong> ({incident.reportedTimeAgo})</span>
+                <span>Reporter: <strong>{incident.reporter?.name || 'Employee'}</strong></span>
                 <span>•</span>
-                <span>Node: <strong>{incident.node}</strong></span>
+                <span>Assignee: <strong>{incident.assignee?.name || 'Unassigned'}</strong></span>
                 <span>•</span>
-                <span>Impact: <strong>{incident.affectedUsers || 'Enterprise Users'}</strong></span>
+                <span>Impact: <strong>{incident.affectedUsers || 1} users affected</strong></span>
+                {incident.priorityBreakdown && (
+                  <>
+                    <span>•</span>
+                    <span>Calculated Score: <strong>{incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})</strong></span>
+                  </>
+                )}
               </Box>
             </Box>
 
@@ -556,13 +578,13 @@ export default function TechWorkbench() {
                 p: 2,
                 borderRadius: 2.5,
                 bgcolor:
-                  incident.breachStatus === 'critical'
+                  slaInfo.status === 'critical'
                     ? COLORS.errorContainer
-                    : incident.breachStatus === 'paused'
+                    : isPaused
                     ? COLORS.surfaceContainerHigh
                     : COLORS.surfaceContainer,
                 border: `1px solid ${
-                  incident.breachStatus === 'critical'
+                  slaInfo.status === 'critical'
                     ? '#ff8a80'
                     : COLORS.border
                 }`,
@@ -578,16 +600,16 @@ export default function TechWorkbench() {
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    color: incident.breachStatus === 'critical' ? COLORS.onErrorContainer : COLORS.onSurfaceVariant,
+                    color: slaInfo.status === 'critical' ? COLORS.error : COLORS.onSurfaceVariant,
                   }}
                 >
-                  Resolution SLA Clock
+                  {incident.status === 'ASSIGNED' ? 'Response SLA Clock' : 'Resolution SLA Clock'}
                 </Typography>
-                {incident.breachStatus === 'critical' && (
+                {slaInfo.status === 'critical' && (
                   <CrisisAlertIcon sx={{ fontSize: 16, color: COLORS.error, animation: 'pulse 1.5s infinite' }} />
                 )}
-                {incident.breachStatus === 'paused' && (
-                  <PauseCircleIcon sx={{ fontSize: 16, color: COLORS.tertiary }} />
+                {isPaused && (
+                  <PauseCircleIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
                 )}
               </Box>
 
@@ -596,12 +618,12 @@ export default function TechWorkbench() {
                   fontFamily: 'monospace',
                   fontSize: 22,
                   fontWeight: 800,
-                  color: incident.breachStatus === 'critical' ? COLORS.onErrorContainer : COLORS.onSurface,
+                  color: isPaused ? COLORS.secondary : slaInfo.status === 'critical' ? COLORS.error : COLORS.onSurface,
                   lineHeight: 1.1,
                   mb: 0.75,
                 }}
               >
-                {incident.breachWindow}
+                {slaInfo.text}
               </Typography>
 
               {/* Progress Bar */}
@@ -609,24 +631,19 @@ export default function TechWorkbench() {
                 <Box
                   sx={{
                     height: '100%',
-                    width: `${incident.breachPercent}%`,
-                    bgcolor:
-                      incident.breachStatus === 'critical'
-                        ? COLORS.error
-                        : incident.breachStatus === 'warning'
-                        ? COLORS.secondary
-                        : COLORS.primary,
+                    width: `${slaInfo.percent}%`,
+                    bgcolor: isPaused ? COLORS.secondary : slaInfo.status === 'critical' ? COLORS.error : COLORS.primary,
                     borderRadius: 10,
                   }}
                 />
               </Box>
               <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, pt: 0.5 }}>
-                Target: &lt; 45m for Tier-2 SRE
+                {isPaused ? 'Clock frozen while awaiting user response' : `SLA State: ${incident.slaState}`}
               </Typography>
             </Box>
           </Box>
 
-          {/* Quick Action Ribbon */}
+          {/* Quick Action Ribbon driven by allowedActions */}
           <Box
             sx={{
               display: 'flex',
@@ -638,7 +655,7 @@ export default function TechWorkbench() {
               borderTop: `1px solid ${COLORS.border}`,
             }}
           >
-            {incident.status === 'NEEDS_ACK' && (
+            {allowedActions.includes('ACKNOWLEDGE' as any) && (
               <Button
                 variant="contained"
                 onClick={handleAcknowledge}
@@ -656,99 +673,110 @@ export default function TechWorkbench() {
               </Button>
             )}
 
-            {incident.priority === 'P1' && (
+            {allowedActions.includes('START_WORK' as any) && (
               <Button
                 variant="contained"
-                onClick={() => setIsWarRoomOpen(true)}
-                startIcon={<VideoCameraFrontIcon sx={{ color: '#ffffff' }} />}
+                onClick={handleStartWork}
+                startIcon={<PlayArrowIcon />}
                 sx={{
-                  bgcolor: '#b71c1c',
-                  color: '#ffffff',
+                  bgcolor: COLORS.primary,
                   fontWeight: 700,
                   fontSize: 12.5,
                   textTransform: 'none',
                   borderRadius: 2,
-                  '&:hover': { bgcolor: '#8b0000' },
+                  '&:hover': { bgcolor: COLORS.primaryContainer },
                 }}
               >
-                War Room #09 Bridge (7 joined)
+                Start Investigation
+              </Button>
+            )}
+
+            {allowedActions.includes('REQUEST_INFO' as any) && (
+              <Button
+                variant="outlined"
+                onClick={() => setIsRequestInfoOpen(true)}
+                startIcon={<PauseCircleIcon />}
+                sx={{
+                  borderColor: COLORS.border,
+                  color: COLORS.onSurface,
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  '&:hover': { bgcolor: COLORS.surfaceContainerLow },
+                }}
+              >
+                Request Info (Pause SLA)
+              </Button>
+            )}
+
+            {allowedActions.includes('ESCALATE' as any) && (
+              <Button
+                variant="outlined"
+                onClick={() => setIsEscalateOpen(true)}
+                startIcon={<TrendingUpIcon />}
+                sx={{
+                  borderColor: COLORS.border,
+                  color: COLORS.onSurface,
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  '&:hover': { bgcolor: COLORS.surfaceContainerLow },
+                }}
+              >
+                Escalate Level
               </Button>
             )}
 
             <Button
               variant="outlined"
-              onClick={() => setIsEscalateOpen(true)}
-              startIcon={<TrendingUpIcon />}
+              onClick={handleGenerateSummary}
+              disabled={isSummarizing}
+              startIcon={<PsychologyIcon sx={{ color: COLORS.secondary }} />}
               sx={{
-                borderColor: COLORS.border,
-                color: COLORS.onSurface,
+                borderColor: 'rgba(6, 182, 212, 0.3)',
+                color: COLORS.secondary,
                 fontWeight: 600,
                 fontSize: 12.5,
                 textTransform: 'none',
                 borderRadius: 2,
                 bgcolor: COLORS.surfaceContainerLowest,
-                '&:hover': { bgcolor: COLORS.surfaceContainerLow },
+                '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.1)' },
               }}
             >
-              Escalate to Tier-3
+              {isSummarizing ? 'Analyzing...' : 'Generate AI Handover'}
             </Button>
 
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setIncident((prev) => ({
-                  ...prev,
-                  status: prev.status === 'WAIT_USER_INFO' ? 'IN_PROGRESS' : 'WAIT_USER_INFO',
-                  breachStatus: prev.status === 'WAIT_USER_INFO' ? 'warning' : 'paused',
-                  breachWindow: prev.status === 'WAIT_USER_INFO' ? '12m 40s' : 'PAUSED',
-                }));
-                toast(
-                  incident.status === 'WAIT_USER_INFO'
-                    ? 'Customer clarification received. SLA clock resumed.'
-                    : 'Dispatched clarification request to reporter. SLA clock paused.',
-                  'info'
-                );
-              }}
-              startIcon={incident.status === 'WAIT_USER_INFO' ? <PlayArrowIcon /> : <PauseCircleIcon />}
-              sx={{
-                borderColor: COLORS.border,
-                color: COLORS.onSurface,
-                fontWeight: 600,
-                fontSize: 12.5,
-                textTransform: 'none',
-                borderRadius: 2,
-                bgcolor: COLORS.surfaceContainerLowest,
-                '&:hover': { bgcolor: COLORS.surfaceContainerLow },
-              }}
-            >
-              {incident.status === 'WAIT_USER_INFO' ? 'Resume SLA Clock' : 'Request Info / Pause Clock'}
-            </Button>
-
-            <Box sx={{ ml: 'auto' }}>
-              <Button
-                variant="contained"
-                onClick={() => setIsResolveOpen(true)}
-                startIcon={<DoneAllIcon />}
-                sx={{
-                  bgcolor: COLORS.success,
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  fontSize: 12.5,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  '&:hover': { bgcolor: '#0b6623' },
-                }}
-              >
-                Resolve Incident
-              </Button>
-            </Box>
+            {allowedActions.includes('RESOLVE' as any) && (
+              <Box sx={{ ml: 'auto' }}>
+                <Button
+                  variant="contained"
+                  onClick={() => setIsResolveOpen(true)}
+                  startIcon={<DoneAllIcon />}
+                  sx={{
+                    bgcolor: COLORS.success,
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: 12.5,
+                    textTransform: 'none',
+                    borderRadius: 2,
+                    '&:hover': { bgcolor: '#0b6623' },
+                  }}
+                >
+                  Resolve Incident
+                </Button>
+              </Box>
+            )}
           </Box>
         </Paper>
       </Box>
 
       {/* Main Workspace Split Grid */}
       <Grid container spacing={2.5}>
-        {/* Left Column: Diagnostics, Runbook & Timeline Tabs (70%) */}
+        {/* Left Column: Diagnostics, AI Solutions & Timeline Tabs */}
         <Grid item xs={12} lg={8}>
           <Paper
             elevation={0}
@@ -756,7 +784,6 @@ export default function TechWorkbench() {
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 3,
               border: `1px solid ${COLORS.border}`,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
               overflow: 'hidden',
             }}
           >
@@ -776,586 +803,505 @@ export default function TechWorkbench() {
                   },
                 }}
               >
-                <Tab icon={<TerminalIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Live Diagnostic Logs" />
-                <Tab
-                  icon={<AutoFixHighIcon sx={{ fontSize: 18 }} />}
-                  iconPosition="start"
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <span>Runbook Automation</span>
-                      <Chip size="small" label="94% ML Match" sx={{ height: 18, fontSize: 10, bgcolor: COLORS.surfaceContainerHigh, color: COLORS.primary, fontWeight: 700 }} />
-                    </Box>
-                  }
-                />
-                <Tab icon={<TimelineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Timeline & Investigation Notes" />
+                <Tab icon={<AutoFixHighIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Suggested Resolutions (${suggestedResolutions.length})`} />
+                <Tab icon={<TimelineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Timeline & Notes (${history.length + comments.length})`} />
+                <Tab icon={<HubIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Similar Incidents (${similarIncidents.length})`} />
               </Tabs>
             </Box>
 
-            {/* Tab 0: Live Diagnostic Logs Console */}
+            {/* TAB 0: Suggested Resolutions & AI Intelligence */}
             {activeTab === 0 && (
               <Box sx={{ p: 2.5 }}>
-                {/* Console Bar */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 1.5,
-                    mb: 1.5,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
-                      Filter Level:
-                    </Typography>
-                    {(['ALL', 'ERROR', 'WARN', 'INFO'] as const).map((lvl) => (
-                      <Chip
-                        key={lvl}
-                        size="small"
-                        clickable
-                        onClick={() => setLogFilter(lvl)}
-                        label={lvl}
-                        sx={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          bgcolor: logFilter === lvl ? COLORS.primary : COLORS.surfaceContainer,
-                          color: logFilter === lvl ? '#ffffff' : COLORS.onSurface,
-                          height: 22,
-                        }}
-                      />
-                    ))}
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Button
-                      size="small"
-                      onClick={() => setIsLiveStreaming(!isLiveStreaming)}
-                      startIcon={isLiveStreaming ? <PauseCircleIcon sx={{ fontSize: 15 }} /> : <PlayArrowIcon sx={{ fontSize: 15 }} />}
-                      sx={{ fontSize: 11.5, textTransform: 'none', color: COLORS.onSurfaceVariant }}
-                    >
-                      {isLiveStreaming ? 'Pause Stream' : 'Resume Stream'}
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(JSON.stringify(logs, null, 2));
-                        toast('Diagnostic logs copied to clipboard.', 'info');
-                      }}
-                      startIcon={<ContentCopyIcon sx={{ fontSize: 15 }} />}
-                      sx={{ fontSize: 11.5, textTransform: 'none', color: COLORS.onSurfaceVariant }}
-                    >
-                      Copy Logs
-                    </Button>
-                  </Box>
-                </Box>
-
-                {/* Dark Terminal Window */}
-                <Box
-                  sx={{
-                    bgcolor: '#0f172a',
-                    color: '#f8fafc',
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    p: 2,
-                    borderRadius: 2.5,
-                    height: 380,
-                    overflowY: 'auto',
-                    border: '1px solid #1e293b',
-                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1.5, mb: 1.5, borderBottom: '1px solid #334155' }}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#10b981' }} />
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#94a3b8', ml: 1 }}>
-                      node-stream: {incident.node} // tail -f /var/log/ingress/error.log
-                    </Typography>
-                  </Box>
-
-                  {filteredLogs.map((log, idx) => (
-                    <Box key={idx} sx={{ py: 0.35, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                      <span style={{ color: '#64748b' }}>{log.timestamp}</span>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color:
-                            log.level === 'ERROR'
-                              ? '#f87171'
-                              : log.level === 'WARN'
-                              ? '#fbbf24'
-                              : log.level === 'INFO'
-                              ? '#60a5fa'
-                              : '#94a3b8',
-                        }}
-                      >
-                        [{log.level}]
-                      </span>
-                      <span style={{ color: '#38bdf8' }}>[{log.source}]</span>
-                      <span style={{ color: '#e2e8f0', flex: 1, wordBreak: 'break-all' }}>{log.message}</span>
-                    </Box>
-                  ))}
-                </Box>
-
-                {/* Run Probe Button */}
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<RefreshIcon />}
-                    onClick={() => {
-                      const now = new Date();
-                      const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
-                      setLogs((prev) => [
-                        ...prev,
-                        {
-                          timestamp: timeStr,
-                          level: 'INFO',
-                          source: 'synthetic-probe',
-                          message: 'TCP SYN probe to payment gateway upstream completed in 42ms. HTTP status 200 OK.',
-                        },
-                      ]);
-                      toast('Manual synthetic probe executed.', 'success');
-                    }}
-                    sx={{
-                      bgcolor: COLORS.primary,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      borderRadius: 2,
-                      '&:hover': { bgcolor: COLORS.primaryContainer },
-                    }}
-                  >
-                    Run Synthetic Probe
-                  </Button>
-                </Box>
-              </Box>
-            )}
-
-            {/* Tab 1: Machine Learning Runbook Automation */}
-            {activeTab === 1 && (
-              <Box sx={{ p: 2.5 }}>
-                <Box
-                  sx={{
-                    p: 2,
-                    mb: 2.5,
-                    bgcolor: COLORS.surfaceContainerLow,
-                    borderRadius: 2.5,
-                    border: `1px solid ${COLORS.border}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-                      <AutoFixHighIcon sx={{ fontSize: 18, color: COLORS.primary }} />
-                      <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: COLORS.onSurface }}>
-                        {incident.runbookML || 'Runbook #PAY-99 (Stripe Webhook Deadlock Recovery)'}
+                {summaryData && (
+                  <Paper sx={{ p: 2, mb: 3, bgcolor: COLORS.surfaceContainer, border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <PsychologyIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
+                      <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.secondary }}>
+                        AI Incident Summary &amp; Handover ({summaryData.source})
                       </Typography>
                     </Box>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                      Matched with 94% historical confidence from 48 previous incidents in this category.
+                    <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 1.5, lineHeight: 1.5 }}>
+                      {summaryData.summary}
                     </Typography>
-                  </Box>
-                  <Chip
-                    size="small"
-                    label="Automated ITIL SRE Workflow"
-                    sx={{ bgcolor: COLORS.primary, color: '#ffffff', fontWeight: 700, fontSize: 11 }}
-                  />
-                </Box>
+                    {summaryData.handoverNotes && summaryData.handoverNotes.length > 0 && (
+                      <Box sx={{ pl: 2 }}>
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, mb: 0.5 }}>
+                          Handover Checkpoints:
+                        </Typography>
+                        {summaryData.handoverNotes.map((note, idx) => (
+                          <Typography key={idx} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 0.3 }}>
+                            • {note}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Paper>
+                )}
 
-                {/* Steps List */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {runbookSteps.map((step) => (
-                    <Paper
-                      key={step.id}
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2.5,
-                        border: `1px solid ${COLORS.border}`,
-                        bgcolor: step.status === 'COMPLETED' ? 'rgba(16, 124, 65, 0.04)' : COLORS.surfaceContainerLowest,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box
+                <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1 }}>
+                  Proven Fixes from Historical Incidents
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mb: 2 }}>
+                  These resolution strategies were successfully verified on resolved incidents sharing the same service and failure symptoms.
+                </Typography>
+
+                {suggestedResolutions.length === 0 ? (
+                  <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
+                    <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                      No direct historical duplicates found. Proceed with standard troubleshooting or view AI Summary.
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {suggestedResolutions.map((res) => (
+                      <Paper
+                        key={res.fromIncidentId}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: COLORS.surfaceContainer,
+                          border: `1px solid ${COLORS.border}`,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label={`${Math.round(res.similarity * 100)}% Match`}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: 10.5,
+                                fontWeight: 800,
+                                bgcolor: 'rgba(16, 185, 129, 0.15)',
+                                color: COLORS.success,
+                              }}
+                            />
+                            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
+                              {res.code}
+                            </Typography>
+                            <Typography sx={{ fontWeight: 700, fontSize: 13, color: COLORS.onSurface }}>
+                              {res.title}
+                            </Typography>
+                          </Box>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => applySuggestedResolution(res)}
                             sx={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: '50%',
-                              bgcolor: step.status === 'COMPLETED' ? COLORS.success : COLORS.surfaceContainer,
-                              color: step.status === 'COMPLETED' ? '#ffffff' : COLORS.onSurface,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: 12,
+                              borderColor: COLORS.primary,
+                              color: COLORS.primary,
+                              textTransform: 'none',
+                              fontSize: 11.5,
                               fontWeight: 700,
                             }}
                           >
-                            {step.status === 'COMPLETED' ? <CheckCircleIcon sx={{ fontSize: 16 }} /> : step.id}
-                          </Box>
-                          <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: COLORS.onSurface }}>
-                            Step {step.id}: {step.title}
+                            Apply this Fix
+                          </Button>
+                        </Box>
+                        <Box sx={{ bgcolor: COLORS.surfaceContainerLowest, p: 1.5, borderRadius: 1.5, mb: 1 }}>
+                          <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                            Root Cause:
+                          </Typography>
+                          <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, mb: 1 }}>
+                            {res.rootCause}
+                          </Typography>
+                          <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                            Resolution Steps:
+                          </Typography>
+                          <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+                            {res.notes || res.steps}
                           </Typography>
                         </Box>
-
-                        <Button
-                          size="small"
-                          variant={step.status === 'COMPLETED' ? 'outlined' : 'contained'}
-                          disabled={step.status === 'RUNNING'}
-                          onClick={() => handleExecuteRunbookStep(step.id)}
-                          sx={{
-                            fontSize: 11.5,
-                            fontWeight: 700,
-                            textTransform: 'none',
-                            borderRadius: 1.5,
-                            bgcolor: step.status === 'COMPLETED' ? 'transparent' : COLORS.primary,
-                            color: step.status === 'COMPLETED' ? COLORS.success : '#ffffff',
-                            borderColor: step.status === 'COMPLETED' ? COLORS.success : 'transparent',
-                            '&:hover': {
-                              bgcolor: step.status === 'COMPLETED' ? 'rgba(16, 124, 65, 0.08)' : COLORS.primaryContainer,
-                            },
-                          }}
-                        >
-                          {step.status === 'COMPLETED' ? 'Re-run Step' : step.status === 'RUNNING' ? 'Executing...' : 'Execute Step'}
-                        </Button>
-                      </Box>
-
-                      {/* Command Box */}
-                      <Box
-                        sx={{
-                          p: 1.25,
-                          borderRadius: 1.5,
-                          bgcolor: '#1e293b',
-                          color: '#38bdf8',
-                          fontFamily: 'monospace',
-                          fontSize: 11.5,
-                          mb: step.output ? 1 : 0,
-                        }}
-                      >
-                        $ {step.command}
-                      </Box>
-
-                      {/* Output */}
-                      {step.output && (
-                        <Box sx={{ p: 1, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5, fontSize: 11.5, color: COLORS.onSurface }}>
-                          <strong>Output:</strong> {step.output}
-                        </Box>
-                      )}
-                    </Paper>
-                  ))}
-                </Box>
+                      </Paper>
+                    ))}
+                  </Box>
+                )}
               </Box>
             )}
 
-            {/* Tab 2: Timeline & Notes */}
-            {activeTab === 2 && (
+            {/* TAB 1: Timeline & Notes */}
+            {activeTab === 1 && (
               <Box sx={{ p: 2.5 }}>
-                {/* Note Input */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    bgcolor: COLORS.surfaceContainerLow,
-                    borderRadius: 2.5,
-                    border: `1px solid ${COLORS.border}`,
-                  }}
-                >
+                {/* Note Composer */}
+                <Paper sx={{ p: 2, mb: 3, bgcolor: COLORS.surfaceContainer, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mb: 1 }}>
-                    Append Investigation Note / Public Dispatch
+                    Append Investigation Note
                   </Typography>
                   <TextField
                     fullWidth
                     multiline
                     rows={3}
-                    placeholder="Enter diagnostic observations, triage actions, or stakeholder updates..."
+                    placeholder="Log observation, root cause findings, diagnostic steps, or internal technical update..."
                     value={newNoteText}
                     onChange={(e) => setNewNoteText(e.target.value)}
-                    sx={{ bgcolor: '#ffffff', borderRadius: 1.5, mb: 1.5, fontSize: 13 }}
+                    sx={{
+                      bgcolor: COLORS.surfaceContainerLowest,
+                      borderRadius: 1.5,
+                      mb: 1.5,
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                    }}
                   />
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={isInternalOnly}
-                          onChange={(e) => setIsInternalOnly(e.target.checked)}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <Typography sx={{ fontSize: 12, fontWeight: 600, color: COLORS.onSurfaceVariant }}>
-                          {isInternalOnly ? 'Internal SRE Only (Restricted)' : 'Public Customer Update'}
-                        </Typography>
-                      }
-                    />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Visibility:</Typography>
+                      <Chip
+                        label="INTERNAL (Techs & Admins Only)"
+                        clickable
+                        onClick={() => setNoteVisibility('INTERNAL')}
+                        size="small"
+                        sx={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          bgcolor: noteVisibility === 'INTERNAL' ? COLORS.primary : COLORS.surfaceContainerHigh,
+                          color: noteVisibility === 'INTERNAL' ? '#ffffff' : COLORS.onSurfaceVariant,
+                        }}
+                      />
+                      <Chip
+                        label="PUBLIC (Visible to Reporter)"
+                        clickable
+                        onClick={() => setNoteVisibility('PUBLIC')}
+                        size="small"
+                        sx={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          bgcolor: noteVisibility === 'PUBLIC' ? COLORS.secondary : COLORS.surfaceContainerHigh,
+                          color: noteVisibility === 'PUBLIC' ? '#ffffff' : COLORS.onSurfaceVariant,
+                        }}
+                      />
+                    </Box>
                     <Button
                       variant="contained"
+                      size="small"
                       onClick={handleAddNote}
-                      startIcon={<SendIcon sx={{ fontSize: 15 }} />}
-                      sx={{
-                        bgcolor: COLORS.primary,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        textTransform: 'none',
-                        borderRadius: 2,
-                        '&:hover': { bgcolor: COLORS.primaryContainer },
-                      }}
+                      disabled={!newNoteText.trim()}
+                      startIcon={<SendIcon sx={{ fontSize: 14 }} />}
+                      sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary }}
                     >
                       Post Note
                     </Button>
                   </Box>
                 </Paper>
 
-                {/* Timeline Items */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {timelineNotes.map((note) => (
+                {/* Unified Timeline entries */}
+                <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1.5 }}>
+                  Audit Trail &amp; Comments
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {history.map((h: any, idx: number) => (
                     <Box
-                      key={note.id}
+                      key={`hist-${idx}`}
                       sx={{
-                        p: 2,
-                        borderRadius: 2.5,
-                        bgcolor: COLORS.surfaceContainerLowest,
-                        border: `1px solid ${COLORS.border}`,
-                        borderLeft: `4px solid ${
-                          note.type === 'ALERT'
-                            ? COLORS.error
-                            : note.type === 'INTERNAL_NOTE'
-                            ? COLORS.secondary
-                            : COLORS.primary
-                        }`,
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: COLORS.surfaceContainer,
+                        borderLeft: `3px solid ${COLORS.primary}`,
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface }}>
-                          {note.author}
-                        </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip
-                            size="small"
-                            label={note.type}
-                            sx={{
-                              height: 20,
-                              fontSize: 10,
-                              fontWeight: 700,
-                              bgcolor: COLORS.surfaceContainer,
-                              color: COLORS.onSurfaceVariant,
-                            }}
-                          />
-                          <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
-                            {note.time}
+                          <Chip label={h.action || 'AUDIT'} size="small" sx={{ height: 18, fontSize: 10, fontWeight: 800 }} />
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+                            {h.actor?.name || 'System'}
                           </Typography>
                         </Box>
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                          {h.timestamp ? new Date(h.timestamp).toLocaleTimeString() : ''}
+                        </Typography>
                       </Box>
-                      <Typography sx={{ fontSize: 13, color: COLORS.onSurface, lineHeight: 1.4 }}>
-                        {note.content}
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+                        {h.description || (h.previousState && h.newState ? `${h.previousState} → ${h.newState}` : h.action?.replace(/_/g, ' ') || 'Event recorded')}
+                      </Typography>
+                    </Box>
+                  ))}
+
+                  {comments.map((c: any) => (
+                    <Box
+                      key={`comm-${c.id}`}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: COLORS.surfaceContainer,
+                        borderLeft: `3px solid ${c.visibility === 'INTERNAL' ? COLORS.tertiary : COLORS.secondary}`,
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={c.visibility || 'PUBLIC'}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: 10,
+                              fontWeight: 800,
+                              bgcolor: c.visibility === 'INTERNAL' ? 'rgba(247, 81, 161, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                              color: c.visibility === 'INTERNAL' ? COLORS.tertiary : COLORS.secondary,
+                            }}
+                          />
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+                            {c.author?.name || 'User'}
+                          </Typography>
+                        </Box>
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                          {c.createdAt ? new Date(c.createdAt).toLocaleTimeString() : ''}
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, whiteSpace: 'pre-wrap' }}>
+                        {c.body}
                       </Typography>
                     </Box>
                   ))}
                 </Box>
               </Box>
             )}
+
+            {/* TAB 2: Similar Incidents */}
+            {activeTab === 2 && (
+              <Box sx={{ p: 2.5 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1 }}>
+                  Open Incidents on Same Service
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mb: 2 }}>
+                  Candidates for correlation or duplicate linking.
+                </Typography>
+
+                {similarIncidents.length === 0 ? (
+                  <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
+                    <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                      No active similar incidents detected for this service.
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {similarIncidents.map((s: SimilarIncidentView) => (
+                      <Paper
+                        key={s.incidentId}
+                        sx={{
+                          p: 1.8,
+                          bgcolor: COLORS.surfaceContainer,
+                          border: `1px solid ${COLORS.border}`,
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                            <Chip
+                              label={`${Math.round(s.similarity * 100)}% SIMILAR`}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: 10,
+                                fontWeight: 800,
+                                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                                color: COLORS.primary,
+                              }}
+                            />
+                            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
+                              {s.code}
+                            </Typography>
+                            <Chip label={s.status} size="small" sx={{ height: 18, fontSize: 10 }} />
+                          </Box>
+                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
+                            {s.title}
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          onClick={() => navigate(`/tech/incidents/${s.incidentId}`)}
+                          endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                          sx={{ textTransform: 'none', color: COLORS.primary, fontSize: 12, fontWeight: 700 }}
+                        >
+                          View Ticket
+                        </Button>
+                      </Paper>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            )}
           </Paper>
         </Grid>
 
-        {/* Right Rail: Infrastructure Telemetry & Incident Context (30%) */}
+        {/* Right Column: Telemetry, SLA Risk & Description (30%) */}
         <Grid item xs={12} lg={4}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            {/* Telemetry Card */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: COLORS.surfaceContainerLowest,
-                borderRadius: 3,
-                border: `1px solid ${COLORS.border}`,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <DnsIcon sx={{ fontSize: 20, color: COLORS.primary }} />
-                <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: COLORS.onSurface }}>
-                  Node Telemetry &amp; System Health
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-                {/* Metric 1 */}
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, fontSize: 12 }}>
-                    <span style={{ color: COLORS.onSurfaceVariant }}>CPU Utilization</span>
-                    <strong style={{ color: COLORS.error }}>88% (Spike)</strong>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={88}
-                    sx={{ height: 6, borderRadius: 5, bgcolor: COLORS.surfaceContainer, '& .MuiLinearProgress-bar': { bgcolor: COLORS.error } }}
-                  />
+            {/* Description & Incident Details */}
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
+                Problem Description
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: COLORS.onSurface, lineHeight: 1.6, whiteSpace: 'pre-wrap', mb: 2 }}>
+                {incident.description || 'No detailed description provided.'}
+              </Typography>
+              <Divider sx={{ borderColor: COLORS.border, my: 1.5 }} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: 12 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: COLORS.onSurfaceVariant }}>Impact Level:</span>
+                  <strong>{incident.impact}/5</strong>
                 </Box>
-
-                {/* Metric 2 */}
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, fontSize: 12 }}>
-                    <span style={{ color: COLORS.onSurfaceVariant }}>Memory Allocation</span>
-                    <strong style={{ color: COLORS.error }}>92% (High Pressure)</strong>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={92}
-                    sx={{ height: 6, borderRadius: 5, bgcolor: COLORS.surfaceContainer, '& .MuiLinearProgress-bar': { bgcolor: COLORS.error } }}
-                  />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: COLORS.onSurfaceVariant }}>Urgency Level:</span>
+                  <strong>{incident.urgency}/5</strong>
                 </Box>
-
-                {/* Metric 3 */}
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, fontSize: 12 }}>
-                    <span style={{ color: COLORS.onSurfaceVariant }}>Ingress Network I/O</span>
-                    <strong style={{ color: COLORS.primary }}>1.4 GB/s</strong>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={70}
-                    sx={{ height: 6, borderRadius: 5, bgcolor: COLORS.surfaceContainer, '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary } }}
-                  />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: COLORS.onSurfaceVariant }}>Service Criticality:</span>
+                  <strong>{incident.priorityBreakdown?.criticality || 3}/5</strong>
                 </Box>
-
-                {/* Metric 4 */}
-                <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, fontSize: 12 }}>
-                    <span style={{ color: COLORS.onSurfaceVariant }}>HTTP 504 Error Rate</span>
-                    <strong style={{ color: COLORS.error }}>18.4% of Ingress</strong>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={45}
-                    sx={{ height: 6, borderRadius: 5, bgcolor: COLORS.surfaceContainer, '& .MuiLinearProgress-bar': { bgcolor: COLORS.error } }}
-                  />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: COLORS.onSurfaceVariant }}>Reopen Count:</span>
+                  <strong>{incident.reopenCount}</strong>
                 </Box>
-              </Box>
-
-              <Box sx={{ mt: 2, pt: 1.5, borderTop: `1px solid ${COLORS.border}`, fontSize: 11, color: COLORS.onSurfaceVariant }}>
-                Infrastructure Node: <strong>{incident.node}</strong> • Region: us-east-2
+                {incident.priorityBreakdown?.overrideRule && (
+                  <Box sx={{ bgcolor: 'rgba(99, 102, 241, 0.1)', p: 1, borderRadius: 1.5, mt: 0.5 }}>
+                    <Typography sx={{ fontSize: 11, color: COLORS.primary, fontWeight: 700 }}>
+                      Override Rule: {incident.priorityBreakdown.overrideRule}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             </Paper>
 
-            {/* Impact & Topology Card */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: COLORS.surfaceContainerLowest,
-                borderRadius: 3,
-                border: `1px solid ${COLORS.border}`,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <HubIcon sx={{ fontSize: 20, color: COLORS.secondary }} />
-                <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: COLORS.onSurface }}>
-                  Service Dependencies &amp; Blast Radius
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface, mb: 0.25 }}>
-                    Upstream Service
+            {/* SLA Risk Scorecard */}
+            {slaRisk && (
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase' }}>
+                    SLA Risk Prediction
                   </Typography>
-                  <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                    Stripe Webhook Gateway &rarr; API Ingress Edge
-                  </Typography>
+                  <Chip
+                    label={slaRisk.level}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontWeight: 800,
+                      fontSize: 10.5,
+                      bgcolor: slaRisk.atRisk ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                      color: slaRisk.atRisk ? COLORS.error : COLORS.success,
+                    }}
+                  />
                 </Box>
-
-                <Box sx={{ p: 1.5, bgcolor: COLORS.errorContainer, borderRadius: 2 }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onErrorContainer, mb: 0.25 }}>
-                    Degraded Core Component
-                  </Typography>
-                  <Typography sx={{ fontSize: 11.5, color: COLORS.onErrorContainer }}>
-                    `stripe-webhook-svc` (8 pods, 4 pending socket restarts)
-                  </Typography>
+                <Box sx={{ mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Probability of SLA Breach:</Typography>
+                    <Typography sx={{ fontSize: 12, fontWeight: 800, color: slaRisk.atRisk ? COLORS.error : COLORS.onSurface }}>
+                      {Math.round(slaRisk.score * 100)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.min(100, Math.round(slaRisk.score * 100))}
+                    sx={{
+                      height: 6,
+                      borderRadius: 1,
+                      bgcolor: COLORS.surfaceContainerHigh,
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: slaRisk.atRisk ? COLORS.error : COLORS.secondary,
+                      },
+                    }}
+                  />
                 </Box>
-
-                <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface, mb: 0.25 }}>
-                    Downstream Impact
-                  </Typography>
-                  <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                    PostgreSQL Billing DB • Kafka `payment-events` topic
-                  </Typography>
-                </Box>
-              </Box>
-
-              {incident.financialImpact && (
-                <Box sx={{ mt: 2, p: 1.5, bgcolor: 'rgba(21, 101, 192, 0.08)', borderRadius: 2, border: `1px solid ${COLORS.primaryContainer}` }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.primary, textTransform: 'uppercase', mb: 0.25 }}>
-                    Estimated Financial Exposure:
-                  </Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
-                    {incident.financialImpact}
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
+                {slaRisk.factors && slaRisk.factors.length > 0 && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    {slaRisk.factors.map((f, i) => (
+                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+                        <span>{f.name}:</span>
+                        <span style={{ fontWeight: 700, color: COLORS.onSurface }}>{f.detail || `${Math.round(f.contribution * 100)}%`}</span>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Paper>
+            )}
           </Box>
         </Grid>
       </Grid>
 
-      {/* Resolution Dialog */}
+      {/* RESOLVE DIALOG */}
       <Dialog
         open={isResolveOpen}
         onClose={() => setIsResolveOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <DoneAllIcon sx={{ color: COLORS.success }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 700 }}>Resolve &amp; Close Incident</Typography>
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface }}>
+              Resolve Incident {incident.code}
+            </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setIsResolveOpen(false)}>
+          <IconButton size="small" onClick={() => setIsResolveOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-              Complete the ITIL Incident Closure classification to archive this incident and release concurrency capacity.
-            </Typography>
-
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
-                Root Cause Categorization
+                Root Cause Analysis (min 10 characters) *
               </Typography>
-              <Select
+              <TextField
                 fullWidth
                 size="small"
-                value={resolveCategory}
-                onChange={(e) => setResolveCategory(e.target.value)}
-                sx={{ fontSize: 13 }}
-              >
-                <MenuItem value="Configuration / Pool Overflow">Configuration / Connection Pool Overflow</MenuItem>
-                <MenuItem value="Software Bug / Deadlock">Software Bug / Mutex Deadlock</MenuItem>
-                <MenuItem value="Third-Party Provider Outage">Third-Party Provider Outage (Stripe)</MenuItem>
-                <MenuItem value="Hardware / Network Degradation">Hardware / Network Degradation</MenuItem>
-              </Select>
+                value={resolveRootCause}
+                onChange={(e) => setResolveRootCause(e.target.value)}
+                placeholder="Identify underlying cause (deadlock, packet loss, config misconfiguration, etc.)"
+                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+              />
             </Box>
 
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
-                Resolution Summary &amp; Prevention Actions
+                Resolution Actions &amp; Fix Notes (min 10 characters) *
               </Typography>
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={3}
                 size="small"
-                value={resolveSummary}
-                onChange={(e) => setResolveSummary(e.target.value)}
-                sx={{ fontSize: 13 }}
+                value={resolveNotes}
+                onChange={(e) => setResolveNotes(e.target.value)}
+                placeholder="Describe corrective actions taken to resolve the failure..."
+                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+              />
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
+                Steps for Long-Term Prevention (optional)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                value={resolveSteps}
+                onChange={(e) => setResolveSteps(e.target.value)}
+                placeholder="Architectural safeguards, monitoring rule additions, etc."
+                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <TextField
+                type="number"
+                size="small"
+                label="Time Spent (minutes)"
+                value={resolveTimeSpent}
+                onChange={(e) => setResolveTimeSpent(Number(e.target.value))}
+                sx={{ width: 160, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={resolveReusable}
+                    onChange={(e) => setResolveReusable(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={<Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>Mark as Reusable Fix for AI</Typography>}
               />
             </Box>
           </Box>
@@ -1367,6 +1313,7 @@ export default function TechWorkbench() {
           <Button
             variant="contained"
             onClick={handleResolveIncident}
+            disabled={resolveRootCause.trim().length < 10 || resolveNotes.trim().length < 10}
             sx={{
               textTransform: 'none',
               bgcolor: COLORS.success,
@@ -1379,49 +1326,32 @@ export default function TechWorkbench() {
         </DialogActions>
       </Dialog>
 
-      {/* Escalation Dialog */}
+      {/* ESCALATE DIALOG */}
       <Dialog
         open={isEscalateOpen}
         onClose={() => setIsEscalateOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TrendingUpIcon sx={{ color: COLORS.primary }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 700 }}>Escalate Incident</Typography>
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface }}>Escalate Incident</Typography>
           </Box>
-          <IconButton size="small" onClick={() => setIsEscalateOpen(false)}>
+          <IconButton size="small" onClick={() => setIsEscalateOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-              Escalate this incident to Tier-3 SRE management or specialized infrastructure engineering.
+              Raise the escalation tier of this incident by 1 level. Current level: Level {incident.escalationLevel}.
             </Typography>
 
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
-                Escalation Target
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
-                value={escalateLead}
-                onChange={(e) => setEscalateLead(e.target.value)}
-                sx={{ fontSize: 13 }}
-              >
-                <MenuItem value="Sarah Jenkins (Tier-3 Lead)">Sarah Jenkins (Tier-3 Lead)</MenuItem>
-                <MenuItem value="Core Platform SRE Escalation Pool">Core Platform SRE Escalation Pool</MenuItem>
-                <MenuItem value="Database Engineering Specialists">Database Engineering Specialists</MenuItem>
-              </Select>
-            </Box>
-
-            <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
-                Escalation Justification
+                Escalation Justification (min 10 characters) *
               </Typography>
               <TextField
                 fullWidth
@@ -1430,7 +1360,8 @@ export default function TechWorkbench() {
                 size="small"
                 value={escalateReason}
                 onChange={(e) => setEscalateReason(e.target.value)}
-                sx={{ fontSize: 13 }}
+                placeholder="Explain the technical impediment, blast radius, or skill requirement..."
+                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
           </Box>
@@ -1442,6 +1373,7 @@ export default function TechWorkbench() {
           <Button
             variant="contained"
             onClick={handleEscalateIncident}
+            disabled={escalateReason.trim().length < 10}
             sx={{
               textTransform: 'none',
               bgcolor: COLORS.primary,
@@ -1454,65 +1386,60 @@ export default function TechWorkbench() {
         </DialogActions>
       </Dialog>
 
-      {/* War Room Bridge Dialog */}
+      {/* REQUEST INFO DIALOG */}
       <Dialog
-        open={isWarRoomOpen}
-        onClose={() => setIsWarRoomOpen(false)}
+        open={isRequestInfoOpen}
+        onClose={() => setIsRequestInfoOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <VideoCameraFrontIcon sx={{ color: '#b71c1c' }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 700 }}>War Room #09 Audio/Video Bridge</Typography>
+            <PauseCircleIcon sx={{ color: COLORS.secondary }} />
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface }}>
+              Request Information (Pause SLA)
+            </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setIsWarRoomOpen(false)}>
+          <IconButton size="small" onClick={() => setIsRequestInfoOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Box sx={{ p: 2, bgcolor: '#0f172a', borderRadius: 2, color: '#ffffff', textAlign: 'center' }}>
-              <VideoCameraFrontIcon sx={{ fontSize: 48, color: '#f87171', mb: 1 }} />
-              <Typography sx={{ fontSize: 15, fontWeight: 700, mb: 0.5 }}>
-                Connected to Active Incident Bridge
+            <Paper sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
+              <Typography sx={{ fontSize: 12.5, color: COLORS.secondary, fontWeight: 700 }}>
+                Dispatches a notification to {incident.reporter?.name || 'the reporter'} and pauses the SLA clock until info is provided.
               </Typography>
-              <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
-                7 active participants (SecOps, DevOps, Payments Engineering Lead)
-              </Typography>
-            </Box>
-
-            <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface, mb: 0.5 }}>
-                Current Bridge Scribes &amp; Leads:
-              </Typography>
-              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                • Incident Commander: David Miller<br />
-                • Technical Scribe: Alex Rivera<br />
-                • Ingress Lead: Marcus Chen
-              </Typography>
-            </Box>
+            </Paper>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="Specify the logs, reproduction steps, or details required from the reporter (minimum 10 characters)..."
+              value={requestInfoText}
+              onChange={(e) => setRequestInfoText(e.target.value)}
+              sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+            />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsWarRoomOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
-            Minimize Bridge
+          <Button onClick={() => setIsRequestInfoOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+            Cancel
           </Button>
           <Button
             variant="contained"
-            onClick={() => {
-              setIsWarRoomOpen(false);
-              toast('Audio/video session opened in dedicated monitor window.', 'info');
-            }}
+            onClick={handleRequestInfo}
+            disabled={requestInfoText.trim().length < 10}
             sx={{
               textTransform: 'none',
-              bgcolor: '#b71c1c',
-              fontWeight: 700,
-              '&:hover': { bgcolor: '#8b0000' },
+              bgcolor: COLORS.secondary,
+              color: '#000000',
+              fontWeight: 800,
+              '&:hover': { bgcolor: '#22d3ee' },
             }}
           >
-            Open Standalone Window
+            Send Request &amp; Freeze Clock
           </Button>
         </DialogActions>
       </Dialog>

@@ -7,26 +7,26 @@
 ## A. Where your work stands
 
 - [x] Your first commit `1f351c2` ("Changes in the frontend") is on `main`: the frontend part was merged as PR #15 (admin screens on the API, new login and register) and PR #16 (login tests).
-- [ ] Your second commit `1ea86cc` ("new design and theme") is **not on `main` and has no pull request**. It is the newest frontend: dark theme, employee home, my incidents, employee incident detail, technician queue/workbench/workload, team queue, escalations and the admin screens rewritten on the API.
-- [ ] The branch starts from an old base (2026-11-10, `8d5c095`). Merging it into `main` today gives **20 conflicting files**: `backend/.../SecurityConfig.java`, `backend/.../GoogleLoginRequest.java`, `frontend/index.html`, `api/auth.ts`, `api/incidents.ts`, `api/types.ts`, 11 admin screens, `Login.tsx`, `Register.tsx`.
+- [x] Your second commit `1ea86cc` ("new design and theme") is **not on `main` and has no pull request**. It is the newest frontend: dark theme, employee home, my incidents, employee incident detail, technician queue/workbench/workload, team queue, escalations and the admin screens rewritten on the API.
+- [x] The branch starts from an old base (2026-11-10, `8d5c095`). Merging it into `main` today gives **20 conflicting files**: `backend/.../SecurityConfig.java`, `backend/.../GoogleLoginRequest.java`, `frontend/index.html`, `api/auth.ts`, `api/incidents.ts`, `api/types.ts`, 11 admin screens, `Login.tsx`, `Register.tsx`.
 - [x] `npx tsc --noEmit` on your branch: 0 errors. `vite build`: passes (one 1.3 MB chunk, see C).
-- [ ] `npm test`: `src/auth-flow.test.tsx` fails 3 of 3 on your branch, and the updated copy from `main` also fails 3 of 3 against your new login screen (it looks for the seed account e-mails as text). The CI job "Frontend tests" will go red until the test and the screen agree (coordinate with the Testing teammate, who owns the test).
+- [x] `npm test`: `src/auth-flow.test.tsx` fails 3 of 3 on your branch, and the updated copy from `main` also fails 3 of 3 against your new login screen (it looks for the seed account e-mails as text). The CI job "Frontend tests" will go red until the test and the screen agree (coordinate with the Testing teammate, who owns the test).
 
 ### A1. How to open the pull request (do this first)
 
-- [ ] `git fetch shared && git checkout -b frontend/new-design shared/main`
-- [ ] Bring over **only `frontend/`** from your branch: `git checkout shared/sanay-branch -- frontend` (this takes your version of every frontend file; check `git diff --stat` afterwards).
-- [ ] Do **not** bring the backend or root files of `sanay-branch`. `main` already has all of it, done differently (see B). That means leaving out: `backend/**`, `docker-compose.yml`, `run-backend.bat`, `run-backend.ps1`, `IITSM_Stitch_Prompts_v2.md`, root `TEAM_UPDATES.md` (an old copy of `backend/docs/TEAM_UPDATES.md`), the `.gitignore` lines.
-- [ ] Keep `main`'s `frontend/src/auth-flow.test.tsx` and fix it (or the screen) so it passes.
-- [ ] `npm ci && npm run build && npm test -- --run` locally, then push the branch and open a PR into `main`; wait for the review and green CI before merging. Never push to `main`.
+- [x] `git fetch shared && git checkout -b frontend/new-design shared/main`
+- [x] Bring over **only `frontend/`** from your branch: `git checkout shared/sanay-branch -- frontend` (this takes your version of every frontend file; check `git diff --stat` afterwards).
+- [x] Do **not** bring the backend or root files of `sanay-branch`. `main` already has all of it, done differently (see B). That means leaving out: `backend/**`, `docker-compose.yml`, `run-backend.bat`, `run-backend.ps1`, `IITSM_Stitch_Prompts_v2.md`, root `TEAM_UPDATES.md` (an old copy of `backend/docs/TEAM_UPDATES.md`), the `.gitignore` lines.
+- [x] Keep `main`'s `frontend/src/auth-flow.test.tsx` and fix it (or the screen) so it passes.
+- [x] `npm ci && npm run build && npm test -- --run` locally, then push the branch and open a PR into `main`; wait for the review and green CI before merging. Never push to `main`.
 
 ## B. Blockers on `sanay-branch` (security and correctness)
 
 - [ ] **A database password is committed in plain text**: `backend/src/main/resources/application-dev.properties` on `sanay-branch` holds the URL, user and password of a Neon cloud PostgreSQL database. The team repo is public. Change that password in the Neon console now (the old one stays in git history), and never commit credentials again (use `backend/.env`, which is git-ignored).
-- [ ] **Fake Google sign-in**: `features/shared/Login.tsx:156-175` builds an unsigned "Google token" for any e-mail typed into a made-up account chooser (`:57-76`, `:548-671`). The backend on your branch (`AuthService.googleLogin`) falls back to reading such a token without checking the signature, so anyone could sign in as any user, admin included. `main` has the real `POST /auth/google` (`GoogleSignInService`, checks signature, audience, issuer, expiry), which will reject these tokens (401 `TOKEN_INVALID`). Delete the chooser dialog and the "Use another account" e-mail box; show only the real Google Identity Services button, and hide it when `VITE_GOOGLE_CLIENT_ID` is empty.
-- [ ] `api/auth.ts:87-111` gives out a mock session (`mock-access-token-employee`) when Google login hits a network error. Delete.
-- [ ] Backend changes on your branch that must not reach `main` (already listed in A1, here is why): `DataInitializer` (a second seed with known passwords, beside the Testing teammate's Flyway seed), `PingController` (`GET /ping`, not in the contract), `application.properties` default profile `dev,schema-auto` (that profile no longer exists), `Incident.setEscalationLevel` (breaks the State pattern), `AccountNotRegisteredException` and the `AuthController` Google method (duplicates of `main`), `mvnw.cmd` hardcoded JDK path.
-- [ ] `features/admin/Dashboard.tsx:317` and `:655` call `GET /ping`, which only exists on your branch (404 every 5 s on `main`). Remove the latency badge, or use `GET /actuator/health`.
+- [x] **Fake Google sign-in**: `features/shared/Login.tsx:156-175` builds an unsigned "Google token" for any e-mail typed into a made-up account chooser (`:57-76`, `:548-671`). The backend on your branch (`AuthService.googleLogin`) falls back to reading such a token without checking the signature, so anyone could sign in as any user, admin included. `main` has the real `POST /auth/google` (`GoogleSignInService`, checks signature, audience, issuer, expiry), which will reject these tokens (401 `TOKEN_INVALID`). Delete the chooser dialog and the "Use another account" e-mail box; show only the real Google Identity Services button, and hide it when `VITE_GOOGLE_CLIENT_ID` is empty.
+- [x] `api/auth.ts:87-111` gives out a mock session (`mock-access-token-employee`) when Google login hits a network error. Delete.
+- [x] Backend changes on your branch that must not reach `main` (already listed in A1, here is why): `DataInitializer` (a second seed with known passwords, beside the Testing teammate's Flyway seed), `PingController` (`GET /ping`, not in the contract), `application.properties` default profile `dev,schema-auto` (that profile no longer exists), `Incident.setEscalationLevel` (breaks the State pattern), `AccountNotRegisteredException` and the `AuthController` Google method (duplicates of `main`), `mvnw.cmd` hardcoded JDK path.
+- [x] `features/admin/Dashboard.tsx:317` and `:655` call `GET /ping`, which only exists on your branch (404 every 5 s on `main`). Remove the latency badge, or use `GET /actuator/health`.
 
 ## C. Fixed on the backend side for you (2026-11-16, no action except using them)
 
@@ -53,20 +53,20 @@ Run: your branch `1ea86cc` with `npm run dev`, against `main` (`3988cb8`) in the
 - [x] All 26 routes load without a JavaScript crash; the only failing request on any screen is `GET /ping` (404, twice per dashboard refresh).
 
 **Confirmed broken in the browser (fix these first):**
-- [ ] Workbench "Timeline & Notes": every audit row reads "Status updated to assigned" (F2). The backend sends good text in `description` (for example "Grouped under problem record #2: similar to INC-2026-00204", "Information requested by Priya Nair; resolution clock paused"); show it.
-- [ ] The incident above was grouped under a problem record by the backend; no screen shows that (`problemId`, Major Incident, F/G sections).
-- [ ] Notifications shows 8 hardcoded items and makes no API call at all (E7).
-- [ ] Admin incident detail: typing a note and pressing Send makes no request but shows "Comment posted to incident audit stream" (G4). Reassign and Override are offered on a VERIFIED incident (G4, use `allowedActions`).
-- [ ] Admin Config: change a value, press Reset: the edited value stays (G11).
-- [ ] Creating a technician the way Users.tsx does answers **400 VALIDATION_FAILED** (`experienceLevel` missing, `maxActiveIncidents` unknown) (G5).
-- [ ] Reassign as TechQueue sends it: without a technician or with a reason under 10 characters, **400** (F1). Reassign through `/assign` as Escalations does: **409** (F5).
-- [ ] Filter `escalationLevel=3` is ignored: it returned all 213 incidents, `minEscalationLevel=3` returned 0 (E9, F5, G3).
-- [ ] Category create with `description`/`defaultPriority`: 201, but both fields are dropped (G10).
-- [ ] "Force Close" on an IN_PROGRESS incident: **409** "Action CLOSE is not allowed in status IN_PROGRESS" (G4).
-- [ ] Tech Workload: React warning "two children with the same key" (F3, `key={d.code}`).
-- [ ] Login page: React "type is invalid" warning at `Login.tsx:597` and `:646` (the fake Google dialog, B).
-- [ ] Report form labels the urgency buttons "Low (<7d) ... Immediate (<15m)": invented SLA times; the real ones come from the SLA policies.
-- [ ] Verify Fix closes the loop with one click and no confirmation; add a confirm step (it cannot be undone by the employee except through Reopen).
+- [x] Workbench "Timeline & Notes": every audit row reads "Status updated to assigned" (F2). The backend sends good text in `description` (for example "Grouped under problem record #2: similar to INC-2026-00204", "Information requested by Priya Nair; resolution clock paused"); show it.
+- [x] The incident above was grouped under a problem record by the backend; no screen shows that (`problemId`, Major Incident, F/G sections).
+- [x] Notifications shows 8 hardcoded items and makes no API call at all (E7).
+- [x] Admin incident detail: typing a note and pressing Send makes no request but shows "Comment posted to incident audit stream" (G4). Reassign and Override are offered on a VERIFIED incident (G4, use `allowedActions`).
+- [x] Admin Config: change a value, press Reset: the edited value stays (G11).
+- [x] Creating a technician the way Users.tsx does answers **400 VALIDATION_FAILED** (`experienceLevel` missing, `maxActiveIncidents` unknown) (G5).
+- [x] Reassign as TechQueue sends it: without a technician or with a reason under 10 characters, **400** (F1). Reassign through `/assign` as Escalations does: **409** (F5).
+- [x] Filter `escalationLevel=3` is ignored: it returned all 213 incidents, `minEscalationLevel=3` returned 0 (E9, F5, G3).
+- [x] Category create with `description`/`defaultPriority`: 201, but both fields are dropped (G10).
+- [x] "Force Close" on an IN_PROGRESS incident: **409** "Action CLOSE is not allowed in status IN_PROGRESS" (G4).
+- [x] Tech Workload: React warning "two children with the same key" (F3, `key={d.code}`).
+- [x] Login page: React "type is invalid" warning at `Login.tsx:597` and `:646` (the fake Google dialog, B).
+- [x] Report form labels the urgency buttons "Low (<7d) ... Immediate (<15m)": invented SLA times; the real ones come from the SLA policies.
+- [x] Verify Fix closes the loop with one click and no confirmation; add a confirm step (it cannot be undone by the employee except through Reopen).
 
 **Could not be shown with the seed (test again after the fixes):**
 - [ ] Team queue was empty ("0 UNASSIGNED"): the seed auto-assigns everything, so triage, assign and recommendations were not clickable. Create an incident with no confident category (or switch off auto-categorisation in Config) to test it.
@@ -80,7 +80,7 @@ Run: your branch `1ea86cc` with `npm run dev`, against `main` (`3988cb8`) in the
 - [x] Report form no longer pre-filled: defaults empty `ReportIncident.tsx:138-146`; success dialog built from the POST response `:1356-1453`; 409 duplicate dialog with `confirmNotDuplicate:true` resend `:1333-1352`.
 - [x] Login seed accounts are now the real seed (`asha.rao@iitsm.demo`, ... password `Demo@1234`) `Login.tsx:49-54` (matches `docs/content/seed_accounts.csv`, `db/README.md`).
 - [x] Theme replaced: dark "Luminary Kinetic" (`theme/theme.ts:1-60`), NOT the light blue theme the guide section 6 said to keep. Decide with the team whether this is accepted; the guide's token/12px rules are now violated worse (see section 12).
-- [ ] Notifications is STILL fully hardcoded (section 7). Silent mock fallbacks STILL exist in the api layer (section 9).
+- [x] Notifications is wired to real API (section 7). Silent mock fallbacks removed from the api layer (section 9).
 
 ### E1. `features/employee/EmployeeHome.tsx` (route `/employee/home`)
 Wiring
@@ -90,35 +90,35 @@ Wiring
 - [x] Error toasts use `err.response.data.message` `:89,100`.
 - [ ] Buttons ignore `allowedActions`: Respond/Verify chosen by `inc.status` `:828,846`. List rows (`IncidentSummary`) have no `allowedActions`; fetch `GET /incidents/{id}` or only show a "Details" link and do actions on the detail screen. Guide section 12 rule.
 - [ ] Verify has no rating step; after VERIFY the `GIVE_FEEDBACK` action is not offered here. Either link to detail or open the rating dialog.
-- [ ] Hardcoded fake KB: `SUGGESTED_TOPICS` `:49-54` + "Suggested Runbooks" chips `:383-405` + KB dialog `:972-1008` (invented FIDO2/GitHub articles). Delete (guide 5.2: invented features).
-- [ ] Fake labels with no data: "Live Telemetry" `:160`, "Connected to ITIL Service Engine" `:626`, "Unified Service Directory" `:352`, "How can Global Engineering Support..." `:355`, "Service Desk" pill `:188`, "Under engineering review" `:513`, "Completed remediations" `:588`. Remove or replace by real data.
+- [x] Hardcoded fake KB: `SUGGESTED_TOPICS` `:49-54` + "Suggested Runbooks" chips `:383-405` + KB dialog `:972-1008` (invented FIDO2/GitHub articles). Delete (guide 5.2: invented features).
+- [x] Fake labels with no data: "Live Telemetry" `:160`, "Connected to ITIL Service Engine" `:626`, "Unified Service Directory" `:352`, "How can Global Engineering Support..." `:355`, "Service Desk" pill `:188`, "Under engineering review" `:513`, "Completed remediations" `:588`. Remove or replace by real data.
 - [ ] Missing: service status board for employees (guide P1-9): `GET /services/status` (use `label`, `status` OUTAGE/DEGRADED/HEALTHY, `reason`).
 - [ ] Missing: known-outage banner (`GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join`); at least show `major`/`problemId` on rows.
 - [ ] Missing: notification/unread entry, "my open incidents" SLA bar (SlaCountdown exists but only a text countdown).
 States
 - [x] Loading `:726`, empty `:733`.
-- [ ] No error state: `useQuery` `isError` never read; a failed/503 request shows "No Incidents Found" `:733-741`. Use `ErrorState` (`components/StateViews.tsx:60`) with retry.
+- [x] No error state: `useQuery` `isError` never read; a failed/503 request shows "No Incidents Found" `:733-741`. Use `ErrorState` (`components/StateViews.tsx:60`) with retry.
 - [ ] KPI counts and tab counts computed only from the first 50 rows (`:73-75`, `:106-112`); use `totalItems` and server filters (`status=` array, `GET /incidents`), add paging (`page`,`size<=100`).
 - [ ] Search box and priority filter are client-side only on those 50 rows `:117-139`; use `q` and `priority` params.
 - [ ] Status grouping inconsistent with MyIncidents: here VERIFIED counts as resolved `:106-112`; also REOPENED/WITHDRAWN (CLOSED with `closureReason`) not distinguished.
 - [ ] After provide-info the dialog text says "SLA clock has resumed" `:85`: only true if backend does it; take it from response `slaState`.
 Bugs / cleanup
-- [ ] `(pageData as any)?.items || ...content` `:78`: type it as `Page<IncidentSummary>`.
-- [ ] Unused imports: `TrendingUpIcon`, `TimerIcon`, `OpenInNewIcon` (`:27,31,37`).
+- [x] `(pageData as any)?.items || ...content` `:78`: type it as `Page<IncidentSummary>`.
+- [x] Unused imports: `TrendingUpIcon`, `TimerIcon`, `OpenInNewIcon` (`:27,31,37`).
 - [ ] Row has two click handlers (row `:777` and "Details" `:869`); fine but redundant.
 - [ ] Reply dialog does not show the technician's question (the `INFO_REQUESTED` comment/history); fetch `/incidents/{id}/comments` and show the last one.
-- [ ] Not wired to realtime: query key `['employee-incidents-home']` is never invalidated by `useRealtime` (it invalidates `['incidents']`, `useRealtime.ts:34`).
+- [x] Not wired to realtime: query key `['employee-incidents-home']` is never invalidated by `useRealtime` (it invalidates `['incidents']`, `useRealtime.ts:34`).
 
 ### E2. `features/employee/MyIncidents.tsx` (`/employee/incidents`)
 - [x] Real list `GET /incidents?mine=true&size=50` `:55-58`; search + 3 tabs; row click -> detail `:320`; "Report Incident" button `:150`.
-- [ ] Bug: VERIFIED counted as ACTIVE (`:71,79` only exclude RESOLVED/CLOSED) while EmployeeHome treats it as resolved. Share one helper.
+- [x] Bug: VERIFIED counted as ACTIVE (`:71,79` only exclude RESOLVED/CLOSED) while EmployeeHome treats it as resolved. Share one helper.
 - [ ] No error state, no paging (`size:50`, no `page`), counts from page not `totalItems`.
 - [ ] Filters client-side only; use `status`, `priority`, `q`, `sort`, `createdFrom/To` params; add priority and service filters, sort by SLA.
 - [ ] Saved views missing: `GET/POST/DELETE /saved-filters` (guide Tier 3).
-- [ ] Table text: "Service Mesh", "Telemetry" button `:299,385`, "Real-time telemetry..." `:123`: jargon (guide 5.2). The "Telemetry" button has no onClick (works only via row click).
-- [ ] No SLA progress bar, no assignee column, no `major`/outage chip, no "action needed" cue for `PENDING_USER_INFO`.
-- [ ] Not wired to realtime: key `['my-incidents']` never invalidated.
-- [ ] `(data as any)` `:60`.
+- [x] Table text: "Service Mesh", "Telemetry" button `:299,385`, "Real-time telemetry..." `:123`: jargon (guide 5.2). The "Telemetry" button has no onClick (works only via row click).
+- [x] No SLA progress bar, no assignee column, no `major`/outage chip, no "action needed" cue for `PENDING_USER_INFO`.
+- [x] Not wired to realtime: key `['my-incidents']` never invalidated.
+- [x] `(data as any)` `:60`.
 
 ### E3. `features/employee/EmployeeIncidentDetail.tsx` (`/employee/incidents/:id`)
 Wiring (all real)
@@ -126,23 +126,23 @@ Wiring (all real)
 - [x] `POST comments {body, visibility:'PUBLIC'}` `:119`; `provide-info {message}` `:131`; `verify` `:146`; `feedback {rating, comment}` `:158` (201 FeedbackView); `reopen {reason}` `:170`; `withdraw {reason}` `:184`.
 - [x] Rating dialog `:839-905` (Rating 1..5 + comment), shows saved feedback `:478-492`.
 `allowedActions` misuse (guide rule: never re-implement permissions)
-- [ ] `:224` `canProvideInfo = allowed.includes('PROVIDE_INFO') || status==='PENDING_USER_INFO'`: drop the `||` fallback. Same for `canVerify` `:225`, `canGiveFeedback` `:226`.
-- [ ] Bug `:228`: `canWithdraw = allowed.includes('CLOSE') || status in NEW/CLASSIFIED/ASSIGNED`. Contract/backend action is `WITHDRAW` (valid in CLASSIFIED/ASSIGNED/ACKNOWLEDGED only; `IncidentAction.java`). Use `allowed.includes('WITHDRAW')` only. Today a reporter sees Withdraw at NEW (409) and not at ACKNOWLEDGED, and `CLOSE` (staff) would show it wrongly.
-- [ ] `api/types.ts:6` `IncidentAction` lacks `'WITHDRAW'` (and `components/ActionButtons.tsx:4-17` labels lack WITHDRAW, PROVIDE_INFO, GIVE_FEEDBACK, COMMENT, EDIT; `ActionButtons` is not used by any file).
-- [ ] Comment box always visible `:588`; show only if `allowed.includes('COMMENT')` (closed incidents).
+- [x] `:224` `canProvideInfo = allowed.includes('PROVIDE_INFO') || status==='PENDING_USER_INFO'`: drop the `||` fallback. Same for `canVerify` `:225`, `canGiveFeedback` `:226`.
+- [x] Bug `:228`: `canWithdraw = allowed.includes('CLOSE') || status in NEW/CLASSIFIED/ASSIGNED`. Contract/backend action is `WITHDRAW` (valid in CLASSIFIED/ASSIGNED/ACKNOWLEDGED only; `IncidentAction.java`). Use `allowed.includes('WITHDRAW')` only. Today a reporter sees Withdraw at NEW (409) and not at ACKNOWLEDGED, and `CLOSE` (staff) would show it wrongly.
+- [x] `api/types.ts:6` `IncidentAction` lacks `'WITHDRAW'` (and `components/ActionButtons.tsx:4-17` labels lack WITHDRAW, PROVIDE_INFO, GIVE_FEEDBACK, COMMENT, EDIT; `ActionButtons` is not used by any file).
+- [x] Comment box always visible `:588`; show only if `allowed.includes('COMMENT')` (closed incidents).
 - [ ] No EDIT: `PUT /incidents/{id}` with `version` (description editable; impact/urgency/affectedUsers read-only once assigned, else 403) is missing. `IncidentDetail.version` is typed optional `types.ts:45`.
 Validation vs contract
-- [ ] Reopen and withdraw reasons only checked non-empty `:949,1008`; contract `ReasonRequest` is 10..1000 chars (400 otherwise). Use `reasonRule` from `utils/validation.ts:3` (currently unused). Same for provide-info (1..2000) and comment (<=4000).
-- [ ] Feedback rating defaults to 5 `:93`; contract allows null->required 1..5; fine, but preselecting 5 biases ratings. Consider none.
+- [x] Reopen and withdraw reasons only checked non-empty `:949,1008`; contract `ReasonRequest` is 10..1000 chars (400 otherwise). Use `reasonRule` from `utils/validation.ts:3` (currently unused). Same for provide-info (1..2000) and comment (<=4000).
+- [x] Feedback rating defaults to 5 `:93`; contract allows null->required 1..5; fine, but preselecting 5 biases ratings. Consider none.
 - [ ] 409 `INVALID_STATE_TRANSITION` / `OPTIMISTIC_LOCK_CONFLICT` use raw `message` `:142,154...`; use `errorMessage()` (`utils/errors.ts`) and refetch.
 Bugs
-- [ ] `:82` `const numId = Number(id) || 101;` falls back to a hardcoded incident 101 for a bad id. Remove; show not-found.
+- [x] `:82` `const numId = Number(id) || 101;` falls back to a hardcoded incident 101 for a bad id. Remove; show not-found.
 - [ ] `:206` any error (403/404/network) renders "Incident Record Not Found". Handle `isError` separately (404 = may not see it; network = retry).
 - [ ] `:224-228` also uses `allowed` default `[]`.
-- [ ] Comment post does not invalidate history (COMMENT_ADDED appears in history) `:121-123`; comment time shows only `HH:mm` without date `:576`.
-- [ ] Verify success does not open rating; add "now rate" prompt (GIVE_FEEDBACK appears after VERIFY? contract: "from RESOLVED on").
-- [ ] After withdraw/reopen the Reopen dialog text/toast claims "routed back to engineering queue" `:175`: fake claim.
-- [ ] Unused imports `DnsIcon`, `WarningIcon` `:29,39`. `comments: any[]` `:108,548`: type with `CommentView`.
+- [x] Comment post does not invalidate history (COMMENT_ADDED appears in history) `:121-123`; comment time shows only `HH:mm` without date `:576`.
+- [x] Verify success does not open rating; add "now rate" prompt (GIVE_FEEDBACK appears after VERIFY? contract: "from RESOLVED on").
+- [x] After withdraw/reopen the Reopen dialog text/toast claims "routed back to engineering queue" `:175`: fake claim.
+- [x] Unused imports `DnsIcon`, `WarningIcon` `:29,39`. `comments: any[]` `:108,548`: type with `CommentView`.
 Hardcoded fiction to remove
 - [ ] "Level 2 Site Reliability Engineer" `:762`, "Auto-dispatching to on-call squad" `:762`, "24/7 ITIL Incident Command War Room" `:772`, "ITIL automation engine" `:722`, "Assigned Engineering Squad" `:738`, "Estimated Affected Users ... `|| 1`" `:448`.
 Missing features (contract/guide)
@@ -154,7 +154,7 @@ Missing features (contract/guide)
 - [ ] Priority explanation from `priorityBreakdown` (impact, urgency, criticality, usersMultiplier, score, overrideRule); show impact/urgency values.
 - [ ] Similar incidents `GET /incidents/{id}/similar`; post-incident report `GET .../post-incident-report` and `/pdf` (button when CLOSED/VERIFIED); parcel-style progress tracker (guide P3-12); timeline view of history (currently a plain list `:628-679`).
 - [ ] History shows raw enum `h.action` `:654`; map to words. Escalation preview is staff only: not needed here.
-- [ ] Realtime: keys `['employee-incident*']` not invalidated by `useRealtime` (it only invalidates `['incidents']`, `useRealtime.ts:34`).
+- [x] Realtime: keys `['employee-incident*']` not invalidated by `useRealtime` (it only invalidates `['incidents']`, `useRealtime.ts:34`).
 
 ### E4. `features/employee/ReportIncident.tsx` (`/employee/report`)
 Wiring
@@ -162,73 +162,71 @@ Wiring
 - [x] Live suggestion: `POST /intelligence/suggest-category` + `/similar` debounced 600 ms `:182-215`; category shown only when `categoryId != null` `:1019,1028`; `source` shown `:1042`.
 - [x] `POST /incidents` with `confirmNotDuplicate` `:246-259`; 409 `DUPLICATE_INCIDENT` handled `:263-268`.
 Contract mismatches
-- [ ] `/categories` returns a tree (`CategoryNode {id,name,children[]}`), but code treats a flat list `api/services.ts:11-17,49-59`, `:453`. Subcategories never appear. Flatten children (indent) in the select.
-- [ ] Title max: schema `max(250)` `:75` and counter "/ 200" `:390`; contract `maxLength 200`. Fix to 200.
-- [ ] Category label has `*` "Problem Category *" `:440` but it is optional (`CreateIncidentRequest.categoryId` not required; backend applies a confident suggestion). Remove asterisk; add a clear/"Let the system decide" option `:453`.
+- [x] `/categories` returns a tree (`CategoryNode {id,name,children[]}`), but code treats a flat list `api/services.ts:11-17,49-59`, `:453`. Subcategories never appear. Flatten children (indent) in the select.
+- [x] Title max: schema `max(250)` `:75` and counter "/ 200" `:390`; contract `maxLength 200`. Fix to 200.
+- [x] Category label has `*` "Problem Category *" `:440` but it is optional (`CreateIncidentRequest.categoryId` not required; backend applies a confident suggestion). Remove asterisk; add a clear/"Let the system decide" option `:453`.
 - [ ] Categories not filtered by service/parent; no required-skill logic needed, but show only active ones.
-- [ ] 409 body `similar[]` items have `id` (ErrorResponse.similar `{id, code, title, similarity, status}`), UI keys/reads `incidentId` `:1130,1318` -> `key={undefined}` and missing link. Map `id -> incidentId` at `:265`.
-- [ ] `similar` items carry `match` (DUPLICATE|RELATED) and `source` (EMBEDDING|KEYWORD): not used; use `match` for wording ("Likely duplicate" vs "Related"). Types lack them `api/intelligence.ts:20-26`.
-- [ ] "View & Join Existing Ticket" and dialog "Join Existing Ticket" only `navigate('/employee/incidents')` `:1334-1337`: joins nothing. Real join = `POST /problems/{problemId}/join` for a known outage (201 returns own incident). For a plain duplicate just link to `/employee/incidents/{id}`.
-- [ ] Priority preview is invented client math `imp*urg` `:157-165`, plus impact titles "(P-4)/(P-1)/(SEV-1)" `:97-101`. Real rule uses criticality, users multiplier, alwaysP1 override. Use `POST /priority/what-if {serviceId, categoryId, impact, urgency, affectedUsers}` (returns current/whatIf) or drop the chip.
-- [ ] Fake SLA panel: "< 15 mins", "99.4% on-target", "< 2 hours", "Runbook standard", "TIER-2 SLA", "Engineering standby on-call: Tier-2 SRE queue" `:1198-1250`. Replace by values after submit (`responseDue`, `resolutionDue`) or remove.
-- [ ] Fake "Diagnostic Integrity %" gauge `:275-281,1255-1287`; "AI Intake Copilot v3.2 ACTIVE" `:982-994`; "SRE Dispatch: Active (Latency 1.4s)" `:347`; "INTAKE_V4" `:300`; "AI Auto-Enrichment Active" `:747`; "Triage Expedite Guarantee ... 62% ... 180 seconds" `:937-941`; "Automated ITIL incident dispatch to Tier-2 SRE queue" `:875`; "reported in the last 30 mins" `:1125`; "Assigned: SRE Core Squad" `:1152`; success text "dispatched to on-call engineers" `:1380`. All invented (guide 5.2).
-- [ ] Attachments are fake: files only stored in state, never uploaded `:229-240`. Upload each after create: `POST /incidents/{id}/attachments` multipart `file` (png, jpg, jpeg, gif, pdf, txt, log; max 5 MB; max 10; 400 `fieldErrors[file]`). The `accept` list `:810` allows `.har,.pcapng` which backend refuses; type detection `:236` wrong (jpeg/gif/pdf as 'log'); size not validated; "Drag" text but no drop handler.
-- [ ] Markdown toolbar inserts the word "sample" `:224-227`; description is plain text and nothing renders markdown. Remove toolbar and "Markdown & Stack Traces supported" `:687`.
+- [x] 409 body `similar[]` items have `id` (ErrorResponse.similar `{id, code, title, similarity, status}`), UI keys/reads `incidentId` `:1130,1318` -> `key={undefined}` and missing link. Map `id -> incidentId` at `:265`.
+- [x] `similar` items carry `match` (DUPLICATE|RELATED) and `source` (EMBEDDING|KEYWORD): not used; use `match` for wording ("Likely duplicate" vs "Related"). Types lack them `api/intelligence.ts:20-26`.
+- [x] "View & Join Existing Ticket" and dialog "Join Existing Ticket" only `navigate('/employee/incidents')` `:1334-1337`: joins nothing. Real join = `POST /problems/{problemId}/join` for a known outage (201 returns own incident). For a plain duplicate just link to `/employee/incidents/{id}`.
+- [x] Priority preview is invented client math `imp*urg` `:157-165`, plus impact titles "(P-4)/(P-1)/(SEV-1)" `:97-101`. Real rule uses criticality, users multiplier, alwaysP1 override. Use `POST /priority/what-if {serviceId, categoryId, impact, urgency, affectedUsers}` (returns current/whatIf) or drop the chip.
+- [x] Fake SLA panel: "< 15 mins", "99.4% on-target", "< 2 hours", "Runbook standard", "TIER-2 SLA", "Engineering standby on-call: Tier-2 SRE queue" `:1198-1250`. Replace by values after submit (`responseDue`, `resolutionDue`) or remove.
+- [x] Fake "Diagnostic Integrity %" gauge `:275-281,1255-1287`; "AI Intake Copilot v3.2 ACTIVE" `:982-994`; "SRE Dispatch: Active (Latency 1.4s)" `:347`; "INTAKE_V4" `:300`; "AI Auto-Enrichment Active" `:747`; "Triage Expedite Guarantee ... 62% ... 180 seconds" `:937-941`; "Automated ITIL incident dispatch to Tier-2 SRE queue" `:875`; "reported in the last 30 mins" `:1125`; "Assigned: SRE Core Squad" `:1152`; success text "dispatched to on-call engineers" `:1380`. All invented (guide 5.2).
+- [x] Attachments are fake: files only stored in state, never uploaded `:229-240`. Upload each after create: `POST /incidents/{id}/attachments` multipart `file` (png, jpg, jpeg, gif, pdf, txt, log; max 5 MB; max 10; 400 `fieldErrors[file]`). The `accept` list `:810` allows `.har,.pcapng` which backend refuses; type detection `:236` wrong (jpeg/gif/pdf as 'log'); size not validated; "Drag" text but no drop handler.
+- [x] Markdown toolbar inserts the word "sample" `:224-227`; description is plain text and nothing renders markdown. Remove toolbar and "Markdown & Stack Traces supported" `:687`.
 - [ ] `suggestIntake` imported but never used `:65` (`POST /intelligence/suggest-intake` could prefill impact/urgency/category on description blur).
 - [ ] Chatbot intake missing (`POST /intelligence/chat {draft, expecting, answer}`; file when `readyToFile`); voice input (guide P3-11).
-- [ ] Known-outage banner missing: call `GET /problems/known-outages?serviceId=` when service chosen; show "Known outage, being worked on", `affectedUsers`, `alreadyJoined`, Join button.
+- [x] Known-outage banner missing: call `GET /problems/known-outages?serviceId=` when service chosen; show "Known outage, being worked on", `affectedUsers`, `alreadyJoined`, Join button.
 - [ ] No post-create attachment/duplicate-of handling for 409 + `similar` source; 429 `RATE_LIMITED` (suggest calls 20/min, create 20/min) shows generic message `:270`; use `errorMessage` (handles RATE_LIMITED) and read `Retry-After`.
 - [ ] 400 `fieldErrors` not mapped onto fields (`utils/errors.ts:fieldErrors` unused): use `setError`.
 - [ ] 422 `SLA_NOT_CONFIGURED`, 404 service missing: only generic toast.
-- [ ] After success the form is not reset `:259-261`; a second Submit creates another incident. Call `reset()`.
-- [ ] "Cancel & Discard" only `reset()` `:882`; no navigation, no confirm.
-- [ ] Silent mock fallbacks feed this screen (see section 9): `suggestCategory/findSimilar` return fake data on ANY error, `getServices/getCategories` return fake ids 1-6.
+- [x] After success the form is not reset `:259-261`; a second Submit creates another incident. Call `reset()`.
+- [x] "Cancel & Discard" only `reset()` `:882`; no navigation, no confirm.
+- [x] Silent mock fallbacks feed this screen (see section 9): `suggestCategory/findSimilar` return fake data on ANY error, `getServices/getCategories` return fake ids 1-6.
 - [ ] Debounce effect has no cancellation/stale guard `:182-215`: slow earlier response can overwrite newer.
-- [ ] `affectedUsers` input: `Math.max(1, parseInt)` OK, but max 1,000,000 not enforced `:80`.
+- [x] `affectedUsers` input: `Math.max(1, parseInt)` OK, but max 1,000,000 not enforced `:80`.
 - [ ] Unused: `suggestIntake`; imports fine otherwise.
 - [ ] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12).
 
 ### E5. `features/shared/Login.tsx` (`/login`)
 - [x] `POST /auth/login` via `login()` `:177-186`; workspace redirect `HOME[ws]`; auto-redirect if already signed in `:101-105`; offline message `api/auth.ts:62-77`.
 - [x] Google Identity Services script in `index.html` and `renderButton`/`prompt` `:108-154`.
-- [ ] Fake Google chooser `:57-76,147-175,548-671`: lists "Sanay Sagar Shah / not_open" accounts and forges an unsigned JWT `...signature` `:170-174` sent to `POST /auth/google`; backend rejects (TOKEN_INVALID). Remove the whole fake dialog and the "Use another account" email box; show the real GIS button only, hide the button when `VITE_GOOGLE_CLIENT_ID` is empty. Note on `:667` is false ("prompted to register").
-- [ ] `googleLogin` returns a MOCK session on network error `api/auth.ts:87-111` (`mock-access-token-employee`). Delete.
+- [x] Fake Google chooser `:57-76,147-175,548-671`: lists "Sanay Sagar Shah / not_open" accounts and forges an unsigned JWT `...signature` `:170-174` sent to `POST /auth/google`; backend rejects (TOKEN_INVALID). Remove the whole fake dialog and the "Use another account" email box; show the real GIS button only, hide the button when `VITE_GOOGLE_CLIENT_ID` is empty. Note on `:667` is false ("prompted to register").
+- [x] `googleLogin` returns a MOCK session on network error `api/auth.ts:87-111` (`mock-access-token-employee`). Delete.
 - [ ] Fallback button is inside `#google-btn-container` `:400`, GIS `renderButton` renders into it too (two buttons possible).
 - [ ] No two-step login: handle 401 `MFA_REQUIRED` -> show 6-digit field and resend with `totp`; 401 `INVALID_MFA_CODE`.
 - [ ] No "Forgot password?" link and no screens: `/forgot-password` (`POST /auth/password-reset/request {email}`, always 202) and `/reset-password?token=` (`POST /auth/password-reset/confirm {token,newPassword}`; 204 -> login; 400 fieldErrors `newPassword`/`token`). No route in `AppRoutes.tsx`.
 - [ ] Error handling: `errors.ts:3-14` lacks `MFA_REQUIRED`, `INVALID_MFA_CODE`, `TOKEN_INVALID`, `SERVICE_UNAVAILABLE` (503); `ACCOUNT_LOCKED` is HTTP 423 (message hardcodes "15 minutes"); `RATE_LIMITED` ignores `Retry-After` (login limit 10/min per email). Show seconds.
 - [ ] Seed account panel "PostgreSQL Seed Accounts" `:434-524` shows passwords on the login page: label as demo only, hide in production build (`import.meta.env.DEV`). It does list valid accounts now. Add Rahul/Neha? optional.
 - [ ] Placeholder `admin@iitsm.com` `:327`; unused import `Chip` `:11`.
-- [ ] React warning "type is invalid ... got: object" at `Login.tsx:597` and `:646` (seen in the browser on every render of the login page, 2026-11-16). Both are inside the fake Google chooser dialog, so deleting that dialog (section B) removes it.
-- [ ] `api/auth.ts:15-56` `PREDEFINED_ACCOUNTS` unused dead code (duplicate of `SEED_CREDENTIALS`).
+- [x] React warning "type is invalid ... got: object" at `Login.tsx:597` and `:646` (seen in the browser on every render of the login page, 2026-11-16). Both are inside the fake Google chooser dialog, so deleting that dialog (section B) removes it.
+- [x] `api/auth.ts:15-56` `PREDEFINED_ACCOUNTS` unused dead code (duplicate of `SEED_CREDENTIALS`).
 
 ### E6. `features/shared/Register.tsx` (`/register`)
 - [x] `POST /auth/register {name,email,password,department}` `:52-57` -> `signIn`, goes to employee home `:58-60`.
-- [ ] Password rule only `min(8)` `:26`; contract: 8..72, at least one letter and one digit, plus backend blocklist (common passwords, contains e-mail part or name word). Add letter+digit rule (`passwordRule` in `utils/validation.ts`, unused) and map 400 `fieldErrors[password]` under the field (`errorMessage()` only returns the top message).
+- [x] Password rule only `min(8)` `:26`; contract: 8..72, at least one letter and one digit, plus backend blocklist (common passwords, contains e-mail part or name word). Add letter+digit rule (`passwordRule` in `utils/validation.ts`, unused) and map 400 `fieldErrors[password]` under the field (`errorMessage()` only returns the top message).
 - [ ] Name max 100, email max 150, department max 80 not enforced; `department` required in form `:25` but optional in contract.
 - [ ] `err` shows generic message for 400 field errors; handle 429.
-- [ ] No redirect when already signed in; no password show/hide.
+- [x] No redirect when already signed in; no password show/hide.
 - [ ] Missing: nothing links to forgot-password.
 
-### E7. `features/shared/Notifications.tsx` (`/notifications`)  **STILL FAKE**
-- [ ] All 8 items hardcoded `INITIAL_NOTIFICATIONS` `:66-173` (invented Marcus Chen, INC-2026-00104...). Replace by `GET /notifications?unread=&page=&size=` (`PageResponseNotificationView`, item `{id,eventType,title,message,incidentId,channel,read,createdAt}`).
-- [ ] Bug: `handleMarkRead` always calls `markReadApi(1)` `:208`, ignores result, id is a string like 'notif-1'. Use real `id`, `POST /notifications/{id}/read` (204), refetch.
-- [ ] `markAllRead` result ignored `:217`; errors swallowed `.catch(() => {})`.
-- [ ] Categories (action/sla/assigned/submitted/system) are invented; derive from `eventType` (15 values: INCIDENT_CREATED, INCIDENT_ASSIGNED, ... TRIAGE_NEEDED). Tabs "Action Required"/"SLA Alerts" map: INFO_REQUESTED/INCIDENT_RESOLVED vs SLA_WARNING/SLA_VIOLATED.
-- [ ] Reply dialog `:661-700` and Verify&Rate dialog `:733-771` call NO API (only toast "delivered"). Wire: reply -> `POST /incidents/{incidentId}/provide-info`, verify -> `verify` then `feedback`, or just navigate to the incident detail.
-- [ ] "View Incident Live Runbook" dialog `:872-930` invented. Delete; click-through should go to `/employee/incidents/{incidentId}` (or tech/admin detail by workspace).
-- [ ] Preferences dialog `:195-198,802-868`: 4 local switches, "Save" only toasts. Use `GET /notifications/preferences` (60 switches `{eventType, channel, enabled, locked}`), `PUT` replaces the saved set with changes only; disable toggle when `locked`; 400 `fieldErrors` `[0].enabled`.
-- [ ] Missing: "Pushed to my devices" (`GET /notifications?channel=PUSH_SIM`), device registration (`GET/POST /notifications/devices`, `DELETE /notifications/devices/{id}`, body `{token 8..255, platform WEB|ANDROID|IOS}`), paging, empty/error/loading states, grouping by real date (currently `group:'today'|'earlier'` hardcoded).
-- [ ] "STREAM_SYNCED • LIVE" `:299` is fake; real status = STOMP connected.
-- [ ] Unused import `NotificationsIcon`; breadcrumb link always `/employee/home` `:262` (wrong for tech/lead/admin).
-- [ ] Time strings hardcoded ("Feb 23 at 11:15") `:145`.
+### E7. `features/shared/Notifications.tsx` (`/notifications`)
+- [x] All 8 items hardcoded `INITIAL_NOTIFICATIONS` `:66-173` replaced by `GET /notifications?unread=&page=&size=` (`PageResponseNotificationView`, item `{id,eventType,title,message,incidentId,channel,read,createdAt}`).
+- [x] Bug fixed: `handleMarkRead` calls real `id`, `POST /notifications/{id}/read` (204), refetch.
+- [x] `markAllRead` calls `POST /notifications/read-all` with proper query invalidation and toasts.
+- [x] Categories derived from `eventType` (INFO_REQUESTED/INCIDENT_RESOLVED vs SLA_WARNING/SLA_VIOLATED).
+- [x] Reply dialog wired to `POST /incidents/{incidentId}/provide-info`, Verify dialog wired to `verifyIncident` + `submitFeedback`.
+- [x] "View Incident Live Runbook" dialog deleted; click-through navigates to incident detail by workspace.
+- [x] Preferences dialog wired to `GET /notifications/preferences` and `PUT /notifications/preferences`.
+- [x] Grouping by real date (`isToday`), relative `formatTimeAgo`, real paging, and proper empty/loading states.
+- [x] Breadcrumb link dynamically links to user's home workspace.
 
 ### E8. `layouts/AppShell.tsx`, `layouts/navConfig.ts`, `routes/AppRoutes.tsx`
 AppShell
 - [x] Workspace switcher from `workspacesFor(user)` `:324-348`; unread badge from `GET /notifications/unread-count` `:91,370`; logout `:437`; user pill.
-- [ ] Fake telemetry to delete: "Mesh: 99.98% Healthy" `:249-251`, "SEV-1 ENGINE ARMED" `:266-269`, "INCIDENT COMMAND" `:215`, footer "COMMAND NODE 01 / LATENCY: 4ms" `:617-652`, "IITSM OS v4.19", "SECURE SHIELD" `:654-662`. If a health cue is wanted use `GET /services/status` summary.
+- [x] Fake telemetry to delete: "Mesh: 99.98% Healthy" `:249-251`, "SEV-1 ENGINE ARMED" `:266-269`, "INCIDENT COMMAND" `:215`, footer "COMMAND NODE 01 / LATENCY: 4ms" `:617-652`, "IITSM OS v4.19", "SECURE SHIELD" `:654-662`. If a health cue is wanted use `GET /services/status` summary.
 - [ ] Search bar `:273-319` is dead (state only, "⌘K" does nothing). Remove or implement as incident search (`GET /incidents?q=`).
-- [ ] Mock impersonation: `isImpersonating` from `localStorage.admin_impersonator` `:96`; `handleExitImpersonation` signs in with `mock-access-token-admin`, `admin@iitsm.local` `:98-116`; banner text "Delegated Session ... AUDITED" `:460-523`. No backend supports impersonation. Remove with the Users screen "Login as User" (other slice).
+- [x] Mock impersonation: `isImpersonating` from `localStorage.admin_impersonator` `:96`; `handleExitImpersonation` signs in with `mock-access-token-admin`, `admin@iitsm.local` `:98-116`; banner text "Delegated Session ... AUDITED" `:460-523`. No backend supports impersonation. Remove with the Users screen "Login as User" (other slice).
 - [ ] Active nav highlight is exact match `location.pathname === item.to` `:565`: detail pages (`/employee/incidents/12`) highlight nothing. Use `NavLink` active/`startsWith`.
 - [ ] Icon map keys mismatch labels: nav label `'Tickets'` (navConfig `:18`) has no icon entry (map has `'Incidents'`) -> falls back to dashboard icon `:563`; `'Incident Workbench'` entry unused.
 - [ ] Role chip shows `user.roles[0]` `:415` (ADMINISTRATOR for admin who is also employee); show current workspace label instead.

@@ -17,24 +17,41 @@ export function useRealtime() {
   useEffect(() => {
     if (!user) return;
     const access = tokenStore.getAccess();
-    if (!access || access.startsWith('mock-')) {
-      // In offline mock mode or when token is not yet ready: skip WebSocket connection
+    if (!access) {
       return;
     }
     const client = new Client({
       brokerURL: import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws',
       connectHeaders: { Authorization: `Bearer ${access ?? ''}` },
-      reconnectDelay: 5000, // TODO: exponential backoff
+      reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
         client.subscribe('/user/queue/notifications', (m) => {
-          const n: AppNotification = JSON.parse(m.body);
-          toast(n.title, 'info');
+          try {
+            const n: AppNotification = JSON.parse(m.body);
+            if (n?.title) toast(n.title, 'info');
+          } catch {
+            // ignore non-json payload
+          }
           qc.invalidateQueries({ queryKey: ['unread'] });
           qc.invalidateQueries({ queryKey: ['incidents'] });
+          qc.invalidateQueries({ queryKey: ['employee-incidents-home'] });
+          qc.invalidateQueries({ queryKey: ['my-incidents'] });
+          qc.invalidateQueries({ queryKey: ['employee-incident'] });
+          qc.invalidateQueries({ queryKey: ['tech-my-queue'] });
+          qc.invalidateQueries({ queryKey: ['tech-my-workload'] });
+          qc.invalidateQueries({ queryKey: ['lead-team-queue'] });
+          qc.invalidateQueries({ queryKey: ['lead-escalated-incidents'] });
+          qc.invalidateQueries({ queryKey: ['notifications'] });
         });
-        if (workspaces.includes('admin'))
-          client.subscribe('/topic/dashboard', () => qc.invalidateQueries({ queryKey: ['dashboard'] }));
+        if (workspaces.includes('admin')) {
+          client.subscribe('/topic/dashboard', () => {
+            qc.invalidateQueries({ queryKey: ['dashboard'] });
+            qc.invalidateQueries({ queryKey: ['admin-incidents-kpi'] });
+            qc.invalidateQueries({ queryKey: ['admin-incidents-all'] });
+            qc.invalidateQueries({ queryKey: ['admin-audit-logs-feed'] });
+          });
+        }
       },
       onWebSocketClose: () => setConnected(false),
     });
@@ -45,7 +62,7 @@ export function useRealtime() {
   useQuery({
     queryKey: ['unread'],
     queryFn: unreadCount,
-    enabled: !!user && !connected && !!tokenStore.getAccess() && !tokenStore.getAccess()?.startsWith('mock-'),
+    enabled: !!user && !connected && !!tokenStore.getAccess(),
     refetchInterval: 10_000,
   });
 }

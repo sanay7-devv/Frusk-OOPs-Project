@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -14,10 +15,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  LinearProgress,
-  Tooltip,
   Menu,
   MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -25,205 +25,113 @@ import {
   PendingActions as PendingActionsIcon,
   ErrorOutline as ErrorOutlineIcon,
   TaskAlt as TaskAltIcon,
-  TrendingUp as TrendingUpIcon,
   FilterList as FilterListIcon,
   Sync as SyncIcon,
-  Lock as LockIcon,
-  VpnKey as VpnKeyIcon,
-  ViewKanban as ViewKanbanIcon,
-  Terminal as TerminalIcon,
-  Timer as TimerIcon,
-  PauseCircle as PauseCircleIcon,
-  Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   ArrowForward as ArrowForwardIcon,
-  Password as PasswordIcon,
-  Apps as AppsIcon,
-  WifiTethering as WifiTetheringIcon,
   Reply as ReplyIcon,
   PriorityHigh as PriorityHighIcon,
   Close as CloseIcon,
-  OpenInNew as OpenInNewIcon,
-  Info as InfoIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material';
 
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
-
-interface EmployeeIncident {
-  id: string;
-  priority: 'P1' | 'P2' | 'P3' | 'P4';
-  title: string;
-  assignedTo: string;
-  service: string;
-  serviceIcon: 'lock' | 'vpn' | 'kanban' | 'terminal';
-  status: 'IN_PROGRESS' | 'PENDING_USER_INFO' | 'RESOLVED' | 'VERIFIED';
-  slaLabel: string;
-  slaPercent: number;
-  slaState: 'error' | 'paused' | 'normal' | 'met';
-  logged: string;
-  actionType: 'view' | 'reply' | 'confirm';
-}
-
-const INITIAL_INCIDENTS: EmployeeIncident[] = [
-  {
-    id: 'INC-2026-00108',
-    priority: 'P1',
-    title: 'Okta MFA Duo Token Desync',
-    assignedTo: 'SecOps Core On-Call',
-    service: 'Identity & SSO',
-    serviceIcon: 'lock',
-    status: 'IN_PROGRESS',
-    slaLabel: '45m left',
-    slaPercent: 78,
-    slaState: 'error',
-    logged: 'Today 08:42',
-    actionType: 'view',
-  },
-  {
-    id: 'INC-2026-00088',
-    priority: 'P2',
-    title: 'VPN & SSO Gateway Handshake Timeout on macOS Sequoia 15.3 Build',
-    assignedTo: 'Technician Marcus Chen',
-    service: 'Corporate VPN',
-    serviceIcon: 'vpn',
-    status: 'PENDING_USER_INFO',
-    slaLabel: 'Paused (Awaiting client logs)',
-    slaPercent: 40,
-    slaState: 'paused',
-    logged: 'Yesterday',
-    actionType: 'reply',
-  },
-  {
-    id: 'INC-2026-00094',
-    priority: 'P3',
-    title: 'Jira Cloud Webhook Delivery Latency in Sprint Board',
-    assignedTo: 'Workplace Systems Tech',
-    service: 'Jira Cloud',
-    serviceIcon: 'kanban',
-    status: 'IN_PROGRESS',
-    slaLabel: '3h 15m left',
-    slaPercent: 35,
-    slaState: 'normal',
-    logged: 'Feb 24',
-    actionType: 'view',
-  },
-  {
-    id: 'INC-2026-00072',
-    priority: 'P4',
-    title: 'GitHub Enterprise SSH Key Provisioning for CI/CD Subnet',
-    assignedTo: 'DevOps Platform Team',
-    service: 'GitHub Enterprise',
-    serviceIcon: 'terminal',
-    status: 'RESOLVED',
-    slaLabel: 'Met (in 1h 12m)',
-    slaPercent: 100,
-    slaState: 'met',
-    logged: 'Feb 22',
-    actionType: 'confirm',
-  },
-];
-
-const SUGGESTED_TOPICS = [
-  { label: 'macOS GlobalProtect Setup', article: 'Instructions to configure Palo Alto GlobalProtect with SAML 2.0 MFA tokens on macOS Sequoia and Sonoma.' },
-  { label: 'FIDO2 Key Reset', article: 'Guide on self-service PIN unblocking and WebAuthn credential re-registration via corporate Okta portal.' },
-  { label: 'Staging AWS Credentials', article: 'Using aws-vault and corporate Okta federated AWS IAM roles for local development clusters.' },
-  { label: 'GitHub Copilot Org License', article: 'Requesting employee seat activation under the IITSM Enterprise GitHub Organization.' },
-];
+import { listIncidents, provideInfo, verifyIncident } from '../../api/incidents';
+import type { IncidentSummary, Page } from '../../api/types';
+import PriorityBadge from '../../components/PriorityBadge';
+import StatusChip from '../../components/StatusChip';
+import SlaCountdown from '../../components/SlaCountdown';
+import { ErrorState } from '../../components/StateViews';
 
 export default function EmployeeHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const [incidents, setIncidents] = useState<EmployeeIncident[]>(INITIAL_INCIDENTS);
   const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'PENDING' | 'RESOLVED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
 
   // Modals
-  const [selectedIncident, setSelectedIncident] = useState<EmployeeIncident | null>(null);
-  const [replyIncident, setReplyIncident] = useState<EmployeeIncident | null>(null);
+  const [replyIncident, setReplyIncident] = useState<IncidentSummary | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
-  const [kbModalTopic, setKbModalTopic] = useState<{ label: string; article: string } | null>(null);
-  const [selfServiceModal, setSelfServiceModal] = useState<string | null>(null);
+  const [verifyConfirmIncident, setVerifyConfirmIncident] = useState<IncidentSummary | null>(null);
 
-  // Filter Menu
-  const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
-  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  // Real backend query for employee incidents
+  const { data: pageData, isLoading, isError, refetch, isFetching } = useQuery<Page<IncidentSummary>>({
+    queryKey: ['employee-incidents-home'],
+    queryFn: () => listIncidents({ mine: true, size: 50 }),
+  });
 
-  // Keyboard shortcut Ctrl+K / Cmd+K
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const searchInput = document.getElementById('kb-search-input');
-        if (searchInput) searchInput.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  const incidents: IncidentSummary[] = pageData?.items || [];
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      toast('Employee incident status synchronized with Tier-2 SRE queue.', 'success');
-    }, 600);
-  };
+  // Mutations
+  const replyMutation = useMutation({
+    mutationFn: ({ id, message }: { id: number; message: string }) => provideInfo(id, message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee-incidents-home'] });
+      toast('Clarification delivered to assigned technician. The SLA clock has resumed.', 'success');
+      setReplyIncident(null);
+      setReplyMessage('');
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Failed to submit response.', 'error');
+    },
+  });
 
-  const handleSendReply = () => {
-    if (!replyIncident) return;
-    setIncidents((prev) =>
-      prev.map((inc) =>
-        inc.id === replyIncident.id
-          ? {
-              ...inc,
-              status: 'IN_PROGRESS',
-              slaState: 'normal',
-              slaLabel: 'Resumed (Tier-2 reviewing logs)',
-              actionType: 'view',
-            }
-          : inc
-      )
-    );
-    toast(`Logs and clarification delivered to ${replyIncident.assignedTo}. Ticket returned to queue.`, 'success');
-    setReplyIncident(null);
-    setReplyMessage('');
-  };
+  const verifyMutation = useMutation({
+    mutationFn: (id: number) => verifyIncident(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee-incidents-home'] });
+      toast('Incident fix verified.', 'success');
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Failed to verify incident.', 'error');
+    },
+  });
 
-  const handleConfirmFixed = (id: string) => {
-    setIncidents((prev) =>
-      prev.map((inc) => (inc.id === id ? { ...inc, status: 'VERIFIED', actionType: 'view' } : inc))
-    );
-    toast(`Ticket ${id} verified and sign-off acknowledged. Thanks for confirming!`, 'success');
-  };
+  // Dynamic status counts
+  const activeCount = incidents.filter(
+    (i) => i.status !== 'RESOLVED' && i.status !== 'VERIFIED' && i.status !== 'CLOSED'
+  ).length;
+  const pendingCount = incidents.filter((i) => i.status === 'PENDING_USER_INFO').length;
+  const resolvedCount = incidents.filter(
+    (i) => i.status === 'RESOLVED' || i.status === 'VERIFIED' || i.status === 'CLOSED'
+  ).length;
 
-  // Filter logic
+  const pendingIncident = incidents.find((i) => i.status === 'PENDING_USER_INFO');
+
+  // Filtered list
   const filteredIncidents = incidents.filter((inc) => {
-    if (filterTab === 'ACTIVE' && (inc.status === 'RESOLVED' || inc.status === 'VERIFIED')) return false;
-    if (filterTab === 'PENDING' && inc.status !== 'PENDING_USER_INFO') return false;
-    if (filterTab === 'RESOLVED' && inc.status !== 'RESOLVED' && inc.status !== 'VERIFIED') return false;
-    if (priorityFilter !== 'ALL' && inc.priority !== priorityFilter) return false;
+    if (filterTab === 'ACTIVE' && (inc.status === 'RESOLVED' || inc.status === 'VERIFIED' || inc.status === 'CLOSED')) {
+      return false;
+    }
+    if (filterTab === 'PENDING' && inc.status !== 'PENDING_USER_INFO') {
+      return false;
+    }
+    if (filterTab === 'RESOLVED' && inc.status !== 'RESOLVED' && inc.status !== 'VERIFIED' && inc.status !== 'CLOSED') {
+      return false;
+    }
+    if (priorityFilter !== 'ALL' && inc.priority !== priorityFilter) {
+      return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        inc.id.toLowerCase().includes(q) ||
+        inc.code.toLowerCase().includes(q) ||
         inc.title.toLowerCase().includes(q) ||
-        inc.service.toLowerCase().includes(q)
+        (inc.service?.name || '').toLowerCase().includes(q)
       );
     }
     return true;
   });
 
-  const activeCount = incidents.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'PENDING_USER_INFO').length;
-  const pendingCount = incidents.filter((i) => i.status === 'PENDING_USER_INFO').length;
-  const resolvedCount = incidents.filter((i) => i.status === 'RESOLVED' || i.status === 'VERIFIED').length;
-
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 6 }}>
-      {/* 1. TOP ASYMMETRIC OPERATIONAL HEADER & REALTIME STATUS */}
+    <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 6 }}>
+      {/* 1. TOP OPERATIONAL HEADER & REALTIME STATUS */}
       <Box
         sx={{
           display: 'flex',
@@ -235,24 +143,20 @@ export default function EmployeeHome() {
         }}
       >
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#425059', letterSpacing: '0.05em' }}>
-              SECURE CONSOLE // REGION_AP_SOUTH_INDIA
-            </Typography>
-            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#2b5bb5' }} />
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#004d99', textTransform: 'uppercase' }}>
-              Zero-Trust Authenticated
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
+            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em' }}>
+              EMPLOYEE WORKSPACE
             </Typography>
           </Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', letterSpacing: '-0.02em', mb: 0.3 }}>
-            Welcome back, {user?.name || 'Elena Vance'}
+          <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', mb: 0.5 }}>
+            Welcome back, {user?.name || 'Employee'}
           </Typography>
-          <Typography variant="body1" sx={{ color: '#425059', fontSize: 15 }}>
-            Enterprise IT Support Portal &amp; Incident Tracker
+          <Typography sx={{ color: '#94a3b8', fontSize: 14.5, fontFamily: 'Geist, sans-serif' }}>
+            Enterprise IT Service Portal
           </Typography>
         </Box>
 
-        {/* Live Telemetry Status Pill */}
+        {/* Live Status Pill */}
         <Box
           sx={{
             display: 'flex',
@@ -260,179 +164,158 @@ export default function EmployeeHome() {
             gap: 1.5,
             px: 2,
             py: 1,
-            borderRadius: 3,
-            bgcolor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            borderRadius: '12px',
+            bgcolor: 'rgba(18, 22, 34, 0.85)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
           }}
         >
-          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 12, height: 12 }}>
-            <Box
-              sx={{
-                position: 'absolute',
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                bgcolor: '#2b5bb5',
-                opacity: 0.6,
-                animation: 'pulse 1.5s infinite',
-                '@keyframes pulse': {
-                  '0%': { transform: 'scale(0.8)', opacity: 0.8 },
-                  '50%': { transform: 'scale(1.5)', opacity: 0.2 },
-                  '100%': { transform: 'scale(0.8)', opacity: 0.8 },
-                },
-              }}
-            />
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#004d99', position: 'relative' }} />
-          </Box>
-
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#06b6d4', boxShadow: '0 0 8px #06b6d4' }} />
           <Box>
-            <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#111c2d', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              All Systems Nominal
+            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#dfe2ef', textTransform: 'uppercase' }}>
+              Incidents Summary
             </Typography>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#425059' }}>
-              99.98% Core Uptime • SLO Met
+            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4cd7f6' }}>
+              {activeCount} Active / {resolvedCount} Resolved
             </Typography>
           </Box>
-
-          <Box sx={{ width: '1px', height: 24, bgcolor: '#e2e8f0', mx: 0.5 }} />
-
+          <Box sx={{ width: '1px', height: 24, bgcolor: 'rgba(255, 255, 255, 0.1)', mx: 0.5 }} />
           <Button
             size="small"
-            onClick={() => toast('Telemetry Stream: 12 services healthy, zero network breaches reported in this quadrant.', 'info')}
-            endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+            onClick={() => refetch()}
+            disabled={isFetching}
+            startIcon={isFetching ? <CircularProgress size={12} color="inherit" /> : <SyncIcon sx={{ fontSize: 14 }} />}
             sx={{
-              color: '#004d99',
+              color: '#c0c1ff',
               fontSize: 12,
               fontWeight: 700,
               textTransform: 'none',
-              p: 0,
+              p: 0.5,
               minWidth: 'auto',
-              '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+              '&:hover': { bgcolor: 'transparent', color: '#ffffff', textDecoration: 'underline' },
             }}
           >
-            Metrics
+            Sync
           </Button>
         </Box>
       </Box>
 
-      {/* 2. OPERATIONAL ALERT BANNER (High Urgency User Blocker) */}
-      <Paper
-        elevation={0}
-        sx={{
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: 3,
-          bgcolor: '#dee8ff',
-          border: '1px solid #c2c6d4',
-          p: 2.5,
-          mb: 3.5,
-          boxShadow: '0 2px 8px rgba(0, 77, 153, 0.06)',
-        }}
-      >
-        <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 6, bgcolor: '#1565c0' }} />
-        <Box
+      {/* 2. DYNAMIC OPERATIONAL ALERT BANNER (Shown when information is requested) */}
+      {pendingIncident && (
+        <Paper
+          elevation={0}
           sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'flex-start', md: 'center' },
-            justifyContent: 'space-between',
-            gap: 2,
-            pl: 1,
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '16px',
+            bgcolor: 'rgba(247, 81, 161, 0.08)',
+            border: '1px solid rgba(247, 81, 161, 0.3)',
+            p: 2.5,
+            mb: 3.5,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(247, 81, 161, 0.15)',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, maxWidth: 900 }}>
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: 2,
-                bgcolor: '#ffffff',
-                color: '#004d99',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                flexShrink: 0,
-                mt: 0.3,
-              }}
-            >
-              <PriorityHighIcon sx={{ fontSize: 22 }} />
-            </Box>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-                <Chip
-                  label="ACTION REQUIRED"
-                  size="small"
-                  sx={{
-                    bgcolor: '#004d99',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: 10.5,
-                    height: 20,
-                    borderRadius: 1,
-                    letterSpacing: '0.04em',
-                  }}
-                />
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#111c2d' }}>
-                  INC-2026-00088
-                </Typography>
-                <Typography sx={{ fontSize: 12, color: '#425059' }}>
-                  • Support Technician Marcus Chen requested log clarification 25m ago
+          <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 5, bgcolor: '#f751a1', boxShadow: '0 0 12px #f751a1' }} />
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: { xs: 'flex-start', md: 'center' },
+              justifyContent: 'space-between',
+              gap: 2,
+              pl: 1,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, maxWidth: 900 }}>
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '10px',
+                  bgcolor: 'rgba(247, 81, 161, 0.15)',
+                  color: '#f751a1',
+                  border: '1px solid rgba(247, 81, 161, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 12px rgba(247, 81, 161, 0.25)',
+                  flexShrink: 0,
+                  mt: 0.3,
+                }}
+              >
+                <PriorityHighIcon sx={{ fontSize: 22 }} />
+              </Box>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                  <Chip
+                    label="ACTION REQUIRED"
+                    size="small"
+                    sx={{
+                      bgcolor: '#f751a1',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: 10.5,
+                      height: 20,
+                      borderRadius: '4px',
+                      letterSpacing: '0.04em',
+                    }}
+                  />
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
+                    {pendingIncident.code}
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                    • Assigned technician requested clarification
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#ffffff' }}>
+                  {pendingIncident.title}
                 </Typography>
               </Box>
-              <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#111c2d' }}>
-                VPN &amp; SSO Gateway Handshake Timeout on macOS Sequoia 15.3 Build
-              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => navigate(`/employee/incidents/${pendingIncident.id}`)}
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.04)',
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                  color: '#dfe2ef',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  borderRadius: '8px',
+                  px: 2,
+                  py: 0.8,
+                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.08)', borderColor: '#6366f1' },
+                }}
+              >
+                View Details
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => setReplyIncident(pendingIncident)}
+                startIcon={<ReplyIcon sx={{ fontSize: 17 }} />}
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  color: '#ffffff',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  borderRadius: '8px',
+                  px: 2.2,
+                  py: 0.8,
+                  boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)',
+                }}
+              >
+                Respond Now
+              </Button>
             </Box>
           </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, alignSelf: { xs: 'stretch', md: 'center' }, justifyContent: 'flex-end' }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setSelectedIncident(incidents.find((i) => i.id === 'INC-2026-00088') || incidents[0])}
-              sx={{
-                bgcolor: '#ffffff',
-                borderColor: '#cbd5e1',
-                color: '#111c2d',
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: 13,
-                borderRadius: 2,
-                px: 2,
-                py: 0.8,
-                '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' },
-              }}
-            >
-              View Details
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={() => {
-                const target = incidents.find((i) => i.id === 'INC-2026-00088') || incidents[0];
-                setReplyIncident(target);
-              }}
-              startIcon={<ReplyIcon sx={{ fontSize: 17 }} />}
-              sx={{
-                bgcolor: '#1565c0',
-                color: '#ffffff',
-                textTransform: 'none',
-                fontWeight: 700,
-                fontSize: 13,
-                borderRadius: 2,
-                px: 2.2,
-                py: 0.8,
-                boxShadow: '0 2px 6px rgba(21, 101, 192, 0.25)',
-                '&:hover': { bgcolor: '#004d99' },
-              }}
-            >
-              Respond Now
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+        </Paper>
+      )}
 
       {/* 3. COMMAND BENTO GRID: Action Launchpad & Search */}
       <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
@@ -442,82 +325,45 @@ export default function EmployeeHome() {
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              bgcolor: '#141824',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
             }}
           >
             <Box>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
-                Unified Service Directory
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
+                Search Incidents
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#111c2d', mb: 2 }}>
-                How can Global Engineering Support assist you today?
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff', mb: 2 }}>
+                Search your reported incidents or service requests
               </Typography>
 
               <TextField
-                id="kb-search-input"
                 fullWidth
                 size="small"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search IT knowledge base, infrastructure runbooks, or paste ticket code (e.g. INC-2026)..."
+                placeholder="Search reported tickets by code, summary, or affected service..."
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#727783', fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Box sx={{ px: 0.8, py: 0.2, bgcolor: '#dee8ff', borderRadius: 1, fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#425059' }}>
-                          Ctrl
-                        </Box>
-                        <Box sx={{ px: 0.8, py: 0.2, bgcolor: '#dee8ff', borderRadius: 1, fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#425059' }}>
-                          K
-                        </Box>
-                      </Box>
+                      <SearchIcon sx={{ color: '#64748b', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
-                  bgcolor: '#f0f3ff',
-                  borderRadius: 2,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
-                  '&.Mui-focused': { bgcolor: '#ffffff' },
-                  mb: 2,
+                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  borderRadius: '10px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.22)' },
+                  mb: 0.5,
                 }}
               />
-            </Box>
-
-            {/* Quick Topics Pills */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pt: 0.5 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#727783', mr: 0.5 }}>
-                Suggested:
-              </Typography>
-              {SUGGESTED_TOPICS.map((topic) => (
-                <Chip
-                  key={topic.label}
-                  label={topic.label}
-                  size="small"
-                  onClick={() => setKbModalTopic(topic)}
-                  sx={{
-                    bgcolor: '#e7eeff',
-                    color: '#111c2d',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: '#dee8ff', color: '#004d99' },
-                  }}
-                />
-              ))}
             </Box>
           </Paper>
         </Grid>
@@ -528,8 +374,9 @@ export default function EmployeeHome() {
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: 3,
-              background: 'linear-gradient(135deg, #1565c0 0%, #004d99 100%)',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(6, 182, 212, 0.2) 100%)',
+              border: '1px solid rgba(99, 102, 241, 0.35)',
               color: '#ffffff',
               height: '100%',
               display: 'flex',
@@ -537,50 +384,32 @@ export default function EmployeeHome() {
               justifyContent: 'space-between',
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 4px 14px rgba(0, 77, 153, 0.25)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(99, 102, 241, 0.15)',
             }}
           >
-            {/* Subtle backdrop circle */}
-            <Box
-              sx={{
-                position: 'absolute',
-                right: -24,
-                bottom: -24,
-                width: 140,
-                height: 140,
-                borderRadius: '50%',
-                bgcolor: '#759efd',
-                opacity: 0.2,
-                pointerEvents: 'none',
-              }}
-            />
-
             <Box sx={{ position: 'relative', zIndex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <Chip
-                  icon={<BoltIcon sx={{ fontSize: '15px !important', color: '#ffffff !important' }} />}
+                  icon={<BoltIcon sx={{ fontSize: '15px !important', color: '#4cd7f6 !important' }} />}
                   label="INCIDENT DESK"
                   size="small"
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.18)',
-                    color: '#ffffff',
+                    bgcolor: 'rgba(6, 182, 212, 0.15)',
+                    border: '1px solid rgba(6, 182, 212, 0.35)',
+                    color: '#4cd7f6',
                     fontWeight: 800,
                     fontSize: 11,
                     height: 22,
-                    borderRadius: 1.5,
-                    letterSpacing: '0.04em',
+                    borderRadius: '4px',
                   }}
                 />
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11.5, color: '#dae5ff', fontWeight: 600 }}>
-                  AVG TTR: 48m
-                </Typography>
               </Box>
 
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', mb: 0.8, lineHeight: 1.25 }}>
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mb: 0.8, lineHeight: 1.25 }}>
                 Experiencing an Interruption?
               </Typography>
-              <Typography sx={{ fontSize: 12.5, color: '#dae5ff', lineHeight: 1.5 }}>
-                Dispatch an automated high-priority ticket straight to Tier-2 SRE on-call engineers.
+              <Typography sx={{ fontSize: 12.5, color: '#94a3b8', lineHeight: 1.5 }}>
+                Dispatch a real incident ticket straight to the SRE triage queue with automated category and SLA correlation.
               </Typography>
             </Box>
 
@@ -590,17 +419,18 @@ export default function EmployeeHome() {
               startIcon={<BoltIcon sx={{ fontSize: 20 }} />}
               sx={{
                 mt: 2.5,
-                bgcolor: '#ffffff',
-                color: '#004d99',
+                background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                color: '#ffffff',
                 fontWeight: 800,
                 fontSize: 13.5,
-                borderRadius: 2,
+                borderRadius: '8px',
                 py: 1.2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                position: 'relative',
-                zIndex: 1,
+                boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
                 textTransform: 'none',
-                '&:hover': { bgcolor: '#f0f3ff', color: '#00337c' },
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
+                  boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+                },
               }}
             >
               + Report Issue / Outage
@@ -609,201 +439,139 @@ export default function EmployeeHome() {
         </Grid>
       </Grid>
 
-      {/* 4. KPI / STATUS METRIC STREAM (4 Columns) */}
+      {/* 4. KPI STREAM */}
       <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
         {/* KPI 1: Active Incidents */}
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid item xs={12} sm={6} lg={4}>
           <Paper
             elevation={0}
             sx={{
               p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              bgcolor: '#141824',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                   Active Incidents
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mt: 0.5 }}>
                   {activeCount}
                 </Typography>
               </Box>
-              <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: '#e7eeff', color: '#004d99', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(99, 102, 241, 0.15)', color: '#c0c1ff', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <PendingActionsIcon sx={{ fontSize: 22 }} />
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 2, borderTop: '1px solid #f1f5f9', mt: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, fontFamily: 'monospace', fontSize: 11, color: '#425059' }}>
-                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#2b5bb5' }} />
-                2 in progress
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, fontFamily: 'monospace', fontSize: 11, color: '#425059' }}>
-                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#759efd' }} />
-                1 waiting
-              </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4cd7f6' }}>
+                Open &amp; in progress
+              </Typography>
             </Box>
           </Paper>
         </Grid>
 
-        {/* KPI 2: Awaiting My Action (Highlighted Attention State) */}
-        <Grid item xs={12} sm={6} lg={3}>
+        {/* KPI 2: Awaiting My Action */}
+        <Grid item xs={12} sm={6} lg={4}>
           <Paper
             elevation={0}
             sx={{
               p: 2.5,
-              borderRadius: 3,
-              border: '2px solid #004d99',
-              bgcolor: '#ffffff',
+              borderRadius: '16px',
+              border: pendingCount > 0 ? '1px solid rgba(247, 81, 161, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+              bgcolor: pendingCount > 0 ? 'rgba(247, 81, 161, 0.06)' : '#141824',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 2px 10px rgba(0, 77, 153, 0.08)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#004d99', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Awaiting My Action
-                  </Typography>
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#004d99', animation: 'pulse 1.2s infinite' }} />
-                </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#004d99', mt: 0.5 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: pendingCount > 0 ? '#ffb0cd' : '#94a3b8', textTransform: 'uppercase' }}>
+                  Awaiting My Action
+                </Typography>
+                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: pendingCount > 0 ? '#f751a1' : '#ffffff', mt: 0.5 }}>
                   {pendingCount}
                 </Typography>
               </Box>
-              <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: '#d8e3fb', color: '#004d99', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(247, 81, 161, 0.15)', color: '#ffb0cd', border: '1px solid rgba(247, 81, 161, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ErrorOutlineIcon sx={{ fontSize: 22 }} />
               </Box>
             </Box>
-            <Box sx={{ pt: 1.5, borderTop: '1px solid #f1f5f9', mt: 1 }}>
-              <Typography sx={{ fontSize: 11.5, color: '#425059' }} noWrap>
-                <strong style={{ color: '#111c2d' }}>INC-2026-00088:</strong> Needs client log verification
+            <Box sx={{ pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
+              <Typography sx={{ fontSize: 11.5, color: '#dfe2ef' }}>
+                {pendingCount > 0 ? 'SLA paused pending your clarification' : 'No pending technician queries'}
               </Typography>
             </Box>
           </Paper>
         </Grid>
 
-        {/* KPI 3: Resolved Past 30 Days */}
-        <Grid item xs={12} sm={6} lg={3}>
+        {/* KPI 3: Resolved */}
+        <Grid item xs={12} sm={6} lg={4}>
           <Paper
             elevation={0}
             sx={{
               p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              bgcolor: '#141824',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Resolved (Past 30d)
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  Resolved &amp; Closed
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 0.5 }}>
-                  {resolvedCount + 13}
+                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mt: 0.5 }}>
+                  {resolvedCount}
                 </Typography>
               </Box>
-              <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: '#e7eeff', color: '#2b5bb5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <TaskAltIcon sx={{ fontSize: 22 }} />
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 2, borderTop: '1px solid #f1f5f9', mt: 1 }}>
-              <TrendingUpIcon sx={{ fontSize: 16, color: '#004d99' }} />
-              <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#425059', fontWeight: 600 }}>
-                100% verified closure
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* KPI 4: SLA Fulfillment */}
-        <Grid item xs={12} sm={6} lg={3}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Avg SLA Fulfillment
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 0.5 }}>
-                  99.4%
-                </Typography>
-              </Box>
-
-              {/* Compact SVG Gauge */}
-              <Box sx={{ width: 40, height: 40, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="40" height="40" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#e7eeff"
-                    strokeWidth="3.5"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#004d99"
-                    strokeWidth="3.5"
-                    strokeDasharray="99.4, 100"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <Typography sx={{ position: 'absolute', fontSize: 10, fontWeight: 800, fontFamily: 'monospace', color: '#111c2d' }}>
-                  OK
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ pt: 2, borderTop: '1px solid #f1f5f9', mt: 1 }}>
-              <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#425059' }}>
-                +0.8% above quarterly ITIL target
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
+              <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#6ee7b7', fontWeight: 600 }}>
+                Resolved &amp; closed
               </Typography>
             </Box>
           </Paper>
         </Grid>
       </Grid>
 
-      {/* 5. PRIMARY WORKING AREA: INTERACTIVE INCIDENTS GRID & DIAGNOSTICS */}
+      {/* 5. PRIMARY WORKING AREA: INCIDENTS GRID */}
       <Paper
         elevation={0}
         sx={{
-          borderRadius: 3,
-          border: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          bgcolor: '#141824',
           overflow: 'hidden',
           mb: 3.5,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
         }}
       >
         {/* Table Header Bar */}
         <Box
           sx={{
             p: 2.5,
-            bgcolor: '#f8fafc',
-            borderBottom: '1px solid #e2e8f0',
+            bgcolor: '#0e121d',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             alignItems: { xs: 'flex-start', md: 'center' },
@@ -813,20 +581,21 @@ export default function EmployeeHome() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
-                My Recent Incidents &amp; Requests
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+                My Reported Incidents
               </Typography>
-              <Typography sx={{ fontSize: 12, color: '#425059' }}>
-                Real-time status synchronizer • ITIL Service Delivery
+              <Typography sx={{ fontSize: 12, color: '#94a3b8', fontFamily: 'Geist, sans-serif' }}>
+                Overview of your open and resolved requests
               </Typography>
             </Box>
             <Chip
-              label={`${filteredIncidents.length} Records`}
+              label={`${filteredIncidents.length} Tickets`}
               size="small"
               sx={{
-                bgcolor: '#d8e3fb',
-                color: '#004d99',
-                fontFamily: 'monospace',
+                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                color: '#c0c1ff',
+                fontFamily: 'JetBrains Mono, monospace',
                 fontWeight: 700,
                 fontSize: 11,
               }}
@@ -835,7 +604,7 @@ export default function EmployeeHome() {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             {/* Filter Tabs */}
-            <Box sx={{ display: 'flex', bgcolor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 2, p: 0.3 }}>
+            <Box sx={{ display: 'flex', bgcolor: 'rgba(18, 22, 34, 0.8)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', p: 0.3 }}>
               {(['ALL', 'ACTIVE', 'PENDING', 'RESOLVED'] as const).map((tab) => {
                 const count =
                   tab === 'ALL'
@@ -853,15 +622,15 @@ export default function EmployeeHome() {
                     onClick={() => setFilterTab(tab)}
                     sx={{
                       fontSize: 11.5,
-                      fontWeight: isSelected ? 800 : 500,
-                      color: isSelected ? '#004d99' : '#425059',
-                      bgcolor: isSelected ? '#dee8ff' : 'transparent',
-                      borderRadius: 1.5,
+                      fontWeight: isSelected ? 700 : 500,
+                      color: isSelected ? '#ffffff' : '#94a3b8',
+                      bgcolor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                      borderRadius: '6px',
                       px: 1.5,
                       py: 0.4,
                       textTransform: 'none',
                       minWidth: 'auto',
-                      '&:hover': { bgcolor: isSelected ? '#dee8ff' : '#f1f5f9' },
+                      '&:hover': { bgcolor: isSelected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.04)', color: '#dfe2ef' },
                     }}
                   >
                     {tab.charAt(0) + tab.slice(1).toLowerCase()} ({count})
@@ -877,11 +646,12 @@ export default function EmployeeHome() {
               onClick={(e) => setFilterAnchor(e.currentTarget)}
               startIcon={<FilterListIcon sx={{ fontSize: 16 }} />}
               sx={{
-                borderColor: '#cbd5e1',
-                color: priorityFilter !== 'ALL' ? '#004d99' : '#425059',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                bgcolor: 'rgba(18, 22, 34, 0.6)',
+                color: priorityFilter !== 'ALL' ? '#4cd7f6' : '#dfe2ef',
                 fontWeight: 600,
                 fontSize: 12,
-                borderRadius: 2,
+                borderRadius: '8px',
                 textTransform: 'none',
                 height: 32,
               }}
@@ -899,16 +669,14 @@ export default function EmployeeHome() {
             {/* Refresh Button */}
             <IconButton
               size="small"
-              onClick={handleRefresh}
+              onClick={() => refetch()}
               title="Refresh Feed"
               sx={{
-                border: '1px solid #cbd5e1',
-                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
                 p: 0.8,
-                bgcolor: '#ffffff',
-                color: '#425059',
-                transform: isRefreshing ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.5s ease',
+                bgcolor: 'rgba(18, 22, 34, 0.6)',
+                color: '#dfe2ef',
               }}
             >
               <SyncIcon sx={{ fontSize: 16 }} />
@@ -916,590 +684,213 @@ export default function EmployeeHome() {
           </Box>
         </Box>
 
-        {/* Responsive Ledger Table */}
-        <Box sx={{ overflowX: 'auto', width: '100%' }}>
-          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <Box component="thead">
-              <Box component="tr" sx={{ bgcolor: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
-                <Box component="th" sx={{ py: 1.2, px: 2.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Incident Code
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Priority
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 2, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Issue Summary
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Service
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Status
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  SLA Countdown
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 1.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Logged
-                </Box>
-                <Box component="th" sx={{ py: 1.2, px: 2.5, fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>
-                  Action
-                </Box>
-              </Box>
-            </Box>
-
-            <Box component="tbody">
-              {filteredIncidents.length === 0 ? (
-                <Box component="tr">
-                  <Box component="td" colSpan={8} sx={{ py: 4, textAlign: 'center', color: '#64748b' }}>
-                    No matching incidents found.
+        {/* Ledger Table */}
+        {isLoading ? (
+          <Box sx={{ p: 6, textAlign: 'center' }}>
+            <CircularProgress size={32} sx={{ color: '#6366f1', mb: 1.5 }} />
+            <Typography sx={{ color: '#94a3b8', fontSize: 13 }}>
+              Loading incidents...
+            </Typography>
+          </Box>
+        ) : isError ? (
+          <Box sx={{ p: 3 }}>
+            <ErrorState onRetry={() => refetch()} message="Failed to load your incidents. Please check your network connection and retry." />
+          </Box>
+        ) : filteredIncidents.length === 0 ? (
+          <Box sx={{ p: 6, textAlign: 'center' }}>
+            <CheckCircleIcon sx={{ fontSize: 44, color: '#06b6d4', mb: 1 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
+              No Incidents Found
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: '#94a3b8', maxWidth: 440, mx: 'auto', mt: 0.5 }}>
+              {searchQuery ? 'No tickets matched your search query.' : 'You have no reported incidents in this status view.'}
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <Box component="thead">
+                <Box component="tr" sx={{ bgcolor: '#0e121d', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    Incident Code
+                  </Box>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    Priority
+                  </Box>
+                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    Issue Summary
+                  </Box>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    Service
+                  </Box>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    Status
+                  </Box>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    SLA Clock
+                  </Box>
+                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>
+                    Action
                   </Box>
                 </Box>
-              ) : (
-                filteredIncidents.map((inc) => {
-                  const isCritical = inc.priority === 'P1';
-                  const isHigh = inc.priority === 'P2';
-                  const isActionNeeded = inc.status === 'PENDING_USER_INFO';
+              </Box>
 
-                  return (
-                    <Box
-                      component="tr"
-                      key={inc.id}
-                      sx={{
-                        borderBottom: '1px solid #e2e8f0',
-                        bgcolor: isActionNeeded ? '#f0f3ff' : '#ffffff',
-                        '&:hover': { bgcolor: isActionNeeded ? '#e7eeff' : '#f8fafc' },
-                        transition: 'background-color 0.15s ease',
-                      }}
-                    >
-                      {/* Code */}
-                      <Box component="td" sx={{ py: 1.8, px: 2.5, whiteSpace: 'nowrap' }}>
-                        <Typography
-                          onClick={() => setSelectedIncident(inc)}
+              <Box component="tbody">
+                {filteredIncidents.map((inc) => (
+                  <Box
+                    key={inc.id}
+                    component="tr"
+                    onClick={() => navigate(`/employee/incidents/${inc.id}`)}
+                    sx={{
+                      cursor: 'pointer',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                      transition: 'background 0.2s',
+                      '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.04)' },
+                    }}
+                  >
+                    <Box component="td" sx={{ py: 1.8, px: 2.5, fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: '#4cd7f6' }}>
+                      {inc.code}
+                    </Box>
+                    <Box component="td" sx={{ py: 1.8, px: 1.5 }}>
+                      <PriorityBadge priority={inc.priority} />
+                    </Box>
+                    <Box component="td" sx={{ py: 1.8, px: 2 }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
+                        {inc.title}
+                      </Typography>
+                      <Typography sx={{ fontSize: 11, color: '#94a3b8', fontFamily: 'JetBrains Mono, monospace', mt: 0.2 }}>
+                        Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                      </Typography>
+                    </Box>
+                    <Box component="td" sx={{ py: 1.8, px: 1.5 }}>
+                      <Chip
+                        label={inc.service?.name || 'General'}
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.05)',
+                          color: '#dfe2ef',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          fontSize: 11,
+                        }}
+                      />
+                    </Box>
+                    <Box component="td" sx={{ py: 1.8, px: 1.5 }}>
+                      <StatusChip status={inc.status} />
+                    </Box>
+                    <Box component="td" sx={{ py: 1.8, px: 1.5 }}>
+                      {inc.status === 'RESOLVED' || inc.status === 'VERIFIED' || inc.status === 'CLOSED' ? (
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, color: '#10b981', fontWeight: 700 }}>
+                          Remediated
+                        </Typography>
+                      ) : (
+                        <SlaCountdown
+                          due={inc.resolutionDue}
+                          createdAt={inc.createdAt}
+                          slaState={inc.slaState}
+                        />
+                      )}
+                    </Box>
+                    <Box component="td" sx={{ py: 1.8, px: 2, textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                      {inc.status === 'PENDING_USER_INFO' ? (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => setReplyIncident(inc)}
+                          startIcon={<ReplyIcon sx={{ fontSize: 14 }} />}
                           sx={{
-                            fontFamily: 'monospace',
-                            fontSize: 12.5,
+                            background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
+                            color: '#ffffff',
                             fontWeight: 700,
-                            color: '#004d99',
-                            cursor: 'pointer',
-                            '&:hover': { textDecoration: 'underline' },
+                            fontSize: 11.5,
+                            textTransform: 'none',
+                            borderRadius: '6px',
+                            px: 1.5,
                           }}
                         >
-                          {inc.id}
-                        </Typography>
-                      </Box>
-
-                      {/* Priority */}
-                      <Box component="td" sx={{ py: 1.8, px: 1.5, whiteSpace: 'nowrap' }}>
-                        <Chip
-                          label={
-                            isCritical ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ba1a1a', animation: 'pulse 1s infinite' }} />
-                                P1 CRITICAL
-                              </Box>
-                            ) : isHigh ? (
-                              'P2 HIGH'
-                            ) : inc.priority === 'P3' ? (
-                              'P3 MEDIUM'
-                            ) : (
-                              'P4 LOW'
-                            )
-                          }
+                          Respond
+                        </Button>
+                      ) : inc.status === 'RESOLVED' ? (
+                        <Button
                           size="small"
+                          variant="contained"
+                          onClick={() => setVerifyConfirmIncident(inc)}
+                          disabled={verifyMutation.isPending}
+                          startIcon={<VerifiedIcon sx={{ fontSize: 14 }} />}
                           sx={{
-                            fontWeight: 800,
-                            fontSize: 10.5,
-                            height: 22,
-                            borderRadius: 1,
-                            bgcolor:
-                              isCritical
-                                ? '#ffdad6'
-                                : isHigh
-                                ? '#fff3e0'
-                                : inc.priority === 'P3'
-                                ? '#fffde7'
-                                : '#e8f5e9',
-                            color:
-                              isCritical
-                                ? '#93000a'
-                                : isHigh
-                                ? '#c65102'
-                                : inc.priority === 'P3'
-                                ? '#f57f17'
-                                : '#1b5e20',
-                            border: `1px solid ${
-                              isCritical
-                                ? '#ffcdd2'
-                                : isHigh
-                                ? '#ffe0b2'
-                                : inc.priority === 'P3'
-                                ? '#fff59d'
-                                : '#c8e6c9'
-                            }`,
-                          }}
-                        />
-                      </Box>
-
-                      {/* Title & Assignee */}
-                      <Box component="td" sx={{ py: 1.8, px: 2, maxWidth: 300 }}>
-                        <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#111c2d' }} noWrap title={inc.title}>
-                          {inc.title}
-                        </Typography>
-                        <Typography sx={{ fontSize: 11.5, color: isActionNeeded ? '#004d99' : '#727783', fontWeight: isActionNeeded ? 600 : 400 }}>
-                          Assigned: {inc.assignedTo}
-                        </Typography>
-                      </Box>
-
-                      {/* Service */}
-                      <Box component="td" sx={{ py: 1.8, px: 1.5, whiteSpace: 'nowrap' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                          {inc.serviceIcon === 'lock' && <LockIcon sx={{ fontSize: 16, color: '#727783' }} />}
-                          {inc.serviceIcon === 'vpn' && <VpnKeyIcon sx={{ fontSize: 16, color: '#727783' }} />}
-                          {inc.serviceIcon === 'kanban' && <ViewKanbanIcon sx={{ fontSize: 16, color: '#727783' }} />}
-                          {inc.serviceIcon === 'terminal' && <TerminalIcon sx={{ fontSize: 16, color: '#727783' }} />}
-                          <Typography sx={{ fontSize: 12.5, color: '#111c2d' }}>{inc.service}</Typography>
-                        </Box>
-                      </Box>
-
-                      {/* Status */}
-                      <Box component="td" sx={{ py: 1.8, px: 1.5, whiteSpace: 'nowrap' }}>
-                        <Chip
-                          label={inc.status}
-                          size="small"
-                          sx={{
-                            fontFamily: 'monospace',
+                            bgcolor: '#10b981',
+                            color: '#ffffff',
                             fontWeight: 700,
-                            fontSize: 10,
-                            height: 20,
-                            borderRadius: 1,
-                            bgcolor:
-                              inc.status === 'RESOLVED' || inc.status === 'VERIFIED'
-                                ? '#dee8ff'
-                                : inc.status === 'PENDING_USER_INFO'
-                                ? '#dee8ff'
-                                : '#e7eeff',
-                            color:
-                              inc.status === 'RESOLVED' || inc.status === 'VERIFIED'
-                                ? '#2b5bb5'
-                                : '#004d99',
+                            fontSize: 11.5,
+                            textTransform: 'none',
+                            borderRadius: '6px',
+                            px: 1.5,
+                            '&:hover': { bgcolor: '#059669' },
                           }}
-                        />
-                      </Box>
-
-                      {/* SLA Progress */}
-                      <Box component="td" sx={{ py: 1.8, px: 1.5, whiteSpace: 'nowrap', width: 140 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {inc.slaState === 'error' && <TimerIcon sx={{ fontSize: 13, color: '#ba1a1a' }} />}
-                            {inc.slaState === 'paused' && <PauseCircleIcon sx={{ fontSize: 13, color: '#727783' }} />}
-                            {inc.slaState === 'normal' && <ScheduleIcon sx={{ fontSize: 13, color: '#2b5bb5' }} />}
-                            {inc.slaState === 'met' && <CheckCircleIcon sx={{ fontSize: 13, color: '#2b5bb5' }} />}
-                            <Typography
-                              sx={{
-                                fontFamily: 'monospace',
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: inc.slaState === 'error' ? '#ba1a1a' : '#111c2d',
-                              }}
-                            >
-                              {inc.slaLabel}
-                            </Typography>
-                          </Box>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: 10, color: '#727783' }}>
-                            {inc.slaPercent}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={inc.slaPercent}
+                        >
+                          Verify Fix
+                        </Button>
+                      ) : (
+                        <Button
+                          size="small"
+                          onClick={() => navigate(`/employee/incidents/${inc.id}`)}
+                          endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
                           sx={{
-                            height: 5,
-                            borderRadius: 2,
-                            bgcolor: '#e2e8f0',
-                            '& .MuiLinearProgress-bar': {
-                              bgcolor:
-                                inc.slaState === 'error'
-                                  ? '#ba1a1a'
-                                  : inc.slaState === 'paused'
-                                  ? '#5a6871'
-                                  : '#004d99',
-                            },
+                            color: '#4cd7f6',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            textTransform: 'none',
                           }}
-                        />
-                      </Box>
-
-                      {/* Logged */}
-                      <Box component="td" sx={{ py: 1.8, px: 1.5, whiteSpace: 'nowrap' }}>
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 11.5, color: '#727783' }}>
-                          {inc.logged}
-                        </Typography>
-                      </Box>
-
-                      {/* Action */}
-                      <Box component="td" sx={{ py: 1.8, px: 2.5, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                        {inc.actionType === 'reply' ? (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() => setReplyIncident(inc)}
-                            sx={{
-                              bgcolor: '#004d99',
-                              color: '#ffffff',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              textTransform: 'none',
-                              borderRadius: 1.5,
-                              px: 1.5,
-                              py: 0.4,
-                              '&:hover': { bgcolor: '#00337c' },
-                            }}
-                          >
-                            Reply Now
-                          </Button>
-                        ) : inc.actionType === 'confirm' && inc.status === 'RESOLVED' ? (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() => handleConfirmFixed(inc.id)}
-                            sx={{
-                              bgcolor: '#2b5bb5',
-                              color: '#ffffff',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              textTransform: 'none',
-                              borderRadius: 1.5,
-                              px: 1.5,
-                              py: 0.4,
-                              '&:hover': { bgcolor: '#00337c' },
-                            }}
-                          >
-                            Confirm Fixed
-                          </Button>
-                        ) : (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => setSelectedIncident(inc)}
-                            sx={{
-                              borderColor: '#e2e8f0',
-                              color: '#004d99',
-                              bgcolor: '#f8fafc',
-                              fontSize: 12,
-                              fontWeight: 600,
-                              textTransform: 'none',
-                              borderRadius: 1.5,
-                              px: 1.5,
-                              py: 0.4,
-                              '&:hover': { bgcolor: '#e7eeff', borderColor: '#cbd5e1' },
-                            }}
-                          >
-                            View Ticket
-                          </Button>
-                        )}
-                      </Box>
+                        >
+                          Details
+                        </Button>
+                      )}
                     </Box>
-                  );
-                })
-              )}
+                  </Box>
+                ))}
+              </Box>
             </Box>
           </Box>
-        </Box>
-
-        {/* Table Footer */}
-        <Box
-          sx={{
-            p: 2,
-            bgcolor: '#f8fafc',
-            borderTop: '1px solid #e2e8f0',
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#727783' }}>
-            <InfoIcon sx={{ fontSize: 16 }} />
-            <Typography sx={{ fontSize: 12, fontFamily: 'monospace' }}>
-              SLAs comply with ITIL 4 Service Level Management Agreements (Bronze / Internal Employee).
-            </Typography>
-          </Box>
-          <Button
-            size="small"
-            onClick={() => navigate('/employee/incidents')}
-            endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
-            sx={{
-              color: '#004d99',
-              fontWeight: 700,
-              fontSize: 12.5,
-              textTransform: 'none',
-              '&:hover': { textDecoration: 'underline', bgcolor: 'transparent' },
-            }}
-          >
-            View full historical incident ledger
-          </Button>
-        </Box>
+        )}
       </Paper>
 
-      {/* 6. AUTOMATED SELF-SERVICE TOOLS STRIP */}
-      <Box sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 18 }}>
-              Automated Self-Service Tools
-            </Typography>
-            <Typography sx={{ fontSize: 12.5, color: '#727783' }}>
-              Instant zero-touch resolutions without manual engineer review
-            </Typography>
-          </Box>
-          <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#727783' }}>
-            SELF_PROVISION_V2.4
-          </Typography>
-        </Box>
-
-        <Grid container spacing={2.5}>
-          {/* Tool 1 */}
-          <Grid item xs={12} md={4}>
-            <Paper
-              elevation={0}
-              onClick={() => setSelfServiceModal('password')}
-              sx={{
-                p: 2.5,
-                borderRadius: 3,
-                border: '1px solid #e2e8f0',
-                bgcolor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: '#004d99',
-                  boxShadow: '0 4px 12px rgba(0, 77, 153, 0.08)',
-                  transform: 'translateY(-2px)',
-                },
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                <Box sx={{ width: 42, height: 42, borderRadius: 2, bgcolor: '#e7eeff', color: '#004d99', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <PasswordIcon sx={{ fontSize: 22 }} />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#111c2d', mb: 0.5 }}>
-                    Self-Service Password &amp; MFA
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#727783', lineHeight: 1.5 }}>
-                    Reset domain credentials, recover hardware YubiKeys, or sync Entra ID passkeys.
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, pt: 1.5, borderTop: '1px solid #f1f5f9', color: '#004d99' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700 }}>Launch Verification Flow</Typography>
-                <ArrowForwardIcon sx={{ fontSize: 16 }} />
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Tool 2 */}
-          <Grid item xs={12} md={4}>
-            <Paper
-              elevation={0}
-              onClick={() => setSelfServiceModal('licenses')}
-              sx={{
-                p: 2.5,
-                borderRadius: 3,
-                border: '1px solid #e2e8f0',
-                bgcolor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: '#004d99',
-                  boxShadow: '0 4px 12px rgba(0, 77, 153, 0.08)',
-                  transform: 'translateY(-2px)',
-                },
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                <Box sx={{ width: 42, height: 42, borderRadius: 2, bgcolor: '#e7eeff', color: '#004d99', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <AppsIcon sx={{ fontSize: 22 }} />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#111c2d', mb: 0.5 }}>
-                    Software License Catalog
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#727783', lineHeight: 1.5 }}>
-                    Request immediate seat allocations for JetBrains, Figma, Copilot, or Postman Enterprise.
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, pt: 1.5, borderTop: '1px solid #f1f5f9', color: '#004d99' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700 }}>Browse 48 Available Apps</Typography>
-                <ArrowForwardIcon sx={{ fontSize: 16 }} />
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Tool 3 */}
-          <Grid item xs={12} md={4}>
-            <Paper
-              elevation={0}
-              onClick={() => setSelfServiceModal('wifi')}
-              sx={{
-                p: 2.5,
-                borderRadius: 3,
-                border: '1px solid #e2e8f0',
-                bgcolor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: '#004d99',
-                  boxShadow: '0 4px 12px rgba(0, 77, 153, 0.08)',
-                  transform: 'translateY(-2px)',
-                },
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                <Box sx={{ width: 42, height: 42, borderRadius: 2, bgcolor: '#e7eeff', color: '#004d99', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <WifiTetheringIcon sx={{ fontSize: 22 }} />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#111c2d', mb: 0.5 }}>
-                    Wi-Fi &amp; Device MDM Profiles
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#727783', lineHeight: 1.5 }}>
-                    Download 802.1X enterprise root certificates and local branch office mesh configs.
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, pt: 1.5, borderTop: '1px solid #f1f5f9', color: '#004d99' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700 }}>Install .mobileconfig</Typography>
-                <ArrowForwardIcon sx={{ fontSize: 16 }} />
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* MODAL 1: TICKET DETAIL VIEW */}
-      <Dialog
-        open={Boolean(selectedIncident)}
-        onClose={() => setSelectedIncident(null)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
-      >
-        {selectedIncident && (
-          <>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#004d99' }}>
-                  {selectedIncident.id}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 17 }}>
-                  {selectedIncident.title}
-                </Typography>
-              </Box>
-              <IconButton onClick={() => setSelectedIncident(null)} size="small">
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers sx={{ py: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#727783', textTransform: 'uppercase' }}>
-                    Service
-                  </Typography>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#111c2d' }}>
-                    {selectedIncident.service}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#727783', textTransform: 'uppercase' }}>
-                    Priority &amp; Status
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                    <Chip label={selectedIncident.priority} size="small" sx={{ fontWeight: 800, fontSize: 11 }} />
-                    <Chip label={selectedIncident.status} size="small" sx={{ fontFamily: 'monospace', fontSize: 11 }} />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#727783', textTransform: 'uppercase' }}>
-                    Assigned Technician
-                  </Typography>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#111c2d' }}>
-                    {selectedIncident.assignedTo}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#727783', textTransform: 'uppercase' }}>
-                    SLA State
-                  </Typography>
-                  <Typography sx={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: selectedIncident.slaState === 'error' ? '#ba1a1a' : '#004d99' }}>
-                    {selectedIncident.slaLabel} ({selectedIncident.slaPercent}% elapsed)
-                  </Typography>
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setSelectedIncident(null)} sx={{ textTransform: 'none' }}>
-                Close
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  const inc = selectedIncident;
-                  setSelectedIncident(null);
-                  setReplyIncident(inc);
-                }}
-                sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
-              >
-                Send Message / Add Logs
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
-
-      {/* MODAL 2: RESPOND / ADD LOGS */}
+      {/* MODAL 1: RESPOND / PROVIDE CLARIFICATION */}
       <Dialog
         open={Boolean(replyIncident)}
         onClose={() => setReplyIncident(null)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            p: 1,
+            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8), 0 0 24px rgba(99, 102, 241, 0.2)',
+          },
+        }}
       >
         {replyIncident && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#004d99' }}>
-                  RESPOND TO TECHNICIAN // {replyIncident.id}
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6' }}>
+                  RESPOND TO TECHNICIAN // {replyIncident.code}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
                   {replyIncident.title}
                 </Typography>
               </Box>
-              <IconButton onClick={() => setReplyIncident(null)} size="small">
+              <IconButton onClick={() => setReplyIncident(null)} size="small" sx={{ color: '#94a3b8' }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2 }}>
-              <Paper sx={{ p: 1.5, bgcolor: '#f0f3ff', border: '1px solid #cbd5e1', borderRadius: 2, mb: 2 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#004d99' }}>
-                  Technician Request:
+            <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+              <Paper sx={{ p: 1.8, bgcolor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '10px', mb: 2 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: '#c0c1ff' }}>
+                  SLA Pause Status:
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#111c2d', mt: 0.3 }}>
-                  &ldquo;Please attach terminal output from <code>log show --predicate 'process == \"GlobalProtect\"' --last 10m</code> or verify if DNS resolves internal gateways.&rdquo;
+                <Typography sx={{ fontSize: 13, color: '#dfe2ef', mt: 0.3, fontFamily: 'Geist, sans-serif' }}>
+                  The SLA clock is currently paused awaiting user feedback. Submitting your response will automatically resume the SLA clock and return the ticket to active triage.
                 </Typography>
               </Paper>
 
@@ -1509,131 +900,87 @@ export default function EmployeeHome() {
                 rows={4}
                 value={replyMessage}
                 onChange={(e) => setReplyMessage(e.target.value)}
-                placeholder="Paste diagnostics, terminal logs, or describe the latest occurrence..."
+                placeholder="Type your clarification, additional logs, or reproduction steps..."
                 sx={{
-                  bgcolor: '#f8fafc',
-                  borderRadius: 2,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  borderRadius: '10px',
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setReplyIncident(null)} sx={{ textTransform: 'none' }}>
+              <Button onClick={() => setReplyIncident(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
                 Cancel
               </Button>
               <Button
                 variant="contained"
-                onClick={handleSendReply}
-                disabled={!replyMessage.trim()}
+                onClick={() => {
+                  if (replyIncident && replyMessage.trim()) {
+                    replyMutation.mutate({ id: replyIncident.id, message: replyMessage });
+                  }
+                }}
+                disabled={!replyMessage.trim() || replyMutation.isPending}
+                startIcon={replyMutation.isPending ? <CircularProgress size={16} /> : <ReplyIcon />}
                 sx={{
-                  bgcolor: '#004d99',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
                   color: '#ffffff',
                   textTransform: 'none',
                   fontWeight: 700,
-                  '&:hover': { bgcolor: '#00337c' },
                 }}
               >
-                Send Clarification to Tech
+                Send &amp; Resume SLA
               </Button>
             </DialogActions>
           </>
         )}
       </Dialog>
 
-      {/* MODAL 3: KNOWLEDGE BASE QUICK PREVIEW */}
+      {/* MODAL 2: VERIFY RESOLUTION CONFIRMATION */}
       <Dialog
-        open={Boolean(kbModalTopic)}
-        onClose={() => setKbModalTopic(null)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
-      >
-        {kbModalTopic && (
-          <>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 17 }}>
-                {kbModalTopic.label}
-              </Typography>
-              <IconButton onClick={() => setKbModalTopic(null)} size="small">
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers sx={{ py: 2 }}>
-              <Typography sx={{ fontSize: 13.5, color: '#334155', lineHeight: 1.6, mb: 2 }}>
-                {kbModalTopic.article}
-              </Typography>
-              <Paper sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#004d99', mb: 0.5 }}>
-                  Recommended Action:
-                </Typography>
-                <Typography sx={{ fontSize: 12.5, color: '#475569' }}>
-                  If self-service configuration fails after 2 attempts, use the <strong>+ Report Issue</strong> button to generate an auto-classified ticket with your host profile.
-                </Typography>
-              </Paper>
-            </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setKbModalTopic(null)} sx={{ textTransform: 'none' }}>
-                Close
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setKbModalTopic(null);
-                  navigate('/employee/report');
-                }}
-                sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
-              >
-                Create Support Ticket
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
-
-      {/* MODAL 4: SELF-SERVICE TOOL POPUP */}
-      <Dialog
-        open={Boolean(selfServiceModal)}
-        onClose={() => setSelfServiceModal(null)}
+        open={Boolean(verifyConfirmIncident)}
+        onClose={() => setVerifyConfirmIncident(null)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            p: 1,
+          },
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d', fontSize: 16 }}>
-            {selfServiceModal === 'password' && 'Self-Service Password & MFA'}
-            {selfServiceModal === 'licenses' && 'Software License Request'}
-            {selfServiceModal === 'wifi' && 'Wi-Fi & MDM Profiles'}
-          </Typography>
-          <IconButton onClick={() => setSelfServiceModal(null)} size="small">
-            <CloseIcon />
-          </IconButton>
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif', color: '#ffffff' }}>
+          Confirm Incident Resolution
         </DialogTitle>
-        <DialogContent dividers sx={{ py: 2 }}>
-          <Typography sx={{ fontSize: 13, color: '#475569', mb: 2 }}>
-            {selfServiceModal === 'password' &&
-              'A zero-touch SMS and Authenticator push notification has been queued for your verified device. Follow the link to reset your credentials.'}
-            {selfServiceModal === 'licenses' &&
-              'Your request for enterprise seat allocation has been registered with automatic IT budget pre-approval.'}
-            {selfServiceModal === 'wifi' &&
-              'The 802.1X certificate bundle and mobile configuration payload are ready for your registered hardware.'}
+        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+          <Typography sx={{ color: '#dfe2ef', fontSize: 13.5, lineHeight: 1.6 }}>
+            Are you sure the reported issue for{' '}
+            <strong style={{ color: '#4cd7f6' }}>{verifyConfirmIncident?.code}</strong> is completely resolved?
+            Once verified, the ticket will be marked as verified and completed.
           </Typography>
-          <Paper sx={{ p: 1.5, bgcolor: '#f0f3ff', borderRadius: 2, textAlign: 'center' }}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#004d99' }}>
-              STATUS: PROVISION_READY
-            </Typography>
-          </Paper>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <Button onClick={() => setVerifyConfirmIncident(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+            Cancel
+          </Button>
           <Button
             variant="contained"
-            fullWidth
+            disabled={verifyMutation.isPending}
             onClick={() => {
-              toast('Self-service operation triggered successfully.', 'success');
-              setSelfServiceModal(null);
+              if (verifyConfirmIncident) {
+                verifyMutation.mutate(verifyConfirmIncident.id);
+                setVerifyConfirmIncident(null);
+              }
             }}
-            sx={{ bgcolor: '#004d99', textTransform: 'none', fontWeight: 700 }}
+            sx={{
+              bgcolor: '#10b981',
+              color: '#ffffff',
+              fontWeight: 700,
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#059669' },
+            }}
           >
-            Confirm &amp; Proceed
+            Confirm &amp; Verify
           </Button>
         </DialogActions>
       </Dialog>

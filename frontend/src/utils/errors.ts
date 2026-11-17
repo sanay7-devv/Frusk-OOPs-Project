@@ -24,3 +24,12 @@ export function errorMessage(e: unknown): string {
 }
 export const fieldErrors = (e: unknown) => (e as AxiosError<ApiError>)?.response?.data?.fieldErrors ?? [];
 export const isDuplicate = (e: unknown) => (e as AxiosError<ApiError>)?.response?.data?.code === 'DUPLICATE_INCIDENT';
+
+export function apiErrorMessage(e: unknown): string {
+  const body = (e as AxiosError<ApiError>)?.response?.data;
+  if (body?.fieldErrors?.length) {
+    const fields = body.fieldErrors.map((f) => `${f.field}: ${f.message}`).join(', ');
+    return `${body.message || 'Validation error'}: ${fields}`;
+  }
+  return errorMessage(e);
+}

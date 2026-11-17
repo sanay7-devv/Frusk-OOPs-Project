@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { listIncidents, createIncident, reassignMockIncident, CreateIncidentPayload } from '../../api/incidents';
+import { listIncidents, createIncident, CreateIncidentPayload } from '../../api/incidents';
 import { getServices, getCategories } from '../../api/services';
 import { getAdminUsers, getAdminAuditLogs, AuditEntry } from '../../api/admin';
 import { api } from '../../api/client';
@@ -52,6 +52,30 @@ import {
 
 import { useToast } from '../../components/Toast';
 import logoIcon from '../../assets/logo.png';
+
+// Design System Tokens (Luminary Kinetic Dark)
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  outlineVariant: 'rgba(255, 255, 255, 0.08)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  primaryContainer: '#4f46e5',
+  secondary: '#06b6d4',
+  secondaryContainer: 'rgba(6, 182, 212, 0.2)',
+  error: '#f43f5e',
+  errorContainer: 'rgba(244, 63, 94, 0.15)',
+  onErrorContainer: '#ffdad6',
+  success: '#10b981',
+  successContainer: 'rgba(16, 185, 129, 0.15)',
+  tertiary: '#f751a1',
+};
 
 interface LiveOperationalEvent {
   id: string;
@@ -282,38 +306,6 @@ export default function Dashboard() {
     return combined.slice(0, 15);
   }, [sessionDeclaredEvents, auditData]);
 
-  // Real-Time Server Latency & Health Probing
-  const [latency, setLatency] = useState<number | null>(null);
-  const [isServerOnline, setIsServerOnline] = useState<boolean>(true);
-  const [lastPingTime, setLastPingTime] = useState<string>('');
-
-  const measureLatency = async () => {
-    const startTime = performance.now();
-    try {
-      await api.get('/ping', { timeout: 3500 });
-      const duration = Math.round(performance.now() - startTime);
-      setLatency(duration);
-      setIsServerOnline(true);
-      setLastPingTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
-    } catch (err: any) {
-      if (err?.code === 'ERR_NETWORK' || !err?.response) {
-        setIsServerOnline(false);
-        setLatency(null);
-      } else {
-        const duration = Math.round(performance.now() - startTime);
-        setLatency(duration);
-        setIsServerOnline(true);
-        setLastPingTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
-      }
-    }
-  };
-
-  useEffect(() => {
-    measureLatency();
-    const interval = setInterval(measureLatency, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Time Range Filter for Velocity Chart
   const [velocityRange, setVelocityRange] = useState<'today' | '7d' | '30d'>('today');
 
@@ -542,7 +534,6 @@ export default function Dashboard() {
           }).catch(() => {});
         }
         if (chosenTech) {
-          reassignMockIncident(created.id, chosenTech.id, chosenTech.name);
           created.assignee = { id: chosenTech.id, name: chosenTech.name };
         }
       }
@@ -597,8 +588,9 @@ export default function Dashboard() {
           p: 2,
           mb: 3,
           borderRadius: 3,
-          border: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: COLORS.surfaceContainer,
+          backdropFilter: 'blur(16px)',
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
@@ -607,144 +599,17 @@ export default function Dashboard() {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-           
-           {/* <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: 2,
-              bgcolor: '#dee8ff',
-              color: '#004d99',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {/*<TerminalIcon sx={{ fontSize: 26 }} /> 
-             also end with </Box> to for the cod ebut this box in unneccesart so skipped*/} 
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {/* <Typography sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 600, color: '#425059' }}>
-                SYS.TELEMETRY// REGION_AP_SOUTH_INDIA
-              </Typography> */}
-              {/* //TODO this has to be taken care blue dot not looking good 
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#2b5bb5' }} /> */}
-              {/*<Typography sx={{ fontSize: 11, fontWeight: 700, color: '#004d99', textTransform: 'uppercase' }}>
-                Executive Mode
-              </Typography> */}
+              
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#111c2d', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
               Incident Command &amp; Reliability Center
             </Typography>
           </Box>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          {/* IST Clock */}
-          {/* 
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, px: 1.5, py: 0.6, bgcolor: '#f0f3ff', borderRadius: 2 }}>
-            <ScheduleIcon sx={{ fontSize: 16, color: '#727783' }} />
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#111c2d' }}>
-              {istTime || 'IST --:--:--'}
-            </Typography>
-          </Box>
-           
-          The IST time not required
-           */}
-         
-
-          {/* Heartbeat & Real-Time Latency Indicator */}
-          <Tooltip
-            arrow
-            title={
-              <Box sx={{ p: 0.5, fontSize: 11 }}>
-                <Typography variant="caption" fontWeight="bold" display="block">
-                  {isServerOnline ? '🟢 Backend Server Connected' : '🔴 Backend Server Offline'}
-                </Typography>
-                <Typography variant="caption" display="block" color="#94a3b8">
-                  Endpoint: /api/v1/ping
-                </Typography>
-                {latency !== null && (
-                  <Typography variant="caption" display="block" color="#94a3b8">
-                    Round-trip latency: {latency} ms
-                  </Typography>
-                )}
-                {lastPingTime && (
-                  <Typography variant="caption" display="block" color="#94a3b8">
-                    Last probe: {lastPingTime}
-                  </Typography>
-                )}
-                <Typography variant="caption" display="block" color="#38bdf8" sx={{ mt: 0.5, fontStyle: 'italic' }}>
-                  Click badge to probe now
-                </Typography>
-              </Box>
-            }
-          >
-            <Box
-              onClick={measureLatency}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.9,
-                px: 1.5,
-                py: 0.6,
-                bgcolor: isServerOnline ? (latency !== null && latency > 200 ? '#fef3c7' : '#f0fdf4') : '#fef2f2',
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: isServerOnline ? (latency !== null && latency > 200 ? '#fde68a' : '#bbf7d0') : '#fecaca',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  transform: 'scale(1.02)',
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: isServerOnline
-                    ? latency !== null && latency > 200
-                      ? '#d97706'
-                      : '#10b981'
-                    : '#ef4444',
-                  boxShadow: isServerOnline
-                    ? latency !== null && latency > 200
-                      ? '0 0 0 2px rgba(217, 119, 6, 0.25)'
-                      : '0 0 0 2px rgba(16, 185, 129, 0.25)'
-                    : '0 0 0 2px rgba(239, 68, 68, 0.25)',
-                  animation: isServerOnline ? 'pulseHeartbeat 1.8s infinite' : 'none',
-                  '@keyframes pulseHeartbeat': {
-                    '0%': { transform: 'scale(0.95)', opacity: 0.7 },
-                    '50%': { transform: 'scale(1.35)', opacity: 1 },
-                    '100%': { transform: 'scale(0.95)', opacity: 0.7 },
-                  },
-                }}
-              />
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: isServerOnline
-                    ? latency !== null && latency > 200
-                      ? '#92400e'
-                      : '#065f46'
-                    : '#991b1b',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {isServerOnline
-                  ? latency !== null
-                    ? `LATENCY ${latency}ms`
-                    : 'CHECKING...'
-                  : 'OFFLINE (503)'}
-              </Typography>
-            </Box>
-          </Tooltip>
-
           {/* Declare Incident Button */}
           <Button
             variant="contained"
@@ -752,14 +617,14 @@ export default function Dashboard() {
             startIcon={<AddAlertIcon />}
             sx={{
               borderRadius: 2,
-              bgcolor: '#ba1a1a',
+              background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
               color: '#ffffff',
               textTransform: 'none',
               fontWeight: 700,
               px: 2,
               py: 0.8,
-              boxShadow: '0 2px 4px rgba(186, 26, 26, 0.3)',
-              '&:hover': { bgcolor: '#93000a' },
+              boxShadow: '0 4px 14px rgba(244, 63, 94, 0.4)',
+              '&:hover': { opacity: 0.9 },
             }}
           >
             Declare Incident
@@ -778,8 +643,9 @@ export default function Dashboard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1px solid #bfdbfe',
-                bgcolor: '#ffffff',
+                border: `1px solid ${COLORS.border}`,
+                bgcolor: COLORS.surfaceContainer,
+                backdropFilter: 'blur(16px)',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -789,34 +655,33 @@ export default function Dashboard() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  transform: 'translateY(-3px)',
-                  boxShadow: '0 8px 24px rgba(43, 91, 181, 0.18)',
-                  borderColor: '#2b5bb5',
+                  borderColor: COLORS.primary,
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'JetBrains Mono, monospace' }}>
                   Total Incidents Today
                 </Typography>
-                <ConfirmationNumberIcon sx={{ fontSize: 20, color: '#2b5bb5' }} />
+                <ConfirmationNumberIcon sx={{ fontSize: 20, color: COLORS.secondary }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
                   {todayCount}
                 </Typography>
                 <Chip
                   icon={<ArrowForwardIcon sx={{ fontSize: 13 }} />}
                   label="View Today →"
                   size="small"
-                  sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: '#dee8ff', color: '#004d99' }}
+                  sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: 'rgba(99, 102, 241, 0.15)', color: COLORS.primary, border: '1px solid rgba(99, 102, 241, 0.3)' }}
                 />
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#425059' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.onSurfaceVariant }}>
                 <span>vs. previous days</span>
-                <span style={{ fontFamily: 'monospace', color: '#727783', fontWeight: 600 }}>{previousCount} prev</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: COLORS.secondary, fontWeight: 600 }}>{previousCount} prev</span>
               </Box>
-              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, bgcolor: '#2b5bb5' }} />
+              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #6366f1, #06b6d4)' }} />
             </Paper>
           </Tooltip>
         </Grid>
@@ -830,8 +695,9 @@ export default function Dashboard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1px solid #e2e8f0',
-                bgcolor: '#ffffff',
+                border: `1px solid ${COLORS.border}`,
+                bgcolor: COLORS.surfaceContainer,
+                backdropFilter: 'blur(16px)',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -841,33 +707,32 @@ export default function Dashboard() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  transform: 'translateY(-3px)',
-                  boxShadow: '0 8px 24px rgba(0, 77, 153, 0.15)',
-                  borderColor: '#004d99',
+                  borderColor: COLORS.secondary,
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'JetBrains Mono, monospace' }}>
                   Active Open
                 </Typography>
-                <PendingActionsIcon sx={{ fontSize: 20, color: '#425059' }} />
+                <PendingActionsIcon sx={{ fontSize: 20, color: COLORS.secondary }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
                   {activeOpenCount}
                 </Typography>
                 <Chip
                   label="In Progress / New"
                   size="small"
-                  sx={{ height: 20, fontSize: 11, fontWeight: 600, bgcolor: '#d8e3fb', color: '#00468c' }}
+                  sx={{ height: 20, fontSize: 11, fontWeight: 600, bgcolor: COLORS.surfaceContainerHighest, color: COLORS.secondary, border: `1px solid ${COLORS.border}` }}
                 />
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#425059' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.onSurfaceVariant }}>
                 <span>Immediate attention</span>
-                <span style={{ fontFamily: 'monospace', color: '#727783' }}>Live queue</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>Live queue</span>
               </Box>
-              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, bgcolor: '#004d99' }} />
+              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, bgcolor: COLORS.primary }} />
             </Paper>
           </Tooltip>
         </Grid>
@@ -881,8 +746,9 @@ export default function Dashboard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1px solid #ffdad6',
-                bgcolor: 'rgba(255, 218, 214, 0.35)',
+                border: '1px solid rgba(244, 63, 94, 0.3)',
+                bgcolor: COLORS.surfaceContainer,
+                backdropFilter: 'blur(16px)',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -892,34 +758,34 @@ export default function Dashboard() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  transform: 'translateY(-3px)',
-                  boxShadow: '0 8px 24px rgba(186, 26, 26, 0.2)',
-                  borderColor: '#ba1a1a',
+                  borderColor: COLORS.error,
+                  boxShadow: '0 8px 24px rgba(244, 63, 94, 0.25)',
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#93000a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 800, color: COLORS.error, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'JetBrains Mono, monospace' }}>
                   P1 Critical Incidents
                 </Typography>
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ba1a1a', boxShadow: '0 0 0 4px rgba(186, 26, 26, 0.2)' }} />
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: COLORS.error, boxShadow: '0 0 10px #f43f5e', animation: 'pulse 1s infinite' }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#ba1a1a', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.error, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
                   {p1Count < 10 ? `0${p1Count}` : p1Count}
                 </Typography>
                 <Chip
                   icon={<CrisisAlertIcon sx={{ fontSize: 14, color: '#ffffff !important' }} />}
                   label="Active War Room"
                   size="small"
-                  sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#ba1a1a', color: '#ffffff' }}
+                  sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: COLORS.error, color: '#ffffff' }}
                 />
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#93000a', fontWeight: 500 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.error, fontWeight: 500 }}>
                 <span>Priority Emergency</span>
-                <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>HIGH SLA</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>HIGH SLA</span>
               </Box>
-              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, bgcolor: '#ba1a1a' }} />
+              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, bgcolor: COLORS.error, boxShadow: '0 0 8px #f43f5e' }} />
             </Paper>
           </Tooltip>
         </Grid>
@@ -933,8 +799,9 @@ export default function Dashboard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1px solid #e2e8f0',
-                bgcolor: '#ffffff',
+                border: `1px solid ${COLORS.border}`,
+                bgcolor: COLORS.surfaceContainer,
+                backdropFilter: 'blur(16px)',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -943,39 +810,40 @@ export default function Dashboard() {
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+                '&:hover': { borderColor: COLORS.secondary, transform: 'translateY(-2px)' },
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'JetBrains Mono, monospace' }}>
                   SLA Violations
                 </Typography>
-                <VerifiedIcon sx={{ fontSize: 20, color: slaViolationsCount > 0 ? '#ba1a1a' : '#059669' }} />
+                <VerifiedIcon sx={{ fontSize: 20, color: slaViolationsCount > 0 ? COLORS.error : COLORS.success }} />
               </Box>
               <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: slaViolationsCount > 0 ? '#ba1a1a' : '#111c2d', letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, color: slaViolationsCount > 0 ? COLORS.error : COLORS.onSurface, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
                   {slaViolationsCount}
                 </Typography>
                 <Chip
-                  icon={slaViolationsCount > 0 ? <WarningIcon sx={{ fontSize: 14, color: '#ba1a1a !important' }} /> : <CheckCircleIcon sx={{ fontSize: 14, color: '#0f1d25 !important' }} />}
+                  icon={slaViolationsCount > 0 ? <WarningIcon sx={{ fontSize: 14, color: `${COLORS.error} !important` }} /> : <CheckCircleIcon sx={{ fontSize: 14, color: `${COLORS.success} !important` }} />}
                   label={slaViolationsCount > 0 ? 'Breaches Logged' : '100% Preserved'}
                   size="small"
                   sx={{
                     height: 20,
                     fontSize: 11,
                     fontWeight: 700,
-                    bgcolor: slaViolationsCount > 0 ? '#ffdad6' : '#d6e5ef',
-                    color: slaViolationsCount > 0 ? '#93000a' : '#0f1d25',
+                    bgcolor: slaViolationsCount > 0 ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    color: slaViolationsCount > 0 ? COLORS.error : COLORS.success,
+                    border: `1px solid ${slaViolationsCount > 0 ? 'rgba(244, 63, 94, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
                   }}
                 />
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#425059' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.onSurfaceVariant }}>
                 <span>{slaViolationsCount > 0 ? 'Immediate action required' : 'Zero breaches past 72h'}</span>
-                <span style={{ fontFamily: 'monospace', color: slaViolationsCount > 0 ? '#ba1a1a' : '#727783', fontWeight: 600 }}>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: slaViolationsCount > 0 ? COLORS.error : COLORS.success, fontWeight: 600 }}>
                   {slaViolationsCount > 0 ? 'FAIL' : 'OK'}
                 </span>
               </Box>
-              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, bgcolor: slaViolationsCount > 0 ? '#ba1a1a' : '#059669' }} />
+              <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, bgcolor: slaViolationsCount > 0 ? COLORS.error : COLORS.success }} />
             </Paper>
           </Tooltip>
         </Grid>
@@ -987,8 +855,9 @@ export default function Dashboard() {
             sx={{
               p: 2,
               borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
+              backdropFilter: 'blur(16px)',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -996,30 +865,30 @@ export default function Dashboard() {
               position: 'relative',
               overflow: 'hidden',
               transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              '&:hover': { borderColor: COLORS.secondary, transform: 'translateY(-2px)' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'JetBrains Mono, monospace' }}>
                 Met SLA Rate
               </Typography>
-              <SpeedIcon sx={{ fontSize: 20, color: '#004d99' }} />
+              <SpeedIcon sx={{ fontSize: 20, color: COLORS.secondary }} />
             </Box>
             <Box sx={{ my: 1.5, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#004d99', letterSpacing: '-0.02em' }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.secondary, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
                 {metSlaRate}%
               </Typography>
               <Chip
                 label="Target >98%"
                 size="small"
-                sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: '#d9e2ff', color: '#001945' }}
+                sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: 'rgba(6, 182, 212, 0.15)', color: COLORS.secondary, border: '1px solid rgba(6, 182, 212, 0.3)' }}
               />
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#425059' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.onSurfaceVariant }}>
               <span>{metSlaCount} of {incidents.length} on target</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#004d99' }}>Live Telemetry</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: COLORS.secondary }}>Live Telemetry</span>
             </Box>
-            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, bgcolor: '#1565c0' }} />
+            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, bgcolor: COLORS.secondary }} />
           </Paper>
         </Grid>
       </Grid>
@@ -1033,8 +902,9 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
+              backdropFilter: 'blur(16px)',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1045,19 +915,19 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#111c2d' }}>
+                  <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     Incident Velocity &amp; Remediation Volume
                   </Typography>
                   <Tooltip title="Real-time incoming alerts vs resolved incident throughput">
-                    <InfoIcon sx={{ fontSize: 16, color: '#727783' }} />
+                    <InfoIcon sx={{ fontSize: 16, color: COLORS.onSurfaceVariant }} />
                   </Tooltip>
                 </Box>
-                <Typography sx={{ fontSize: 12, color: '#425059', mt: 0.2 }}>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.2 }}>
                   Real-time incoming alerts vs resolved incident throughput
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', bgcolor: '#f0f3ff', p: 0.5, borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', bgcolor: COLORS.surfaceContainerLow, p: 0.5, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
                 {(['today', '7d', '30d'] as const).map((r) => (
                   <Button
                     key={r}
@@ -1070,9 +940,9 @@ export default function Dashboard() {
                       fontWeight: velocityRange === r ? 700 : 500,
                       borderRadius: 1.5,
                       textTransform: 'none',
-                      bgcolor: velocityRange === r ? '#ffffff' : 'transparent',
-                      color: velocityRange === r ? '#004d99' : '#425059',
-                      boxShadow: velocityRange === r ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                      bgcolor: velocityRange === r ? COLORS.surfaceContainerHighest : 'transparent',
+                      color: velocityRange === r ? '#ffffff' : COLORS.onSurfaceVariant,
+                      border: velocityRange === r ? `1px solid ${COLORS.border}` : '1px solid transparent',
                     }}
                   >
                     {r === 'today' ? 'Today' : r === '7d' ? '7 Days' : '30 Days'}
@@ -1084,20 +954,20 @@ export default function Dashboard() {
             {/* Legend row */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: '#004d99' }} />
-                <Typography sx={{ fontSize: 12, color: '#111c2d', fontWeight: 500 }}>
-                  Inbound Incidents <span style={{ fontFamily: 'sans-serif', color: '#727783' }}>(Total: {chartData.rangeInboundTotal})</span>
+                <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: COLORS.primary }} />
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurface, fontWeight: 500 }}>
+                  Inbound Incidents <span style={{ fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>(Total: {chartData.rangeInboundTotal})</span>
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: '#759efd' }} />
-                <Typography sx={{ fontSize: 12, color: '#111c2d', fontWeight: 500 }}>
-                  Remediated <span style={{ fontFamily: 'sans-serif', color: '#727783' }}>(Total: {chartData.rangeResolvedTotal})</span>
+                <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: COLORS.secondary }} />
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurface, fontWeight: 500 }}>
+                  Remediated <span style={{ fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>(Total: {chartData.rangeResolvedTotal})</span>
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, ml: 'auto' }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: activeOpenCount > 0 ? '#ba1a1a' : '#059669' }} />
-                <Typography sx={{ fontFamily: 'sans-serif', fontSize: 11, fontWeight: 700, color: activeOpenCount > 0 ? '#ba1a1a' : '#059669' }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: activeOpenCount > 0 ? COLORS.error : COLORS.success }} />
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: activeOpenCount > 0 ? COLORS.error : COLORS.success }}>
                   Current Net Open: {activeOpenCount}
                 </Typography>
               </Box>
@@ -1109,8 +979,9 @@ export default function Dashboard() {
                 position: 'relative',
                 width: '100%',
                 height: 240,
-                bgcolor: 'rgba(240, 243, 255, 0.4)',
+                bgcolor: COLORS.surfaceContainerLowest,
                 borderRadius: 2,
+                border: `1px solid ${COLORS.border}`,
                 p: 1.5,
                 overflow: 'hidden',
                 display: 'flex',
@@ -1120,43 +991,43 @@ export default function Dashboard() {
               <svg className="w-full h-full" style={{ width: '100%', height: '100%' }} preserveAspectRatio="none" viewBox="0 0 680 220">
                 <defs>
                   <linearGradient id="velocityPrimaryGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#004d99" stopOpacity="0.32" />
-                    <stop offset="100%" stopColor="#004d99" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
                   </linearGradient>
                   <linearGradient id="resolvedSecondaryGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#759efd" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#759efd" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
 
                 {/* Horizontal grid lines & Y-axis real scale values */}
-                <line x1="0" y1="35" x2="680" y2="35" stroke="#c2c6d4" strokeDasharray="3 3" strokeOpacity="0.3" />
-                <text x="6" y="32" fill="#727783" fontSize="10" fontFamily="monospace">{chartData.yMax}</text>
+                <line x1="0" y1="35" x2="680" y2="35" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+                <text x="6" y="32" fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace">{chartData.yMax}</text>
 
-                <line x1="0" y1="85" x2="680" y2="85" stroke="#c2c6d4" strokeDasharray="3 3" strokeOpacity="0.3" />
-                <text x="6" y="82" fill="#727783" fontSize="10" fontFamily="monospace">{Math.round(chartData.yMax * 0.66)}</text>
+                <line x1="0" y1="85" x2="680" y2="85" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+                <text x="6" y="82" fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace">{Math.round(chartData.yMax * 0.66)}</text>
 
-                <line x1="0" y1="135" x2="680" y2="135" stroke="#c2c6d4" strokeDasharray="3 3" strokeOpacity="0.3" />
-                <text x="6" y="132" fill="#727783" fontSize="10" fontFamily="monospace">{Math.round(chartData.yMax * 0.33)}</text>
+                <line x1="0" y1="135" x2="680" y2="135" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+                <text x="6" y="132" fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace">{Math.round(chartData.yMax * 0.33)}</text>
 
-                <line x1="0" y1="185" x2="680" y2="185" stroke="#c2c6d4" strokeOpacity="0.5" />
-                <text x="6" y="182" fill="#727783" fontSize="10" fontFamily="monospace">0</text>
+                <line x1="0" y1="185" x2="680" y2="185" stroke="rgba(255,255,255,0.1)" />
+                <text x="6" y="182" fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace">0</text>
 
-                {/* Area 1: Inbound (Primary) - Computed dynamically from real incidents */}
+                {/* Area 1: Inbound (Primary) */}
                 <path d={chartData.inboundAreaPath} fill="url(#velocityPrimaryGrad)" />
-                <path d={chartData.inboundLinePath} fill="none" stroke="#004d99" strokeWidth="2.5" />
+                <path d={chartData.inboundLinePath} fill="none" stroke="#6366f1" strokeWidth="2.5" />
 
-                {/* Area 2: Resolved (Secondary) - Computed dynamically from real incidents */}
+                {/* Area 2: Resolved (Secondary) */}
                 <path d={chartData.resolvedAreaPath} fill="url(#resolvedSecondaryGrad)" />
-                <path d={chartData.resolvedLinePath} fill="none" stroke="#759efd" strokeDasharray="4 2" strokeWidth="2" />
+                <path d={chartData.resolvedLinePath} fill="none" stroke="#06b6d4" strokeDasharray="4 2" strokeWidth="2" />
 
                 {/* Real Data Interactive Markers */}
                 {chartData.points.map((p, idx) => (
                   <g key={idx}>
-                    <circle cx={p.x} cy={p.yInbound} r="4" fill="#004d99" stroke="#ffffff" strokeWidth="1.5">
+                    <circle cx={p.x} cy={p.yInbound} r="4" fill="#6366f1" stroke="#090d16" strokeWidth="1.5">
                       <title>{`${p.label} - Inbound: ${p.inbound} incident${p.inbound === 1 ? '' : 's'}`}</title>
                     </circle>
-                    <circle cx={p.x} cy={p.yResolved} r="3.5" fill="#759efd" stroke="#ffffff" strokeWidth="1.5">
+                    <circle cx={p.x} cy={p.yResolved} r="3.5" fill="#06b6d4" stroke="#090d16" strokeWidth="1.5">
                       <title>{`${p.label} - Remediated: ${p.resolved} incident${p.resolved === 1 ? '' : 's'}`}</title>
                     </circle>
                   </g>
@@ -1167,12 +1038,12 @@ export default function Dashboard() {
                   const last = chartData.points[chartData.points.length - 1];
                   return (
                     <g>
-                      <circle cx={last.x} cy={last.yInbound} r="5" fill="#004d99" />
-                      <circle cx={last.x} cy={last.yInbound} r="11" fill="none" stroke="#004d99" strokeWidth="1.5">
+                      <circle cx={last.x} cy={last.yInbound} r="5" fill="#6366f1" />
+                      <circle cx={last.x} cy={last.yInbound} r="11" fill="none" stroke="#6366f1" strokeWidth="1.5">
                         <animate attributeName="r" values="5;14;5" dur="2s" repeatCount="indefinite" />
                         <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
                       </circle>
-                      <line x1={last.x} y1="30" x2={last.x} y2="185" stroke="#004d99" strokeDasharray="3 3" strokeWidth="1.5" />
+                      <line x1={last.x} y1="30" x2={last.x} y2="185" stroke="#6366f1" strokeDasharray="3 3" strokeWidth="1.5" />
                     </g>
                   );
                 })()}
@@ -1180,8 +1051,8 @@ export default function Dashboard() {
                 {/* P1 Alert Hotspot Marker if critical incident is open */}
                 {p1Count > 0 && chartData.points.length > 0 && (
                   <g>
-                    <circle cx={chartData.points[chartData.points.length - 1].x} cy={chartData.points[chartData.points.length - 1].yInbound} r="4.5" fill="#ba1a1a" />
-                    <circle cx={chartData.points[chartData.points.length - 1].x} cy={chartData.points[chartData.points.length - 1].yInbound} r="9" fill="none" stroke="#ba1a1a" strokeWidth="1.5" opacity="0.7">
+                    <circle cx={chartData.points[chartData.points.length - 1].x} cy={chartData.points[chartData.points.length - 1].yInbound} r="4.5" fill="#f43f5e" />
+                    <circle cx={chartData.points[chartData.points.length - 1].x} cy={chartData.points[chartData.points.length - 1].yInbound} r="9" fill="none" stroke="#f43f5e" strokeWidth="1.5" opacity="0.7">
                       <animate attributeName="r" values="4.5;13;4.5" dur="1.5s" repeatCount="indefinite" />
                     </circle>
                   </g>
@@ -1189,12 +1060,12 @@ export default function Dashboard() {
               </svg>
 
               {/* Dynamic X-Axis Labels */}
-              <Box sx={{ position: 'absolute', bottom: 4, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: 10, color: '#727783' }}>
+              <Box sx={{ position: 'absolute', bottom: 4, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>
                 {chartData.points.map((p, idx) => (
                   <span
                     key={idx}
                     style={{
-                      color: idx === chartData.points.length - 1 ? '#004d99' : '#727783',
+                      color: idx === chartData.points.length - 1 ? '#6366f1' : '#64748b',
                       fontWeight: idx === chartData.points.length - 1 ? 700 : 500,
                     }}
                   >
@@ -1209,7 +1080,8 @@ export default function Dashboard() {
               sx={{
                 mt: 2,
                 p: 1.5,
-                bgcolor: '#f0f3ff',
+                bgcolor: COLORS.surfaceContainerLow,
+                border: `1px solid ${COLORS.border}`,
                 borderRadius: 2,
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -1219,11 +1091,11 @@ export default function Dashboard() {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <BoltIcon sx={{ fontSize: 18, color: '#2b5bb5' }} />
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#111c2d' }}>
+                <BoltIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
                   System Health:
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#425059' }}>
+                <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
                   {p1Count > 0
                     ? `${p1Count} active P1 critical incident(s) currently being mitigated`
                     : 'All services operational with healthy throughput'}
@@ -1233,7 +1105,7 @@ export default function Dashboard() {
                 size="small"
                 endIcon={<ArrowForwardIcon fontSize="small" />}
                 onClick={() => navigate('/admin/tickets?tab=all')}
-                sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700, color: '#004d99' }}
+                sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700, color: COLORS.secondary }}
               >
                 View Tickets Queue
               </Button>
@@ -1248,8 +1120,9 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
+              backdropFilter: 'blur(16px)',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1258,17 +1131,17 @@ export default function Dashboard() {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#111c2d' }}>
+                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                   Active Priority Distribution
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: '#425059', mt: 0.2 }}>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.2 }}>
                   {totalActive} open tickets segmented by ITIL severity
                 </Typography>
               </Box>
               <Chip
                 label="LIVE QUEUE"
                 size="small"
-                sx={{ fontFamily: 'sans-serif', fontSize: 9, fontWeight: 800, bgcolor: '#dee8ff', color: '#004d99' }}
+                sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5, fontWeight: 800, bgcolor: 'rgba(99, 102, 241, 0.15)', color: COLORS.primary, border: '1px solid rgba(99, 102, 241, 0.3)' }}
               />
             </Box>
 
@@ -1276,7 +1149,7 @@ export default function Dashboard() {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, my: 2 }}>
               <Box sx={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="12" />
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
                   {totalActive > 0 && (
                     <>
                       {/* P4 Arc */}
@@ -1286,7 +1159,7 @@ export default function Dashboard() {
                           cy="50"
                           r="38"
                           fill="none"
-                          stroke="#425059"
+                          stroke="#64748b"
                           strokeWidth="12"
                           strokeDasharray={`${p4Dash} ${donutCircumference - p4Dash}`}
                           strokeDashoffset={p4Offset}
@@ -1299,7 +1172,7 @@ export default function Dashboard() {
                           cy="50"
                           r="38"
                           fill="none"
-                          stroke="#2b5bb5"
+                          stroke="#06b6d4"
                           strokeWidth="12"
                           strokeDasharray={`${p3Dash} ${donutCircumference - p3Dash}`}
                           strokeDashoffset={p3Offset}
@@ -1312,7 +1185,7 @@ export default function Dashboard() {
                           cy="50"
                           r="38"
                           fill="none"
-                          stroke="#759efd"
+                          stroke="#6366f1"
                           strokeWidth="12"
                           strokeDasharray={`${p2Dash} ${donutCircumference - p2Dash}`}
                           strokeDashoffset={p2Offset}
@@ -1325,7 +1198,7 @@ export default function Dashboard() {
                           cy="50"
                           r="38"
                           fill="none"
-                          stroke="#ba1a1a"
+                          stroke="#f43f5e"
                           strokeWidth="12"
                           strokeDasharray={`${p1Dash} ${donutCircumference - p1Dash}`}
                           strokeDashoffset={p1Offset}
@@ -1335,10 +1208,10 @@ export default function Dashboard() {
                   )}
                 </svg>
                 <Box sx={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#111c2d', lineHeight: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, lineHeight: 1, fontFamily: 'Sora, sans-serif' }}>
                     {totalActive}
                   </Typography>
-                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#727783', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Tickets
                   </Typography>
                 </Box>
@@ -1346,21 +1219,21 @@ export default function Dashboard() {
 
               {/* MTTR Summary Column */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#727783', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Fleetwide MTTR
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#111c2d' }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                   {avgMttrMinutes}m
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#059669', fontSize: 12, fontWeight: 600 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: COLORS.success, fontSize: 12, fontWeight: 600 }}>
                   <SouthIcon sx={{ fontSize: 14 }} />
                   <span>On-target response</span>
                 </Box>
                 <Box sx={{ mt: 1 }}>
-                  <Typography sx={{ fontFamily: 'monospace', fontSize: 10, color: '#727783', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>
                     Active Escalations
                   </Typography>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#111c2d' }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
                     {p1Count > 0 ? 'Tier 2 (Lead SRE)' : 'Tier 1 Support'}
                   </Typography>
                 </Box>
@@ -1371,57 +1244,57 @@ export default function Dashboard() {
             <Grid container spacing={1.5}>
               {/* P1 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(255, 218, 214, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ba1a1a' }} />
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: COLORS.error, boxShadow: '0 0 6px #f43f5e' }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#ba1a1a' }}>P1 Critical</Typography>
-                      <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#727783' }}>MTTR: 15m target</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.error }}>P1 Critical</Typography>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>MTTR: 15m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#ba1a1a' }}>{p1Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.error, fontFamily: 'Sora, sans-serif' }}>{p1Count}</Typography>
                 </Box>
               </Grid>
 
               {/* P2 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f0f3ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#759efd' }} />
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: COLORS.primary }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#111c2d' }}>P2 High</Typography>
-                      <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#727783' }}>MTTR: 30m target</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>P2 High</Typography>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>MTTR: 30m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d' }}>{p2Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>{p2Count}</Typography>
                 </Box>
               </Grid>
 
               {/* P3 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f0f3ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#2b5bb5' }} />
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: COLORS.secondary }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#111c2d' }}>P3 Medium</Typography>
-                      <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#727783' }}>MTTR: 60m target</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>P3 Medium</Typography>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>MTTR: 60m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d' }}>{p3Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>{p3Count}</Typography>
                 </Box>
               </Grid>
 
               {/* P4 */}
               <Grid item xs={6}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#f0f3ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#425059' }} />
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#64748b' }} />
                     <Box>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#111c2d' }}>P4 Low</Typography>
-                      <Typography sx={{ fontFamily: 'sans-serif', fontSize: 10, color: '#727783' }}>MTTR: 120m target</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>P4 Low</Typography>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>MTTR: 120m target</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#111c2d' }}>{p4Count}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>{p4Count}</Typography>
                 </Box>
               </Grid>
             </Grid>
@@ -1438,8 +1311,9 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
+              backdropFilter: 'blur(16px)',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1448,17 +1322,17 @@ export default function Dashboard() {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#111c2d' }}>
+                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                   Team Capacity Heatmap
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: '#425059', mt: 0.2 }}>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.2 }}>
                   Live technician workload &amp; concurrency quotas
                 </Typography>
               </Box>
               <Chip
                 label={`${totalAssignedSlots}/${totalMaxSlots} SLOTS (${overallCapacityPct}%)`}
                 size="small"
-                sx={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, bgcolor: '#dee8ff', color: '#004d99' }}
+                sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, bgcolor: 'rgba(99, 102, 241, 0.15)', color: COLORS.primary, border: '1px solid rgba(99, 102, 241, 0.3)' }}
               />
             </Box>
 
@@ -1473,43 +1347,44 @@ export default function Dashboard() {
                     sx={{
                       p: 1.5,
                       borderRadius: 2,
-                      bgcolor: '#f0f3ff',
-                      transition: 'background-color 0.2s',
-                      '&:hover': { bgcolor: '#e7eeff' },
+                      bgcolor: COLORS.surfaceContainerLow,
+                      border: `1px solid ${COLORS.border}`,
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
                     }}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#004d99', fontSize: 13, fontWeight: 700 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: COLORS.primary, fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
                           {tech.name.charAt(0)}
                         </Avatar>
                         <Box>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#111c2d' }}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
                             {tech.name}
                           </Typography>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: 10, color: '#425059' }}>
+                          <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>
                             {tech.specialty}
                           </Typography>
                         </Box>
                       </Box>
 
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: isAtCapacity ? '#ba1a1a' : '#111c2d' }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: isAtCapacity ? COLORS.error : COLORS.onSurface }}>
                           {tech.activeCount} / {tech.maxCount} {isAtCapacity ? 'Max' : 'Active'}
                         </Typography>
 
                         {isAtCapacity ? (
                           <Chip
-                            icon={<WarningIcon sx={{ fontSize: 14, color: '#ba1a1a !important' }} />}
+                            icon={<WarningIcon sx={{ fontSize: 14, color: `${COLORS.error} !important` }} />}
                             label="At Capacity"
                             size="small"
-                            sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: '#ffdad6', color: '#93000a' }}
+                            sx={{ height: 20, fontSize: 10, fontWeight: 800, bgcolor: 'rgba(244, 63, 94, 0.15)', color: COLORS.error, border: '1px solid rgba(244, 63, 94, 0.3)' }}
                           />
                         ) : (
                           <Chip
                             label={`${percentage}% ${tech.status === 'ready' ? 'Ready' : tech.status === 'available' ? 'Available' : 'Busy'}`}
                             size="small"
-                            sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: tech.status === 'ready' ? '#d9e2ff' : '#d8e3fb', color: '#001945' }}
+                            sx={{ height: 20, fontSize: 10, fontWeight: 700, bgcolor: COLORS.surfaceContainerHighest, color: COLORS.secondary, border: `1px solid ${COLORS.border}` }}
                           />
                         )}
 
@@ -1523,9 +1398,9 @@ export default function Dashboard() {
                             borderRadius: 1.5,
                             px: 1.5,
                             py: 0.3,
-                            bgcolor: isAtCapacity ? '#ffffff' : '#004d99',
-                            color: isAtCapacity ? '#727783' : '#ffffff',
-                            '&:hover': { bgcolor: isAtCapacity ? '#ffffff' : '#00468c' },
+                            bgcolor: isAtCapacity ? COLORS.surfaceContainerHighest : COLORS.primary,
+                            color: isAtCapacity ? COLORS.onSurfaceVariant : '#ffffff',
+                            '&:hover': { bgcolor: isAtCapacity ? COLORS.surfaceContainerHigh : COLORS.primaryContainer },
                           }}
                         >
                           View Queue
@@ -1540,9 +1415,9 @@ export default function Dashboard() {
                       sx={{
                         height: 6,
                         borderRadius: 3,
-                        bgcolor: '#d8e3fb',
+                        bgcolor: COLORS.surfaceContainerHighest,
                         '& .MuiLinearProgress-bar': {
-                          bgcolor: isAtCapacity ? '#ba1a1a' : percentage > 70 ? '#2b5bb5' : '#759efd',
+                          bgcolor: isAtCapacity ? COLORS.error : percentage > 70 ? COLORS.secondary : COLORS.primary,
                         },
                       }}
                     />
@@ -1553,13 +1428,13 @@ export default function Dashboard() {
 
             {/* Heatmap Footer */}
             <Box sx={{ mt: 2, pt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ fontSize: 12, color: '#425059' }}>
+              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                 Load distribution monitored in real-time across active engineers
               </Typography>
               <Button
                 size="small"
                 onClick={handleRebalance}
-                sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700, color: '#004d99' }}
+                sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700, color: COLORS.secondary }}
               >
                 Verify Workload Distribution
               </Button>
@@ -1574,8 +1449,9 @@ export default function Dashboard() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
+              backdropFilter: 'blur(16px)',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1584,26 +1460,27 @@ export default function Dashboard() {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <RssFeedIcon sx={{ fontSize: 20, color: '#004d99' }} />
-                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: '#111c2d' }}>
+                <RssFeedIcon sx={{ fontSize: 20, color: COLORS.primary }} />
+                <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                   Live Operational Feed
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, bgcolor: '#f0f3ff', borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, borderRadius: 3 }}>
                 <Box
                   sx={{
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    bgcolor: isStreamPaused ? '#ed6c02' : '#2b5bb5',
+                    bgcolor: isStreamPaused ? '#ed6c02' : COLORS.secondary,
+                    boxShadow: isStreamPaused ? 'none' : '0 0 8px #06b6d4',
                     animation: isStreamPaused ? 'none' : 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
                     '@keyframes ping': {
                       '75%, 100%': { transform: 'scale(2)', opacity: 0 },
                     },
                   }}
                 />
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: '#2b5bb5', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700, color: COLORS.secondary, textTransform: 'uppercase' }}>
                   {isStreamPaused ? 'Feed: Paused' : 'Live Audit Stream'}
                 </Typography>
               </Box>
@@ -1617,8 +1494,8 @@ export default function Dashboard() {
                   sx={{
                     p: 1.5,
                     borderRadius: 2,
-                    bgcolor: evt.type === 'outage' ? 'rgba(255, 218, 214, 0.3)' : evt.type === 'sla_warning' ? 'rgba(219, 232, 255, 0.4)' : '#f0f3ff',
-                    border: evt.type === 'outage' ? '1px solid rgba(186, 26, 26, 0.2)' : '1px solid #e2e8f0',
+                    bgcolor: evt.type === 'outage' ? 'rgba(244, 63, 94, 0.1)' : evt.type === 'sla_warning' ? 'rgba(6, 182, 212, 0.1)' : COLORS.surfaceContainerLow,
+                    border: evt.type === 'outage' ? '1px solid rgba(244, 63, 94, 0.25)' : `1px solid ${COLORS.border}`,
                     display: 'flex',
                     gap: 1.5,
                     alignItems: 'flex-start',
@@ -1629,8 +1506,8 @@ export default function Dashboard() {
                       width: 26,
                       height: 26,
                       borderRadius: '50%',
-                      bgcolor: evt.type === 'outage' ? '#ba1a1a' : evt.type === 'sla_warning' ? '#2b5bb5' : '#d8e3fb',
-                      color: evt.type === 'outage' || evt.type === 'sla_warning' ? '#ffffff' : '#004d99',
+                      bgcolor: evt.type === 'outage' ? COLORS.error : evt.type === 'sla_warning' ? COLORS.secondary : COLORS.surfaceContainerHighest,
+                      color: evt.type === 'outage' || evt.type === 'sla_warning' ? '#ffffff' : COLORS.primary,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1651,17 +1528,17 @@ export default function Dashboard() {
                         sx={{
                           fontSize: 13,
                           fontWeight: 700,
-                          color: evt.type === 'outage' ? '#ba1a1a' : '#111c2d',
+                          color: evt.type === 'outage' ? COLORS.error : COLORS.onSurface,
                         }}
                       >
                         {evt.title}
                       </Typography>
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: 10, color: '#727783' }}>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>
                         {evt.time}
                       </Typography>
                     </Box>
 
-                    <Typography sx={{ fontSize: 12, color: '#425059', lineHeight: 1.4 }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, lineHeight: 1.4 }}>
                       {evt.description}
                     </Typography>
 
@@ -1670,9 +1547,9 @@ export default function Dashboard() {
                         <LinearProgress
                           variant="determinate"
                           value={evt.progressPercent}
-                          sx={{ flexGrow: 1, height: 4, borderRadius: 2, bgcolor: '#d8e3fb', '& .MuiLinearProgress-bar': { bgcolor: '#004d99' } }}
+                          sx={{ flexGrow: 1, height: 4, borderRadius: 2, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary } }}
                         />
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: '#004d99' }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700, color: COLORS.primary }}>
                           {evt.progressPercent}% ELAPSED
                         </Typography>
                       </Box>
@@ -1680,14 +1557,14 @@ export default function Dashboard() {
 
                     {evt.code && (
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#727783' }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: COLORS.secondary }}>
                           {evt.code}
                         </Typography>
                         {evt.linkText && (
                           <Button
                             size="small"
                             onClick={() => navigate(evt.targetId ? `/admin/tickets/${evt.targetId}` : '/admin/tickets')}
-                            sx={{ p: 0, minWidth: 0, textTransform: 'none', fontSize: 11, fontWeight: 700, color: '#004d99' }}
+                            sx={{ p: 0, minWidth: 0, textTransform: 'none', fontSize: 11, fontWeight: 700, color: COLORS.secondary }}
                           >
                             {evt.linkText}
                           </Button>
@@ -1700,7 +1577,7 @@ export default function Dashboard() {
             </Box>
 
             {/* Feed Controls Footer */}
-            <Box sx={{ mt: 2, p: 1, bgcolor: '#f0f3ff', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ mt: 2, p: 1, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <IconButton
                   size="small"
@@ -1708,18 +1585,18 @@ export default function Dashboard() {
                     setIsStreamPaused((prev) => !prev);
                     toast(isStreamPaused ? 'Live telemetry resumed.' : 'Live telemetry stream paused.', 'info');
                   }}
-                  sx={{ color: '#425059' }}
+                  sx={{ color: COLORS.onSurfaceVariant }}
                 >
                   {isStreamPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
                 </IconButton>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: '#425059' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
                   {liveFeedEvents.length} operational events active
                 </Typography>
               </Box>
               <Button
                 size="small"
                 onClick={() => navigate('/admin/audit')}
-                sx={{ textTransform: 'none', fontSize: 11, fontWeight: 700, color: '#004d99' }}
+                sx={{ textTransform: 'none', fontSize: 11, fontWeight: 700, color: COLORS.secondary }}
               >
                 Export Audit Trail
               </Button>
@@ -1734,14 +1611,14 @@ export default function Dashboard() {
         onClose={() => !isDeclaring && setDeclareOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 800, color: '#ba1a1a' }}>
-          <CrisisAlertIcon sx={{ color: '#ba1a1a' }} />
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 800, color: COLORS.error, fontFamily: 'Sora, sans-serif' }}>
+          <CrisisAlertIcon sx={{ color: COLORS.error }} />
           Declare Major Incident
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: '#f1f5f9' }}>
-          <Typography sx={{ fontSize: 13, color: '#425059', mb: 2.5 }}>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+          <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2.5 }}>
             Declaring an incident creates a live ticket in the backend database, calculates SLA targets, and broadcasts real-time telemetry to on-call engineers.
           </Typography>
 
@@ -1755,6 +1632,11 @@ export default function Dashboard() {
               onChange={(e) => setIncidentTitle(e.target.value)}
               helperText="Minimum 5 characters required by backend validation"
               disabled={isDeclaring}
+              sx={{
+                bgcolor: COLORS.surfaceContainerLowest,
+                borderRadius: 2,
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+              }}
             />
 
             <TextField
@@ -1768,6 +1650,11 @@ export default function Dashboard() {
               onChange={(e) => setIncidentDescription(e.target.value)}
               helperText="Minimum 20 characters required by backend validation"
               disabled={isDeclaring}
+              sx={{
+                bgcolor: COLORS.surfaceContainerLowest,
+                borderRadius: 2,
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+              }}
             />
 
             <Grid container spacing={2}>
@@ -1780,6 +1667,11 @@ export default function Dashboard() {
                   value={selectedServiceId}
                   onChange={(e) => setSelectedServiceId(Number(e.target.value))}
                   disabled={isDeclaring}
+                  sx={{
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  }}
                 >
                   {services.map((s) => (
                     <MenuItem key={s.id} value={s.id}>
@@ -1797,6 +1689,11 @@ export default function Dashboard() {
                   value={selectedCategoryId}
                   onChange={(e) => setSelectedCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
                   disabled={isDeclaring}
+                  sx={{
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  }}
                 >
                   <MenuItem value="">
                     <em>(Auto / General Triage)</em>
@@ -1820,11 +1717,37 @@ export default function Dashboard() {
                   value={incidentSeverity}
                   onChange={(e) => setIncidentSeverity(e.target.value as 'P1' | 'P2' | 'P3' | 'P4')}
                   disabled={isDeclaring}
+                  sx={{
+                    bgcolor: 'rgba(18, 22, 34, 0.75)',
+                    backdropFilter: 'blur(16px)',
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                  }}
                 >
-                  <MenuItem value="P1">P1 Critical (War Room &amp; Lead SRE)</MenuItem>
-                  <MenuItem value="P2">P2 Major Degraded Outage</MenuItem>
-                  <MenuItem value="P3">P3 Moderate Service Impact</MenuItem>
-                  <MenuItem value="P4">P4 Low / Minor Issue</MenuItem>
+                  <MenuItem value="P1">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f43f5e', boxShadow: '0 0 8px #f43f5e' }} />
+                      <span style={{ color: '#f43f5e', fontWeight: 700 }}>P1 Critical (War Room &amp; Lead SRE)</span>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="P2">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fb923c' }} />
+                      <span style={{ color: '#fb923c', fontWeight: 600 }}>P2 Major Degraded Outage</span>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="P3">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#38bdf8' }} />
+                      <span style={{ color: '#38bdf8' }}>P3 Moderate Service Impact</span>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="P4">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4ade80' }} />
+                      <span style={{ color: '#4ade80' }}>P4 Low / Minor Issue</span>
+                    </Box>
+                  </MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -1837,6 +1760,11 @@ export default function Dashboard() {
                   onChange={(e) => setAffectedUsers(Math.max(1, Number(e.target.value)))}
                   inputProps={{ min: 1, max: 1000000 }}
                   disabled={isDeclaring}
+                  sx={{
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    borderRadius: 2,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  }}
                 />
               </Grid>
             </Grid>
@@ -1851,9 +1779,14 @@ export default function Dashboard() {
               onChange={(e) => setSelectedAssigneeId(e.target.value === '' ? '' : Number(e.target.value))}
               disabled={isDeclaring}
               helperText="Assign to an enrolled technician / lead immediately, or leave blank for ITIL auto-routing"
+              sx={{
+                bgcolor: COLORS.surfaceContainerLowest,
+                borderRadius: 2,
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+              }}
             >
               <MenuItem value="">
-                <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#64748b' }}>
+                <Typography variant="body2" sx={{ fontStyle: 'italic', color: COLORS.onSurfaceVariant }}>
                   ⚡ Auto-Assign via ITIL Skill &amp; Load Algorithm
                 </Typography>
               </MenuItem>
@@ -1861,13 +1794,13 @@ export default function Dashboard() {
                 <MenuItem key={t.id} value={t.id}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar sx={{ width: 22, height: 22, fontSize: 11, bgcolor: '#004d99', color: '#fff' }}>
+                      <Avatar sx={{ width: 22, height: 22, fontSize: 11, bgcolor: COLORS.primary, color: '#fff' }}>
                         {t.name.charAt(0)}
                       </Avatar>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {t.name}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                         ({t.specialty})
                       </Typography>
                     </Box>
@@ -1877,8 +1810,8 @@ export default function Dashboard() {
                       sx={{
                         height: 20,
                         fontSize: 10,
-                        bgcolor: t.status === 'locked' ? '#fee2e2' : t.status === 'busy' ? '#fef3c7' : '#dcfce7',
-                        color: t.status === 'locked' ? '#991b1b' : t.status === 'busy' ? '#92400e' : '#166534',
+                        bgcolor: t.status === 'locked' ? 'rgba(244, 63, 94, 0.15)' : t.status === 'busy' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: t.status === 'locked' ? COLORS.error : t.status === 'busy' ? '#f59e0b' : COLORS.success,
                         fontWeight: 700,
                       }}
                     />
@@ -1892,7 +1825,7 @@ export default function Dashboard() {
           <Button
             onClick={() => setDeclareOpen(false)}
             disabled={isDeclaring}
-            sx={{ textTransform: 'none', color: '#425059', fontWeight: 600 }}
+            sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant, fontWeight: 600 }}
           >
             Cancel
           </Button>
@@ -1901,7 +1834,7 @@ export default function Dashboard() {
             onClick={handleDeclareSubmit}
             disabled={isDeclaring}
             startIcon={isDeclaring ? <CircularProgress size={16} color="inherit" /> : <CrisisAlertIcon />}
-            sx={{ bgcolor: '#ba1a1a', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#93000a' } }}
+            sx={{ background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)', textTransform: 'none', fontWeight: 700, '&:hover': { opacity: 0.9 } }}
           >
             {isDeclaring ? 'Saving to Database...' : 'Confirm & Declare Incident'}
           </Button>

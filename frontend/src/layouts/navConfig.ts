@@ -6,7 +6,6 @@ export const NAV: Record<Workspace, { label: string; to: string }[]> = {
   ],
   tech: [
     { label: 'My queue', to: '/tech/queue' },
-    { label: 'Workbench', to: '/tech/incidents/INC-2026-00095' },
     { label: 'Workload', to: '/tech/workload' },
     { label: 'Notifications', to: '/notifications' },
   ],

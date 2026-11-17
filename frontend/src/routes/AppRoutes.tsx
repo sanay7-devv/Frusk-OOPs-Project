@@ -1,5 +1,6 @@
 //we are importing all project folders 
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
 import RequireWorkspace from '../auth/RequireRole';
 import { useAuth, HOME } from '../auth/AuthContext';
 import AppShell from '../layouts/AppShell';
@@ -29,7 +30,14 @@ import Register from '../features/shared/Register';
 import Login from '../features/shared/Login';
 
 function RootRedirect() {
-  const { user, workspace, workspaces } = useAuth();
+  const { user, workspace, workspaces, loading } = useAuth();
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress size={32} />
+      </Box>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
   const targetWs = (workspace && HOME[workspace] ? workspace : workspaces[0] || 'employee');
   return <Navigate to={HOME[targetWs]} replace />;

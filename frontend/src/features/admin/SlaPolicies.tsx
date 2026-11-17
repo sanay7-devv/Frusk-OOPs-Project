@@ -58,6 +58,23 @@ import { listIncidents } from '../../api/incidents';
 import PriorityBadge from '../../components/PriorityBadge';
 import { useToast } from '../../components/Toast';
 
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  secondary: '#06b6d4',
+  error: '#f43f5e',
+  success: '#10b981',
+  warning: '#f59e0b',
+};
+
 export default function SlaPolicies() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<'SLA' | 'ESCALATION'>('SLA');
@@ -102,7 +119,7 @@ export default function SlaPolicies() {
     refetchInterval: 10000,
   });
 
-  // Query 3: Services Catalog (for service-specific SLA targets)
+  // Query 3: Services Catalog
   const { data: services = [] } = useQuery({
     queryKey: ['admin-services-catalog-lookup'],
     queryFn: getAdminServices,
@@ -134,7 +151,6 @@ export default function SlaPolicies() {
           metCount++;
         }
       } else {
-        // Active tickets
         if (inc.slaState === 'VIOLATED' || (inc.slaState as any) === 'BREACHED') {
           breachedCount++;
         } else if (inc.slaState === 'WARNING') {
@@ -158,7 +174,6 @@ export default function SlaPolicies() {
     };
   }, [allIncidents]);
 
-  // Handle Open Create SLA Modal
   const handleOpenCreateSla = () => {
     setEditingSlaId(null);
     setSlaPriority('P1');
@@ -169,7 +184,6 @@ export default function SlaPolicies() {
     setSlaModalOpen(true);
   };
 
-  // Handle Open Edit SLA Modal
   const handleOpenEditSla = (pol: AdminSlaPolicy) => {
     setEditingSlaId(pol.id);
     setSlaPriority(pol.priority);
@@ -180,7 +194,6 @@ export default function SlaPolicies() {
     setSlaModalOpen(true);
   };
 
-  // Save SLA Policy (Create or Update)
   const handleSaveSlaPolicy = async () => {
     setIsSubmitting(true);
     const targetServiceId = slaServiceId === 'GLOBAL' ? null : Number(slaServiceId);
@@ -218,7 +231,6 @@ export default function SlaPolicies() {
     }
   };
 
-  // Delete SLA Policy
   const handleDeleteSlaPolicy = async (id: number, p: string) => {
     if (!window.confirm(`Are you sure you want to delete this SLA policy for ${p}?`)) return;
     try {
@@ -230,7 +242,6 @@ export default function SlaPolicies() {
     }
   };
 
-  // Save Escalation Policy
   const handleSaveEscalationPolicy = async () => {
     setIsSubmitting(true);
     try {
@@ -250,7 +261,6 @@ export default function SlaPolicies() {
     }
   };
 
-  // Delete Escalation Policy
   const handleDeleteEscalation = async (id: number, priority: string, level: number) => {
     if (!window.confirm(`Delete escalation policy for ${priority} Level ${level}?`)) return;
     try {
@@ -269,7 +279,6 @@ export default function SlaPolicies() {
     toast('SLA matrix and escalation telemetry refreshed', 'info');
   };
 
-  // Helper to format minutes into human readable duration
   const formatDuration = (mins: number) => {
     if (mins < 60) return `${mins} mins`;
     const hrs = mins / 60;
@@ -297,20 +306,21 @@ export default function SlaPolicies() {
                 width: 40,
                 height: 40,
                 borderRadius: 2,
-                bgcolor: '#f5f3ff',
-                color: '#7c3aed',
+                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                color: COLORS.primary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
               }}
             >
               <PolicyIcon />
             </Box>
-            <Typography variant="h5" fontWeight={800} color="#0f172a">
-              SLA Policy Matrix & Escalation Engine
+            <Typography variant="h5" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+              SLA Policy Matrix &amp; Escalation Engine
             </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
             Enforce contractual response and resolution deadlines, define service-specific overrides, and automate on-call escalation
           </Typography>
         </Box>
@@ -320,7 +330,14 @@ export default function SlaPolicies() {
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={handleRefreshAll}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: COLORS.border,
+              color: COLORS.onSurfaceVariant,
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.2)' },
+            }}
           >
             Refresh
           </Button>
@@ -329,7 +346,14 @@ export default function SlaPolicies() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleOpenCreateSla}
-              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#7c3aed' }}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                borderRadius: 2,
+                bgcolor: COLORS.primary,
+                color: '#ffffff',
+                '&:hover': { bgcolor: '#4f46e5' },
+              }}
             >
               Add SLA Target Rule
             </Button>
@@ -338,7 +362,14 @@ export default function SlaPolicies() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setEscModalOpen(true)}
-              sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#0284c7' }}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                borderRadius: 2,
+                bgcolor: COLORS.secondary,
+                color: '#000000',
+                '&:hover': { bgcolor: '#0891b2' },
+              }}
             >
               Add Escalation Trigger
             </Button>
@@ -350,9 +381,9 @@ export default function SlaPolicies() {
       <Grid container spacing={2.5} mb={3}>
         {/* Card 1: Live SLA Compliance */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Live SLA Compliance Rate
               </Typography>
               <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
@@ -361,15 +392,15 @@ export default function SlaPolicies() {
                     width: 10,
                     height: 10,
                     borderRadius: '50%',
-                    bgcolor: Number(slaMetrics.complianceRate) >= 95 ? '#10b981' : '#f59e0b',
-                    boxShadow: Number(slaMetrics.complianceRate) >= 95 ? '0 0 8px #10b981' : '0 0 8px #f59e0b',
+                    bgcolor: Number(slaMetrics.complianceRate) >= 95 ? COLORS.success : COLORS.warning,
+                    boxShadow: Number(slaMetrics.complianceRate) >= 95 ? `0 0 8px ${COLORS.success}` : `0 0 8px ${COLORS.warning}`,
                   }}
                 />
-                <Typography variant="h4" fontWeight={800} color="#0f172a">
+                <Typography variant="h4" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                   {slaMetrics.complianceRate}%
                 </Typography>
               </Stack>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
                 {slaMetrics.metCount} Met SLA • {slaMetrics.breachedCount} Breached in live telemetry
               </Typography>
             </CardContent>
@@ -378,17 +409,17 @@ export default function SlaPolicies() {
 
         {/* Card 2: Active SLA Health */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Active Incident Clocks
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#0f172a" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: COLORS.onSurface, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
                 {slaMetrics.activeOkCount + slaMetrics.warningCount} Open Clocks
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
                 {slaMetrics.warningCount > 0 ? (
-                  <span style={{ color: '#d97706', fontWeight: 700 }}>
+                  <span style={{ color: '#fbbf24', fontWeight: 700 }}>
                     ⚠️ {slaMetrics.warningCount} tickets approaching breach threshold
                   </span>
                 ) : (
@@ -401,16 +432,16 @@ export default function SlaPolicies() {
 
         {/* Card 3: Active Policies */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Configured SLA Rules
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#7c3aed" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: COLORS.primary, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
                 {policies.length} Policies
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                {policies.filter((p) => !p.serviceId).length} Global Defaults • {policies.filter((p) => p.serviceId).length} Service Overrides
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
+                {policies.filter((p) => !p.serviceId).length} Global Defaults • {policies.filter((p) => p.serviceId).length} Overrides
               </Typography>
             </CardContent>
           </Card>
@@ -418,16 +449,16 @@ export default function SlaPolicies() {
 
         {/* Card 4: Escalation Ladder */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+          <Card elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
             <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase" letterSpacing={0.5}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Automated Escalation Steps
               </Typography>
-              <Typography variant="h4" fontWeight={800} color="#0284c7" mt={0.5}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: COLORS.secondary, mt: 0.5, fontFamily: 'Sora, sans-serif' }}>
                 {escalations.length} Triggers
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                Auto-page team lead & manager on unacknowledged alerts
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mt: 0.5 }}>
+                Auto-page team lead &amp; manager on unacknowledged alerts
               </Typography>
             </CardContent>
           </Card>
@@ -435,14 +466,23 @@ export default function SlaPolicies() {
       </Grid>
 
       {/* Tabs navigation */}
-      <Paper elevation={0} sx={{ borderRadius: 2.5, border: '1px solid #e2e8f0', mb: 3 }}>
+      <Paper elevation={0} sx={{ borderRadius: 2.5, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer, mb: 3 }}>
         <Tabs
           value={activeTab}
           onChange={(_, val) => setActiveTab(val)}
           sx={{
             px: 2,
-            borderBottom: '1px solid #e2e8f0',
-            '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: '0.9rem', py: 2 },
+            borderBottom: `1px solid ${COLORS.border}`,
+            bgcolor: COLORS.surfaceContainerLow,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              py: 2,
+              color: COLORS.onSurfaceVariant,
+              '&.Mui-selected': { color: COLORS.primary },
+            },
+            '& .MuiTabs-indicator': { backgroundColor: COLORS.primary },
           }}
         >
           <Tab
@@ -464,34 +504,34 @@ export default function SlaPolicies() {
           <TableContainer>
             {isLoadingSla ? (
               <Box p={6} display="flex" justifyContent="center">
-                <CircularProgress size={32} />
+                <CircularProgress size={32} sx={{ color: COLORS.primary }} />
               </Box>
             ) : policies.length === 0 ? (
               <Box p={6} textAlign="center">
-                <Typography variant="subtitle1" fontWeight={700} color="#334155">
+                <Typography variant="subtitle1" fontWeight={700} sx={{ color: COLORS.onSurface }}>
                   No SLA policies configured yet
                 </Typography>
               </Box>
             ) : (
               <Table>
-                <TableHead sx={{ bgcolor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                <TableHead sx={{ bgcolor: COLORS.surfaceContainerLow, borderBottom: `1px solid ${COLORS.border}` }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       PRIORITY TIER
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       APPLICATION SCOPE
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       RESPONSE TARGET (ACK)
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       RESOLUTION TARGET (FIX)
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       OPERATING CALENDAR
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2, textAlign: 'right' }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
                       ACTIONS
                     </TableCell>
                   </TableRow>
@@ -508,7 +548,7 @@ export default function SlaPolicies() {
                     const isGlobal = !pol.serviceId;
 
                     return (
-                      <TableRow key={pol.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc !important' } }}>
+                      <TableRow key={pol.id} hover sx={{ '& td': { borderBottom: `1px solid ${COLORS.border}` }, '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.05) !important' } }}>
                         {/* Priority Badge */}
                         <TableCell sx={{ py: 2 }}>
                           <PriorityBadge priority={pol.priority} />
@@ -517,13 +557,13 @@ export default function SlaPolicies() {
                         {/* Scope */}
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="body2" fontWeight={isGlobal ? 700 : 600} color={isGlobal ? '#0f172a' : '#1d4ed8'}>
+                            <Typography variant="body2" fontWeight={isGlobal ? 700 : 600} sx={{ color: isGlobal ? COLORS.onSurface : COLORS.secondary }}>
                               {scopeName}
                             </Typography>
                             {isGlobal ? (
-                              <Chip label="Default Fallback" size="small" sx={{ fontSize: '0.68rem', height: 20 }} />
+                              <Chip label="Default Fallback" size="small" sx={{ fontSize: '0.68rem', height: 20, bgcolor: COLORS.surfaceContainerHighest, color: COLORS.onSurfaceVariant }} />
                             ) : (
-                              <Chip label="Override" size="small" color="primary" sx={{ fontSize: '0.68rem', height: 20 }} />
+                              <Chip label="Override" size="small" sx={{ fontSize: '0.68rem', height: 20, bgcolor: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.3)' }} />
                             )}
                           </Stack>
                         </TableCell>
@@ -531,12 +571,12 @@ export default function SlaPolicies() {
                         {/* Response Target */}
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <AccessTimeIcon sx={{ fontSize: 16, color: '#64748b' }} />
-                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                            <AccessTimeIcon sx={{ fontSize: 16, color: COLORS.onSurfaceVariant }} />
+                            <Typography variant="body2" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                               {formatDuration(pol.responseMinutes)}
                             </Typography>
                           </Stack>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                             Time to engineer triage
                           </Typography>
                         </TableCell>
@@ -544,12 +584,12 @@ export default function SlaPolicies() {
                         {/* Resolution Target */}
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <TimerIcon sx={{ fontSize: 16, color: '#64748b' }} />
-                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                            <TimerIcon sx={{ fontSize: 16, color: COLORS.onSurfaceVariant }} />
+                            <Typography variant="body2" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                               {formatDuration(pol.resolutionMinutes)}
                             </Typography>
                           </Stack>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                             Time to full system restoration
                           </Typography>
                         </TableCell>
@@ -563,9 +603,10 @@ export default function SlaPolicies() {
                               sx={{
                                 fontWeight: 700,
                                 fontSize: '0.72rem',
-                                bgcolor: '#eff6ff',
-                                color: '#1d4ed8',
-                                border: '1px solid #bfdbfe',
+                                bgcolor: 'rgba(99, 102, 241, 0.2)',
+                                color: COLORS.primary,
+                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                fontFamily: 'JetBrains Mono, monospace',
                               }}
                             />
                           ) : (
@@ -573,7 +614,7 @@ export default function SlaPolicies() {
                               label="Business Hours (09:00 - 18:00 M-F)"
                               size="small"
                               variant="outlined"
-                              sx={{ fontWeight: 600, fontSize: '0.72rem' }}
+                              sx={{ fontWeight: 600, fontSize: '0.72rem', borderColor: COLORS.border, color: COLORS.onSurfaceVariant }}
                             />
                           )}
                         </TableCell>
@@ -582,12 +623,12 @@ export default function SlaPolicies() {
                         <TableCell sx={{ py: 2, textAlign: 'right' }}>
                           <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                             <Tooltip title="Edit Policy Target">
-                              <IconButton size="small" color="default" onClick={() => handleOpenEditSla(pol)}>
+                              <IconButton size="small" onClick={() => handleOpenEditSla(pol)} sx={{ color: COLORS.secondary }}>
                                 <EditIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Delete Policy">
-                              <IconButton size="small" color="error" onClick={() => handleDeleteSlaPolicy(pol.id, pol.priority)}>
+                              <IconButton size="small" onClick={() => handleDeleteSlaPolicy(pol.id, pol.priority)} sx={{ color: COLORS.error }}>
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
@@ -607,31 +648,31 @@ export default function SlaPolicies() {
           <TableContainer>
             {isLoadingEsc ? (
               <Box p={6} display="flex" justifyContent="center">
-                <CircularProgress size={32} />
+                <CircularProgress size={32} sx={{ color: COLORS.primary }} />
               </Box>
             ) : escalations.length === 0 ? (
               <Box p={6} textAlign="center">
-                <Typography variant="subtitle1" fontWeight={700} color="#334155">
+                <Typography variant="subtitle1" fontWeight={700} sx={{ color: COLORS.onSurface }}>
                   No escalation policies configured yet
                 </Typography>
               </Box>
             ) : (
               <Table>
-                <TableHead sx={{ bgcolor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                <TableHead sx={{ bgcolor: COLORS.surfaceContainerLow, borderBottom: `1px solid ${COLORS.border}` }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       TRIGGER PRIORITY
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       ESCALATION TIER LEVEL
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                       TIMEOUT THRESHOLD
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2 }}>
-                      AUTOMATED ACTION & DISPATCH
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, fontFamily: 'JetBrains Mono, monospace' }}>
+                      AUTOMATED ACTION &amp; DISPATCH
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, color: '#334155', fontSize: '0.82rem', py: 2, textAlign: 'right' }}>
+                    <TableCell sx={{ fontWeight: 800, color: COLORS.onSurfaceVariant, fontSize: '0.75rem', py: 2, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
                       ACTIONS
                     </TableCell>
                   </TableRow>
@@ -642,7 +683,7 @@ export default function SlaPolicies() {
                     const timeout = p.timeoutMinutes || p.triggerMinutes || 30;
 
                     return (
-                      <TableRow key={p.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc !important' } }}>
+                      <TableRow key={p.id} hover sx={{ '& td': { borderBottom: `1px solid ${COLORS.border}` }, '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.05) !important' } }}>
                         <TableCell sx={{ py: 2 }}>
                           <PriorityBadge priority={p.priority} />
                         </TableCell>
@@ -651,26 +692,29 @@ export default function SlaPolicies() {
                           <Chip
                             label={`Level ${level}: ${level >= 2 ? 'SRE Incident Commander' : 'Team Lead'}`}
                             size="small"
-                            color={level >= 2 ? 'error' : 'primary'}
-                            variant="outlined"
-                            sx={{ fontWeight: 700 }}
+                            sx={{
+                              fontWeight: 700,
+                              bgcolor: level >= 2 ? 'rgba(244, 63, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+                              color: level >= 2 ? '#fb7185' : COLORS.primary,
+                              border: `1px solid ${level >= 2 ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
+                            }}
                           />
                         </TableCell>
 
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <TimerIcon sx={{ fontSize: 16, color: '#d97706' }} />
-                            <Typography variant="body2" fontWeight={800} color="#0f172a">
+                            <TimerIcon sx={{ fontSize: 16, color: '#f59e0b' }} />
+                            <Typography variant="body2" fontWeight={800} sx={{ color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                               {timeout} minutes unacknowledged
                             </Typography>
                           </Stack>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                             Triggered automatically by SLA daemon
                           </Typography>
                         </TableCell>
 
                         <TableCell sx={{ py: 2 }}>
-                          <Typography variant="body2" fontWeight={600} color="#0f172a">
+                          <Typography variant="body2" fontWeight={600} sx={{ color: COLORS.onSurface }}>
                             {p.action || `Auto-escalate to Tier ${level} On-Call Queue & Page Duty Engineer`}
                           </Typography>
                         </TableCell>
@@ -678,8 +722,8 @@ export default function SlaPolicies() {
                         <TableCell sx={{ py: 2, textAlign: 'right' }}>
                           <IconButton
                             size="small"
-                            color="error"
                             onClick={() => handleDeleteEscalation(p.id, p.priority, level)}
+                            sx={{ color: COLORS.error }}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
@@ -695,11 +739,24 @@ export default function SlaPolicies() {
       </Paper>
 
       {/* Dialog 1: Add / Edit SLA Policy */}
-      <Dialog open={slaModalOpen} onClose={() => setSlaModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+      <Dialog
+        open={slaModalOpen}
+        onClose={() => setSlaModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
           {editingSlaId ? 'Edit SLA Target Rule' : 'Configure New SLA Policy Target'}
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2.5} mt={1}>
             <TextField
               select
@@ -707,6 +764,14 @@ export default function SlaPolicies() {
               fullWidth
               value={slaPriority}
               onChange={(e) => setSlaPriority(e.target.value as any)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="P1">P1 - Critical Priority</MenuItem>
               <MenuItem value="P2">P2 - High Priority</MenuItem>
@@ -721,6 +786,15 @@ export default function SlaPolicies() {
               value={slaServiceId}
               onChange={(e) => setSlaServiceId(e.target.value)}
               helperText="Global default applies across all services unless overridden by a service-specific rule"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                '& .MuiFormHelperText-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="GLOBAL">Global Enterprise Default (All Services)</MenuItem>
               {services.map((svc) => (
@@ -738,6 +812,15 @@ export default function SlaPolicies() {
                 value={responseMinutes}
                 onChange={(e) => setResponseMinutes(Number(e.target.value))}
                 helperText="Maximum time allowed for on-call triage"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                  '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                  '& .MuiFormHelperText-root': { color: COLORS.onSurfaceVariant },
+                }}
               />
               <TextField
                 label="Resolution Target (Minutes to Fix)"
@@ -746,6 +829,15 @@ export default function SlaPolicies() {
                 value={resolutionMinutes}
                 onChange={(e) => setResolutionMinutes(Number(e.target.value))}
                 helperText="Maximum allowed time to resolve"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  },
+                  '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                  '& .MuiFormHelperText-root': { color: COLORS.onSurfaceVariant },
+                }}
               />
             </Stack>
 
@@ -755,21 +847,29 @@ export default function SlaPolicies() {
               fullWidth
               value={calendarType}
               onChange={(e) => setCalendarType(e.target.value as any)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="ALWAYS">24x7 Continuous (Uninterrupted 24/7)</MenuItem>
               <MenuItem value="BUSINESS_HOURS">Business Hours Only (Mon-Fri 09:00 - 18:00)</MenuItem>
             </TextField>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setSlaModalOpen(false)} sx={{ textTransform: 'none' }}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setSlaModalOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveSlaPolicy}
             disabled={isSubmitting}
-            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: '#7c3aed' }}
+            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary, color: '#ffffff', '&:hover': { bgcolor: '#4f46e5' } }}
           >
             {isSubmitting ? 'Saving...' : editingSlaId ? 'Update Policy' : 'Save Policy'}
           </Button>
@@ -777,11 +877,24 @@ export default function SlaPolicies() {
       </Dialog>
 
       {/* Dialog 2: Add Escalation Trigger */}
-      <Dialog open={escModalOpen} onClose={() => setEscModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: '#0f172a' }}>
+      <Dialog
+        open={escModalOpen}
+        onClose={() => setEscModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
           Configure Escalation Trigger Rule
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2.5} mt={1}>
             <TextField
               select
@@ -789,6 +902,14 @@ export default function SlaPolicies() {
               fullWidth
               value={escPriority}
               onChange={(e) => setEscPriority(e.target.value as any)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="P1">P1 - Critical Priority</MenuItem>
               <MenuItem value="P2">P2 - High Priority</MenuItem>
@@ -800,9 +921,17 @@ export default function SlaPolicies() {
               fullWidth
               value={escLevel}
               onChange={(e) => setEscLevel(Number(e.target.value))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value={1}>Level 1: Team Lead Escalation</MenuItem>
-              <MenuItem value={2}>Level 2: SRE Incident Commander & War Room</MenuItem>
+              <MenuItem value={2}>Level 2: SRE Incident Commander &amp; War Room</MenuItem>
             </TextField>
 
             <TextField
@@ -812,6 +941,15 @@ export default function SlaPolicies() {
               value={escTimeout}
               onChange={(e) => setEscTimeout(Number(e.target.value))}
               helperText="Trigger alert if ticket remains unacknowledged after this duration"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+                '& .MuiFormHelperText-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
 
             <TextField
@@ -820,18 +958,26 @@ export default function SlaPolicies() {
               value={escAction}
               onChange={(e) => setEscAction(e.target.value)}
               placeholder="e.g. Escalate to Lead & Page On-Call Manager"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setEscModalOpen(false)} sx={{ textTransform: 'none' }}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setEscModalOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveEscalationPolicy}
             disabled={isSubmitting}
-            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: '#0284c7' }}
+            sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.secondary, color: '#000000', '&:hover': { bgcolor: '#0891b2' } }}
           >
             {isSubmitting ? 'Saving...' : 'Add Escalation Trigger'}
           </Button>

@@ -50,7 +50,7 @@ import {
   ConfirmationNumber as ConfirmationNumberIcon,
   FilterAltOff as FilterAltOffIcon,
 } from '@mui/icons-material';
-import { listIncidents, createIncident, CreateIncidentPayload, reassignMockIncident } from '../../api/incidents';
+import { listIncidents, createIncident, CreateIncidentPayload } from '../../api/incidents';
 import { getServices } from '../../api/services';
 import { getAdminUsers } from '../../api/admin';
 import { api } from '../../api/client';
@@ -58,6 +58,25 @@ import PriorityBadge from '../../components/PriorityBadge';
 import StatusChip from '../../components/StatusChip';
 import SlaCountdown from '../../components/SlaCountdown';
 import { useToast } from '../../components/Toast';
+
+// Design System Tokens (Luminary Kinetic Dark)
+const COLORS = {
+  surface: '#090d16',
+  surfaceContainerLowest: '#0a0e17',
+  surfaceContainerLow: '#121622',
+  surfaceContainer: '#141824',
+  surfaceContainerHigh: '#1c2234',
+  surfaceContainerHighest: '#262d42',
+  onSurface: '#f8fafc',
+  onSurfaceVariant: '#94a3b8',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#6366f1',
+  primaryContainer: '#4f46e5',
+  secondary: '#06b6d4',
+  error: '#f43f5e',
+  errorContainer: 'rgba(244, 63, 94, 0.15)',
+  success: '#10b981',
+};
 
 export default function Tickets() {
   const navigate = useNavigate();
@@ -134,7 +153,7 @@ export default function Tickets() {
         q: q.trim() || undefined,
         priority: priorityFilter !== 'ALL' ? [priorityFilter] : undefined,
         status: statusFilter === 'ACTIVE' ? undefined : statusFilter !== 'ALL' ? [statusFilter] : undefined,
-        escalationLevel: levelFilter !== 'ALL' ? Number(levelFilter) : undefined,
+        minEscalationLevel: levelFilter !== 'ALL' ? Number(levelFilter) : undefined,
         page: 0,
         size: 100,
         sort: 'createdAt,desc',
@@ -223,15 +242,10 @@ export default function Tickets() {
         reason: reassignReason || 'Reassigned from Tickets Hub',
       });
       toast(`Ticket ${targetIncident.code} assigned to ${tech?.name || 'technician'}`, 'success');
-      reassignMockIncident(targetIncident.id, selectedTechId, tech?.name || 'Technician');
       setReassignOpen(false);
       refetch();
-    } catch {
-      // Offline fallback
-      reassignMockIncident(targetIncident.id, selectedTechId, tech?.name || 'Technician');
-      toast(`Ticket ${targetIncident.code} assigned to ${tech?.name || 'technician'} (Offline mode)`, 'info');
-      setReassignOpen(false);
-      refetch();
+    } catch (err: any) {
+      toast(err?.response?.data?.message || 'Failed to reassign incident.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +287,6 @@ export default function Tickets() {
           }).catch(() => {});
         }
         if (tech) {
-          reassignMockIncident(created.id, tech.id, tech.name);
           created.assignee = { id: tech.id, name: tech.name };
         }
       }
@@ -330,11 +343,12 @@ export default function Tickets() {
             size="small"
             label="L1 • Lead Escalation"
             sx={{
-              bgcolor: '#fef3c7',
-              color: '#b45309',
+              bgcolor: 'rgba(245, 158, 11, 0.15)',
+              color: '#f59e0b',
               fontWeight: 700,
               fontSize: '0.72rem',
-              border: '1px solid #fde68a',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -344,11 +358,12 @@ export default function Tickets() {
             size="small"
             label="L2 • SRE / Admin"
             sx={{
-              bgcolor: '#fee2e2',
-              color: '#b91c1c',
+              bgcolor: 'rgba(244, 63, 94, 0.15)',
+              color: COLORS.error,
               fontWeight: 700,
               fontSize: '0.72rem',
-              border: '1px solid #fecaca',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -358,10 +373,11 @@ export default function Tickets() {
             size="small"
             label="L3 • War Room"
             sx={{
-              bgcolor: '#7f1d1d',
+              bgcolor: COLORS.error,
               color: '#ffffff',
               fontWeight: 800,
               fontSize: '0.72rem',
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -372,11 +388,12 @@ export default function Tickets() {
             size="small"
             label="L0 • Frontline Tech"
             sx={{
-              bgcolor: '#e0f2fe',
-              color: '#0369a1',
+              bgcolor: 'rgba(6, 182, 212, 0.15)',
+              color: COLORS.secondary,
               fontWeight: 700,
               fontSize: '0.72rem',
-              border: '1px solid #bae6fd',
+              border: '1px solid rgba(6, 182, 212, 0.3)',
+              fontFamily: 'JetBrains Mono, monospace',
             }}
           />
         );
@@ -395,17 +412,17 @@ export default function Tickets() {
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <ConfirmationNumberIcon sx={{ fontSize: 32, color: '#2b5bb5' }} />
-            <Typography variant="h4" fontWeight="800" sx={{ color: '#111c2d', letterSpacing: '-0.02em' }}>
+            <ConfirmationNumberIcon sx={{ fontSize: 32, color: COLORS.secondary }} />
+            <Typography variant="h4" fontWeight="800" sx={{ color: COLORS.onSurface, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
               Tickets Hub
             </Typography>
             <Chip
               label="Live Backend Connected"
               size="small"
-              sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontWeight: 700, height: 22 }}
+              sx={{ bgcolor: 'rgba(6, 182, 212, 0.15)', color: COLORS.secondary, border: '1px solid rgba(6, 182, 212, 0.3)', fontWeight: 700, height: 22, fontFamily: 'JetBrains Mono, monospace' }}
             />
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mt: 0.5 }}>
             Master operational repository of today&apos;s tickets, historical tickets, assigned handlers, and escalation levels
           </Typography>
         </Box>
@@ -417,7 +434,7 @@ export default function Tickets() {
               refetch();
               toast('Refreshed tickets from backend', 'info');
             }}
-            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: COLORS.border, color: COLORS.onSurface, bgcolor: COLORS.surfaceContainer, '&:hover': { bgcolor: COLORS.surfaceContainerHigh } }}
           >
             Refresh
           </Button>
@@ -427,12 +444,12 @@ export default function Tickets() {
             onClick={() => setDeclareOpen(true)}
             sx={{
               borderRadius: 2,
-              bgcolor: '#ba1a1a',
+              background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
               color: '#ffffff',
               textTransform: 'none',
               fontWeight: 700,
-              boxShadow: '0 2px 6px rgba(186, 26, 26, 0.25)',
-              '&:hover': { bgcolor: '#93000a' },
+              boxShadow: '0 4px 14px rgba(244, 63, 94, 0.35)',
+              '&:hover': { opacity: 0.9 },
             }}
           >
             Declare Ticket / Incident
@@ -448,24 +465,24 @@ export default function Tickets() {
             onClick={() => handleTabChange({} as any, 0)}
             sx={{
               borderRadius: 2.5,
-              border: activeTab === 0 ? '2px solid #2b5bb5' : '1px solid #e2e8f0',
-              bgcolor: activeTab === 0 ? '#f0f5ff' : '#ffffff',
+              border: activeTab === 0 ? `2px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(43,91,181,0.1)' },
+              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.secondary },
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Today&apos;s Tickets
                 </Typography>
-                <TodayIcon sx={{ fontSize: 18, color: '#2b5bb5' }} />
+                <TodayIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 1, fontFamily: 'Sora, sans-serif' }}>
                 {metrics.todayCount}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Reported since midnight
               </Typography>
             </CardContent>
@@ -478,24 +495,24 @@ export default function Tickets() {
             onClick={() => handleTabChange({} as any, 1)}
             sx={{
               borderRadius: 2.5,
-              border: activeTab === 1 ? '2px solid #004d99' : '1px solid #e2e8f0',
-              bgcolor: activeTab === 1 ? '#f0f5ff' : '#ffffff',
+              border: activeTab === 1 ? `2px solid ${COLORS.primary}` : `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,77,153,0.1)' },
+              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.primary },
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Previous Days
                 </Typography>
-                <HistoryIcon sx={{ fontSize: 18, color: '#727783' }} />
+                <HistoryIcon sx={{ fontSize: 18, color: COLORS.onSurfaceVariant }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#111c2d', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 1, fontFamily: 'Sora, sans-serif' }}>
                 {metrics.prevCount}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Historical records
               </Typography>
             </CardContent>
@@ -511,24 +528,24 @@ export default function Tickets() {
             }}
             sx={{
               borderRadius: 2.5,
-              border: statusFilter === 'ACTIVE' ? '2px solid #004d99' : '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: statusFilter === 'ACTIVE' ? `2px solid ${COLORS.primary}` : `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.primary },
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Active Workload
                 </Typography>
-                <AssignmentIndIcon sx={{ fontSize: 18, color: '#004d99' }} />
+                <AssignmentIndIcon sx={{ fontSize: 18, color: COLORS.primary }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#004d99', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.primary, mt: 1, fontFamily: 'Sora, sans-serif' }}>
                 {metrics.activeCount}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 In Progress &amp; Assigned
               </Typography>
             </CardContent>
@@ -544,24 +561,24 @@ export default function Tickets() {
             }}
             sx={{
               borderRadius: 2.5,
-              border: priorityFilter === 'P1' ? '2px solid #ba1a1a' : '1px solid #ffdad6',
-              bgcolor: 'rgba(255, 218, 214, 0.3)',
+              border: priorityFilter === 'P1' ? `2px solid ${COLORS.error}` : '1px solid rgba(244, 63, 94, 0.3)',
+              bgcolor: COLORS.surfaceContainer,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(186,26,26,0.12)' },
+              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.error },
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 800, color: '#ba1a1a', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 800, color: COLORS.error, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Critical P1 Outages
                 </Typography>
-                <CrisisAlertIcon sx={{ fontSize: 18, color: '#ba1a1a' }} />
+                <CrisisAlertIcon sx={{ fontSize: 18, color: COLORS.error }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#ba1a1a', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.error, mt: 1, fontFamily: 'Sora, sans-serif' }}>
                 {metrics.p1Count < 10 ? `0${metrics.p1Count}` : metrics.p1Count}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#93000a', fontWeight: 600 }}>
+              <Typography variant="caption" sx={{ color: COLORS.error, fontWeight: 600 }}>
                 High SLA Attention
               </Typography>
             </CardContent>
@@ -573,21 +590,21 @@ export default function Tickets() {
             elevation={0}
             sx={{
               borderRadius: 2.5,
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.surfaceContainer,
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#425059', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Unassigned Triage
                 </Typography>
-                <WarningIcon sx={{ fontSize: 18, color: '#d97706' }} />
+                <WarningIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: metrics.unassignedCount > 0 ? '#d97706' : '#111c2d', mt: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: metrics.unassignedCount > 0 ? '#f59e0b' : COLORS.onSurface, mt: 1, fontFamily: 'Sora, sans-serif' }}>
                 {metrics.unassignedCount}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Awaiting Handler Assignment
               </Typography>
             </CardContent>
@@ -596,8 +613,17 @@ export default function Tickets() {
       </Grid>
 
       {/* 3. Tab Switcher: Today's vs Previous Days' vs All */}
-      <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, mb: 3, overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc', px: 2 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: 3,
+          mb: 3,
+          overflow: 'hidden',
+          bgcolor: COLORS.surfaceContainer,
+        }}
+      >
+        <Box sx={{ borderBottom: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainerLow, px: 2 }}>
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
@@ -608,6 +634,13 @@ export default function Tickets() {
                 fontSize: 14,
                 py: 2,
                 minHeight: 54,
+                color: COLORS.onSurfaceVariant,
+                '&.Mui-selected': {
+                  color: COLORS.primary,
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: COLORS.primary,
               },
             }}
           >
@@ -623,8 +656,10 @@ export default function Tickets() {
                     sx={{
                       height: 20,
                       fontWeight: 700,
-                      bgcolor: activeTab === 0 ? '#2b5bb5' : '#e2e8f0',
-                      color: activeTab === 0 ? '#ffffff' : '#475569',
+                      bgcolor: activeTab === 0 ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+                      color: activeTab === 0 ? COLORS.primary : COLORS.onSurfaceVariant,
+                      border: `1px solid ${activeTab === 0 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+                      fontFamily: 'JetBrains Mono, monospace',
                     }}
                   />
                 </Box>
@@ -642,8 +677,10 @@ export default function Tickets() {
                     sx={{
                       height: 20,
                       fontWeight: 700,
-                      bgcolor: activeTab === 1 ? '#2b5bb5' : '#e2e8f0',
-                      color: activeTab === 1 ? '#ffffff' : '#475569',
+                      bgcolor: activeTab === 1 ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+                      color: activeTab === 1 ? COLORS.primary : COLORS.onSurfaceVariant,
+                      border: `1px solid ${activeTab === 1 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+                      fontFamily: 'JetBrains Mono, monospace',
                     }}
                   />
                 </Box>
@@ -661,8 +698,10 @@ export default function Tickets() {
                     sx={{
                       height: 20,
                       fontWeight: 700,
-                      bgcolor: activeTab === 2 ? '#2b5bb5' : '#e2e8f0',
-                      color: activeTab === 2 ? '#ffffff' : '#475569',
+                      bgcolor: activeTab === 2 ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
+                      color: activeTab === 2 ? COLORS.primary : COLORS.onSurfaceVariant,
+                      border: `1px solid ${activeTab === 2 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+                      fontFamily: 'JetBrains Mono, monospace',
                     }}
                   />
                 </Box>
@@ -672,18 +711,28 @@ export default function Tickets() {
         </Box>
 
         {/* 4. Toolbar / Filter Controls */}
-        <Box sx={{ p: 2, bgcolor: '#ffffff' }}>
+        <Box sx={{ p: 2, bgcolor: COLORS.surfaceContainer }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems="center">
             <TextField
-              placeholder="Search code, title, handler name, reporter, or service..."
+              placeholder="Search by code, title, or description..."
               size="small"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              sx={{ flex: 1, width: '100%' }}
+              sx={{
+                flex: 1,
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: COLORS.border },
+                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+                },
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" sx={{ color: '#727783' }} />
+                    <SearchIcon fontSize="small" sx={{ color: COLORS.onSurfaceVariant }} />
                   </InputAdornment>
                 ),
               }}
@@ -695,13 +744,51 @@ export default function Tickets() {
               label="Priority Level"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              sx={{ minWidth: 140 }}
+              sx={{
+                minWidth: 165,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: 'rgba(18, 22, 34, 0.75)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  color: COLORS.onSurface,
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                  '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.45)' },
+                  '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
-              <MenuItem value="ALL">All Priorities</MenuItem>
-              <MenuItem value="P1">P1 - Critical</MenuItem>
-              <MenuItem value="P2">P2 - High</MenuItem>
-              <MenuItem value="P3">P3 - Medium</MenuItem>
-              <MenuItem value="P4">P4 - Low</MenuItem>
+              <MenuItem value="ALL">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#94a3b8' }} />
+                  <span>All Priorities</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="P1">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f43f5e', boxShadow: '0 0 8px #f43f5e' }} />
+                  <span style={{ color: '#f43f5e', fontWeight: 700 }}>P1 • Critical Outage</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="P2">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fb923c' }} />
+                  <span style={{ color: '#fb923c', fontWeight: 600 }}>P2 • High Priority</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="P3">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#38bdf8' }} />
+                  <span style={{ color: '#38bdf8' }}>P3 • Medium Impact</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="P4">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4ade80' }} />
+                  <span style={{ color: '#4ade80' }}>P4 • Low Minor</span>
+                </Box>
+              </MenuItem>
             </TextField>
 
             <TextField
@@ -710,16 +797,64 @@ export default function Tickets() {
               label="Ticket Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ minWidth: 150 }}
+              sx={{
+                minWidth: 175,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: 'rgba(18, 22, 34, 0.75)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  color: COLORS.onSurface,
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                  '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.45)' },
+                  '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="ALL">All Statuses</MenuItem>
-              <MenuItem value="ACTIVE">Active (Unresolved)</MenuItem>
-              <MenuItem value="NEW">New</MenuItem>
-              <MenuItem value="ASSIGNED">Assigned</MenuItem>
-              <MenuItem value="ACKNOWLEDGED">Acknowledged</MenuItem>
-              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-              <MenuItem value="RESOLVED">Resolved</MenuItem>
-              <MenuItem value="CLOSED">Closed</MenuItem>
+              <MenuItem value="ACTIVE">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b', boxShadow: '0 0 6px #f59e0b' }} />
+                  <span style={{ color: '#fbbf24', fontWeight: 600 }}>Active (Unresolved)</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="NEW">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#06b6d4' }} />
+                  <span>New</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="ASSIGNED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#6366f1' }} />
+                  <span>Assigned</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="ACKNOWLEDGED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#818cf8' }} />
+                  <span>Acknowledged</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="IN_PROGRESS">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#a855f7' }} />
+                  <span style={{ color: '#c084fc' }}>In Progress</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="RESOLVED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
+                  <span style={{ color: '#34d399' }}>Resolved</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="CLOSED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#64748b' }} />
+                  <span style={{ color: '#94a3b8' }}>Closed</span>
+                </Box>
+              </MenuItem>
             </TextField>
 
             <TextField
@@ -728,13 +863,46 @@ export default function Tickets() {
               label="Escalation Level"
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
-              sx={{ minWidth: 170 }}
+              sx={{
+                minWidth: 190,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: 'rgba(18, 22, 34, 0.75)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  color: COLORS.onSurface,
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                  '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.45)' },
+                  '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             >
               <MenuItem value="ALL">All Escalation Levels</MenuItem>
-              <MenuItem value="0">Level 0 - Frontline Tech</MenuItem>
-              <MenuItem value="1">Level 1 - Lead Escalated</MenuItem>
-              <MenuItem value="2">Level 2 - SRE / Admin</MenuItem>
-              <MenuItem value="3">Level 3 - War Room</MenuItem>
+              <MenuItem value="0">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip label="L0" size="small" sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', fontWeight: 700 }} />
+                  <span>Frontline Tech</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="1">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip label="L1" size="small" sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 700 }} />
+                  <span>Lead Escalated</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="2">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip label="L2" size="small" sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', fontWeight: 700 }} />
+                  <span>SRE / Admin</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="3">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip label="L3" size="small" sx={{ height: 18, fontSize: 10, bgcolor: '#f43f5e', color: '#fff', fontWeight: 800 }} />
+                  <span style={{ fontWeight: 700, color: '#f43f5e' }}>War Room</span>
+                </Box>
+              </MenuItem>
             </TextField>
 
             {(q || priorityFilter !== 'ALL' || statusFilter !== 'ALL' || levelFilter !== 'ALL') && (
@@ -744,7 +912,16 @@ export default function Tickets() {
                 size="small"
                 onClick={handleResetFilters}
                 startIcon={<FilterAltOffIcon />}
-                sx={{ textTransform: 'none', minWidth: 130 }}
+                sx={{
+                  textTransform: 'none',
+                  minWidth: 130,
+                  borderColor: COLORS.border,
+                  color: COLORS.onSurfaceVariant,
+                  '&:hover': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    bgcolor: 'rgba(255, 255, 255, 0.04)',
+                  },
+                }}
               >
                 Reset
               </Button>
@@ -759,48 +936,57 @@ export default function Tickets() {
         elevation={0}
         sx={{
           borderRadius: 3,
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+          border: `1px solid ${COLORS.border}`,
+          bgcolor: COLORS.surfaceContainer,
           overflow: 'hidden',
         }}
       >
         {isLoading ? (
           <Box p={8} display="flex" flexDirection="column" alignItems="center" gap={2}>
-            <CircularProgress size={36} />
-            <Typography variant="body2" color="text.secondary">
+            <CircularProgress size={36} sx={{ color: COLORS.primary }} />
+            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
               Loading tickets from backend...
             </Typography>
           </Box>
         ) : displayedIncidents.length === 0 ? (
           <Box p={8} textAlign="center">
-            <Typography variant="h6" fontWeight="700" color="#111c2d" gutterBottom>
+            <Typography variant="h6" fontWeight="700" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
               {activeTab === 0
                 ? "No tickets reported today matching your filters"
                 : activeTab === 1
                 ? "No previous days' tickets matching your filters"
                 : "No tickets found"}
             </Typography>
-            <Typography variant="body2" color="text.secondary" mb={2}>
+            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mb: 2 }}>
               {q || priorityFilter !== 'ALL' || statusFilter !== 'ALL' || levelFilter !== 'ALL'
                 ? 'Try broadening your search query or reset the filters.'
                 : 'Declare a new ticket or check another tab.'}
             </Typography>
-            <Button variant="outlined" size="small" onClick={handleResetFilters}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleResetFilters}
+              sx={{
+                borderColor: COLORS.border,
+                color: COLORS.onSurface,
+                '&:hover': { borderColor: COLORS.primary },
+              }}
+            >
               Clear All Filters
             </Button>
           </Box>
         ) : (
           <Table>
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>TICKET CODE</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>TITLE &amp; SERVICE</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>TICKET LEVEL</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>HANDLING ASSIGNEE</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>STATUS</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>SLA TARGET</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12 }}>REPORTED AT</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: 12, textAlign: 'right' }}>
+            <TableHead sx={{ bgcolor: COLORS.surfaceContainerLow }}>
+              <TableRow sx={{ '& th': { borderBottom: `1px solid ${COLORS.border}` } }}>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TICKET CODE</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TITLE &amp; SERVICE</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TICKET LEVEL</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>HANDLING ASSIGNEE</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>STATUS</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>SLA TARGET</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>REPORTED AT</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em', textAlign: 'right' }}>
                   ACTIONS
                 </TableCell>
               </TableRow>
@@ -815,7 +1001,8 @@ export default function Tickets() {
                     sx={{
                       cursor: 'pointer',
                       transition: 'background-color 0.15s',
-                      '&:hover': { bgcolor: '#f8fafc' },
+                      '& td': { borderBottom: `1px solid ${COLORS.border}` },
+                      '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.05) !important' },
                     }}
                     onClick={() => navigate(`/admin/tickets/${inc.id}`)}
                   >
@@ -825,9 +1012,9 @@ export default function Tickets() {
                         <Typography
                           variant="body2"
                           sx={{
-                            fontFamily: 'monospace',
+                            fontFamily: 'JetBrains Mono, monospace',
                             fontWeight: 700,
-                            color: '#004d99',
+                            color: COLORS.primary,
                             fontSize: '0.85rem',
                           }}
                         >
@@ -841,8 +1028,10 @@ export default function Tickets() {
                               height: 18,
                               fontSize: 10,
                               fontWeight: 800,
-                              bgcolor: '#ba1a1a',
-                              color: '#ffffff',
+                              bgcolor: 'rgba(244, 63, 94, 0.2)',
+                              color: '#fb7185',
+                              border: '1px solid rgba(244, 63, 94, 0.3)',
+                              fontFamily: 'JetBrains Mono, monospace',
                             }}
                           />
                         )}
@@ -851,7 +1040,7 @@ export default function Tickets() {
 
                     {/* 2. Title & Service */}
                     <TableCell sx={{ maxWidth: 320 }}>
-                      <Typography variant="body2" fontWeight="700" color="#111c2d" noWrap>
+                      <Typography variant="body2" fontWeight="700" sx={{ color: COLORS.onSurface }} noWrap>
                         {inc.title}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center" mt={0.4}>
@@ -862,12 +1051,13 @@ export default function Tickets() {
                             height: 20,
                             fontSize: '0.72rem',
                             fontWeight: 600,
-                            bgcolor: '#f1f5f9',
-                            color: '#334155',
+                            bgcolor: COLORS.surfaceContainerHighest,
+                            color: COLORS.onSurfaceVariant,
+                            border: `1px solid ${COLORS.border}`,
                           }}
                         />
                         {inc.category?.name && (
-                          <Typography variant="caption" color="text.secondary" noWrap>
+                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }} noWrap>
                             • {inc.category.name}
                           </Typography>
                         )}
@@ -894,17 +1084,18 @@ export default function Tickets() {
                               height: 30,
                               fontSize: 12,
                               fontWeight: 700,
-                              bgcolor: '#004d99',
-                              color: '#ffffff',
+                              bgcolor: 'rgba(99, 102, 241, 0.2)',
+                              color: COLORS.primary,
+                              border: '1px solid rgba(99, 102, 241, 0.4)',
                             }}
                           >
                             {inc.assignee.name.charAt(0)}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" fontWeight="700" color="#111c2d">
+                            <Typography variant="body2" fontWeight="700" sx={{ color: COLORS.onSurface }}>
                               {inc.assignee.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                               Reported by {inc.reporter?.name || 'Staff'}
                             </Typography>
                           </Box>
@@ -912,19 +1103,19 @@ export default function Tickets() {
                       ) : (
                         <Box>
                           <Chip
-                            icon={<WarningIcon sx={{ fontSize: 14, color: '#b45309 !important' }} />}
+                            icon={<WarningIcon sx={{ fontSize: 14, color: '#f59e0b !important' }} />}
                             label="Unassigned"
                             size="small"
                             sx={{
                               height: 22,
                               fontSize: '0.75rem',
                               fontWeight: 700,
-                              bgcolor: '#fef3c7',
-                              color: '#b45309',
-                              border: '1px solid #fde68a',
+                              bgcolor: 'rgba(245, 158, 11, 0.15)',
+                              color: '#fbbf24',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
                             }}
                           />
-                          <Typography variant="caption" color="text.secondary" display="block" mt={0.3}>
+                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }} display="block" mt={0.3}>
                             Reported by {inc.reporter?.name || 'Staff'}
                           </Typography>
                         </Box>
@@ -947,7 +1138,7 @@ export default function Tickets() {
 
                     {/* 7. Reported Date */}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Typography variant="body2" fontSize="0.82rem" color="#111c2d" fontWeight={isToday ? 700 : 500}>
+                      <Typography variant="body2" fontSize="0.82rem" sx={{ color: COLORS.onSurface, fontWeight: isToday ? 700 : 500, fontFamily: 'JetBrains Mono, monospace' }}>
                         {formatTicketDate(inc.createdAt, isToday)}
                       </Typography>
                       {isToday && (
@@ -958,9 +1149,11 @@ export default function Tickets() {
                             height: 16,
                             fontSize: 9,
                             fontWeight: 800,
-                            bgcolor: '#dbeafe',
-                            color: '#1d4ed8',
+                            bgcolor: 'rgba(99, 102, 241, 0.2)',
+                            color: COLORS.primary,
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
                             mt: 0.3,
+                            fontFamily: 'JetBrains Mono, monospace',
                           }}
                         />
                       )}
@@ -972,7 +1165,7 @@ export default function Tickets() {
                         <IconButton
                           size="small"
                           onClick={(e) => handleOpenAssign(inc, e)}
-                          sx={{ color: '#004d99', mr: 0.5 }}
+                          sx={{ color: COLORS.primary, mr: 0.5 }}
                         >
                           <AssignmentIndIcon fontSize="small" />
                         </IconButton>
@@ -980,11 +1173,11 @@ export default function Tickets() {
                       <Tooltip title="View Ticket Details">
                         <IconButton
                           size="small"
-                          color="primary"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/admin/tickets/${inc.id}`);
                           }}
+                          sx={{ color: COLORS.secondary }}
                         >
                           <VisibilityIcon fontSize="small" />
                         </IconButton>
@@ -999,37 +1192,55 @@ export default function Tickets() {
       </TableContainer>
 
       {/* 6. Quick Assign / Reassign Dialog */}
-      <Dialog open={reassignOpen} onClose={() => setReassignOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>
+      <Dialog
+        open={reassignOpen}
+        onClose={() => setReassignOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
           Assign Handler: {targetIncident?.code}
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2.5} mt={1}>
-            <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2 }}>
-              <Typography variant="subtitle2" fontWeight="700" color="#111c2d">
+            <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
+              <Typography variant="subtitle2" fontWeight="700" sx={{ color: COLORS.onSurface }}>
                 {targetIncident?.title}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                 Service: {targetIncident?.service?.name} | Priority: {targetIncident?.priority}
               </Typography>
             </Box>
 
             <FormControl fullWidth size="small">
-              <InputLabel>Select Technician / Handler</InputLabel>
+              <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Select Technician / Handler</InputLabel>
               <Select
                 value={selectedTechId}
                 label="Select Technician / Handler"
                 onChange={(e) => setSelectedTechId(Number(e.target.value))}
+                sx={{
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                }}
               >
                 {technicians.map((t) => (
                   <MenuItem key={t.id} value={t.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon sx={{ fontSize: 18, color: '#425059' }} />
+                      <PersonIcon sx={{ fontSize: 18, color: COLORS.onSurfaceVariant }} />
                       <Box>
                         <Typography variant="body2" fontWeight="600">
                           {t.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                           {t.roles.includes('ADMINISTRATOR') ? 'System Admin' : 'Technician'} • {t.department || 'IT Operations'}
                         </Typography>
                       </Box>
@@ -1046,23 +1257,54 @@ export default function Tickets() {
               value={reassignReason}
               onChange={(e) => setReassignReason(e.target.value)}
               placeholder="e.g. Assigned to specialist for immediate triage"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setReassignOpen(false)} disabled={isSubmitting}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setReassignOpen(false)} disabled={isSubmitting} sx={{ color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleSaveReassign} disabled={isSubmitting}>
+          <Button
+            variant="contained"
+            onClick={handleSaveReassign}
+            disabled={isSubmitting}
+            sx={{
+              bgcolor: COLORS.primary,
+              color: '#ffffff',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#4f46e5' },
+            }}
+          >
             {isSubmitting ? 'Assigning...' : 'Save Assignment'}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* 7. Declare Ticket / Incident Dialog */}
-      <Dialog open={declareOpen} onClose={() => setDeclareOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Declare New Ticket / Incident</DialogTitle>
-        <DialogContent dividers>
+      <Dialog
+        open={declareOpen}
+        onClose={() => setDeclareOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 3,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>Declare New Ticket / Incident</DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Stack spacing={2.5} mt={1}>
             <TextField
               label="Ticket Summary / Title"
@@ -1071,6 +1313,14 @@ export default function Tickets() {
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="e.g. Core Database Aurora Replica Lag Spikes"
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
             <TextField
               label="Detailed Technical Description"
@@ -1081,13 +1331,26 @@ export default function Tickets() {
               onChange={(e) => setNewDesc(e.target.value)}
               placeholder="Describe symptoms, edge clusters affected, and impact..."
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                },
+                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
+              }}
             />
             <FormControl fullWidth>
-              <InputLabel>Impacted Service</InputLabel>
+              <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Impacted Service</InputLabel>
               <Select
                 value={newServiceId}
                 label="Impacted Service"
                 onChange={(e) => setNewServiceId(Number(e.target.value))}
+                sx={{
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                }}
               >
                 {services.map((svc) => (
                   <MenuItem key={svc.id} value={svc.id}>
@@ -1098,11 +1361,16 @@ export default function Tickets() {
             </FormControl>
             <Stack direction="row" spacing={2}>
               <FormControl fullWidth>
-                <InputLabel>Impact (1-5)</InputLabel>
+                <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Impact (1-5)</InputLabel>
                 <Select
                   value={newImpact}
                   label="Impact (1-5)"
                   onChange={(e) => setNewImpact(Number(e.target.value))}
+                  sx={{
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  }}
                 >
                   <MenuItem value={1}>1 - Minor / Single User</MenuItem>
                   <MenuItem value={2}>2 - Moderate / Department</MenuItem>
@@ -1112,11 +1380,16 @@ export default function Tickets() {
                 </Select>
               </FormControl>
               <FormControl fullWidth>
-                <InputLabel>Urgency (1-5)</InputLabel>
+                <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Urgency (1-5)</InputLabel>
                 <Select
                   value={newUrgency}
                   label="Urgency (1-5)"
                   onChange={(e) => setNewUrgency(Number(e.target.value))}
+                  sx={{
+                    bgcolor: COLORS.surfaceContainerLowest,
+                    color: COLORS.onSurface,
+                    '& fieldset': { borderColor: COLORS.border },
+                  }}
                 >
                   <MenuItem value={1}>1 - Low Workaround</MenuItem>
                   <MenuItem value={2}>2 - Standard Urgency</MenuItem>
@@ -1129,14 +1402,19 @@ export default function Tickets() {
 
             {/* Assignee / Handler Selection */}
             <FormControl fullWidth>
-              <InputLabel>Assign Handler / Technician (Optional)</InputLabel>
+              <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Assign Handler / Technician (Optional)</InputLabel>
               <Select
                 value={newAssigneeId}
                 label="Assign Handler / Technician (Optional)"
                 onChange={(e) => setNewAssigneeId(e.target.value === '' ? '' : Number(e.target.value))}
+                sx={{
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  color: COLORS.onSurface,
+                  '& fieldset': { borderColor: COLORS.border },
+                }}
               >
                 <MenuItem value="">
-                  <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#64748b' }}>
+                  <Typography variant="body2" sx={{ fontStyle: 'italic', color: COLORS.onSurfaceVariant }}>
                     ⚡ Auto-Assign via Workload Algorithm
                   </Typography>
                 </MenuItem>
@@ -1144,20 +1422,27 @@ export default function Tickets() {
                   <MenuItem key={tech.id} value={tech.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 22, height: 22, fontSize: 11, bgcolor: '#004d99', color: '#fff' }}>
+                        <Avatar sx={{ width: 22, height: 22, fontSize: 11, bgcolor: 'rgba(99, 102, 241, 0.2)', color: COLORS.primary }}>
                           {tech.name.charAt(0)}
                         </Avatar>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {tech.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
                           ({tech.department || (tech.roles.includes('ADMINISTRATOR') ? 'Admin' : 'Technician')})
                         </Typography>
                       </Box>
                       <Chip
                         size="small"
                         label={tech.roles.includes('ADMINISTRATOR') ? 'Admin' : 'Technician'}
-                        sx={{ height: 18, fontSize: 10, bgcolor: '#e2e8f0', fontWeight: 600 }}
+                        sx={{
+                          height: 18,
+                          fontSize: 10,
+                          bgcolor: COLORS.surfaceContainerHighest,
+                          color: COLORS.onSurfaceVariant,
+                          border: `1px solid ${COLORS.border}`,
+                          fontWeight: 600,
+                        }}
                       />
                     </Box>
                   </MenuItem>
@@ -1166,11 +1451,21 @@ export default function Tickets() {
             </FormControl>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setDeclareOpen(false)} disabled={isSubmitting}>
+        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
+          <Button onClick={() => setDeclareOpen(false)} disabled={isSubmitting} sx={{ color: COLORS.onSurfaceVariant }}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleCreate} disabled={isSubmitting}>
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            disabled={isSubmitting}
+            sx={{
+              bgcolor: COLORS.primary,
+              color: '#ffffff',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#4f46e5' },
+            }}
+          >
             {isSubmitting ? 'Creating...' : 'Create Ticket'}
           </Button>
         </DialogActions>

@@ -36,10 +36,68 @@ function renderApp(initialPath = '/login') {
   );
 }
 
-// No backend in these tests: every API call fails like an unreachable server, so the offline accounts answer at once
-// (without this the result would depend on whatever listens on port 8080 of the machine running the tests).
 beforeEach(() => {
-  vi.spyOn(api, 'post').mockRejectedValue(Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK' }));
+  vi.spyOn(api, 'get').mockResolvedValue({ data: { count: 0, items: [], content: [] } });
+  vi.spyOn(api, 'post').mockImplementation(async (url, body: any) => {
+    if (url === '/auth/login') {
+      const email = body?.email;
+      if (email === 'asha.rao@iitsm.demo') {
+        return {
+          data: {
+            accessToken: 'token-admin',
+            refreshToken: 'refresh-admin',
+            expiresInSeconds: 900,
+            user: {
+              id: 1,
+              name: 'Asha Rao',
+              email: 'asha.rao@iitsm.demo',
+              roles: ['ADMINISTRATOR', 'EMPLOYEE'],
+              permissions: ['ALL'],
+              technician: null,
+              administrator: { scope: 'SYSTEM_ADMIN' },
+            },
+          },
+        };
+      }
+      if (email === 'priya.nair@iitsm.demo') {
+        return {
+          data: {
+            accessToken: 'token-lead',
+            refreshToken: 'refresh-lead',
+            expiresInSeconds: 900,
+            user: {
+              id: 2,
+              name: 'Priya Nair',
+              email: 'priya.nair@iitsm.demo',
+              roles: ['TECHNICIAN', 'EMPLOYEE'],
+              permissions: [],
+              technician: { escalationLevel: 1, availability: 'AVAILABLE' },
+              administrator: null,
+            },
+          },
+        };
+      }
+      if (email === 'employee1@iitsm.demo') {
+        return {
+          data: {
+            accessToken: 'token-employee',
+            refreshToken: 'refresh-employee',
+            expiresInSeconds: 900,
+            user: {
+              id: 3,
+              name: 'Employee 1',
+              email: 'employee1@iitsm.demo',
+              roles: ['EMPLOYEE'],
+              permissions: [],
+              technician: null,
+              administrator: null,
+            },
+          },
+        };
+      }
+    }
+    return { data: {} };
+  });
 });
 
 afterEach(() => {
@@ -59,7 +117,7 @@ describe('Auth and Navigation Flow', () => {
     localStorage.clear();
     renderApp('/login');
 
-    signInWithSeedAccount('admin@iitsm.com');
+    signInWithSeedAccount('asha.rao@iitsm.demo');
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/admin/dashboard');
@@ -70,7 +128,7 @@ describe('Auth and Navigation Flow', () => {
     localStorage.clear();
     renderApp('/login');
 
-    signInWithSeedAccount('lead@iitsm.com');
+    signInWithSeedAccount('priya.nair@iitsm.demo');
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/lead/team-queue');
@@ -81,7 +139,7 @@ describe('Auth and Navigation Flow', () => {
     localStorage.clear();
     renderApp('/login');
 
-    signInWithSeedAccount('employee@iitsm.com');
+    signInWithSeedAccount('employee1@iitsm.demo');
 
     await waitFor(() => {
       expect(screen.getByTestId('current-route').textContent).toBe('/employee/home');

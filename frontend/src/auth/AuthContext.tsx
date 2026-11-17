@@ -43,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const workspaces = useMemo(() => (user ? workspacesFor(user) : []), [user]);
 
   // Remember the last workspace choice; fall back to the first allowed one.
+
+  //this will be limited to some lgin numbers and then have to login again
   const signIn = useCallback((r: AuthResponse) => {
     tokenStore.setAccess(r.accessToken);
     tokenStore.setRefresh(r.refreshToken);
@@ -85,58 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const rt = tokenStore.getRefresh();
     if (!rt) { setLoading(false); return; }
 
-    // If mock session, restore from localStorage directly without calling offline backend
-    if (rt.startsWith('mock-')) {
-      const savedUserStr = localStorage.getItem('currentUser');
-      if (savedUserStr) {
-        try {
-          const savedUser = JSON.parse(savedUserStr);
-          tokenStore.setAccess('mock-access-token');
-          setUser(savedUser);
-          const all = workspacesFor(savedUser);
-          const saved = localStorage.getItem('workspace') as Workspace | null;
-          const chosen = saved && all.includes(saved) ? saved : all[0] ?? null;
-          if (chosen) {
-            localStorage.setItem('workspace', chosen);
-          }
-          setWs(chosen);
-          setLoading(false);
-          return;
-        } catch {
-          // parse error, clear and fall through
-          clear();
-          return;
-        }
-      } else {
-        clear();
-        return;
-      }
-    }
-
     axios.post<AuthResponse>(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1'}/auth/refresh`, { refreshToken: rt }, { timeout: 3000 })
       .then((r) => signIn(r.data))
       .catch((err) => {
-        // If it's a network error (backend offline) or timeout, preserve the stored session from localStorage
-        const isNetworkErr = !err?.response || err?.code === 'ERR_NETWORK' || err?.message?.includes('Network') || err?.code === 'ECONNABORTED';
-        const savedUserStr = localStorage.getItem('currentUser');
-        if (isNetworkErr && savedUserStr) {
-          try {
-            const savedUser = JSON.parse(savedUserStr);
-            setUser(savedUser);
-            const all = workspacesFor(savedUser);
-            const saved = localStorage.getItem('workspace') as Workspace | null;
-            const chosen = saved && all.includes(saved) ? saved : all[0] ?? null;
-            if (chosen) {
-              localStorage.setItem('workspace', chosen);
-            }
-            setWs(chosen);
-            return;
-          } catch {
-            clear();
-          }
-        } else {
-          clear();
-        }
+        clear();
       })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
