@@ -35,6 +35,10 @@ api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError<ApiError>) => {
     const cfg = error.config as InternalAxiosRequestConfig & { _retried?: boolean };
+    // Blob downloads deliver error bodies as a Blob; turn them back into the JSON ApiError.
+    if (error.response?.data instanceof Blob) {
+      try { (error.response as { data: unknown }).data = JSON.parse(await error.response.data.text()); } catch { /* not JSON */ }
+    }
     if (error.response?.status === 401 && error.response.data?.code === 'TOKEN_EXPIRED' && !cfg._retried) {
       cfg._retried = true;
       try 

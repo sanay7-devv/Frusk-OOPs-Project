@@ -872,25 +872,25 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/reports/*`.
 
 - [x] Renders (Refresh button, 4 KPI cards, P1-P4 bars).
-- [ ] KPI "Resolution Compliance" = `(RESOLVED|CLOSED)/total` over 100 incidents (Reports.tsx:46-53): not compliance, wrong total.
-- [ ] **KPI "Mean Time to Resolve (MTTR) 1.8 hrs, -24 mins vs previous cycle" is literal text** (:111-116). Use `/reports/overview.avgResolutionMinutes`.
-- [ ] KPI "P1 volume" and "% of total volume": client counts over 100.
-- [ ] KPI "Active Catalog Services" = `/admin/services` length (includes retired).
-- [ ] Only chart = 4 `LinearProgress` bars by priority. Missing (guide 7 + contract):
-  - [ ] Overview KPIs `GET /reports/overview?from&to` (total, open, critical, resolved, slaViolations, avgResolutionMinutes, avgSatisfaction), max 4 cards.
-  - [ ] Created vs resolved line, 7/30/90 days: `GET /reports/trends?bucket=day|week&from&to` (`[{date, created, resolved}]`).
-  - [ ] SLA compliance grouped bars, switch priority/service/technician: `GET /reports/sla-compliance?groupBy=` (`label, met, violated, total, compliancePercent`).
-  - [ ] Priority donut: `GET /reports/priority-distribution` (`[{label, count}]`, P1-P4 always).
-  - [ ] Categories top 8: `GET /reports/category-distribution` ("Uncategorized" included).
-  - [ ] Services ranked bars: `GET /reports/services` (`name, count, serviceId`).
-  - [ ] Technician workload (load vs maxLoad, avg resolution): `GET /reports/workload` (`name, load, maxLoad, active, avgResolutionMinutes`).
-  - [ ] Coverage risk matrix (E3): `GET /reports/coverage-risk?onlyFlagged=` (`items[]: category, service, criticality, eligibleCount, eligibleTechnicians, level NO_COVERAGE|SINGLE_HOLDER|THIN|COVERED, message, requiredSkills[{name, holders}], incidentsInWindow`; header `flaggedCount`, `windowDays`, `minHolders`).
-  - [ ] SLA violations list: `GET /sla/violations?from&to&page&size` (`incidentCode, type RESPONSE|RESOLUTION, overdueSeconds, technician, createdAt`); `getSlaViolations` exists (`api/incidents.ts:715`), unused.
-  - [ ] Date range picker (`from`, `to`) shared by all charts; presets 7/30/90 days.
-  - [ ] Export CSV and PDF: `GET /reports/export?type=...&format=csv|pdf&from&to` (download as blob with the auth header; contract returns `text/csv` or `application/pdf`).
-  - [ ] Click a bar/slice -> filtered incident list in a drawer (guide 7 rule 6), via `GET /incidents` filters.
-  - [ ] Use `recharts` (installed); one message per chart; empty states.
-- [ ] Title "Executive Analytics & SLA Reports" + subtitle (guide 5.1 #5).
+- [x] KPI "Resolution Compliance" = `(RESOLVED|CLOSED)/total` over 100 incidents (Reports.tsx:46-53): not compliance, wrong total.
+- [x] **KPI "Mean Time to Resolve (MTTR) 1.8 hrs, -24 mins vs previous cycle" is literal text** (:111-116). Use `/reports/overview.avgResolutionMinutes`.
+- [x] KPI "P1 volume" and "% of total volume": client counts over 100.
+- [x] KPI "Active Catalog Services" = `/admin/services` length (includes retired).
+- [x] Only chart = 4 `LinearProgress` bars by priority. Missing (guide 7 + contract):
+  - [x] Overview KPIs `GET /reports/overview?from&to` (total, open, critical, resolved, slaViolations, avgResolutionMinutes, avgSatisfaction), max 4 cards.
+  - [x] Created vs resolved line, 7/30/90 days: `GET /reports/trends?bucket=day|week&from&to` (`[{date, created, resolved}]`).
+  - [x] SLA compliance grouped bars, switch priority/service/technician: `GET /reports/sla-compliance?groupBy=` (`label, met, violated, total, compliancePercent`).
+  - [x] Priority donut: `GET /reports/priority-distribution` (`[{label, count}]`, P1-P4 always).
+  - [x] Categories top 8: `GET /reports/category-distribution` ("Uncategorized" included).
+  - [x] Services ranked bars: `GET /reports/services` (`name, count, serviceId`).
+  - [x] Technician workload (load vs maxLoad, avg resolution): `GET /reports/workload` (`name, load, maxLoad, active, avgResolutionMinutes`).
+  - [x] Coverage risk matrix (E3): `GET /reports/coverage-risk?onlyFlagged=` (`items[]: category, service, criticality, eligibleCount, eligibleTechnicians, level NO_COVERAGE|SINGLE_HOLDER|THIN|COVERED, message, requiredSkills[{name, holders}], incidentsInWindow`; header `flaggedCount`, `windowDays`, `minHolders`).
+  - [x] SLA violations list: `GET /sla/violations?from&to&page&size` (`incidentCode, type RESPONSE|RESOLUTION, overdueSeconds, technician, createdAt`); `getSlaViolations` exists (`api/incidents.ts:715`), unused.
+  - [x] Date range picker (`from`, `to`) shared by all charts; presets 7/30/90 days.
+  - [x] Export CSV and PDF: `GET /reports/export?type=...&format=csv|pdf&from&to` (download as blob with the auth header; contract returns `text/csv` or `application/pdf`).
+  - [ ] Click a bar/slice -> filtered incident list in a drawer (guide 7 rule 6), via `GET /incidents` filters. **Partly done (2026-11-18):** priority donut slice and priority SLA bars open `/admin/tickets?priority=` instead of a drawer; service, category and technician bars are not clickable.
+  - [x] Use `recharts` (installed); one message per chart; empty states.
+- [ ] Title "Executive Analytics & SLA Reports" + subtitle (guide 5.1 #5). **Partly done (2026-11-18):** title is now "Reports" with a one-line subtitle; the long title was not used.
 
 ### G14. Backend features with no screen (admin-relevant)
 
@@ -900,8 +900,8 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 - [ ] **Demo controls (demo profile only; not in the OpenAPI export)**: `GET /admin/demo/clock` (`{now, offsetMinutes}`), `POST /admin/demo/clock/advance {minutes 1..1440}` (refresh the token after a big jump), `POST /admin/demo/outage-drill {rootServiceId}` (-> `{rootService, problemId, incidentCodes[], dependents[], note}`); show only when the endpoint answers (404 elsewhere). "Director's bar" (+10 min, start drill).
 - [ ] **Live dashboard** `GET /dashboard/live` + STOMP `/topic/dashboard` (events and `COUNTERS` every 30 s; non-admin gets an ERROR frame; close 4001 -> refresh + reconnect). Not used by the Dashboard.
 - [ ] **Service status board** `GET /services/status`, **graph** `GET /services/graph`, **impact** `GET /services/{id}/impact`.
-- [ ] **Coverage risk (E3)** screen.
-- [ ] **SLA violations list** `GET /sla/violations`.
+- [x] **Coverage risk (E3)** screen.
+- [x] **SLA violations list** `GET /sla/violations`.
 - [ ] **Post-incident report + PDF** (`/incidents/{id}/post-incident-report[/pdf]`).
 - [ ] **Saved views** (`/saved-filters`).
 - [ ] **Priority what-if** `POST /priority/what-if` (+ explanation on incident detail).
@@ -925,7 +925,7 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 5. Admin incident detail: comment "Send" posts nothing but toasts success; Force Close and others ignore `allowedActions` (409 in most states).
 6. Audit log incident column always "-" and Dashboard "View Ticket" links never appear: use the new `incidentId` (section C).
 7. Dashboard: totals/charts/MTTR from 100 incidents; MTTR falls back to hardcoded 32; `/ping` 404 every 5 s; pause button doesn't pause; "Verify Workload Distribution" always says optimal; heatmap deep link `assigneeId` ignored by Tickets; capacity uses non-existent `maxActiveIncidents`; hardcoded fake technician list.
-8. Reports: MTTR "1.8 hrs / -24 mins" is literal text; all other numbers from 100 incidents; no `/reports/*` call.
+8. Reports: MTTR "1.8 hrs / -24 mins" is literal text; all other numbers from 100 incidents; no `/reports/*` call. **Fixed (2026-11-18):** Reports now reads `/reports/*`; the literal numbers are gone.
 9. Service graph: invented "$/hr blast radius" and failure-rate sparkline; cascade one hop only; layout by name heuristics; graph endpoints and `reactflow` unused.
 10. Services: `code`/`tier` client-only and re-derived from the name after refresh (typed input lost); invented owner and dependency links; health from 100 incidents; literal "100% telemetry nominal".
 11. Categories: `defaultPriority`/`description` (and skill `description`) not persisted; column shows blank.
