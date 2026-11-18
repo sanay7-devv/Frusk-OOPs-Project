@@ -5,13 +5,13 @@ export interface ReportRange { from?: string; to?: string }
 
 export interface ReportOverview {
   total: number; open: number; critical: number; resolved: number; slaViolations: number;
-  avgResolutionMinutes: number | null; avgSatisfaction: number | null;
+  avgResolutionMinutes: number; avgSatisfaction: number | null;
 }
 export interface TrendPoint { date: string; created: number; resolved: number }
 export interface SlaComplianceRow { label: string; met: number; violated: number; total: number; compliancePercent: number }
 export interface LabelCount { label: string; count: number }
 export interface ServiceReportRow { serviceId: number; name: string; count: number }
-export interface WorkloadReportRow { technicianId: number; name: string; load: number; maxLoad: number; active: number; avgResolutionMinutes: number | null }
+export interface WorkloadReportRow { technicianId: number; name: string; load: number; maxLoad: number; active: number; avgResolutionMinutes: number }
 export type CoverageLevel = 'NO_COVERAGE' | 'SINGLE_HOLDER' | 'THIN' | 'COVERED';
 export interface CoverageItem {
   category: Ref | null; service: Ref | null; criticality: number; eligibleCount: number;

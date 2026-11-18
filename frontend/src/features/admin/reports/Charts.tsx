@@ -110,7 +110,7 @@ export const WorkloadChart = ({ data }: { data: WorkloadReportRow[] }) => (
       </BarChart>
     </ResponsiveContainer>
     <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12, mt: 1 }}>
-      Average time to resolve: {data.map((d) => `${d.name} ${d.avgResolutionMinutes == null ? 'no data' : formatMinutes(d.avgResolutionMinutes)}`).join(' · ')}
+      Average time to resolve: {data.map((d) => `${d.name} ${d.avgResolutionMinutes <= 0 ? 'no data' : formatMinutes(d.avgResolutionMinutes)}`).join(' · ')}
     </Typography>
   </Box>
 );

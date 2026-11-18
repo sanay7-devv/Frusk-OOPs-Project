@@ -52,21 +52,22 @@ export default function Reports() {
   const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const rangeInvalid = from > to;
+  const rangeInvalid = !from || !to || from > to;
   // Backend takes date-times: start of the first day to the end of the last day, in the viewer's time zone.
-  const range = useMemo<DateRange>(() => ({
+  const range = useMemo<DateRange | null>(() => (rangeInvalid ? null : {
     from: new Date(`${from}T00:00:00`).toISOString(),
     to: new Date(`${to}T23:59:59.999`).toISOString(),
-  }), [from, to]);
-  const enabled = !rangeInvalid;
-  const bucket = (new Date(to).getTime() - new Date(from).getTime()) / 86400000 > 45 ? 'week' : 'day';
+  }), [from, to, rangeInvalid]);
+  const enabled = range !== null;
+  const r = range ?? {};
+  const bucket = range && (new Date(range.to).getTime() - new Date(range.from).getTime()) / 86400000 > 45 ? 'week' : 'day';
 
-  const overview = useQuery({ queryKey: ['reports', 'overview', range], queryFn: () => getOverview(range), enabled });
-  const trends = useQuery({ queryKey: ['reports', 'trends', range, bucket], queryFn: () => getTrends(range, bucket), enabled });
-  const sla = useQuery({ queryKey: ['reports', 'sla', range, groupBy], queryFn: () => getSlaCompliance(range, groupBy), enabled });
-  const priorities = useQuery({ queryKey: ['reports', 'priority', range], queryFn: () => getPriorityDistribution(range), enabled });
-  const categories = useQuery({ queryKey: ['reports', 'categories', range], queryFn: () => getCategoryDistribution(range), enabled });
-  const services = useQuery({ queryKey: ['reports', 'services', range], queryFn: () => getServiceReport(range), enabled });
+  const overview = useQuery({ queryKey: ['reports', 'overview', range], queryFn: () => getOverview(r), enabled });
+  const trends = useQuery({ queryKey: ['reports', 'trends', range, bucket], queryFn: () => getTrends(r, bucket), enabled });
+  const sla = useQuery({ queryKey: ['reports', 'sla', range, groupBy], queryFn: () => getSlaCompliance(r, groupBy), enabled });
+  const priorities = useQuery({ queryKey: ['reports', 'priority', range], queryFn: () => getPriorityDistribution(r), enabled });
+  const categories = useQuery({ queryKey: ['reports', 'categories', range], queryFn: () => getCategoryDistribution(r), enabled });
+  const services = useQuery({ queryKey: ['reports', 'services', range], queryFn: () => getServiceReport(r), enabled });
   const workload = useQuery({ queryKey: ['reports', 'workload'], queryFn: getWorkloadReport });
 
   const pickPreset = (days: number) => { setPreset(days); setFrom(daysAgo(days)); setTo(toIsoDate(new Date())); };
@@ -75,7 +76,8 @@ export default function Reports() {
   const doExport = async (format: 'csv' | 'pdf') => {
     setExporting(format);
     setExportError(null);
-    try { await downloadReport(exportType, format, range); }
+    try { if (!range) return;
+      await downloadReport(exportType, format, range); }
     catch (e) { setExportError(apiErrorMessage(e)); }
     finally { setExporting(null); }
   };
@@ -99,7 +101,7 @@ export default function Reports() {
               onChange={(e) => { setFrom(e.target.value); setPreset('custom'); }} error={rangeInvalid} />
             <TextField size="small" type="date" label="To" value={to} InputLabelProps={{ shrink: true }}
               onChange={(e) => { setTo(e.target.value); setPreset('custom'); }} error={rangeInvalid}
-              helperText={rangeInvalid ? 'Start date must be before end date' : undefined} />
+              helperText={rangeInvalid ? 'Pick a start date that is not after the end date' : undefined} />
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
             <TextField select size="small" label="Report to download" value={exportType} sx={{ minWidth: 240 }}
@@ -126,7 +128,7 @@ export default function Reports() {
           <Grid item xs={12} sm={6} md={3}><Kpi label="SLA violations" value={String(o.slaViolations)} /></Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Kpi label="Average time to resolve"
-              value={o.avgResolutionMinutes == null ? 'No data' : formatMinutes(o.avgResolutionMinutes)}
+              value={o.resolved === 0 ? 'No data' : formatMinutes(o.avgResolutionMinutes)}
               hint={o.avgSatisfaction != null ? `Average satisfaction ${o.avgSatisfaction.toFixed(1)} / 5` : undefined} />
           </Grid>
         </Grid>

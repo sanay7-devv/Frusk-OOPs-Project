@@ -872,24 +872,24 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/reports/*`.
 
 - [x] Renders (Refresh button, 4 KPI cards, P1-P4 bars).
-- [x] KPI "Resolution Compliance" = `(RESOLVED|CLOSED)/total` over 100 incidents (Reports.tsx:46-53): not compliance, wrong total.
-- [x] **KPI "Mean Time to Resolve (MTTR) 1.8 hrs, -24 mins vs previous cycle" is literal text** (:111-116). Use `/reports/overview.avgResolutionMinutes`.
-- [x] KPI "P1 volume" and "% of total volume": client counts over 100.
-- [x] KPI "Active Catalog Services" = `/admin/services` length (includes retired).
-- [x] Only chart = 4 `LinearProgress` bars by priority. Missing (guide 7 + contract):
-  - [x] Overview KPIs `GET /reports/overview?from&to` (total, open, critical, resolved, slaViolations, avgResolutionMinutes, avgSatisfaction), max 4 cards.
-  - [x] Created vs resolved line, 7/30/90 days: `GET /reports/trends?bucket=day|week&from&to` (`[{date, created, resolved}]`).
-  - [x] SLA compliance grouped bars, switch priority/service/technician: `GET /reports/sla-compliance?groupBy=` (`label, met, violated, total, compliancePercent`).
-  - [x] Priority donut: `GET /reports/priority-distribution` (`[{label, count}]`, P1-P4 always).
-  - [x] Categories top 8: `GET /reports/category-distribution` ("Uncategorized" included).
-  - [x] Services ranked bars: `GET /reports/services` (`name, count, serviceId`).
-  - [x] Technician workload (load vs maxLoad, avg resolution): `GET /reports/workload` (`name, load, maxLoad, active, avgResolutionMinutes`).
-  - [x] Coverage risk matrix (E3): `GET /reports/coverage-risk?onlyFlagged=` (`items[]: category, service, criticality, eligibleCount, eligibleTechnicians, level NO_COVERAGE|SINGLE_HOLDER|THIN|COVERED, message, requiredSkills[{name, holders}], incidentsInWindow`; header `flaggedCount`, `windowDays`, `minHolders`).
-  - [x] SLA violations list: `GET /sla/violations?from&to&page&size` (`incidentCode, type RESPONSE|RESOLUTION, overdueSeconds, technician, createdAt`); `getSlaViolations` exists (`api/incidents.ts:715`), unused.
-  - [x] Date range picker (`from`, `to`) shared by all charts; presets 7/30/90 days.
-  - [x] Export CSV and PDF: `GET /reports/export?type=...&format=csv|pdf&from&to` (download as blob with the auth header; contract returns `text/csv` or `application/pdf`).
+- [ ] KPI "Resolution Compliance" = `(RESOLVED|CLOSED)/total` over 100 incidents (Reports.tsx:46-53): not compliance, wrong total.
+- [ ] **KPI "Mean Time to Resolve (MTTR) 1.8 hrs, -24 mins vs previous cycle" is literal text** (:111-116). Use `/reports/overview.avgResolutionMinutes`.
+- [ ] KPI "P1 volume" and "% of total volume": client counts over 100.
+- [ ] KPI "Active Catalog Services" = `/admin/services` length (includes retired).
+- [ ] Only chart = 4 `LinearProgress` bars by priority. Missing (guide 7 + contract):
+  - [ ] Overview KPIs `GET /reports/overview?from&to` (total, open, critical, resolved, slaViolations, avgResolutionMinutes, avgSatisfaction), max 4 cards.
+  - [ ] Created vs resolved line, 7/30/90 days: `GET /reports/trends?bucket=day|week&from&to` (`[{date, created, resolved}]`).
+  - [ ] SLA compliance grouped bars, switch priority/service/technician: `GET /reports/sla-compliance?groupBy=` (`label, met, violated, total, compliancePercent`).
+  - [ ] Priority donut: `GET /reports/priority-distribution` (`[{label, count}]`, P1-P4 always).
+  - [ ] Categories top 8: `GET /reports/category-distribution` ("Uncategorized" included).
+  - [ ] Services ranked bars: `GET /reports/services` (`name, count, serviceId`).
+  - [ ] Technician workload (load vs maxLoad, avg resolution): `GET /reports/workload` (`name, load, maxLoad, active, avgResolutionMinutes`).
+  - [ ] Coverage risk matrix (E3): `GET /reports/coverage-risk?onlyFlagged=` (`items[]: category, service, criticality, eligibleCount, eligibleTechnicians, level NO_COVERAGE|SINGLE_HOLDER|THIN|COVERED, message, requiredSkills[{name, holders}], incidentsInWindow`; header `flaggedCount`, `windowDays`, `minHolders`).
+  - [ ] SLA violations list: `GET /sla/violations?from&to&page&size` (`incidentCode, type RESPONSE|RESOLUTION, overdueSeconds, technician, createdAt`); `getSlaViolations` exists (`api/incidents.ts:715`), unused.
+  - [ ] Date range picker (`from`, `to`) shared by all charts; presets 7/30/90 days.
+  - [ ] Export CSV and PDF: `GET /reports/export?type=...&format=csv|pdf&from&to` (download as blob with the auth header; contract returns `text/csv` or `application/pdf`).
   - [ ] Click a bar/slice -> filtered incident list in a drawer (guide 7 rule 6), via `GET /incidents` filters.
-  - [x] Use `recharts` (installed); one message per chart; empty states.
+  - [ ] Use `recharts` (installed); one message per chart; empty states.
 - [ ] Title "Executive Analytics & SLA Reports" + subtitle (guide 5.1 #5).
 
 ### G14. Backend features with no screen (admin-relevant)

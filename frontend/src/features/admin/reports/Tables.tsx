@@ -1,18 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Chip, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, Typography, Box,
 } from '@mui/material';
-import { tokens } from '../../../theme/theme';
+import { theme, tokens } from '../../../theme/theme';
 import { getCoverageRisk, type CoverageLevel } from '../../../api/reports';
 import { getSlaViolations } from '../../../api/incidents';
 import { ChartCard, type DateRange } from './common';
 
 const LEVEL: Record<CoverageLevel, { label: string; color: string }> = {
-  NO_COVERAGE: { label: 'No one covers this', color: '#f43f5e' },
-  SINGLE_HOLDER: { label: 'Only one person', color: '#fb923c' },
-  THIN: { label: 'Thin cover', color: '#f59e0b' },
-  COVERED: { label: 'Covered', color: '#10b981' },
+  NO_COVERAGE: { label: 'No one covers this', color: theme.palette.error.main },
+  SINGLE_HOLDER: { label: 'Only one person', color: theme.palette.warning.main },
+  THIN: { label: 'Thin cover', color: theme.palette.warning.light },
+  COVERED: { label: 'Covered', color: theme.palette.success.main },
 };
 
 const head = { color: tokens.onSurfaceVariant, fontSize: 12, fontWeight: 600, borderColor: tokens.outlineVariant } as const;
@@ -70,12 +70,14 @@ function overdue(seconds: number): string {
   return `${Math.floor(m / 60)} h ${m % 60} min`;
 }
 
-export function SlaViolationsCard({ range }: { range: DateRange }) {
+export function SlaViolationsCard({ range }: { range: DateRange | null }) {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
+  useEffect(() => { setPage(0); }, [range?.from, range?.to]);
   const query = useQuery({
     queryKey: ['reports', 'violations', range, page, size],
     queryFn: () => getSlaViolations({ ...range, page, size }),
+    enabled: range !== null,
   });
   return (
     <ChartCard title="Recent SLA violations" query={query} isEmpty={(d) => d.totalItems === 0} emptyMessage="No SLA violations in this period">
