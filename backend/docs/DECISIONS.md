@@ -2140,3 +2140,17 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **Options.** A second service for PDF (two copies of every report query); **one sink, two writers** ✔; PDF only for the post-incident report (the old state, a gap against the handbook's Tier 3 "PDF export").
 
 **Trade-off.** A PDF is built in memory, bounded by the row cap, and says when it cut the table short.
+
+### DEC-119: Expose `Retry-After` to the browser through CORS
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-18 | M1 | ✅ |
+
+**Decision.** `CorsConfig` now exposes `Retry-After` beside `X-Request-Id`. The backend already sends `Retry-After` on 429 `RATE_LIMITED` and 503 `SERVICE_UNAVAILABLE`, but the frontend runs on another origin, and a browser hides every response header that CORS does not expose. The frontend can therefore say "try again in N seconds" instead of a vague "try again in a moment" (login is limited to 10 per minute per email, password-reset requests and the suggestion endpoints are limited too).
+
+**Options.** Put the seconds in the error body as well (a contract change for one number); **expose the existing header** ✔ (one line, no contract change); leave it (users guess how long to wait).
+
+**Trade-off.** None worth noting: the header carries only a number of seconds.
+
+**Cross-question.** *"Why did the header not reach the page before?"* CORS exposes only the "safe-listed" headers by default; any other header must be named in `Access-Control-Expose-Headers`.
