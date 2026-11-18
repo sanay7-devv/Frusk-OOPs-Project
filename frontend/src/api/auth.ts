@@ -1,9 +1,9 @@
 import { api } from './client';
 import type { AuthResponse, CurrentUser } from './types';
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
+export async function login(email: string, password: string, totp?: string): Promise<AuthResponse> {
   try {
-    const res = await api.post<AuthResponse>('/auth/login', { email, password });
+    const res = await api.post<AuthResponse>('/auth/login', totp ? { email, password, totp } : { email, password });
     return res.data;
   } catch (apiError: any) {
     const isNetworkError = !apiError?.response || apiError?.code === 'ERR_NETWORK' || apiError?.message?.includes('Network Error');
@@ -39,3 +39,17 @@ export const logout = (refreshToken: string) =>
 
 export const me = () => api.get<CurrentUser>('/auth/me').then((r) => r.data);
 
+
+// Password reset (public). Request always answers 202 whether or not the address has an account.
+export const requestPasswordReset = (email: string) =>
+  api.post('/auth/password-reset/request', { email }).then(() => undefined);
+
+export const confirmPasswordReset = (token: string, newPassword: string) =>
+  api.post('/auth/password-reset/confirm', { token, newPassword }).then(() => undefined);
+
+// Two-step verification (TOTP), signed-in user.
+export interface MfaSetup { otpauthUri: string; secret: string }
+export const getMfaStatus = () => api.get<{ enabled: boolean }>('/auth/mfa').then((r) => r.data);
+export const setupMfa = () => api.post<MfaSetup>('/auth/mfa/setup').then((r) => r.data);
+export const enableMfa = (code: string) => api.post('/auth/mfa/enable', { code }).then(() => undefined);
+export const disableMfa = (code: string) => api.post('/auth/mfa/disable', { code }).then(() => undefined);
