@@ -9,9 +9,9 @@ Last updated: 2026-11-18
 
 | | |
 |---|---|
-| Code checked | `main` after helper PRs #36 to #39 (2026-11-18), on top of `50794aa` "30% done" (Sanay) |
+| Code checked | `main` after PRs #36 to #43 (2026-11-18), on top of `50794aa` "30% done" (Sanay) |
 | Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 3/3, CI green on every merged PR |
-| Checklist | **283 of 636 done (44%)**, 353 open of which 67 partly done. Was 247 after the re-check of `50794aa`; the helper PRs added 36. |
+| Checklist | **309 of 636 done (49%)**, 327 open of which 69 partly done. Was 247 after the re-check of `50794aa`; the helper PRs added 36; round 2 (PRs #42 and #43) added 26. |
 
 ## 2. Done by Sanay (do not redo)
 
@@ -26,7 +26,7 @@ From commits `1f351c2` (PR #15/#16), `1ea86cc` (new design and theme) and `50794
 
 ## 3. In progress (claimed, do not start these)
 
-Two areas claimed (round 2, 2026-11-18). To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines.
+Nothing claimed right now. To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines.
 
 | Area | Who | Branch | Files it changes | Checklist items | Status |
 |---|---|---|---|---|---|
@@ -43,6 +43,8 @@ Each piece was reviewed against the contract and the backend code, built togethe
 | Account security | [#37](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/37) | `/forgot-password`, `/reset-password` (token removed from the address bar), two-step login (`MFA_REQUIRED` → 6-digit code), `/account/security` (TOTP set up, enable, disable), account menu on the user pill, new error codes and `Retry-After` seconds, Register field errors fixed | E5, E6, E8, E9, summary: 6 ticked, 5 partly |
 | Problems / Major Incident Mode | [#38](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/38) | `api/problems.ts`, `features/problems/`: list + detail for leads (`/lead/problems`) and admins (`/admin/problems`), linked incidents, root cause, remove incident (admin), resolve whole problem, recurring problems; the fake War Room in TechQueue replaced by "Open problem"; Workbench problem chip links to it | F1, F4, F5, F6, G7, G14: 3 ticked, 7 partly |
 | Reports on `/reports/*` | [#39](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/39) | `api/reports.ts`, `features/admin/reports/`: shared date range, 4 KPI cards, created vs resolved, SLA compliance by priority/service/technician, priority donut, categories, services, technician workload, coverage risk, SLA violations, CSV and PDF export (with real error messages) | G13, G14: 19 ticked, 2 partly |
+| Admin Dashboard on real data | [#42](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/42) | `api/dashboard.ts` (`GET /dashboard/live`), `Dashboard.tsx` (about 40 lines) and `features/admin/dashboard/`: 4 KPI cards from `/reports/overview`, `/reports/sla-compliance` and `/dashboard/live`; velocity from `/reports/trends` (7d, 30d, 12w); capacity as load vs max from `/reports/workload`; needs-attention list and live feed from `/dashboard/live`; declare dialog shows similar incidents on 409 with "Create anyway"; realtime keys under `['dashboard']` | G2: 16 ticked, 2 partly (MTTR as a line, not in the donut centre; the declare dialog is not shared with Tickets); G15 bug 7 fixed; bugs 16 and 18 partly. Not done: Prometheus/Grafana card, wallboard mode |
+| Technician SLA and bug fixes | [#43](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/43) | `SlaCountdown` (colour from server `slaState`, one shared 1-second ticker, PAUSED shows "Paused", 12 px), `theme/theme.ts` (`slaStateColor`, `slaStateLabel`), `TechQueue.tsx`, `TechWorkbench.tsx`, `TechWorkload.tsx`: client SLA maths removed, both clocks in the Workbench header, availability from the `PUT /technicians/me/availability` response, resolve time 1 to 10080, PriorityBadge, one PENDING_USER_INFO predicate for tab and KPI, `apiErrorMessage` in queue and workbench toasts | F1, F2 and F3: 10 lines ticked and 8 inline sub-items; 2 partly (one clock in the queue row; PAUSED remaining time has no API field). Not done: StateViews in TechWorkbench and TechWorkload, Workload profile switcher and export stub. The round 1 claim listed bugs 8-12, 15, 16, 18: #43 closes none of 9-12 or 15, bug 8 was closed by #39, 16 and 18 are partly done |
 
 Backend change made for these (with the lead's approval): CORS now exposes `Retry-After` ([#35](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/35), DEC-119).
 
@@ -59,3 +61,4 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 | 2026-11-18 | Page created. Checklist re-checked against `50794aa`; four helper pieces claimed (audit seal, reports, problems, account security). |
 | 2026-11-18 | Helper PRs #36 to #39 merged after review and green CI; section 3 emptied, section 4 lists them; checklist now 283 of 636 done. |
 | 2026-11-18 | Round 2 claimed: technician SLA fixes, admin Dashboard on real data. |
+| 2026-11-18 | Round 2 ticks: PR #42 (Dashboard) and PR #43 (technician SLA) checked on `main` and ticked; section 3 emptied, section 4 lists them; checklist now 309 of 636 done. |
