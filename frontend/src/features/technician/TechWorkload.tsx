@@ -51,6 +51,9 @@ import {
 } from '@mui/icons-material';
 
 import { useToast } from '../../components/Toast';
+import { apiErrorMessage } from '../../utils/errors';
+import SlaCountdown from '../../components/SlaCountdown';
+import { slaStateColor, slaStateLabel } from '../../theme/theme';
 import { useAuth } from '../../auth/AuthContext';
 import {
   getMyWorkload,
@@ -58,6 +61,7 @@ import {
   listTechnicians,
   setMyAvailability,
   type WorkloadView,
+  type TechnicianView,
   type Deadline,
 } from '../../api/technicians';
 
@@ -83,22 +87,6 @@ const COLORS = {
   tertiary: '#94a3b8',
   tertiaryContainer: '#1c2234',
 };
-
-function formatDue(dueIso: string): { text: string; percent: number; isImminent: boolean; isPaused: boolean } {
-  if (!dueIso) return { text: 'N/A', percent: 100, isImminent: false, isPaused: false };
-  const target = new Date(dueIso).getTime();
-  const diffMins = Math.round((target - Date.now()) / 60000);
-  if (diffMins <= 0) return { text: 'BREACHED', percent: 0, isImminent: true, isPaused: false };
-  const hours = Math.floor(diffMins / 60);
-  const mins = diffMins % 60;
-  const text = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  return {
-    text,
-    percent: Math.min(100, Math.round((diffMins / 240) * 100)),
-    isImminent: diffMins < 30,
-    isPaused: false,
-  };
-}
 
 export default function TechWorkload() {
   const navigate = useNavigate();
@@ -136,17 +124,28 @@ export default function TechWorkload() {
   const maxQuota = workload?.maxLoad ?? 10;
   const capacityPercent = Math.min(100, Math.round((activeLoad / maxQuota) * 100));
   const deadlines = workload?.upcomingDeadlines || [];
-  const currentAvailability = user?.technician?.availability ?? 'AVAILABLE';
+  // Newest known value wins: our own PUT response, then the technician list, then the sign-in profile.
+  const [availabilityOverride, setAvailabilityOverride] = useState<TechnicianView['availability'] | null>(null);
+  const me = techList.find((t) => t.email === user?.email);
+  const currentAvailability = availabilityOverride ?? me?.availability ?? user?.technician?.availability ?? null;
   const isAvailable = currentAvailability === 'AVAILABLE';
+  const availabilityLabel =
+    currentAvailability === 'AVAILABLE' ? 'Available'
+    : currentAvailability === 'BUSY' ? 'Busy'
+    : currentAvailability === 'AWAY' ? 'Away'
+    : currentAvailability === 'OFF_DUTY' ? 'Off duty'
+    : 'Unknown';
 
   const handleToggleAvailability = async () => {
     const next = isAvailable ? 'AWAY' : 'AVAILABLE';
     try {
-      await setMyAvailability(next);
-      toast(`Availability status changed to ${next}.`, 'info');
+      const updated = await setMyAvailability(next);
+      setAvailabilityOverride(updated.availability);
+      toast(`Availability set to ${updated.availability.replace('_', ' ').toLowerCase()}.`, 'info');
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
-    } catch (err: any) {
-      toast(err.message || 'Failed to update availability', 'error');
+      queryClient.invalidateQueries({ queryKey: ['technicians-list'] });
+    } catch (err) {
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -307,7 +306,7 @@ export default function TechWorkload() {
                 }}
               />
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
-                {isAvailable ? 'Available' : 'Away'}
+                {availabilityLabel}
               </Typography>
               <Button
                 size="small"
@@ -605,7 +604,7 @@ export default function TechWorkload() {
               No Imminent Deadlines
             </Typography>
             <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
-              All assigned incidents have met their SLA windows or are currently in healthy bands.
+              None of your assigned incidents has an upcoming deadline.
             </Typography>
           </Paper>
         ) : (
@@ -613,18 +612,15 @@ export default function TechWorkload() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${COLORS.border}` }}>
-                  <th style={{ padding: '8px 12px', fontSize: 11, color: COLORS.onSurfaceVariant }}>INCIDENT CODE</th>
-                  <th style={{ padding: '8px 12px', fontSize: 11, color: COLORS.onSurfaceVariant }}>SLA CLOCK TYPE</th>
-                  <th style={{ padding: '8px 12px', fontSize: 11, color: COLORS.onSurfaceVariant }}>SLA STATE</th>
-                  <th style={{ padding: '8px 12px', fontSize: 11, color: COLORS.onSurfaceVariant }}>TIME REMAINING</th>
-                  <th style={{ padding: '8px 12px', fontSize: 11, color: COLORS.onSurfaceVariant, textAlign: 'right' }}>ACTION</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>INCIDENT CODE</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>SLA CLOCK TYPE</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>SLA STATE</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>TIME REMAINING</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant, textAlign: 'right' }}>ACTION</th>
                 </tr>
               </thead>
               <tbody>
                 {deadlines.map((d: Deadline) => {
-                  const info = formatDue(d.due);
-                  const isBreached = d.slaState === 'VIOLATED' || info.text === 'BREACHED';
-
                   return (
                     <tr key={`${d.incidentId}-${d.type}`} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
                       <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 700, color: COLORS.secondary }}>
@@ -640,23 +636,13 @@ export default function TechWorkload() {
                       </td>
                       <td style={{ padding: '12px' }}>
                         <Chip
-                          label={d.slaState}
+                          label={slaStateLabel[d.slaState]}
                           size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: 10.5,
-                            fontWeight: 800,
-                            bgcolor: isBreached
-                              ? 'rgba(244, 63, 94, 0.15)'
-                              : d.slaState === 'WARNING'
-                              ? 'rgba(245, 158, 11, 0.15)'
-                              : 'rgba(16, 185, 129, 0.15)',
-                            color: isBreached ? COLORS.error : d.slaState === 'WARNING' ? '#f59e0b' : '#10b981',
-                          }}
+                          sx={{ height: 22, fontSize: 12, fontWeight: 700, bgcolor: `${slaStateColor[d.slaState]}26`, color: slaStateColor[d.slaState] }}
                         />
                       </td>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 700, color: isBreached ? COLORS.error : COLORS.onSurface }}>
-                        {info.text}
+                      <td style={{ padding: '12px' }}>
+                        <SlaCountdown due={d.due} slaState={d.slaState} />
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         <Button

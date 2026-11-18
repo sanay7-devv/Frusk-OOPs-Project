@@ -55,6 +55,9 @@ import {
 } from '@mui/icons-material';
 
 import { useToast } from '../../components/Toast';
+import { apiErrorMessage } from '../../utils/errors';
+import PriorityBadge from '../../components/PriorityBadge';
+import SlaCountdown from '../../components/SlaCountdown';
 import { useAuth } from '../../auth/AuthContext';
 import { useProblemBasePath } from '../problems/problemAccess';
 import { getIncident, getHistory, getComments, addComment } from '../../api/incidents';
@@ -98,24 +101,6 @@ const COLORS = {
   tertiary: '#f751a1',
 };
 
-function formatTimeRemaining(targetIso: string | null): { text: string; percent: number; status: 'critical' | 'warning' | 'safe' | 'paused' } {
-  if (!targetIso) return { text: 'N/A', percent: 100, status: 'safe' };
-  const target = new Date(targetIso).getTime();
-  const now = Date.now();
-  const diffMinutes = Math.round((target - now) / 60000);
-
-  if (diffMinutes <= 0) {
-    return { text: 'BREACHED', percent: 0, status: 'critical' };
-  }
-  const hours = Math.floor(diffMinutes / 60);
-  const mins = diffMinutes % 60;
-  const text = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-
-  if (diffMinutes < 15) return { text, percent: 15, status: 'critical' };
-  if (diffMinutes < 60) return { text, percent: 35, status: 'warning' };
-  return { text, percent: Math.min(100, Math.round((diffMinutes / 240) * 100)), status: 'safe' };
-}
-
 export default function TechWorkbench() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -133,7 +118,7 @@ export default function TechWorkbench() {
   const [resolveRootCause, setResolveRootCause] = useState('');
   const [resolveNotes, setResolveNotes] = useState('');
   const [resolveSteps, setResolveSteps] = useState('');
-  const [resolveTimeSpent, setResolveTimeSpent] = useState<number>(30);
+  const [resolveTimeSpent, setResolveTimeSpent] = useState<string>('');
   const [resolveReusable, setResolveReusable] = useState(true);
 
   const [isEscalateOpen, setIsEscalateOpen] = useState(false);
@@ -205,7 +190,7 @@ export default function TechWorkbench() {
       refetchIncident();
       refetchHistory();
     } catch (err: any) {
-      toast(err.message || 'Failed to acknowledge', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -216,7 +201,7 @@ export default function TechWorkbench() {
       refetchIncident();
       refetchHistory();
     } catch (err: any) {
-      toast(err.message || 'Failed to start work', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -234,7 +219,7 @@ export default function TechWorkbench() {
       refetchHistory();
       refetchComments();
     } catch (err: any) {
-      toast(err.message || 'Failed to request info', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -247,20 +232,25 @@ export default function TechWorkbench() {
       toast('Resolution notes must be at least 10 characters long.', 'warning');
       return;
     }
+    const minutes = Number(resolveTimeSpent);
+    if (!resolveTimeSpent.trim() || !Number.isInteger(minutes) || minutes < 1 || minutes > 10080) {
+      toast('Time spent must be a whole number of minutes from 1 to 10080.', 'warning');
+      return;
+    }
     try {
-      await resolveIncident(incidentId, {
+      const updated = await resolveIncident(incidentId, {
         rootCause: resolveRootCause.trim(),
         notes: resolveNotes.trim(),
         steps: resolveSteps.trim() || undefined,
-        timeSpentMinutes: resolveTimeSpent || 30,
+        timeSpentMinutes: minutes,
         reusableSolution: resolveReusable,
       });
-      toast(`Incident marked as RESOLVED. Concurrency capacity released.`, 'success');
+      toast(`${incident?.code ?? 'Incident'} is now ${updated.status.replace(/_/g, ' ')}.`, 'success');
       setIsResolveOpen(false);
       refetchIncident();
       refetchHistory();
     } catch (err: any) {
-      toast(err.message || 'Failed to resolve incident', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -277,7 +267,7 @@ export default function TechWorkbench() {
       refetchIncident();
       refetchHistory();
     } catch (err: any) {
-      toast(err.message || 'Failed to escalate', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -290,7 +280,7 @@ export default function TechWorkbench() {
       refetchComments();
       refetchHistory();
     } catch (err: any) {
-      toast(err.message || 'Failed to add note', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -301,19 +291,19 @@ export default function TechWorkbench() {
       setSummaryData(result);
       toast('AI thread summary and handover notes generated.', 'success');
     } catch (err: any) {
-      toast(err.message || 'Failed to generate AI summary', 'error');
+      toast(apiErrorMessage(err), 'error');
     } finally {
       setIsSummarizing(false);
     }
   };
 
   const applySuggestedResolution = (res: SuggestedResolutionView) => {
-    setResolveRootCause(res.rootCause || `Issue caused by duplicate root cause matching ${res.code}`);
-    setResolveNotes(res.notes || `Applied proven fix from incident ${res.code}: ${res.title}`);
-    setResolveSteps(res.steps || 'Verified configuration rollback and restored service traffic.');
+    setResolveRootCause(res.rootCause ?? '');
+    setResolveNotes(res.notes ?? '');
+    setResolveSteps(res.steps ?? '');
     setResolveReusable(true);
     setIsResolveOpen(true);
-    toast(`Pre-filled resolution modal from ${res.code}.`, 'info');
+    toast(`Filled the resolve form from ${res.code}. Review it before you resolve.`, 'info');
   };
 
   if (isLoading) {
@@ -340,11 +330,8 @@ export default function TechWorkbench() {
 
   const isCritical = incident.priority === 'P1';
   const isHigh = incident.priority === 'P2';
-  const isPaused = incident.status === 'PENDING_USER_INFO' || incident.slaState === 'PAUSED';
-  const targetDue = incident.status === 'ASSIGNED' ? incident.responseDue : incident.resolutionDue;
-  const slaInfo = isPaused
-    ? { text: 'PAUSED', percent: 50, status: 'paused' as const }
-    : formatTimeRemaining(targetDue);
+  // The server's single slaState describes the clock that is running: response until acknowledged, then resolution.
+  const responseActive = !incident.acknowledgedAt && !incident.resolvedAt;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
@@ -426,26 +413,7 @@ export default function TechWorkbench() {
             {/* Title & Info */}
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                <Chip
-                  size="small"
-                  label={
-                    isCritical ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: COLORS.error, animation: 'pulse 1.5s infinite' }} />
-                        P1 CRITICAL
-                      </Box>
-                    ) : (
-                      `${incident.priority || 'P3'} ${isHigh ? 'HIGH' : 'MEDIUM'}`
-                    )
-                  }
-                  sx={{
-                    bgcolor: isCritical ? COLORS.errorContainer : COLORS.surfaceContainerHigh,
-                    color: isCritical ? COLORS.error : COLORS.secondary,
-                    fontWeight: 800,
-                    fontSize: 11,
-                    height: 24,
-                  }}
-                />
+                <PriorityBadge priority={incident.priority} />
 
                 <Chip
                   size="small"
@@ -566,7 +534,7 @@ export default function TechWorkbench() {
                 <span>•</span>
                 <span>Assignee: <strong>{incident.assignee?.name || 'Unassigned'}</strong></span>
                 <span>•</span>
-                <span>Impact: <strong>{incident.affectedUsers || 1} users affected</strong></span>
+                <span>Impact: <strong>{incident.affectedUsers} users affected</strong></span>
                 {incident.priorityBreakdown && (
                   <>
                     <span>•</span>
@@ -576,74 +544,47 @@ export default function TechWorkbench() {
               </Box>
             </Box>
 
-            {/* SLA Countdown Timer Box */}
+            {/* SLA clocks: colour and state come from the server */}
             <Box
               sx={{
                 p: 2,
                 borderRadius: 2.5,
-                bgcolor:
-                  slaInfo.status === 'critical'
-                    ? COLORS.errorContainer
-                    : isPaused
-                    ? COLORS.surfaceContainerHigh
-                    : COLORS.surfaceContainer,
-                border: `1px solid ${
-                  slaInfo.status === 'critical'
-                    ? '#ff8a80'
-                    : COLORS.border
-                }`,
+                bgcolor: COLORS.surfaceContainer,
+                border: `1px solid ${incident.slaState === 'VIOLATED' ? COLORS.error : COLORS.border}`,
                 display: 'flex',
                 flexDirection: 'column',
-                minWidth: 220,
+                gap: 1.25,
+                minWidth: 260,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography
-                  sx={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    color: slaInfo.status === 'critical' ? COLORS.error : COLORS.onSurfaceVariant,
-                  }}
-                >
-                  {incident.status === 'ASSIGNED' ? 'Response SLA Clock' : 'Resolution SLA Clock'}
+              {([
+                { label: 'Response', due: incident.responseDue, active: responseActive, doneAt: incident.acknowledgedAt, doneText: 'Acknowledged' },
+                { label: 'Resolution', due: incident.resolutionDue, active: !responseActive && !incident.resolvedAt, doneAt: incident.resolvedAt, doneText: 'Resolved' },
+              ] as const).map((c) => (
+                <Box key={c.label}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: COLORS.onSurfaceVariant }}>
+                    {c.label} clock
+                  </Typography>
+                  {c.active ? (
+                    <Box sx={{ fontSize: 18 }}>
+                      <SlaCountdown due={c.due} createdAt={incident.createdAt} slaState={incident.slaState} />
+                    </Box>
+                  ) : c.doneAt ? (
+                    <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
+                      {c.doneText} {new Date(c.doneAt).toLocaleString()}
+                    </Typography>
+                  ) : (
+                    <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
+                      {c.due ? `Due ${new Date(c.due).toLocaleString()}` : 'No target'}
+                    </Typography>
+                  )}
+                </Box>
+              ))}
+              {incident.slaState === 'PAUSED' && (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                  Paused while waiting for the reporter
                 </Typography>
-                {slaInfo.status === 'critical' && (
-                  <CrisisAlertIcon sx={{ fontSize: 16, color: COLORS.error, animation: 'pulse 1.5s infinite' }} />
-                )}
-                {isPaused && (
-                  <PauseCircleIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
-                )}
-              </Box>
-
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: isPaused ? COLORS.secondary : slaInfo.status === 'critical' ? COLORS.error : COLORS.onSurface,
-                  lineHeight: 1.1,
-                  mb: 0.75,
-                }}
-              >
-                {slaInfo.text}
-              </Typography>
-
-              {/* Progress Bar */}
-              <Box sx={{ width: '100%', height: 6, bgcolor: 'rgba(0,0,0,0.08)', borderRadius: 10, overflow: 'hidden' }}>
-                <Box
-                  sx={{
-                    height: '100%',
-                    width: `${slaInfo.percent}%`,
-                    bgcolor: isPaused ? COLORS.secondary : slaInfo.status === 'critical' ? COLORS.error : COLORS.primary,
-                    borderRadius: 10,
-                  }}
-                />
-              </Box>
-              <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, pt: 0.5 }}>
-                {isPaused ? 'Clock frozen while awaiting user response' : `SLA State: ${incident.slaState}`}
-              </Typography>
+              )}
             </Box>
           </Box>
 
@@ -1152,7 +1093,7 @@ export default function TechWorkbench() {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: COLORS.onSurfaceVariant }}>Service Criticality:</span>
-                  <strong>{incident.priorityBreakdown?.criticality || 3}/5</strong>
+                  <strong>{incident.priorityBreakdown ? `${incident.priorityBreakdown.criticality}/5` : 'Not scored'}</strong>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: COLORS.onSurfaceVariant }}>Reopen Count:</span>
@@ -1294,8 +1235,11 @@ export default function TechWorkbench() {
                 size="small"
                 label="Time Spent (minutes)"
                 value={resolveTimeSpent}
-                onChange={(e) => setResolveTimeSpent(Number(e.target.value))}
-                sx={{ width: 160, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+                onChange={(e) => setResolveTimeSpent(e.target.value)}
+                inputProps={{ min: 1, max: 10080, step: 1 }}
+                helperText="1 to 10080 minutes"
+                error={resolveTimeSpent !== '' && !(Number.isInteger(Number(resolveTimeSpent)) && Number(resolveTimeSpent) >= 1 && Number(resolveTimeSpent) <= 10080)}
+                sx={{ width: 200, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
               <FormControlLabel
                 control={
@@ -1325,7 +1269,7 @@ export default function TechWorkbench() {
               '&:hover': { bgcolor: '#0b6623' },
             }}
           >
-            Confirm Resolution &amp; Close
+            Resolve
           </Button>
         </DialogActions>
       </Dialog>
