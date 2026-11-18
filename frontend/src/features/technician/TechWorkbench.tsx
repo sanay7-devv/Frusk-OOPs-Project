@@ -56,6 +56,7 @@ import {
 
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../auth/AuthContext';
+import { useProblemBasePath } from '../problems/problemAccess';
 import { getIncident, getHistory, getComments, addComment } from '../../api/incidents';
 import {
   acknowledgeIncident,
@@ -121,6 +122,7 @@ export default function TechWorkbench() {
   const toast = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const problemBase = useProblemBasePath();
 
   const incidentId = Number(id);
 
@@ -517,6 +519,8 @@ export default function TechWorkbench() {
                   <Chip
                     size="small"
                     label={`Problem #${incident.problemId}`}
+                    clickable={!!problemBase}
+                    onClick={problemBase ? () => navigate(`${problemBase}/${incident.problemId}`) : undefined}
                     sx={{
                       bgcolor: 'rgba(99, 102, 241, 0.15)',
                       color: COLORS.primary,

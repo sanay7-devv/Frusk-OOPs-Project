@@ -33,7 +33,6 @@ import {
   EditNote as EditNoteIcon,
   Chat as ChatIcon,
   Send as SendIcon,
-  VideoCameraFront as VideoCameraFrontIcon,
   ErrorOutline as ErrorOutlineIcon,
   Dns as DnsIcon,
   Hub as HubIcon,
@@ -61,7 +60,9 @@ import {
   listTechnicians,
   type TechnicianView,
 } from '../../api/technicians';
-import { addComment } from '../../api/incidents';
+import { addComment, getIncident } from '../../api/incidents';
+import { useProblemBasePath } from '../problems/problemAccess';
+import { apiErrorMessage } from '../../utils/errors';
 import type { IncidentSummary, SlaState } from '../../api/types';
 
 // Design System Tokens (Luminary Kinetic Dark)
@@ -131,7 +132,17 @@ export default function TechQueue() {
   const [noteText, setNoteText] = useState('');
   const [requestInfoIncident, setRequestInfoIncident] = useState<IncidentSummary | null>(null);
   const [requestInfoText, setRequestInfoText] = useState('');
-  const [warRoomIncident, setWarRoomIncident] = useState<IncidentSummary | null>(null);
+  const problemBase = useProblemBasePath();
+  // Major incidents: open the problem record (Major Incident Mode) the incident belongs to.
+  const openProblem = async (inc: IncidentSummary) => {
+    try {
+      const detail = await getIncident(inc.id);
+      if (detail.problemId) navigate(`${problemBase}/${detail.problemId}`);
+      else toast(`${inc.code} is not linked to a problem record.`, 'info');
+    } catch (e) {
+      toast(apiErrorMessage(e), 'error');
+    }
+  };
   const [reassignIncident, setReassignIncident] = useState<IncidentSummary | null>(null);
   const [reassignTargetId, setReassignTargetId] = useState<number | ''>('');
   const [reassignReason, setReassignReason] = useState('');
@@ -1106,11 +1117,11 @@ export default function TechQueue() {
                       Request Info
                     </Button>
 
-                    {isCritical && (
+                    {inc.major && problemBase && (
                       <Button
                         size="small"
-                        onClick={() => setWarRoomIncident(inc)}
-                        startIcon={<VideoCameraFrontIcon sx={{ fontSize: 15 }} />}
+                        onClick={() => openProblem(inc)}
+                        startIcon={<HubIcon sx={{ fontSize: 15 }} />}
                         sx={{
                           fontSize: 12,
                           fontWeight: 700,
@@ -1123,7 +1134,7 @@ export default function TechQueue() {
                           '&:hover': { bgcolor: 'rgba(244, 63, 94, 0.2)' },
                         }}
                       >
-                        War Room
+                        Open problem
                       </Button>
                     )}
                   </Box>
@@ -1282,70 +1293,6 @@ export default function TechQueue() {
                 sx={{ background: 'linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)', textTransform: 'none', fontWeight: 700 }}
               >
                 Send Request & Pause Clock
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
-
-      {/* DIALOG 3: WAR ROOM MODAL */}
-      <Dialog
-        open={Boolean(warRoomIncident)}
-        onClose={() => setWarRoomIncident(null)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
-      >
-        {warRoomIncident && (
-          <>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
-                Active Incident War Room
-              </Typography>
-              <IconButton onClick={() => setWarRoomIncident(null)} size="small" sx={{ color: COLORS.onSurfaceVariant }}>
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers sx={{ py: 2.5, textAlign: 'center', borderColor: COLORS.border }}>
-              <Box
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(244, 63, 94, 0.15)',
-                  color: COLORS.error,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
-                  mb: 1.5,
-                }}
-              >
-                <VideoCameraFrontIcon sx={{ fontSize: 28 }} />
-              </Box>
-              <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: COLORS.onSurface, mb: 0.5 }}>
-                War Room Bridge for {warRoomIncident.code}
-              </Typography>
-              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mb: 2 }}>
-                Critical incident bridge for technical triage and communications.
-              </Typography>
-              <Paper sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}`, borderRadius: 2 }}>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>
-                  BRIDGE: https://meet.iitsm.internal/war-room-{warRoomIncident.code.toLowerCase()}
-                </Typography>
-              </Paper>
-            </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => {
-                  toast(`Bridged into War Room for ${warRoomIncident.code}.`, 'success');
-                  setWarRoomIncident(null);
-                }}
-                sx={{ bgcolor: COLORS.error, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#e11d48' } }}
-              >
-                Connect to Bridge
               </Button>
             </DialogActions>
           </>
