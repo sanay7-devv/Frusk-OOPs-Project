@@ -26,10 +26,12 @@ From commits `1f351c2` (PR #15/#16), `1ea86cc` (new design and theme) and `50794
 
 ## 3. In progress (claimed, do not start these)
 
-Nothing claimed right now. To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines.
+Two areas claimed (round 2, 2026-11-18). To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines.
 
 | Area | Who | Branch | Files it changes | Checklist items | Status |
 |---|---|---|---|---|---|
+| Technician screens: server-driven SLA clocks and bug fixes | helper (fe-tech-sla) | `frontend/tech-sla-fixes` | `features/technician/TechQueue.tsx`, `TechWorkbench.tsx`, `TechWorkload.tsx`, `components/SlaCountdown.tsx` | F0 L388, F1, F2, F3 SLA and bug items (bugs 8-12, 15, 16, 18) | building |
+| Admin Dashboard on real data (`/reports/overview`, `/dashboard/live`) | helper (fe-dashboard) | `frontend/dashboard-real-data` | `features/admin/Dashboard.tsx`, new files under `features/admin/dashboard/`, new `api/dashboard.ts` | G2, G15 bug 7 | building |
 
 ## 4. Done by helpers
 
@@ -56,3 +58,4 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 |---|---|
 | 2026-11-18 | Page created. Checklist re-checked against `50794aa`; four helper pieces claimed (audit seal, reports, problems, account security). |
 | 2026-11-18 | Helper PRs #36 to #39 merged after review and green CI; section 3 emptied, section 4 lists them; checklist now 283 of 636 done. |
+| 2026-11-18 | Round 2 claimed: technician SLA fixes, admin Dashboard on real data. |
