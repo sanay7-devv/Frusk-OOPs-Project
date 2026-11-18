@@ -2,7 +2,7 @@
 
 > For Sanay (frontend). Every line is a small, separate task. `[x]` = done and checked in the code, `[ ]` = still to do.
 > Checked against **your latest work**: branch `sanay-branch` on the team repo, commit `1ea86cc` "new design and theme" (2026-11-15 23:31). Line numbers (`file:line`) refer to that commit, paths are under `frontend/src/`.
-> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
+> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Then the helper PRs #36 to #39 (audit seal, account security, problems, reports) ticked their items: **283 of 636 done** on 2026-11-18. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
 > Contract: `backend/docs/openapi/iitsm-api.json` (129 operations). Older review with the reasons behind each rule: `frontend/FRONTEND_GUIDE.md`.
 
 ## A. Where your work stands

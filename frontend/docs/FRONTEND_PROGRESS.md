@@ -9,9 +9,9 @@ Last updated: 2026-11-18
 
 | | |
 |---|---|
-| Code checked | `main` `50794aa` "30% done" (Sanay, 2026-11-18) |
-| Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 3/3 |
-| Checklist | 247 items done, 389 open (re-checked line by line against the code on 2026-11-18) |
+| Code checked | `main` after helper PRs #36 to #39 (2026-11-18), on top of `50794aa` "30% done" (Sanay) |
+| Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 3/3, CI green on every merged PR |
+| Checklist | **283 of 636 done (44%)**, 353 open of which 67 partly done. Was 247 after the re-check of `50794aa`; the helper PRs added 36. |
 
 ## 2. Done by Sanay (do not redo)
 
@@ -26,29 +26,33 @@ From commits `1f351c2` (PR #15/#16), `1ea86cc` (new design and theme) and `50794
 
 ## 3. In progress (claimed, do not start these)
 
-Helpers work on their own branches from `main` `50794aa` and open a pull request into `main` after review. Each one adds new files and touches shared files only with a few lines.
+Nothing claimed right now. To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines.
 
 | Area | Who | Branch | Files it changes | Checklist items | Status |
 |---|---|---|---|---|---|
-| Audit log: Verify & Seal (S3), filters, paging | helper (fe-audit-seal) | `frontend/audit-verify-seal` | `features/admin/AuditLog.tsx`, new audit panel/api file, `api/admin.ts` (audit part only) | G12, G14 "Audit Verify + Seal" | PR #36 open, review passed |
-| Reports on `/reports/*` with charts and CSV/PDF export | helper (fe-reports) | `frontend/reports-real-api` | `features/admin/Reports.tsx` (rewrite), new `api/reports.ts`, new `features/admin/reports/` | G13, G14 coverage risk / SLA violations list | PR #39 open, review passed |
-| Problems / Major Incident screens | helper (fe-problems) | `frontend/problems-major-incident` | new `api/problems.ts`, new `features/problems/`, routes + nav (few lines), small hooks in `TechWorkbench.tsx` (problem link) and `TechQueue.tsx` (War Room button) | F2 L468, F4 L540, F6 L579, G7 L796, G14 Problems | PR #38 open, review passed |
-| Forgot/reset password, two-step login, account security | helper (fe-auth-mfa) | `frontend/auth-reset-mfa` | new screens, `api/auth.ts`, `utils/errors.ts`, small changes in `Login.tsx`, `Register.tsx` (field-error bug), `AppShell.tsx` (account menu), routes | E5 L197-199, E6 L211, E8 L235 L241, E9 L255, L330 | PR #37 open, review passed |
-
-**Sanay**: please avoid these files until the PRs above are merged (or tell us and we will rebase on your change). Everything else in `FRONTEND_WORK_LEFT.md` is free.
 
 ## 4. Done by helpers
 
-Nothing merged yet.
+Each piece was reviewed against the contract and the backend code, built together with the others, and merged after green CI. None has been clicked through against a running backend yet (do that before the video).
+
+| Piece | PR | What it adds | Checklist |
+|---|---|---|---|
+| Audit log: Verify & Seal (S3) | [#36](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/36) | `api/audit.ts`, `AuditSealPanel.tsx`: "Verify chain" (intact / first problem), "Seal now" (new seal or "nothing new"); audit log with server paging, filters (action, actor, incident, from/to), expandable rows with previous → new state, explicit action colours | G12, G14 Audit Verify + Seal: 8 ticked, 4 partly |
+| Account security | [#37](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/37) | `/forgot-password`, `/reset-password` (token removed from the address bar), two-step login (`MFA_REQUIRED` → 6-digit code), `/account/security` (TOTP set up, enable, disable), account menu on the user pill, new error codes and `Retry-After` seconds, Register field errors fixed | E5, E6, E8, E9, summary: 6 ticked, 5 partly |
+| Problems / Major Incident Mode | [#38](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/38) | `api/problems.ts`, `features/problems/`: list + detail for leads (`/lead/problems`) and admins (`/admin/problems`), linked incidents, root cause, remove incident (admin), resolve whole problem, recurring problems; the fake War Room in TechQueue replaced by "Open problem"; Workbench problem chip links to it | F1, F4, F5, F6, G7, G14: 3 ticked, 7 partly |
+| Reports on `/reports/*` | [#39](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/39) | `api/reports.ts`, `features/admin/reports/`: shared date range, 4 KPI cards, created vs resolved, SLA compliance by priority/service/technician, priority donut, categories, services, technician workload, coverage risk, SLA violations, CSV and PDF export (with real error messages) | G13, G14: 19 ticked, 2 partly |
+
+Backend change made for these (with the lead's approval): CORS now exposes `Retry-After` ([#35](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/35), DEC-119).
 
 ## 5. Notes for the team
 
 - Commit `50794aa` went straight to `main` without a pull request. Please use a branch + PR (the team rule) so others can see the change before it lands.
 - `50794aa` also changed `deploy/backend.Dockerfile` (CRLF fix for `mvnw`, runtime image JRE → JDK). That file belongs to Testing/DevOps; tell them, and say why the JDK image is needed (it makes the image larger).
-- Known bug found in the re-check, being fixed by fe-auth-mfa: `Register.tsx` maps server `fieldErrors` as an object, but the contract sends an array `{field, message}`, so field errors never reach the form.
+- Bug found in the re-check and fixed in #37: `Register.tsx` mapped server `fieldErrors` as an object, but the contract sends an array `{field, message}`, so field errors never reached the form.
 
 ## Changelog
 
 | Date | Change |
 |---|---|
 | 2026-11-18 | Page created. Checklist re-checked against `50794aa`; four helper pieces claimed (audit seal, reports, problems, account security). |
+| 2026-11-18 | Helper PRs #36 to #39 merged after review and green CI; section 3 emptied, section 4 lists them; checklist now 283 of 636 done. |
