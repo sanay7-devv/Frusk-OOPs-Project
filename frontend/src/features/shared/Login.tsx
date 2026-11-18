@@ -24,6 +24,7 @@ import { useState, useEffect } from 'react';
 import { login, googleLogin } from '../../api/auth';
 import { useAuth, HOME } from '../../auth/AuthContext';
 import { errorMessage } from '../../utils/errors';
+import { Link as RouterLink } from 'react-router-dom';
 import logoIcon from '../../assets/logo.png';
 
 declare global {
@@ -65,6 +66,10 @@ export default function Login() {
   const [err, setErr] = useState('');
   const [showSeed, setShowSeed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Two-step login: set once the server answers 401 MFA_REQUIRED.
+  const [needCode, setNeedCode] = useState(false);
+  const [totp, setTotp] = useState('');
+  const [codeErr, setCodeErr] = useState('');
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const hasGoogleAuth = Boolean(clientId && !clientId.includes('your-google-client-id'));
@@ -117,12 +122,20 @@ export default function Login() {
 
   const onSubmit = handleSubmit(async (v) => {
     setErr('');
+    setCodeErr('');
     try {
-      const authResponse = await login(v.email, v.password);
+      const authResponse = await login(v.email, v.password, needCode ? totp.trim() : undefined);
       const ws = signIn(authResponse);
       navigate(ws ? HOME[ws] : '/', { replace: true });
     } catch (e: unknown) {
-      setErr(errorMessage(e));
+      const code = (e as any)?.response?.data?.code;
+      if (code === 'MFA_REQUIRED') {
+        setNeedCode(true);
+      } else if (code === 'INVALID_MFA_CODE' && needCode) {
+        setCodeErr(errorMessage(e));
+      } else {
+        setErr(errorMessage(e));
+      }
     }
   });
 
@@ -130,6 +143,9 @@ export default function Login() {
     setValue('email', email, { shouldValidate: true });
     setValue('password', pass, { shouldValidate: true });
     setErr('');
+    setNeedCode(false);
+    setTotp('');
+    setCodeErr('');
   };
 
   return (
@@ -266,7 +282,13 @@ export default function Login() {
             fullWidth
             margin="normal"
             placeholder="e.g. admin@iitsm.com"
-            {...register('email')}
+            {...register('email', {
+              onChange: () => {
+                setNeedCode(false);
+                setTotp('');
+                setCodeErr('');
+              },
+            })}
             error={!!errors.email}
             helperText={errors.email?.message}
             autoComplete="email"
@@ -297,6 +319,31 @@ export default function Login() {
               ),
             }}
           />
+
+          {needCode && (
+            <TextField
+              label="Authenticator code"
+              fullWidth
+              margin="normal"
+              autoFocus
+              value={totp}
+              onChange={(e) => setTotp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              error={!!codeErr}
+              helperText={codeErr || 'Enter the 6-digit code from your authenticator app.'}
+              autoComplete="one-time-code"
+              inputProps={{ inputMode: 'numeric', maxLength: 6 }}
+            />
+          )}
+
+          <Box mt={1} textAlign="right">
+            <Link
+              component={RouterLink}
+              to="/forgot-password"
+              sx={{ fontSize: 12.5, color: '#4cd7f6', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+            >
+              Forgot password?
+            </Link>
+          </Box>
 
           {err && (
             <Alert
@@ -331,9 +378,9 @@ export default function Login() {
                 boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
               },
             }}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (needCode && totp.length !== 6)}
           >
-            {isSubmitting ? 'Authenticating...' : 'Sign In'}
+            {isSubmitting ? 'Authenticating...' : needCode ? 'Verify and sign in' : 'Sign In'}
           </Button>
         </form>
 

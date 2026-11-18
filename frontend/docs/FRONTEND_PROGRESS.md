@@ -33,7 +33,7 @@ Helpers work on their own branches from `main` `50794aa` and open a pull request
 | Audit log: Verify & Seal (S3), filters, paging | helper (fe-audit-seal) | `frontend/audit-verify-seal` | `features/admin/AuditLog.tsx`, new audit panel/api file, `api/admin.ts` (audit part only) | G12, G14 "Audit Verify + Seal" | PR #36 open, review passed |
 | Reports on `/reports/*` with charts and CSV/PDF export | helper (fe-reports) | `frontend/reports-real-api` | `features/admin/Reports.tsx` (rewrite), new `api/reports.ts`, new `features/admin/reports/` | G13, G14 coverage risk / SLA violations list | building |
 | Problems / Major Incident screens | helper (fe-problems) | `frontend/problems-major-incident` | new `api/problems.ts`, new `features/problems/`, routes + nav (few lines), small hooks in `TechWorkbench.tsx` (problem link) and `TechQueue.tsx` (War Room button) | F2 L468, F4 L540, F6 L579, G7 L796, G14 Problems | building |
-| Forgot/reset password, two-step login, account security | helper (fe-auth-mfa) | `frontend/auth-reset-mfa` | new screens, `api/auth.ts`, `utils/errors.ts`, small changes in `Login.tsx`, `Register.tsx` (field-error bug), `AppShell.tsx` (account menu), routes | E5 L197-199, E6 L211, E8 L235 L241, E9 L255, L330 | building |
+| Forgot/reset password, two-step login, account security | helper (fe-auth-mfa) | `frontend/auth-reset-mfa` | new screens, `api/auth.ts`, `utils/errors.ts`, small changes in `Login.tsx`, `Register.tsx` (field-error bug), `AppShell.tsx` (account menu), routes | E5 L197-199, E6 L211, E8 L235 L241, E9 L255, L330 | PR #37 open, review passed |
 
 **Sanay**: please avoid these files until the PRs above are merged (or tell us and we will rebase on your change). Everything else in `FRONTEND_WORK_LEFT.md` is free.
 

@@ -17,7 +17,7 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { register as registerApi } from '../../api/auth';
 import { useAuth, HOME } from '../../auth/AuthContext';
@@ -74,11 +74,10 @@ export default function Register() {
       signIn(authResponse);
       navigate(HOME.employee, { replace: true });
     } catch (e: any) {
-      if (e?.response?.data?.fieldErrors) {
-        for (const [field, msg] of Object.entries(e.response.data.fieldErrors)) {
-          if (field === 'name' || field === 'email' || field === 'password' || field === 'department') {
-            setError(field as any, { message: String(msg) });
-          }
+      const fes: { field: string; message: string }[] = e?.response?.data?.fieldErrors ?? [];
+      for (const fe of fes) {
+        if (fe.field === 'name' || fe.field === 'email' || fe.field === 'password' || fe.field === 'department') {
+          setError(fe.field, { message: fe.message });
         }
       }
       setErr(errorMessage(e));
@@ -285,6 +284,7 @@ export default function Register() {
             Already have an account?{' '}
             <Link
               component="button"
+              type="button"
               sx={{
                 fontWeight: 700,
                 color: '#4cd7f6',
@@ -298,6 +298,13 @@ export default function Register() {
               Sign In
             </Link>
           </Typography>
+          <Link
+            component={RouterLink}
+            to="/forgot-password"
+            sx={{ display: 'inline-block', mt: 1, fontSize: 13, color: '#4cd7f6', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          >
+            Forgot password?
+          </Link>
         </Box>
       </Paper>
     </Box>
