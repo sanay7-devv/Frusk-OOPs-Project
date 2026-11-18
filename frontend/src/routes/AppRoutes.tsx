@@ -28,6 +28,8 @@ import AuditLog from '../features/admin/AuditLog';
 import Reports from '../features/admin/Reports';
 import Register from '../features/shared/Register';
 import Login from '../features/shared/Login';
+import ProblemsList from '../features/problems/ProblemsList';
+import ProblemDetail from '../features/problems/ProblemDetail';
 
 function RootRedirect() {
   const { user, workspace, workspaces, loading } = useAuth();
@@ -70,6 +72,8 @@ export default function AppRoutes() {
           <Route element={<RequireWorkspace workspace="lead" />}>
             <Route path="/lead/team-queue" element={<TeamQueue />} />
             <Route path="/lead/escalations" element={<Escalations />} />
+            <Route path="/lead/problems" element={<ProblemsList />} />
+            <Route path="/lead/problems/:id" element={<ProblemDetail />} />
           </Route>
           {/* these are all file paths which routed leads to that file */}
           <Route element={<RequireWorkspace workspace="admin" />}>
@@ -90,6 +94,8 @@ export default function AppRoutes() {
             <Route path="/admin/escalation" element={<EscalationSettings />} />
             <Route path="/admin/audit" element={<AuditLog />} />
             <Route path="/admin/reports" element={<Reports />} />
+            <Route path="/admin/problems" element={<ProblemsList />} />
+            <Route path="/admin/problems/:id" element={<ProblemDetail />} />
           </Route>
         </Route>
       </Route>

@@ -43,6 +43,7 @@ import {
   Home as HomeIcon,
   Terminal as TerminalIcon,
   CrisisAlert as CrisisAlertIcon,
+  Hub as HubIcon,
   Search as SearchIcon,
   Bolt as BoltIcon,
   Menu as MenuIcon,
@@ -116,6 +117,7 @@ const NAV_ICONS: Record<string, ElementType> = {
   'Escalation': TrendingUpIcon,
   'Audit log': HistoryIcon,
   'Reports': AssessmentIcon,
+  'Problems': HubIcon,
 };
 
 const DRAWER_WIDTH = 260;

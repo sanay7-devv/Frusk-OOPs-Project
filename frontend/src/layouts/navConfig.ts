@@ -11,10 +11,12 @@ export const NAV: Record<Workspace, { label: string; to: string }[]> = {
   ],
   lead: [
     { label: 'Team queue', to: '/lead/team-queue' }, { label: 'Escalations', to: '/lead/escalations' },
+    { label: 'Problems', to: '/lead/problems' },
     { label: 'Notifications', to: '/notifications' },
   ],
   admin: [
     { label: 'Dashboard', to: '/admin/dashboard' }, { label: 'Tickets', to: '/admin/tickets' },
+    { label: 'Problems', to: '/admin/problems' },
     { label: 'Users', to: '/admin/users' }, { label: 'Services', to: '/admin/services' },
     { label: 'Dependency graph', to: '/admin/services/graph' }, { label: 'SLA policies', to: '/admin/sla' },
     { label: 'Categories', to: '/admin/categories' }, { label: 'Config', to: '/admin/config' },
