@@ -63,6 +63,9 @@ import {
 import { addComment, getIncident } from '../../api/incidents';
 import { useProblemBasePath } from '../problems/problemAccess';
 import { apiErrorMessage } from '../../utils/errors';
+import { LoadingState, EmptyState, ErrorState } from '../../components/StateViews';
+import PriorityBadge from '../../components/PriorityBadge';
+import SlaCountdown from '../../components/SlaCountdown';
 import type { IncidentSummary, SlaState } from '../../api/types';
 
 // Design System Tokens (Luminary Kinetic Dark)
@@ -89,23 +92,8 @@ const COLORS = {
   tertiary: '#f751a1',
 };
 
-function formatTimeRemaining(targetIso: string | null): { text: string; percent: number; status: 'critical' | 'warning' | 'safe' | 'paused' } {
-  if (!targetIso) return { text: 'N/A', percent: 100, status: 'safe' };
-  const target = new Date(targetIso).getTime();
-  const now = Date.now();
-  const diffMinutes = Math.round((target - now) / 60000);
-
-  if (diffMinutes <= 0) {
-    return { text: 'BREACHED', percent: 0, status: 'critical' };
-  }
-  const hours = Math.floor(diffMinutes / 60);
-  const mins = diffMinutes % 60;
-  const text = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-
-  if (diffMinutes < 15) return { text, percent: 15, status: 'critical' };
-  if (diffMinutes < 60) return { text, percent: 35, status: 'warning' };
-  return { text, percent: Math.min(100, Math.round((diffMinutes / 240) * 100)), status: 'safe' };
-}
+/** One definition for the Pending Info tab and its KPI card. */
+const isPendingInfo = (i: IncidentSummary) => i.status === 'PENDING_USER_INFO';
 
 function timeAgo(dateString: string): string {
   const diffMs = Date.now() - new Date(dateString).getTime();
@@ -177,8 +165,17 @@ export default function TechQueue() {
   });
 
   const queue = queuePage?.items ?? [];
-  const currentAvailability = user?.technician?.availability ?? (workload ? 'AVAILABLE' : 'AVAILABLE');
+  // Newest known value wins: the response of our own PUT, then the technician list, then the sign-in profile.
+  const [availabilityOverride, setAvailabilityOverride] = useState<TechnicianView['availability'] | null>(null);
+  const me = techList.find((t) => t.email === user?.email);
+  const currentAvailability = availabilityOverride ?? me?.availability ?? user?.technician?.availability ?? null;
   const isAvailable = currentAvailability === 'AVAILABLE';
+  const availabilityLabel =
+    currentAvailability === 'AVAILABLE' ? 'Available'
+    : currentAvailability === 'BUSY' ? 'Busy'
+    : currentAvailability === 'AWAY' ? 'Away'
+    : currentAvailability === 'OFF_DUTY' ? 'Off duty'
+    : 'Unknown';
 
   // Keyboard shortcut Ctrl+K
   useEffect(() => {
@@ -197,11 +194,13 @@ export default function TechQueue() {
   const handleToggleAvailability = async () => {
     const newStatus = isAvailable ? 'AWAY' : 'AVAILABLE';
     try {
-      await setMyAvailability(newStatus);
-      toast(`Availability set to ${newStatus === 'AVAILABLE' ? 'Available' : 'Busy / Away'}.`, 'info');
+      const updated = await setMyAvailability(newStatus);
+      setAvailabilityOverride(updated.availability);
+      toast(`Availability set to ${updated.availability.replace('_', ' ').toLowerCase()}.`, 'info');
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
-    } catch (err: any) {
-      toast(err.message || 'Failed to update availability', 'error');
+      queryClient.invalidateQueries({ queryKey: ['technicians-list'] });
+    } catch (err) {
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -212,7 +211,7 @@ export default function TechQueue() {
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
     } catch (err: any) {
-      toast(err.message || 'Failed to acknowledge incident', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -223,7 +222,7 @@ export default function TechQueue() {
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
     } catch (err: any) {
-      toast(err.message || 'Failed to start work', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -235,7 +234,7 @@ export default function TechQueue() {
       setNoteModalIncident(null);
       setNoteText('');
     } catch (err: any) {
-      toast(err.message || 'Failed to save note', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -249,7 +248,7 @@ export default function TechQueue() {
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
     } catch (err: any) {
-      toast(err.message || 'Failed to request info', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -272,7 +271,7 @@ export default function TechQueue() {
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
     } catch (err: any) {
-      toast(err?.response?.data?.message || err.message || 'Failed to reassign incident', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -281,13 +280,12 @@ export default function TechQueue() {
 
   // Filter calculations
   const filteredQueue = queue.filter((inc) => {
-    const isPaused = inc.status === 'PENDING_USER_INFO' || inc.slaState === 'PAUSED';
     const isAtRisk = inc.slaState === 'WARNING' || inc.slaState === 'AT_RISK' || inc.slaState === 'VIOLATED';
 
     if (filterTab === 'NEEDS_ACK' && inc.status !== 'ASSIGNED') return false;
     if (filterTab === 'AT_RISK' && !isAtRisk) return false;
     if (filterTab === 'IN_PROGRESS' && inc.status !== 'IN_PROGRESS' && inc.status !== 'ACKNOWLEDGED') return false;
-    if (filterTab === 'PENDING_INFO' && !isPaused) return false;
+    if (filterTab === 'PENDING_INFO' && !isPendingInfo(inc)) return false;
     if (serviceFilter !== 'ALL' && inc.service?.name !== serviceFilter) return false;
     if (priorityFilter !== 'ALL' && inc.priority !== priorityFilter) return false;
 
@@ -306,7 +304,7 @@ export default function TechQueue() {
   const needsAckCount = queue.filter((i) => i.status === 'ASSIGNED').length;
   const atRiskCount = queue.filter((i) => i.slaState === 'WARNING' || i.slaState === 'AT_RISK' || i.slaState === 'VIOLATED').length;
   const inProgressCount = queue.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'ACKNOWLEDGED').length;
-  const pendingInfoCount = queue.filter((i) => i.status === 'PENDING_USER_INFO').length;
+  const pendingInfoCount = queue.filter(isPendingInfo).length;
 
   // Workload values from real backend
   const activeLoad = workload?.load ?? queue.length;
@@ -407,10 +405,10 @@ export default function TechQueue() {
           />
           <Box>
             <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.2 }}>
-              Status: {isAvailable ? 'Available' : 'Away / Paused'}
+              Status: {availabilityLabel}
             </Typography>
             <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
-              {isAvailable ? 'Accepting auto-assignment' : 'Paused auto-assignment'}
+              {isAvailable ? 'Accepting auto-assignment' : 'Not receiving auto-assignment'}
             </Typography>
           </Box>
           <Button
@@ -435,11 +433,7 @@ export default function TechQueue() {
         </Paper>
       </Box>
 
-      {queueError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load live queue from backend: {(queueError as Error).message}
-        </Alert>
-      )}
+      {queueError && <ErrorState message={apiErrorMessage(queueError)} onRetry={() => refetchQueue()} />}
 
       {/* 2. OPERATIONAL HEALTH & WORKLOAD CAPACITY BENTO GRID */}
       <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
@@ -823,29 +817,15 @@ export default function TechQueue() {
       {/* 4. HIGH-DENSITY INCIDENT QUEUE STREAM */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {isQueueLoading ? (
-          <Paper sx={{ p: 6, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 3, border: `1px solid ${COLORS.border}` }}>
-            <CircularProgress size={36} sx={{ color: COLORS.primary, mb: 2 }} />
-            <Typography variant="h6" sx={{ color: COLORS.onSurface }}>Loading live queue from backend...</Typography>
-          </Paper>
+          <LoadingState />
         ) : filteredQueue.length === 0 ? (
-          <Paper sx={{ p: 6, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 3, border: `1px solid ${COLORS.border}` }}>
-            <CheckCircleIcon sx={{ fontSize: 40, color: COLORS.secondary, mb: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
-              Zero Matching Incidents in Queue
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-              All tickets matching this criteria are acknowledged, healthy, or closed.
-            </Typography>
-          </Paper>
+          <EmptyState message="No incidents match this view." />
         ) : (
           filteredQueue.map((inc) => {
             const isCritical = inc.priority === 'P1';
             const isHigh = inc.priority === 'P2';
-            const isPaused = inc.status === 'PENDING_USER_INFO' || inc.slaState === 'PAUSED';
+            const isPaused = isPendingInfo(inc) || inc.slaState === 'PAUSED';
             const targetDue = inc.status === 'ASSIGNED' ? inc.responseDue : inc.resolutionDue;
-            const slaInfo = isPaused
-              ? { text: 'PAUSED', percent: 50, status: 'paused' as const }
-              : formatTimeRemaining(targetDue);
 
             return (
               <Paper
@@ -878,29 +858,7 @@ export default function TechQueue() {
                 >
                   <Box sx={{ maxWidth: 880 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-                      <Chip
-                        label={
-                          isCritical ? (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: COLORS.error, boxShadow: '0 0 6px #f43f5e', animation: 'pulse 1s infinite' }} />
-                              P1 CRITICAL
-                            </Box>
-                          ) : (
-                            `${inc.priority || 'P3'} ${isHigh ? 'HIGH' : 'MEDIUM'}`
-                          )
-                        }
-                        size="small"
-                        sx={{
-                          fontWeight: 800,
-                          fontSize: 10.5,
-                          height: 22,
-                          bgcolor: isCritical ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                          color: isCritical ? COLORS.error : COLORS.primary,
-                          border: `1px solid ${isCritical ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
-                          borderRadius: 1,
-                          fontFamily: 'JetBrains Mono, monospace',
-                        }}
-                      />
+                      <PriorityBadge priority={inc.priority} />
                       <Typography
                         onClick={() => navigate(`/tech/incidents/${inc.id}`)}
                         sx={{
@@ -992,33 +950,10 @@ export default function TechQueue() {
                       minWidth: 220,
                     }}
                   >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                        {isPaused ? (
-                          <PauseCircleIcon sx={{ fontSize: 14, color: COLORS.secondary }} />
-                        ) : (
-                          <ScheduleIcon sx={{ fontSize: 14, color: slaInfo.status === 'critical' ? COLORS.error : COLORS.onSurfaceVariant }} />
-                        )}
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color: isPaused ? COLORS.secondary : slaInfo.status === 'critical' ? COLORS.error : COLORS.onSurface }}>
-                          {isPaused ? 'SLA CLOCK PAUSED' : `SLA: ${slaInfo.text}`}
-                        </Typography>
-                      </Box>
-                      <Typography sx={{ fontSize: 10.5, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>
-                        {inc.status === 'ASSIGNED' ? 'Response target' : 'Resolution target'}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={slaInfo.percent}
-                      sx={{
-                        height: 6,
-                        borderRadius: 1,
-                        bgcolor: COLORS.surfaceContainerHigh,
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: isPaused ? COLORS.secondary : slaInfo.status === 'critical' ? COLORS.error : COLORS.primary,
-                        },
-                      }}
-                    />
+                    <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                      {inc.status === 'ASSIGNED' ? 'Response due' : 'Resolution due'}
+                    </Typography>
+                    <SlaCountdown due={targetDue} createdAt={inc.createdAt} slaState={inc.slaState} />
                   </Paper>
                 </Box>
 

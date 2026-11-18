@@ -540,3 +540,22 @@ export const statusColor: Record<string, string> = {
   CLOSED: '#64748b',
   REOPENED: '#f43f5e',
 };
+
+/** Colour per server-reported SLA state. The client never derives the state itself. */
+export const slaStateColor = {
+  OK: '#38bdf8',
+  WARNING: '#facc15',
+  AT_RISK: '#fb923c',
+  VIOLATED: '#f43f5e',
+  PAUSED: '#94a3b8',
+  MET: '#4ade80',
+} as const;
+
+export const slaStateLabel = {
+  OK: 'On track',
+  WARNING: 'Warning',
+  AT_RISK: 'At risk',
+  VIOLATED: 'Violated',
+  PAUSED: 'Paused',
+  MET: 'Met',
+} as const;
