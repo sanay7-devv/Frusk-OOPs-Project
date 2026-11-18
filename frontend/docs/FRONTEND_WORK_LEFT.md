@@ -195,9 +195,9 @@ Contract mismatches
 - [x] Fake Google chooser `:57-76,147-175,548-671`: lists "Sanay Sagar Shah / not_open" accounts and forges an unsigned JWT `...signature` `:170-174` sent to `POST /auth/google`; backend rejects (TOKEN_INVALID). Remove the whole fake dialog and the "Use another account" email box; show the real GIS button only, hide the button when `VITE_GOOGLE_CLIENT_ID` is empty. Note on `:667` is false ("prompted to register").
 - [x] `googleLogin` returns a MOCK session on network error `api/auth.ts:87-111` (`mock-access-token-employee`). Delete.
 - [x] Fallback button is inside `#google-btn-container` `:400`, GIS `renderButton` renders into it too (two buttons possible).
-- [ ] No two-step login: handle 401 `MFA_REQUIRED` -> show 6-digit field and resend with `totp`; 401 `INVALID_MFA_CODE`.
-- [ ] No "Forgot password?" link and no screens: `/forgot-password` (`POST /auth/password-reset/request {email}`, always 202) and `/reset-password?token=` (`POST /auth/password-reset/confirm {token,newPassword}`; 204 -> login; 400 fieldErrors `newPassword`/`token`). No route in `AppRoutes.tsx`.
-- [ ] Error handling: `errors.ts:3-14` lacks `MFA_REQUIRED`, `INVALID_MFA_CODE`, `TOKEN_INVALID`, `SERVICE_UNAVAILABLE` (503); `ACCOUNT_LOCKED` is HTTP 423 (message hardcodes "15 minutes"); `RATE_LIMITED` ignores `Retry-After` (login limit 10/min per email). Show seconds.
+- [x] No two-step login: handle 401 `MFA_REQUIRED` -> show 6-digit field and resend with `totp`; 401 `INVALID_MFA_CODE`.
+- [x] No "Forgot password?" link and no screens: `/forgot-password` (`POST /auth/password-reset/request {email}`, always 202) and `/reset-password?token=` (`POST /auth/password-reset/confirm {token,newPassword}`; 204 -> login; 400 fieldErrors `newPassword`/`token`). No route in `AppRoutes.tsx`.
+- [x] Error handling: `errors.ts:3-14` lacks `MFA_REQUIRED`, `INVALID_MFA_CODE`, `TOKEN_INVALID`, `SERVICE_UNAVAILABLE` (503); `ACCOUNT_LOCKED` is HTTP 423 (message hardcodes "15 minutes"); `RATE_LIMITED` ignores `Retry-After` (login limit 10/min per email). Show seconds.
 - [ ] Seed account panel "PostgreSQL Seed Accounts" `:434-524` shows passwords on the login page: label as demo only, hide in production build (`import.meta.env.DEV`). It does list valid accounts now. Add Rahul/Neha? optional.
 - [ ] Placeholder `admin@iitsm.com` `:327`; unused import `Chip` `:11`. **Partly done (2026-11-18):** Chip import removed; placeholder admin@iitsm.com remains.
 - [x] React warning "type is invalid ... got: object" at `Login.tsx:597` and `:646` (seen in the browser on every render of the login page, 2026-11-16). Both are inside the fake Google chooser dialog, so deleting that dialog (section B) removes it.
@@ -205,11 +205,11 @@ Contract mismatches
 
 ### E6. `features/shared/Register.tsx` (`/register`)
 - [x] `POST /auth/register {name,email,password,department}` `:52-57` -> `signIn`, goes to employee home `:58-60`.
-- [ ] Password rule only `min(8)` `:26`; contract: 8..72, at least one letter and one digit, plus backend blocklist (common passwords, contains e-mail part or name word). Add letter+digit rule (`passwordRule` in `utils/validation.ts`, unused) and map 400 `fieldErrors[password]` under the field (`errorMessage()` only returns the top message). **Partly done (2026-11-18):** letter+digit rule added; server fieldErrors mapping is broken (iterates an object, contract sends an array).
+- [x] Password rule only `min(8)` `:26`; contract: 8..72, at least one letter and one digit, plus backend blocklist (common passwords, contains e-mail part or name word). Add letter+digit rule (`passwordRule` in `utils/validation.ts`, unused) and map 400 `fieldErrors[password]` under the field (`errorMessage()` only returns the top message).
 - [x] Name max 100, email max 150, department max 80 not enforced; `department` required in form `:25` but optional in contract.
-- [ ] `err` shows generic message for 400 field errors; handle 429. **Partly done (2026-11-18):** RATE_LIMITED message added; field-error mapping broken (see above).
+- [x] `err` shows generic message for 400 field errors; handle 429.
 - [x] No redirect when already signed in; no password show/hide.
-- [ ] Missing: nothing links to forgot-password.
+- [x] Missing: nothing links to forgot-password.
 
 ### E7. `features/shared/Notifications.tsx` (`/notifications`)
 - [x] All 8 items hardcoded `INITIAL_NOTIFICATIONS` `:66-173` replaced by `GET /notifications?unread=&page=&size=` (`PageResponseNotificationView`, item `{id,eventType,title,message,incidentId,channel,read,createdAt}`).
@@ -233,13 +233,13 @@ AppShell
 - [ ] Role chip shows `user.roles[0]` `:415` (ADMINISTRATOR for admin who is also employee); show current workspace label instead.
 - [x] Notification badge never live: only polls when WebSocket down (see section 10); `unreadCount()` swallows errors to 0 `api/notifications.ts:39`.
 - [ ] No global connection/503 banner; no mobile drawer (permanent drawer always 260 px; `width: {sm: ...}` but drawer not hidden below sm).
-- [ ] No account menu: Account security (MFA setup `GET /auth/mfa`, `POST /auth/mfa/setup|enable|disable`), notification preferences, sign out everywhere.
+- [ ] No account menu: Account security (MFA setup `GET /auth/mfa`, `POST /auth/mfa/setup|enable|disable`), notification preferences, sign out everywhere. **Partly done (2026-11-18):** account menu with Account security, Notification preferences and Sign out is done; "sign out everywhere" is not.
 navConfig
 - [x] `tech` nav "Workbench" -> `/tech/incidents/INC-2026-00095` hardcoded code string `:9` (route param is numeric id; 404). Remove, or link from queue only.
-- [ ] Employee nav lacks: Service status, Account security. Add routes.
+- [ ] Employee nav lacks: Service status, Account security. Add routes. **Partly done (2026-11-18):** Account security is reachable from the account menu, not the employee nav; Service status route still missing.
 AppRoutes
 - [x] Guards via `RequireWorkspace` `:45-65`, role routes for 4 workspaces, admin redirects.
-- [ ] Missing routes: `/forgot-password`, `/reset-password`, `/account/security`, `/employee/status`, 404 page (`path="*"` just redirects to `/` `:88`).
+- [ ] Missing routes: `/forgot-password`, `/reset-password`, `/account/security`, `/employee/status`, 404 page (`path="*"` just redirects to `/` `:88`). **Partly done (2026-11-18):** `/forgot-password`, `/reset-password` and `/account/security` added; `/employee/status` and a real 404 page still missing.
 - [x] `RootRedirect` ignores `loading` `:31-36`: on reload at `/` a signed-in user flashes to `/login` first. Show spinner while `loading`.
 - [ ] `RequireWorkspace` "No access" text only `auth/RequireRole.tsx:14-15`; add button back to own home.
 - [ ] `pages/Home.jsx` ("Welcome Admin, login worked!") is dead code; delete.
@@ -253,7 +253,7 @@ client.ts
 - [ ] Stray comment/whitespace formatting `:18-22,40-42` (cosmetic).
 auth.ts
 - [ ] `googleLogin` mock fallback `:87-111`; `logout` special-cases `mock-` tokens `:113-116`; `PREDEFINED_ACCOUNTS` dead `:15-56`; `login()` offline message hardcodes `http://localhost:8080` `:66`. **Partly done (2026-11-18):** mock Google session, mock logout and PREDEFINED_ACCOUNTS gone; offline message still hardcodes http://localhost:8080.
-- [ ] Missing API functions: password reset request/confirm, `GET /auth/mfa`, mfa setup/enable/disable, devices.
+- [ ] Missing API functions: password reset request/confirm, `GET /auth/mfa`, mfa setup/enable/disable, devices. **Partly done (2026-11-18):** password reset, `GET /auth/mfa` and mfa setup/enable/disable added; devices still missing.
 incidents.ts
 - [x] ~440 lines of mock incidents `SEED_INCIDENTS` `:35-473` + mock branches keyed on `tokenStore.getAccess()?.startsWith('mock-')` `:554,565,585` + `mockCreateIncident`, `reassignMockIncident` `:600-670` (used by admin Dashboard/Tickets). With real login the branches are inert, but any mock session (Google fallback above, impersonation) shows fiction. Delete all of it.
 - [ ] Filter name `escalationLevel` `:11` does not exist; contract param is `minEscalationLevel` (0..3). Also `reporterId` missing from `IncidentFilters`; `slaState` should be an enum incl. AT_RISK. **Partly done (2026-11-18):** minEscalationLevel and reporterId added; slaState still a plain string.
@@ -328,7 +328,7 @@ useRealtime
 - [ ] SLA progress bar + AT_RISK label; escalation not for employees.
 - [ ] Post-incident report + PDF (`/incidents/{id}/post-incident-report[/pdf]`).
 - [ ] Real notifications, preferences grid (15 events x channels, locked), push devices/`PUSH_SIM` list. **Partly done (2026-11-18):** real notifications and preferences done; no devices/PUSH_SIM list.
-- [ ] Password reset screens, MFA login step, Account security (QR), admin MFA reset (other slice).
+- [ ] Password reset screens, MFA login step, Account security (QR), admin MFA reset (other slice). **Partly done (2026-11-18):** password reset screens, MFA login step and Account security done; the setup shows the secret and link as text with copy, not a QR code (no QR library); admin MFA reset is another slice.
 - [x] Google login working through GIS only (`VITE_GOOGLE_CLIENT_ID`, backend `GOOGLE_CLIENT_ID`).
 - [ ] Saved views (`/saved-filters`) on My incidents.
 - [ ] Priority what-if / explanation (`/priority/what-if`, `priorityBreakdown`). **Partly done (2026-11-18):** what-if on the report form; not on detail screens.
@@ -670,8 +670,8 @@ useRealtime
 - [ ] 429 `RATE_LIMITED`, 409 `OPTIMISTIC_LOCK_CONFLICT`, 409 `DUPLICATE_INCIDENT` unhandled in every admin form.
 - [ ] Giant files to split: `Dashboard.tsx` 1948 lines, `ServiceGraph.tsx` 1851, `Users.tsx` 1463, `Tickets.tsx` 1390, `Services.tsx` 1313, `SlaPolicies.tsx` 988, `api/admin.ts` 920. Extract `AdminPageHeader`, `KpiCard`, `TableHeadCell`, `ConfirmDialog` (Users, Services, SlaPolicies, AdminIncidentDetail use `window.confirm`).
 - [ ] Same 100 incidents fetched under different keys (`admin-incidents-kpi`, `admin-incidents-all`, `admin-services-telemetry`, `admin-reports-incidents`).
-- [ ] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`.
-- [ ] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one.
+- [ ] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`. **Partly done (2026-11-18):** the audit screen uses `Page<T>` via `api/audit.ts`; the Dashboard still uses `getAdminAuditLogs`.
+- [ ] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one. **Partly done (2026-11-18):** the audit screen uses the contract type; the admin type remains because the Dashboard imports it.
 - [ ] No admin screen uses `recharts` (installed) or `reactflow` (installed, unused); charts are hand-drawn SVG/`LinearProgress`.
 
 ### G2. Dashboard (`/admin/dashboard`, `Dashboard.tsx`, 1948 lines)
@@ -856,16 +856,16 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 
 - [x] Real `GET /audit?page=0&size=50` (newest first); table with time, action chip, actor, incident, description; loading + empty state (~:82-95).
 - [x] **Incident column**: since the backend added `incidentId` (section C) the column shows `INC #213` (the database id). Show `incidentCode` (`INC-2026-00213`) instead, as a link to `/admin/incidents/{incidentId}`.
-- [ ] Time shown via `toLocaleString()` but the header says "(UTC)".
-- [ ] Fixed `size: 50`, no paging controls (`totalItems/totalPages` available).
-- [ ] **No filters** (P1-6): API has `incidentId`, `actorId`, `action`, `from`, `to`. Add action multi-select (28 actions in the enum), actor, incident code, date range.
-- [ ] **No Verify / Seal**: `GET /audit/verify` -> `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem{recordId, sealId, problem, message}, problems[]}`; `POST /audit/seal` (200 `SealView{id, fromId, toId, recordCount, hash, prevHash, createdAt}` / 204 nothing new). Add a Verify button, green "intact" / red `firstProblem.message` banner, "Seal now", last seal id/hash. This is the S3 demo moment.
-- [ ] Chip colour by substring (`FAIL`, `LOCK`, `LOGIN`, `CONFIG`); real actions are `LOGIN_FAILED`, `ACCESS_DENIED`, `CONFIG_CHANGED`, `USER_ROLE_CHANGED`, `MFA_*`, `PASSWORD_*`...; `LOGIN` never occurs. Map explicitly.
-- [ ] Expandable row with full description and `previousState -> newState` (not displayed at all).
-- [ ] Header claims logins are logged (only failed logins are).
+- [x] Time shown via `toLocaleString()` but the header says "(UTC)".
+- [x] Fixed `size: 50`, no paging controls (`totalItems/totalPages` available).
+- [ ] **No filters** (P1-6): API has `incidentId`, `actorId`, `action`, `from`, `to`. Add action multi-select (28 actions in the enum), actor, incident code, date range. **Partly done (2026-11-18):** action (single choice, as the contract allows), actor ID, incident ID and from/to are built; actor and incident are numeric IDs, not name/code (the API filters by ID only).
+- [x] **No Verify / Seal**: `GET /audit/verify` -> `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem{recordId, sealId, problem, message}, problems[]}`; `POST /audit/seal` (200 `SealView{id, fromId, toId, recordCount, hash, prevHash, createdAt}` / 204 nothing new). Add a Verify button, green "intact" / red `firstProblem.message` banner, "Seal now", last seal id/hash. This is the S3 demo moment.
+- [x] Chip colour by substring (`FAIL`, `LOCK`, `LOGIN`, `CONFIG`); real actions are `LOGIN_FAILED`, `ACCESS_DENIED`, `CONFIG_CHANGED`, `USER_ROLE_CHANGED`, `MFA_*`, `PASSWORD_*`...; `LOGIN` never occurs. Map explicitly.
+- [x] Expandable row with full description and `previousState -> newState` (not displayed at all).
+- [x] Header claims logins are logged (only failed logins are).
 - [ ] Events-per-hour histogram (guide 7), audit-chain visual (P3 #4), CSV export of the filtered list.
-- [ ] Normaliser invents values: `action || 'SYSTEM_ACTION'`, `description || 'System event recorded'`, `occurredAt || new Date()` (missing timestamp shows "now"), actor `'System'`.
-- [ ] Table font 10-11 px mono; chip fontSize 10.
+- [ ] Normaliser invents values: `action || 'SYSTEM_ACTION'`, `description || 'System event recorded'`, `occurredAt || new Date()` (missing timestamp shows "now"), actor `'System'`. **Partly done (2026-11-18):** the audit screen no longer uses it; `getAdminAuditLogs` and its defaults remain in `api/admin.ts` for the Dashboard feed.
+- [x] Table font 10-11 px mono; chip fontSize 10.
 
 ### G13. Reports (`/admin/reports`, `Reports.tsx`, 214 lines)
 
@@ -894,7 +894,7 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 
 ### G14. Backend features with no screen (admin-relevant)
 
-- [ ] **Audit Verify + Seal** (`GET /audit/verify`, `POST /audit/seal`): S3 signature feature.
+- [x] **Audit Verify + Seal** (`GET /audit/verify`, `POST /audit/seal`): S3 signature feature.
 - [ ] **Service Desk Simulator (S1)**: `POST /admin/simulations` (`SimulationRequest {configurations[{name, strategy, technicians, weights{skill, load, experience, priorityFit, familiarity}}] up to 3, lastIncidents, speedUp}` -> `SimulationView {results[ConfigurationView: meanWaitMinutes, meanResolveMinutes, p90ResolveMinutes, slaViolations, slaViolationPercent, fairness, unassigned, matchesRealAssigneePercent, perTechnician[], weights], best, bestReason, assumptions[], workload}`) and `POST /admin/simulations/apply`. One screen: configuration editor, grouped bar chart, assumptions panel, "Apply best".
 - [ ] **Problems / Major Incident Mode**: `GET /problems` (`?status=OPEN`), `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve`, `DELETE /problems/{id}/incidents/{incidentId}`, `POST /problems` (`CreateProblemRequest`), `GET /problems/recurring`, `GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join` (employee banner). Admin list + detail + "Resolve whole problem" + root-cause path on the graph.
 - [ ] **Demo controls (demo profile only; not in the OpenAPI export)**: `GET /admin/demo/clock` (`{now, offsetMinutes}`), `POST /admin/demo/clock/advance {minutes 1..1440}` (refresh the token after a big jump), `POST /admin/demo/outage-drill {rootServiceId}` (-> `{rootService, problemId, incidentCodes[], dependents[], note}`); show only when the endpoint answers (404 elsewhere). "Director's bar" (+10 min, start drill).

@@ -43,7 +43,8 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(allowedOrigin));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Request-Id"));
-        config.setExposedHeaders(List.of("X-Request-Id"));
+        // Retry-After lets the frontend show "try again in N seconds" on 429 and 503 (DEC-119).
+        config.setExposedHeaders(List.of("X-Request-Id", "Retry-After"));
         config.setAllowCredentials(false);
         config.setMaxAge(3600L);
 

@@ -28,6 +28,9 @@ import AuditLog from '../features/admin/AuditLog';
 import Reports from '../features/admin/Reports';
 import Register from '../features/shared/Register';
 import Login from '../features/shared/Login';
+import ForgotPassword from '../features/shared/ForgotPassword';
+import ResetPassword from '../features/shared/ResetPassword';
+import AccountSecurity from '../features/account/AccountSecurity';
 
 function RootRedirect() {
   const { user, workspace, workspaces, loading } = useAuth();
@@ -48,11 +51,14 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<RootRedirect />} />
 
       <Route element={<RequireWorkspace />}>
         <Route element={<AppShell />}>
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/account/security" element={<AccountSecurity />} />
 
           <Route element={<RequireWorkspace workspace="employee" />}>
             <Route path="/employee/home" element={<EmployeeHome />} />

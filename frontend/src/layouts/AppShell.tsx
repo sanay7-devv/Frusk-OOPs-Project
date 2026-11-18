@@ -127,6 +127,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [accountAnchorEl, setAccountAnchorEl] = useState<null | HTMLElement>(null);
   const [workspaceAnchorEl, setWorkspaceAnchorEl] = useState<null | HTMLElement>(null);
   const isWorkspaceMenuOpen = Boolean(workspaceAnchorEl);
 
@@ -535,15 +536,24 @@ export default function AppShell() {
 
           {/* User Profile Pill */}
           <Box
+            component="button"
+            type="button"
+            aria-label="Account menu"
+            aria-haspopup="true"
+            onClick={(e: React.MouseEvent<HTMLElement>) => setAccountAnchorEl(e.currentTarget)}
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 1.2,
               px: 1.2,
               py: 0.5,
+              cursor: 'pointer',
+              color: 'inherit',
+              font: 'inherit',
               bgcolor: 'rgba(18, 22, 34, 0.7)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '8px',
+              '&:hover': { borderColor: 'rgba(255, 255, 255, 0.2)' },
             }}
           >
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', textAlign: 'right' }}>
@@ -578,6 +588,19 @@ export default function AppShell() {
               {user?.name ? user.name[0].toUpperCase() : 'U'}
             </Avatar>
           </Box>
+
+          <Menu
+            anchorEl={accountAnchorEl}
+            open={Boolean(accountAnchorEl)}
+            onClose={() => setAccountAnchorEl(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <MenuItem onClick={() => { setAccountAnchorEl(null); navigate('/account/security'); }}>Account security</MenuItem>
+            <MenuItem onClick={() => { setAccountAnchorEl(null); navigate('/notifications'); }}>Notification preferences</MenuItem>
+            <Divider />
+            <MenuItem onClick={() => { setAccountAnchorEl(null); signOut(); }}>Sign out</MenuItem>
+          </Menu>
 
           {/* Logout Button */}
           <Button
