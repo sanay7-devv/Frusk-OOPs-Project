@@ -51,7 +51,8 @@ export default function AuditLog() {
     queryFn: () => searchAudit(toParams(filters, page, size)),
   });
 
-  const apply = () => { setPage(0); setFilters(draft); };
+  const rangeBad = !!draft.from && !!draft.to && new Date(draft.to) <= new Date(draft.from);
+  const apply = () => { if (rangeBad) return; setPage(0); setFilters(draft); };
   const reset = () => { setPage(0); setDraft(EMPTY); setFilters(EMPTY); };
   const toggle = (id: number) =>
     setOpen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -83,8 +84,9 @@ export default function AuditLog() {
           <TextField size="small" label="Actor (user ID)" type="number" value={draft.actorId} onChange={field('actorId')} onKeyDown={onKey} sx={{ width: 150 }} />
           <TextField size="small" label="Incident (ID)" type="number" value={draft.incidentId} onChange={field('incidentId')} onKeyDown={onKey} sx={{ width: 150 }} />
           <TextField size="small" label="From" type="datetime-local" value={draft.from} onChange={field('from')} InputLabelProps={{ shrink: true }} />
-          <TextField size="small" label="To" type="datetime-local" value={draft.to} onChange={field('to')} InputLabelProps={{ shrink: true }} />
-          <Button variant="contained" onClick={apply}>Apply</Button>
+          <TextField size="small" label="To" type="datetime-local" value={draft.to} onChange={field('to')} InputLabelProps={{ shrink: true }}
+            error={rangeBad} helperText={rangeBad ? 'To must be after From' : 'To is exclusive'} />
+          <Button variant="contained" onClick={apply} disabled={rangeBad}>Apply</Button>
           <Button onClick={reset}>Clear</Button>
         </Stack>
       </Paper>

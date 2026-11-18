@@ -38,7 +38,7 @@ export default function AuditSealPanel() {
           <Button
             variant="outlined"
             disabled={busy}
-            onClick={() => { setSealed(null); verifyMut.mutate(); }}
+            onClick={() => { setSealed(null); sealMut.reset(); verifyMut.mutate(); }}
             startIcon={verifyMut.isPending ? <CircularProgress size={16} /> : <VerifyIcon />}
           >
             Verify chain
@@ -46,7 +46,7 @@ export default function AuditSealPanel() {
           <Button
             variant="contained"
             disabled={busy}
-            onClick={() => sealMut.mutate()}
+            onClick={() => { verifyMut.reset(); setVerify(null); sealMut.mutate(); }}
             startIcon={sealMut.isPending ? <CircularProgress size={16} color="inherit" /> : <SealIcon />}
           >
             Seal now
