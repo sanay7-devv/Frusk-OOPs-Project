@@ -1,6 +1,35 @@
 # Testing and DevOps: what is left, and the optional full test catalogue
 
-## Status on 2026-11-15 (checked against the code at `260d159`)
+## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
+
+Checked with git, grep and `gh` on `main` at `2bd1c61`. Since 2026-11-15 no commit has touched `backend/src/test`, `docs/qa`, `db`, `.github` or the Postman collection. The only change under `deploy/` is `deploy/backend.Dockerfile` in `50794aa` (Sanay: CRLF fix for `mvnw`, runtime image JRE → JDK). Re-check it on a fresh build (R6).
+
+CI: six jobs per run (frontend build, frontend tests, backend tests with PostgreSQL migrations, seed integrity dev and demo, demo stack and snapshot round trip). Green on every PR merged on 2026-11-18 (#34 to #40).
+
+| Item | Status | One line |
+|---|---|---|
+| R1 close issue #11 | **Done** | Unchanged. Nothing left. |
+| R2 portable tests | **Done (merged, PR #21)** | Unchanged. A run on a non-UTC Windows laptop is still not recorded. |
+| R3 security checks | **Partly done** | Unchanged. Left: browser check for check 4 and the table with request and date. |
+| R4 Postman | **Done (merged, PR #21)** | Collection not changed since 2026-11-15, so the new backend and frontend behaviour listed below is not in it. |
+| R5 dry-run checklist, tamper helper | **Partly done** | Unchanged. Left: administrator and security segments, recording-day checks. |
+| R6 reset time, fresh clone | **Not done** | Nothing timed. `deploy/README.md` still says "unmeasured". Also re-check the `deploy/backend.Dockerfile` change (JDK image, larger). |
+| R7 test report | **Partly done** | Unchanged. Left: per-case evidence, re-run of the 26 cases on the final commit, corrected security table. |
+| R8 bug tracking, repo settings | **Partly done** | Still no `severity:*` or `area:*` labels; branch protection on `main` still 404; project board not verified. |
+| R9 CI gaps | **Partly done** | Still no lint script in `frontend/package.json` and no lint step. |
+| R10 frontend tests | **Not done** | Still one test file (`frontend/src/auth-flow.test.tsx`, 3 tests). Untested new screens: Audit Verify & Seal (#36); forgot and reset password, two-step login, account security (#37); Problems / Major Incident Mode (#38); Reports on `/reports/*` with CSV and PDF export (#39). |
+| R11 handbook unit-test classes | **Not done** | Still 4 of 12 classes; 8 missing. |
+
+What is left, in order: R6; R11; R10 for the four new screens above (with the Frontend Developer); R8 (labels, board, owner's branch protection); finish R3, R5 and R7 gaps; R9 lint once a `lint` script exists. Sections 4 to 6 stay optional.
+
+### What changed since 2026-11-15
+- **Backend (no tests added for these):** `slaState` AT_RISK from the SLA risk score (#28); Gemini embeddings for similarity with TF-IDF fallback (#29); PDF format for report exports (#27); obsolete `schema-auto` profile removed (#26); CORS exposes `Retry-After` (#35).
+- **Frontend (no tests added for these):** the four screens in R10 (#36 to #39).
+- **Counts:** backend `@Test` methods are still 40 in 7 files (the count of 43 in the supervisor's note included `@TestConfiguration` and `@Testcontainers`). Frontend is still 3 tests.
+
+---
+
+## Status on 2026-11-15 (checked against the code at `260d159`, kept as history)
 
 Checked against `main` at `260d159` (PR #21 merged as `b15a166`; the tests, CI, deploy, db and docs/qa files are identical to PR #21 head `efbd419`, which is what was inspected), the GitHub repository `sanay7-devv/Frusk-OOPs-Project`, and the CI runs on that branch. Only code, CI logs and GitHub state count as evidence here; the claims in `TEST_REPORT.md` and the READMEs were re-checked against them.
 
