@@ -670,8 +670,8 @@ useRealtime
 - [ ] 429 `RATE_LIMITED`, 409 `OPTIMISTIC_LOCK_CONFLICT`, 409 `DUPLICATE_INCIDENT` unhandled in every admin form.
 - [ ] Giant files to split: `Dashboard.tsx` 1948 lines, `ServiceGraph.tsx` 1851, `Users.tsx` 1463, `Tickets.tsx` 1390, `Services.tsx` 1313, `SlaPolicies.tsx` 988, `api/admin.ts` 920. Extract `AdminPageHeader`, `KpiCard`, `TableHeadCell`, `ConfirmDialog` (Users, Services, SlaPolicies, AdminIncidentDetail use `window.confirm`).
 - [ ] Same 100 incidents fetched under different keys (`admin-incidents-kpi`, `admin-incidents-all`, `admin-services-telemetry`, `admin-reports-incidents`).
-- [ ] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`.
-- [ ] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one.
+- [ ] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`. **Partly done (2026-11-18):** the audit screen uses `Page<T>` via `api/audit.ts`; the Dashboard still uses `getAdminAuditLogs`.
+- [ ] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one. **Partly done (2026-11-18):** the audit screen uses the contract type; the admin type remains because the Dashboard imports it.
 - [ ] No admin screen uses `recharts` (installed) or `reactflow` (installed, unused); charts are hand-drawn SVG/`LinearProgress`.
 
 ### G2. Dashboard (`/admin/dashboard`, `Dashboard.tsx`, 1948 lines)
@@ -856,16 +856,16 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 
 - [x] Real `GET /audit?page=0&size=50` (newest first); table with time, action chip, actor, incident, description; loading + empty state (~:82-95).
 - [x] **Incident column**: since the backend added `incidentId` (section C) the column shows `INC #213` (the database id). Show `incidentCode` (`INC-2026-00213`) instead, as a link to `/admin/incidents/{incidentId}`.
-- [ ] Time shown via `toLocaleString()` but the header says "(UTC)".
-- [ ] Fixed `size: 50`, no paging controls (`totalItems/totalPages` available).
-- [ ] **No filters** (P1-6): API has `incidentId`, `actorId`, `action`, `from`, `to`. Add action multi-select (28 actions in the enum), actor, incident code, date range.
-- [ ] **No Verify / Seal**: `GET /audit/verify` -> `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem{recordId, sealId, problem, message}, problems[]}`; `POST /audit/seal` (200 `SealView{id, fromId, toId, recordCount, hash, prevHash, createdAt}` / 204 nothing new). Add a Verify button, green "intact" / red `firstProblem.message` banner, "Seal now", last seal id/hash. This is the S3 demo moment.
-- [ ] Chip colour by substring (`FAIL`, `LOCK`, `LOGIN`, `CONFIG`); real actions are `LOGIN_FAILED`, `ACCESS_DENIED`, `CONFIG_CHANGED`, `USER_ROLE_CHANGED`, `MFA_*`, `PASSWORD_*`...; `LOGIN` never occurs. Map explicitly.
-- [ ] Expandable row with full description and `previousState -> newState` (not displayed at all).
-- [ ] Header claims logins are logged (only failed logins are).
+- [x] Time shown via `toLocaleString()` but the header says "(UTC)".
+- [x] Fixed `size: 50`, no paging controls (`totalItems/totalPages` available).
+- [ ] **No filters** (P1-6): API has `incidentId`, `actorId`, `action`, `from`, `to`. Add action multi-select (28 actions in the enum), actor, incident code, date range. **Partly done (2026-11-18):** action (single choice, as the contract allows), actor ID, incident ID and from/to are built; actor and incident are numeric IDs, not name/code (the API filters by ID only).
+- [x] **No Verify / Seal**: `GET /audit/verify` -> `{intact, sealsChecked, recordsChecked, unsealedRecords, lastSealId, lastSealHash, problemCount, firstProblem{recordId, sealId, problem, message}, problems[]}`; `POST /audit/seal` (200 `SealView{id, fromId, toId, recordCount, hash, prevHash, createdAt}` / 204 nothing new). Add a Verify button, green "intact" / red `firstProblem.message` banner, "Seal now", last seal id/hash. This is the S3 demo moment.
+- [x] Chip colour by substring (`FAIL`, `LOCK`, `LOGIN`, `CONFIG`); real actions are `LOGIN_FAILED`, `ACCESS_DENIED`, `CONFIG_CHANGED`, `USER_ROLE_CHANGED`, `MFA_*`, `PASSWORD_*`...; `LOGIN` never occurs. Map explicitly.
+- [x] Expandable row with full description and `previousState -> newState` (not displayed at all).
+- [x] Header claims logins are logged (only failed logins are).
 - [ ] Events-per-hour histogram (guide 7), audit-chain visual (P3 #4), CSV export of the filtered list.
-- [ ] Normaliser invents values: `action || 'SYSTEM_ACTION'`, `description || 'System event recorded'`, `occurredAt || new Date()` (missing timestamp shows "now"), actor `'System'`.
-- [ ] Table font 10-11 px mono; chip fontSize 10.
+- [ ] Normaliser invents values: `action || 'SYSTEM_ACTION'`, `description || 'System event recorded'`, `occurredAt || new Date()` (missing timestamp shows "now"), actor `'System'`. **Partly done (2026-11-18):** the audit screen no longer uses it; `getAdminAuditLogs` and its defaults remain in `api/admin.ts` for the Dashboard feed.
+- [x] Table font 10-11 px mono; chip fontSize 10.
 
 ### G13. Reports (`/admin/reports`, `Reports.tsx`, 214 lines)
 
@@ -894,7 +894,7 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 
 ### G14. Backend features with no screen (admin-relevant)
 
-- [ ] **Audit Verify + Seal** (`GET /audit/verify`, `POST /audit/seal`): S3 signature feature.
+- [x] **Audit Verify + Seal** (`GET /audit/verify`, `POST /audit/seal`): S3 signature feature.
 - [ ] **Service Desk Simulator (S1)**: `POST /admin/simulations` (`SimulationRequest {configurations[{name, strategy, technicians, weights{skill, load, experience, priorityFit, familiarity}}] up to 3, lastIncidents, speedUp}` -> `SimulationView {results[ConfigurationView: meanWaitMinutes, meanResolveMinutes, p90ResolveMinutes, slaViolations, slaViolationPercent, fairness, unassigned, matchesRealAssigneePercent, perTechnician[], weights], best, bestReason, assumptions[], workload}`) and `POST /admin/simulations/apply`. One screen: configuration editor, grouped bar chart, assumptions panel, "Apply best".
 - [ ] **Problems / Major Incident Mode**: `GET /problems` (`?status=OPEN`), `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve`, `DELETE /problems/{id}/incidents/{incidentId}`, `POST /problems` (`CreateProblemRequest`), `GET /problems/recurring`, `GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join` (employee banner). Admin list + detail + "Resolve whole problem" + root-cause path on the graph.
 - [ ] **Demo controls (demo profile only; not in the OpenAPI export)**: `GET /admin/demo/clock` (`{now, offsetMinutes}`), `POST /admin/demo/clock/advance {minutes 1..1440}` (refresh the token after a big jump), `POST /admin/demo/outage-drill {rootServiceId}` (-> `{rootService, problemId, incidentCodes[], dependents[], note}`); show only when the endpoint answers (404 elsewhere). "Director's bar" (+10 min, start drill).
