@@ -282,7 +282,13 @@ export default function Login() {
             fullWidth
             margin="normal"
             placeholder="e.g. admin@iitsm.com"
-            {...register('email')}
+            {...register('email', {
+              onChange: () => {
+                setNeedCode(false);
+                setTotp('');
+                setCodeErr('');
+              },
+            })}
             error={!!errors.email}
             helperText={errors.email?.message}
             autoComplete="email"

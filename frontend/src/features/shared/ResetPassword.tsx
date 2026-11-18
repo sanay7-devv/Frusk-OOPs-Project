@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Alert, Button, Link, Stack, TextField } from '@mui/material';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { confirmPasswordReset } from '../../api/auth';
 import { apiErrorMessage } from '../../utils/errors';
 import { passwordRule } from '../../utils/validation';
@@ -19,7 +19,12 @@ type Values = z.infer<typeof schema>;
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
-  const token = params.get('token') ?? '';
+  const navigate = useNavigate();
+  // Keep the token in state, then remove it from the address bar and history.
+  const [token] = useState(() => params.get('token') ?? '');
+  useEffect(() => {
+    if (params.has('token')) navigate('/reset-password', { replace: true });
+  }, [params, navigate]);
   const [done, setDone] = useState(false);
   const [tokenBad, setTokenBad] = useState(!token);
   const [err, setErr] = useState('');

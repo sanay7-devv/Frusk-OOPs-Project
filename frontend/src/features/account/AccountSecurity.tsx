@@ -26,7 +26,7 @@ export default function AccountSecurity() {
     if (fe) setCodeErr(`Code ${fe}`); else setErr(apiErrorMessage(e));
   };
 
-  const start = useMutation({ mutationFn: setupMfa, onMutate: () => { reset(); setInfo(''); }, onSuccess: setSetup, onError: fail });
+  const start = useMutation({ mutationFn: setupMfa, onMutate: () => { reset(); setInfo(''); }, onSuccess: setSetup, onError: (e) => { setSetup(null); fail(e); } });
   const enable = useMutation({ mutationFn: () => enableMfa(code), onMutate: reset, onSuccess: () => done('Two-step verification is on.'), onError: fail });
   const disable = useMutation({ mutationFn: () => disableMfa(code), onMutate: reset, onSuccess: () => done('Two-step verification is off.'), onError: fail });
 
