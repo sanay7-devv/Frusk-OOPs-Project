@@ -1,214 +1,179 @@
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  Stack,
-  LinearProgress,
-  Button,
+  Alert, Box, Button, Grid, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material';
-import { Refresh as RefreshIcon, Assessment as ReportIcon } from '@mui/icons-material';
-import { listIncidents } from '../../api/incidents';
-import { getAdminServices } from '../../api/admin';
+import { Download as DownloadIcon } from '@mui/icons-material';
+import { tokens } from '../../theme/theme';
+import {
+  downloadReport, getCategoryDistribution, getOverview, getPriorityDistribution, getServiceReport, getSlaCompliance,
+  getTrends, getWorkloadReport, type ExportType, type SlaGroupBy,
+} from '../../api/reports';
+import { apiErrorMessage } from '../../utils/errors';
+import { ErrorState, LoadingState } from '../../components/StateViews';
+import { ChartCard, type DateRange } from './reports/common';
+import {
+  CategoryBars, PriorityDonut, ServiceBars, SlaChart, TrendChart, WorkloadChart, formatMinutes,
+} from './reports/Charts';
+import { CoverageRiskCard, SlaViolationsCard } from './reports/Tables';
 
-const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  secondary: '#06b6d4',
-  error: '#f43f5e',
-  success: '#10b981',
-  warning: '#f59e0b',
-};
+const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return toIsoDate(d); };
+
+const EXPORT_TYPES: { value: ExportType; label: string }[] = [
+  { value: 'incidents', label: 'All incidents' },
+  { value: 'overview', label: 'Summary numbers' },
+  { value: 'trends', label: 'Created and resolved over time' },
+  { value: 'sla-compliance', label: 'SLA compliance' },
+  { value: 'priority-distribution', label: 'Incidents by priority' },
+  { value: 'category-distribution', label: 'Incidents by category' },
+  { value: 'services', label: 'Incidents by service' },
+  { value: 'workload', label: 'Technician workload' },
+];
+
+function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <Paper sx={{ p: 2.5, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px', height: '100%' }}>
+      <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13 }}>{label}</Typography>
+      <Typography sx={{ color: tokens.onSurface, fontSize: 32, fontWeight: 700, lineHeight: 1.3 }}>{value}</Typography>
+      {hint && <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>{hint}</Typography>}
+    </Paper>
+  );
+}
 
 export default function Reports() {
-  const { data: incidentPage, refetch } = useQuery({
-    queryKey: ['admin-reports-incidents'],
-    queryFn: () => listIncidents({ page: 0, size: 100 }),
-  });
+  const navigate = useNavigate();
+  const [preset, setPreset] = useState<number | 'custom'>(30);
+  const [from, setFrom] = useState(daysAgo(30));
+  const [to, setTo] = useState(toIsoDate(new Date()));
+  const [groupBy, setGroupBy] = useState<SlaGroupBy>('priority');
+  const [exportType, setExportType] = useState<ExportType>('incidents');
+  const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['admin-reports-services'],
-    queryFn: getAdminServices,
-  });
+  const rangeInvalid = from > to;
+  // Backend takes date-times: start of the first day to the end of the last day, in the viewer's time zone.
+  const range = useMemo<DateRange>(() => ({
+    from: new Date(`${from}T00:00:00`).toISOString(),
+    to: new Date(`${to}T23:59:59.999`).toISOString(),
+  }), [from, to]);
+  const enabled = !rangeInvalid;
+  const bucket = (new Date(to).getTime() - new Date(from).getTime()) / 86400000 > 45 ? 'week' : 'day';
 
-  const incidents: any[] = (incidentPage as any)?.items || (incidentPage as any)?.content || [];
-  const total = incidents.length || 1;
-  const p1Count = incidents.filter((i) => i.priority === 'P1').length;
-  const p2Count = incidents.filter((i) => i.priority === 'P2').length;
-  const p3Count = incidents.filter((i) => i.priority === 'P3').length;
-  const p4Count = incidents.filter((i) => i.priority === 'P4').length;
+  const overview = useQuery({ queryKey: ['reports', 'overview', range], queryFn: () => getOverview(range), enabled });
+  const trends = useQuery({ queryKey: ['reports', 'trends', range, bucket], queryFn: () => getTrends(range, bucket), enabled });
+  const sla = useQuery({ queryKey: ['reports', 'sla', range, groupBy], queryFn: () => getSlaCompliance(range, groupBy), enabled });
+  const priorities = useQuery({ queryKey: ['reports', 'priority', range], queryFn: () => getPriorityDistribution(range), enabled });
+  const categories = useQuery({ queryKey: ['reports', 'categories', range], queryFn: () => getCategoryDistribution(range), enabled });
+  const services = useQuery({ queryKey: ['reports', 'services', range], queryFn: () => getServiceReport(range), enabled });
+  const workload = useQuery({ queryKey: ['reports', 'workload'], queryFn: getWorkloadReport });
 
-  const resolved = incidents.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length;
-  const resolutionRate = Math.round((resolved / total) * 100);
+  const pickPreset = (days: number) => { setPreset(days); setFrom(daysAgo(days)); setTo(toIsoDate(new Date())); };
+  const toTickets = (priority: string) => navigate(`/admin/tickets?priority=${encodeURIComponent(priority)}`);
 
+  const doExport = async (format: 'csv' | 'pdf') => {
+    setExporting(format);
+    setExportError(null);
+    try { await downloadReport(exportType, format, range); }
+    catch (e) { setExportError(apiErrorMessage(e)); }
+    finally { setExporting(null); }
+  };
+
+  const o = overview.data;
   return (
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={3} spacing={2}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
-            Executive Analytics &amp; SLA Reports
-          </Typography>
-          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mt: 0.5 }}>
-            Long-term reliability trends, MTTR metrics and workload distributions
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={() => refetch()}
-          sx={{
-            borderColor: COLORS.border,
-            color: COLORS.onSurfaceVariant,
-            textTransform: 'none',
-            fontWeight: 600,
-            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.2)' },
-          }}
-        >
-          Refresh Data
-        </Button>
-      </Stack>
+      <Typography variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 0.5 }}>Reports</Typography>
+      <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 14, mb: 3 }}>Incident volume, SLA results and team workload for the chosen dates.</Typography>
 
-      <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
-            <CardContent>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                Resolution Compliance
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.primary, my: 1, fontFamily: 'Sora, sans-serif' }}>
-                {resolutionRate}%
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={resolutionRate}
-                sx={{
-                  height: 6,
-                  borderRadius: 3,
-                  bgcolor: COLORS.surfaceContainerHighest,
-                  '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary },
-                }}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
-            <CardContent>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                Mean Time to Resolve (MTTR)
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.onSurface, my: 1, fontFamily: 'Sora, sans-serif' }}>
-                1.8 hrs
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.success, fontWeight: 600 }}>
-                -24 mins vs previous cycle
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
-            <CardContent>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                Mission-Critical P1 Volume
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.error, my: 1, fontFamily: 'Sora, sans-serif' }}>
-                {p1Count}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                {Math.round((p1Count / total) * 100)}% of total volume
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer }}>
-            <CardContent>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                Active Catalog Services
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: COLORS.onSurface, my: 1, fontFamily: 'Sora, sans-serif' }}>
-                {services.length}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                Monitored infrastructure nodes
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Priority Distribution Chart */}
-      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
-          Incident Volume Distribution by Priority
-        </Typography>
-        <Stack spacing={2.5}>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
-                P1 - Critical Priority
-              </Typography>
-              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p1Count} incidents</Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={(p1Count / total) * 100}
-              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.error } }}
-            />
-          </Box>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
-                P2 - High Priority
-              </Typography>
-              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p2Count} incidents</Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={(p2Count / total) * 100}
-              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: '#ea580c' } }}
-            />
-          </Box>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
-                P3 - Medium Priority
-              </Typography>
-              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p3Count} incidents</Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={(p3Count / total) * 100}
-              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.secondary } }}
-            />
-          </Box>
-          <Box>
-            <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="body2" fontWeight="600" sx={{ color: COLORS.onSurface }}>
-                P4 - Low Priority
-              </Typography>
-              <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>{p4Count} incidents</Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={(p4Count / total) * 100}
-              sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.surfaceContainerHighest, '& .MuiLinearProgress-bar': { bgcolor: COLORS.primary } }}
-            />
-          </Box>
+      <Paper sx={{ p: 2, mb: 3, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems={{ lg: 'center' }} justifyContent="space-between">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+            <ToggleButtonGroup size="small" exclusive value={preset} onChange={(_, v) => v !== null && (v === 'custom' ? setPreset('custom') : pickPreset(v))}>
+              <ToggleButton value={7}>Last 7 days</ToggleButton>
+              <ToggleButton value={30}>Last 30 days</ToggleButton>
+              <ToggleButton value={90}>Last 90 days</ToggleButton>
+              <ToggleButton value="custom">Custom</ToggleButton>
+            </ToggleButtonGroup>
+            <TextField size="small" type="date" label="From" value={from} InputLabelProps={{ shrink: true }}
+              onChange={(e) => { setFrom(e.target.value); setPreset('custom'); }} error={rangeInvalid} />
+            <TextField size="small" type="date" label="To" value={to} InputLabelProps={{ shrink: true }}
+              onChange={(e) => { setTo(e.target.value); setPreset('custom'); }} error={rangeInvalid}
+              helperText={rangeInvalid ? 'Start date must be before end date' : undefined} />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+            <TextField select size="small" label="Report to download" value={exportType} sx={{ minWidth: 240 }}
+              onChange={(e) => setExportType(e.target.value as ExportType)}>
+              {EXPORT_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+            </TextField>
+            <Button variant="outlined" startIcon={<DownloadIcon />} disabled={rangeInvalid || exporting !== null} onClick={() => doExport('csv')}>
+              {exporting === 'csv' ? 'Preparing…' : 'Download CSV'}
+            </Button>
+            <Button variant="outlined" startIcon={<DownloadIcon />} disabled={rangeInvalid || exporting !== null} onClick={() => doExport('pdf')}>
+              {exporting === 'pdf' ? 'Preparing…' : 'Download PDF'}
+            </Button>
+          </Stack>
         </Stack>
+        {exportError && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setExportError(null)}>Download failed: {exportError}</Alert>}
       </Paper>
+
+      {overview.isLoading && enabled ? <LoadingState /> : overview.isError ? (
+        <ErrorState message={apiErrorMessage(overview.error)} onRetry={() => overview.refetch()} />
+      ) : o && (
+        <Grid container spacing={2} mb={3}>
+          <Grid item xs={12} sm={6} md={3}><Kpi label="Total incidents" value={String(o.total)} hint={`${o.resolved} resolved`} /></Grid>
+          <Grid item xs={12} sm={6} md={3}><Kpi label="Still open" value={String(o.open)} hint={`${o.critical} critical`} /></Grid>
+          <Grid item xs={12} sm={6} md={3}><Kpi label="SLA violations" value={String(o.slaViolations)} /></Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Kpi label="Average time to resolve"
+              value={o.avgResolutionMinutes == null ? 'No data' : formatMinutes(o.avgResolutionMinutes)}
+              hint={o.avgSatisfaction != null ? `Average satisfaction ${o.avgSatisfaction.toFixed(1)} / 5` : undefined} />
+          </Grid>
+        </Grid>
+      )}
+
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <ChartCard title={`Incidents created and resolved (per ${bucket})`} query={trends} isEmpty={(d) => d.every((p) => p.created === 0 && p.resolved === 0)}
+            emptyMessage="No incidents in this period">
+            {(d) => <TrendChart data={d} />}
+          </ChartCard>
+        </Grid>
+        <Grid item xs={12} md={7}>
+          <ChartCard title={`SLA compliance by ${groupBy}`} query={sla} isEmpty={(d) => d.length === 0} emptyMessage="No SLA results in this period"
+            action={
+              <ToggleButtonGroup size="small" exclusive value={groupBy} onChange={(_, v) => v && setGroupBy(v)}>
+                <ToggleButton value="priority">Priority</ToggleButton>
+                <ToggleButton value="service">Service</ToggleButton>
+                <ToggleButton value="technician">Technician</ToggleButton>
+              </ToggleButtonGroup>
+            }>
+            {(d) => <SlaChart data={d} onBarClick={groupBy === 'priority' ? toTickets : undefined} />}
+          </ChartCard>
+        </Grid>
+        <Grid item xs={12} md={5}>
+          <ChartCard title="Incidents by priority" query={priorities} isEmpty={(d) => d.every((p) => p.count === 0)} emptyMessage="No incidents in this period">
+            {(d) => <PriorityDonut data={d} onSliceClick={toTickets} />}
+          </ChartCard>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <ChartCard title="Top 8 categories" query={categories} isEmpty={(d) => d.length === 0} emptyMessage="No incidents in this period">
+            {(d) => <CategoryBars data={d} />}
+          </ChartCard>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <ChartCard title="Incidents by service" query={services} isEmpty={(d) => d.length === 0} emptyMessage="No incidents in this period">
+            {(d) => <ServiceBars data={d} />}
+          </ChartCard>
+        </Grid>
+        <Grid item xs={12}>
+          <ChartCard title="Technician workload" query={workload} isEmpty={(d) => d.length === 0} emptyMessage="No technicians yet">
+            {(d) => <WorkloadChart data={d} />}
+          </ChartCard>
+        </Grid>
+        <Grid item xs={12}><CoverageRiskCard /></Grid>
+        <Grid item xs={12}><SlaViolationsCard range={range} /></Grid>
+      </Grid>
     </Box>
   );
 }
