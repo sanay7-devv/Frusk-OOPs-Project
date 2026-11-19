@@ -3,15 +3,15 @@
 > For Sanay and everyone helping on `frontend/`. **Read this before you start an item** from `FRONTEND_WORK_LEFT.md`, and add yourself to "In progress" when you start, so nobody does the same work twice.
 > The full item list (with what is done and what is left) stays in `frontend/docs/FRONTEND_WORK_LEFT.md`. This page only says **who** owns **which files/areas** right now and what each person has finished.
 
-Last updated: 2026-11-18
+Last updated: 2026-11-19
 
 ## 1. Where the frontend stands
 
 | | |
 |---|---|
-| Code checked | `main` after PRs #36 to #43 and Employee E1/E2 completions (2026-11-18) |
+| Code checked | `main` after PRs #36 to #43, Employee E1/E2 completions (2026-11-18) and commit `39db8c3` (Sanay, 2026-11-19, pushed to `main` without a PR) |
 | Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 3/3, CI green on every merged PR |
-| Checklist | **449 of 636 done (70.6%)**, 187 open. Completed across Employee (E1, E2, E3, E4, E5, E6, E7), Technician (F1, F2, F3), Team Lead (F4, F5), and Admin (G1, G3, G4). |
+| Checklist | **448 of 636 done (70.4%)**, 188 open (recounted 2026-11-19: three wrong ticks undone, G14 live dashboard and post-incident report ticked). Completed across Employee (E1, E2, E3, E4, E5, E6, E7), Technician (F1, F2, F3), Team Lead (F4, F5), and Admin (G1, G3, G4). |
 
 ## 2. Done by Sanay (do not redo)
 
@@ -23,15 +23,16 @@ From commits `1f351c2` (PR #15/#16), `1ea86cc` (new design and theme) and `50794
 - **Shared**: Notifications fully on the API (list, read, read-all, reply, verify, preferences); Login with real Google button only; Register with redirect and password rule; AppShell telemetry and fake impersonation removed; nav Workbench link fixed; `RootRedirect` waits for loading; `useRealtime` invalidates the employee/tech/lead/admin keys.
 - **Technician / lead**: Workbench timeline shows real audit text, major/problem/duplicate shown; workload duplicate key fixed; TeamQueue only CLASSIFIED, correct invalidation keys, routes to `/tech/incidents/:id`; Escalations server-filtered.
 - **Admin**: incident detail comments real and actions gated by `allowedActions`; Config saves only changed keys and Reset works; audit log links incidents by `incidentCode`; Tickets uses `minEscalationLevel`, real reassign errors.
+- **Commit `39db8c3` "70% frontend work done"** (pushed straight to `main`, no PR; checked in the code 2026-11-19): Employee service status board (`features/employee/ServiceStatus.tsx`, route `/employee/status`); post-incident report and PDF download on the employee, technician and admin incident screens; new shared components `ConfirmDialog`, `KpiCard`, `SlaBar`, `ConnectionBanner`, `PriorityExplainer`; `api/client.ts` rewritten (refresh, 429 and network handling); `realtime/useRealtime.ts` with exponential backoff and close 4001 refresh; `NotFound` page. `api/notifications.ts` has `listDevices`, `registerDevice`, `deleteDevice`, but no screen calls them yet. Some ticks in the checklist were wrong; they are corrected in `FRONTEND_WORK_LEFT.md`.
 
 ## 3. In progress (claimed, do not start these)
 
-Nothing claimed right now. To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines.
+To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines. The round 2 rows (tech SLA, Dashboard) were removed here on 2026-11-19: both are merged (PR #42 and #43, section 4).
 
 | Area | Who | Branch | Files it changes | Checklist items | Status |
 |---|---|---|---|---|---|
-| Technician screens: server-driven SLA clocks and bug fixes | helper (fe-tech-sla) | `frontend/tech-sla-fixes` | `features/technician/TechQueue.tsx`, `TechWorkbench.tsx`, `TechWorkload.tsx`, `components/SlaCountdown.tsx` | F0 L388, F1, F2, F3 SLA and bug items (bugs 8-12, 15, 16, 18) | building |
-| Admin Dashboard on real data (`/reports/overview`, `/dashboard/live`) | helper (fe-dashboard) | `frontend/dashboard-real-data` | `features/admin/Dashboard.tsx`, new files under `features/admin/dashboard/`, new `api/dashboard.ts` | G2, G15 bug 7 | building |
+| Service Desk Simulator (S1) and demo controls | worker fe-simulator | not pushed yet | new Simulator screen and `api/simulation.ts` (new); demo controls in the admin area; shared `routes/AppRoutes.tsx` and `layouts/navConfig.ts` (a few lines) | G14 Service Desk Simulator (S1) and Demo controls (2 items) | claimed 2026-11-19 |
+| Config (G11), escalation settings (G9) with escalation timeout and business-hours calendar editor, categories (G10) with category and skill edit | worker fe-admin-settings | not pushed yet | `features/admin/` Config, EscalationSettings and Categories screens; `api/admin.ts`; shared `routes/AppRoutes.tsx` and `layouts/navConfig.ts` (a few lines) | G9, G10, G11 items; G14 "Category edit/deactivate/tree/required skills" and "Escalation timeout edit; business-hours calendar editor" | claimed 2026-11-19 |
 
 ## 4. Done by helpers
 
@@ -52,7 +53,7 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 
 ## 5. Notes for the team
 
-- Commit `50794aa` went straight to `main` without a pull request. Please use a branch + PR (the team rule) so others can see the change before it lands.
+- Commit `50794aa` went straight to `main` without a pull request. Please use a branch + PR (the team rule) so others can see the change before it lands. The same applies to `39db8c3` (2026-11-19).
 - `50794aa` also changed `deploy/backend.Dockerfile` (CRLF fix for `mvnw`, runtime image JRE → JDK). That file belongs to Testing/DevOps; tell them, and say why the JDK image is needed (it makes the image larger).
 - Bug found in the re-check and fixed in #37: `Register.tsx` mapped server `fieldErrors` as an object, but the contract sends an array `{field, message}`, so field errors never reached the form.
 
@@ -65,4 +66,5 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 | 2026-11-18 | Round 2 claimed: technician SLA fixes, admin Dashboard on real data. |
 | 2026-11-18 | Round 2 ticks: PR #42 (Dashboard) and PR #43 (technician SLA) checked on `main` and ticked; section 3 emptied, section 4 lists them; checklist now 309 of 636 done. |
 | 2026-11-18 | E1 (EmployeeHome) and E2 (MyIncidents) completed with server paging, server filters, true counts, service status board, known outages + join, technician query preview, feedback rating dialog, visual SLA bars, saved views, and assignee column; checklist now 324 of 636 done (51%). |
+| 2026-11-19 | Docs PR (round 3 claims): checked Sanay's `39db8c3` against the code. Three wrong ticks undone in `FRONTEND_WORK_LEFT.md` (device push functions unused by screens; ReportIncident still has 21 font sizes under 12 px; notifications devices), font-size count noted (346 to 384). G14 live dashboard and post-incident report ticked; service status board marked Partly done (graph and impact unused). Checklist now 448 of 636 done (70.4%). Section 3: round 2 rows removed (merged); claimed fe-simulator (G14 S1 and demo controls) and fe-admin-settings (G9, G10, G11, and their G14 items). |
 | 2026-11-19 | Completed comprehensive technical and contract work across Technician (F1, F2, F3), Team Lead (F4, F5), and Admin management (G1, G3, G4): dual SLA timers, server pagination, chronological unified timelines, escalationPreview countdowns, whole problem resolution, mark duplicate, PriorityExplainer, attachments, PDF exports, recommendations, real CSV export, and `<ConfirmDialog>` integrations. Checklist advances past target to 449 of 636 done (70.6%). |
