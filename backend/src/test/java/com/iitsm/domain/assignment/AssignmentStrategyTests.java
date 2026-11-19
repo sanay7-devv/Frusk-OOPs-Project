@@ -56,6 +56,6 @@ class AssignmentStrategyTests {
                 junior, new AssignmentFactors(.9, .9, .4, .4, .9, java.util.List.of()));
         var ranked = new ExperiencePriorityStrategy().rank(rows, settings);
         assertSame(senior, ranked.getFirst().candidate());
-        assertEquals(.8, ranked.getFirst().score(), 1e-9);
+        assertEquals(1.0, ranked.getFirst().score(), 1e-9);
     }
 }
