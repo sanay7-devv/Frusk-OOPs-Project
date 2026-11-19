@@ -245,45 +245,32 @@ export const deleteAdminSlaPolicy = async (id: number) => {
 export interface AdminEscalationPolicy {
   id: number;
   priority: 'P1' | 'P2' | 'P3' | 'P4';
+  /** 1 Team Lead, 2 System Admin, 3 IT Manager. */
   level: number;
-  targetLevel?: number;
+  /** Minutes an incident may stay unacknowledged at the previous level before it moves up to this level. */
   timeoutMinutes: number;
+  /** Not part of the API contract; kept optional only for older callers. */
+  targetLevel?: number;
   triggerMinutes?: number;
   action?: string;
 }
 
 export const getAdminEscalationPolicies = async (): Promise<AdminEscalationPolicy[]> => {
-  const res = await api.get<any[]>('/admin/escalation-policies');
-  return (res.data || []).map((p, idx) => ({
-    id: p.id || idx + 1,
-    priority: p.priority,
-    level: p.level || p.targetLevel || 1,
-    targetLevel: p.level || p.targetLevel || 1,
-    timeoutMinutes: p.timeoutMinutes || p.triggerMinutes || 30,
-    triggerMinutes: p.timeoutMinutes || p.triggerMinutes || 30,
-    action: p.action || (p.level >= 2 ? 'Escalate to Tier 2 Lead & Page On-Call Commander' : 'Escalate to On-Call Team Lead'),
-  }));
+  const res = await api.get<AdminEscalationPolicy[]>('/admin/escalation-policies');
+  return res.data;
 };
 
 export const createAdminEscalationPolicy = async (data: { priority: string; level: number; timeoutMinutes: number; action?: string }) => {
-  const res = await api.post<any>('/admin/escalation-policies', {
+  const res = await api.post<AdminEscalationPolicy>('/admin/escalation-policies', {
     priority: data.priority,
     level: data.level,
     timeoutMinutes: data.timeoutMinutes,
   });
-  return {
-    id: res.data.id,
-    priority: res.data.priority,
-    level: res.data.level,
-    targetLevel: res.data.level,
-    timeoutMinutes: res.data.timeoutMinutes,
-    triggerMinutes: res.data.timeoutMinutes,
-    action: data.action || `Tier ${res.data.level} Incident Escalation Alert`,
-  };
+  return res.data;
 };
 
 export const updateAdminEscalationPolicy = async (id: number, data: { priority: string; level: number; timeoutMinutes: number }) => {
-  const res = await api.put<any>(`/admin/escalation-policies/${id}`, data);
+  const res = await api.put<AdminEscalationPolicy>(`/admin/escalation-policies/${id}`, data);
   return res.data;
 };
 
@@ -301,14 +288,18 @@ export interface AdminCategory {
   parentId?: number | null;
   requiredSkillIds?: number[];
   active: boolean;
-  description?: string;
-  defaultPriority?: string;
 }
 
 export interface AdminSkill {
   id: number;
   name: string;
-  description?: string;
+}
+
+export interface AdminCategoryInput {
+  name: string;
+  parentId: number | null;
+  requiredSkillIds: number[];
+  active: boolean;
 }
 
 export const getAdminCategories = async (): Promise<AdminCategory[]> => {
@@ -316,9 +307,18 @@ export const getAdminCategories = async (): Promise<AdminCategory[]> => {
   return res.data;
 };
 
-export const createAdminCategory = async (data: Partial<AdminCategory>) => {
+export const createAdminCategory = async (data: AdminCategoryInput) => {
   const res = await api.post<AdminCategory>('/admin/categories', data);
   return res.data;
+};
+
+export const updateAdminCategory = async (id: number, data: AdminCategoryInput) => {
+  const res = await api.put<AdminCategory>(`/admin/categories/${id}`, data);
+  return res.data;
+};
+
+export const deactivateAdminCategory = async (id: number) => {
+  await api.delete(`/admin/categories/${id}`);
 };
 
 export const getAdminSkills = async (): Promise<AdminSkill[]> => {
@@ -326,9 +326,18 @@ export const getAdminSkills = async (): Promise<AdminSkill[]> => {
   return res.data;
 };
 
-export const createAdminSkill = async (data: { name: string; description?: string }) => {
+export const createAdminSkill = async (data: { name: string }) => {
   const res = await api.post<AdminSkill>('/admin/skills', { name: data.name });
   return res.data;
+};
+
+export const renameAdminSkill = async (id: number, name: string) => {
+  const res = await api.put<AdminSkill>(`/admin/skills/${id}`, { name });
+  return res.data;
+};
+
+export const deleteAdminSkill = async (id: number) => {
+  await api.delete(`/admin/skills/${id}`);
 };
 
 // ==========================================
@@ -340,7 +349,6 @@ export interface ConfigItem {
   value: string;
   defaultValue: string;
   description: string;
-  type: string;
 }
 
 export const getAdminConfig = async (): Promise<ConfigItem[]> => {
