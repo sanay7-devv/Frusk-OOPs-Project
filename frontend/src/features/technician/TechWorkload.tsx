@@ -27,7 +27,9 @@ import { useToast } from '../../components/Toast';
 import { apiErrorMessage } from '../../utils/errors';
 import SlaCountdown from '../../components/SlaCountdown';
 import { ErrorState } from '../../components/StateViews';
-import { slaStateColor, slaStateLabel } from '../../theme/theme';
+import { slaStateColor, slaStateLabel, tokens } from '../../theme/theme';
+import { me as fetchMe } from '../../api/auth';
+import WorkloadInsights from './WorkloadInsights';
 import { useAuth } from '../../auth/AuthContext';
 import {
   getMyWorkload,
@@ -38,27 +40,23 @@ import {
   type Deadline,
 } from '../../api/technicians';
 
-// Design System Tokens (Luminary Kinetic Dark)
+// Colours come from the shared theme tokens; status colours from the shared SLA map.
 const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  outlineVariant: 'rgba(255, 255, 255, 0.08)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  primaryContainer: '#4f46e5',
-  secondary: '#06b6d4',
-  secondaryContainer: 'rgba(6, 182, 212, 0.2)',
-  error: '#f43f5e',
+  surface: tokens.background,
+  surfaceContainerLowest: tokens.surfaceContainerLowest,
+  surfaceContainerLow: tokens.surfaceContainerLow,
+  surfaceContainer: tokens.surfaceContainer,
+  surfaceContainerHigh: tokens.surfaceContainerHigh,
+  surfaceContainerHighest: tokens.surfaceContainerHighest,
+  onSurface: tokens.onSurface,
+  onSurfaceVariant: tokens.onSurfaceVariant,
+  border: tokens.outlineVariant,
+  primary: tokens.primary,
+  primaryContainer: tokens.primaryDark,
+  secondary: tokens.secondary,
+  error: slaStateColor.VIOLATED,
   errorContainer: 'rgba(244, 63, 94, 0.15)',
-  onErrorContainer: '#ffdad6',
-  tertiary: '#94a3b8',
-  tertiaryContainer: '#1c2234',
+  tertiary: tokens.onSurfaceVariant,
 };
 
 export default function TechWorkload() {
@@ -81,10 +79,14 @@ export default function TechWorkload() {
     refetchInterval: 15000,
   });
 
-  // 2. Fetch technicians list
+  // 2. Own profile (availability). GET /technicians is for team leads and administrators only, so a plain
+  //    technician never calls it; leads call it to show their own skills.
+  const { data: meProfile } = useQuery({ queryKey: ['auth-me'], queryFn: fetchMe, staleTime: 30_000 });
+  const canListTechnicians = !!user?.permissions?.includes('TEAM_VIEW');
   const { data: techList = [] } = useQuery({
     queryKey: ['technicians-list'],
     queryFn: () => listTechnicians(),
+    enabled: canListTechnicians,
   });
 
   const activeLoad = workload?.load ?? 0;
@@ -94,7 +96,7 @@ export default function TechWorkload() {
   // Newest known value wins: our own PUT response, then the technician list, then the sign-in profile.
   const [availabilityOverride, setAvailabilityOverride] = useState<TechnicianView['availability'] | null>(null);
   const me = techList.find((t) => t.email === user?.email);
-  const currentAvailability = availabilityOverride ?? me?.availability ?? user?.technician?.availability ?? null;
+  const currentAvailability = availabilityOverride ?? meProfile?.technician?.availability ?? me?.availability ?? user?.technician?.availability ?? null;
   const isAvailable = currentAvailability === 'AVAILABLE';
   const availabilityLabel =
     currentAvailability === 'AVAILABLE' ? 'Available'
@@ -111,6 +113,7 @@ export default function TechWorkload() {
       toast(`Availability set to ${updated.availability.replace('_', ' ').toLowerCase()}.`, 'info');
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
       queryClient.invalidateQueries({ queryKey: ['technicians-list'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-me'] });
     } catch (err) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -229,7 +232,7 @@ export default function TechWorkload() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 700,
                 }}
               >
@@ -239,7 +242,7 @@ export default function TechWorkload() {
                 <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.1 }}>
                   {user?.name || 'Technician'}
                 </Typography>
-                <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, lineHeight: 1 }}>
+                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, lineHeight: 1 }}>
                   {user?.technician?.escalationLevel === 1 ? 'Team Lead (L1)' : 'Technician (L0)'}
                 </Typography>
               </Box>
@@ -275,7 +278,7 @@ export default function TechWorkload() {
                 size="small"
                 onClick={handleToggleAvailability}
                 sx={{
-                  fontSize: 11,
+                  fontSize: 12,
                   py: 0.2,
                   px: 1,
                   textTransform: 'none',
@@ -343,7 +346,7 @@ export default function TechWorkload() {
               <Box>
                 <Typography
                   sx={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
@@ -378,12 +381,12 @@ export default function TechWorkload() {
                   bgcolor: capacityPercent >= 80 ? COLORS.errorContainer : 'rgba(16, 185, 129, 0.15)',
                   color: capacityPercent >= 80 ? COLORS.error : '#10b981',
                   fontWeight: 700,
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 22,
                   mb: 0.5,
                 }}
               />
-              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
                 Active ticket allocation cap: {maxQuota} slots
               </Typography>
             </Box>
@@ -409,7 +412,7 @@ export default function TechWorkload() {
               <Box>
                 <Typography
                   sx={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
@@ -429,7 +432,7 @@ export default function TechWorkload() {
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.primary }}>
                 Live Queue Tickets
               </Typography>
-              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
                 Currently assigned to you
               </Typography>
             </Box>
@@ -455,7 +458,7 @@ export default function TechWorkload() {
               <Box>
                 <Typography
                   sx={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
@@ -475,7 +478,7 @@ export default function TechWorkload() {
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>
                 Completed Resolutions
               </Typography>
-              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
                 Resolved tickets this calendar week
               </Typography>
             </Box>
@@ -501,7 +504,7 @@ export default function TechWorkload() {
               <Box>
                 <Typography
                   sx={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
@@ -521,13 +524,15 @@ export default function TechWorkload() {
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>
                 Next Commitments
               </Typography>
-              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
                 Upcoming SLA commitment deadlines
               </Typography>
             </Box>
           </Paper>
         </Grid>
       </Grid>
+
+      <WorkloadInsights deadlines={deadlines} skills={canListTechnicians ? (me?.skills ?? []) : null} />
 
       {/* Row 2: Upcoming SLA Commitments Table */}
       <Paper
@@ -613,7 +618,7 @@ export default function TechWorkload() {
                           variant="contained"
                           onClick={() => navigate(`/tech/incidents/${d.incidentId}`)}
                           sx={{
-                            fontSize: 11.5,
+                            fontSize: 12.5,
                             textTransform: 'none',
                             bgcolor: COLORS.primary,
                             fontWeight: 700,
