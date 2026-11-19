@@ -2,7 +2,7 @@
 
 > For Sanay (frontend). Every line is a small, separate task. `[x]` = done and checked in the code, `[ ]` = still to do.
 > Checked against **your latest work**: branch `sanay-branch` on the team repo, commit `1ea86cc` "new design and theme" (2026-11-15 23:31). Line numbers (`file:line`) refer to that commit, paths are under `frontend/src/`.
-> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Round 3 (Sections E1-E7, F1-F5, G1, G3, G4) ticked: 449 of 636 done (70.6%). **Recounted 2026-11-19: 448 of 636 done (70.4%), 188 open** (three wrong ticks undone, two G14 items ticked; see the Partly done notes). Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
+> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Round 3 (Sections E1-E7, F1-F5, G1, G3, G4) ticked: 449 of 636 done (70.6%). **Recounted 2026-11-19 after round 3 (#48 to #51): 481 of 636 done (75.6%), 155 open.** Earlier that day: three wrong ticks undone, two G14 items ticked. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
 > Contract: `backend/docs/openapi/iitsm-api.json` (129 operations). Older review with the reasons behind each rule: `frontend/FRONTEND_GUIDE.md`.
 
 ## A. Where your work stands
@@ -267,7 +267,7 @@ services.ts
 - [x] `PREDEFINED_SERVICES/CATEGORIES` fake ids `:19-35`; `getServices/getCategories` silently return them on error or empty list `:37-59` -> the form submits fake `serviceId` that does not exist. Remove, show error.
 - [x] `ServiceItem` with optional description/alwaysP1, categories flattened tree with hierarchy indicators.
 notifications.ts
-- [ ] Real notifications, preferences, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Partly done (2026-11-19):** preferences are used in `features/shared/Notifications.tsx`. `listDevices`, `registerDevice` and `deleteDevice` exist only in `api/notifications.ts`; no screen calls them.
+- [x] Real notifications, preferences, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Done (2026-11-19):** preferences in `features/shared/Notifications.tsx`; push devices in `features/shared/PushDevicesDialog.tsx` (list, register, remove), which the device lines were waiting for (#51).
 types.ts
 - [x] `closureReason` enum (`VERIFIED | AUTO_VERIFIED | DUPLICATE | WITHDRAWN`), `availability` enum (`AVAILABLE | BUSY | AWAY | OFF_DUTY`), `escalationLevel` integer (0..3), `ApiError.similar` typed with `source/match`, `AppNotification.eventType` and `channel` typed unions.
 - [ ] No typed client generated from `iitsm-api.json` (guide 12 suggests it).
@@ -327,7 +327,7 @@ useRealtime
 - [x] Service status board (`/services/status`) on employee home and dedicated `/employee/status` page.
 - [x] SLA progress bar (`SlaBar`) + AT_RISK label.
 - [x] Post-incident report + PDF (`/incidents/{id}/post-incident-report[/pdf]`).
-- [ ] Real notifications, preferences grid, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Partly done (2026-11-19):** preferences grid works (`features/shared/Notifications.tsx`). Push devices: the three functions exist only in `api/notifications.ts`; no screen calls them.
+- [x] Real notifications, preferences grid, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Done (2026-11-19):** preferences grid in `features/shared/Notifications.tsx`; push devices in `features/shared/PushDevicesDialog.tsx` (#51).
 - [x] Password reset screens, MFA login step, Account security.
 - [x] Google login working through GIS only (`VITE_GOOGLE_CLIENT_ID`, backend `GOOGLE_CLIENT_ID`).
 - [x] Saved views (`/saved-filters`) on My incidents.
@@ -670,8 +670,8 @@ useRealtime
 - [ ] 429 `RATE_LIMITED`, 409 `OPTIMISTIC_LOCK_CONFLICT`, 409 `DUPLICATE_INCIDENT` unhandled in every admin form.
 - [x] Extracted reusable `<ConfirmDialog>` component and replaced all native `window.confirm` calls across Users, Services, SlaPolicies, and AdminIncidentDetail.
 - [ ] Same 100 incidents fetched under different keys (`admin-incidents-kpi`, `admin-incidents-all`, `admin-services-telemetry`, `admin-reports-incidents`).
-- [ ] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`. **Partly done (2026-11-18):** the audit screen uses `Page<T>` via `api/audit.ts`; the Dashboard still uses `getAdminAuditLogs`.
-- [ ] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one. **Partly done (2026-11-18):** the audit screen uses the contract type; the admin type remains because the Dashboard imports it.
+- [x] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`. **Done (2026-11-19):** `getAdminAuditLogs` is deleted, so the audit screen uses `api/audit.ts` only (#51).
+- [x] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one. **Done (2026-11-19):** the duplicate admin type is deleted (#51).
 - [ ] No admin screen uses `recharts` (installed) or `reactflow` (installed, unused); charts are hand-drawn SVG/`LinearProgress`.
 
 ### G2. Dashboard (`/admin/dashboard`, `Dashboard.tsx`, 1948 lines)
@@ -685,7 +685,7 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] "Met SLA Rate" = `(MET|OK)/all incidents`: wrong definition. Use `GET /reports/sla-compliance` (`compliancePercent`).
 - [x] Hardcoded text with no data: "Target >98%" chip, "HIGH SLA", "Priority Emergency", "Zero breaches past 72h", FAIL/OK (~:895-1012).
 - [x] "Active War Room" chip on the P1 card (~:903): no war room exists; delete.
-- [ ] Donut centre MTTR `{avgMttrMinutes}m` (:1350) falls back to a hardcoded **32** (:187) and replaces non-positive values by 30. Use `/reports/overview.avgResolutionMinutes`. **Partly done (2026-11-18):** the 32 and 30 fallbacks are gone and `avgResolutionMinutes` is used, with "No data" when nothing is resolved; the figure is a line under the donut, not in its centre.
+- [x] Donut centre MTTR `{avgMttrMinutes}m` (:1350) falls back to a hardcoded **32** (:187) and replaces non-positive values by 30. Use `/reports/overview.avgResolutionMinutes`. **Done (2026-11-19):** MTTR sits in the donut centre from `/reports/overview` (`dashboard/PriorityCard.tsx`); no 32 or 30 fallback; shows Unavailable on error (#51).
 - [x] Donut legend "MTTR: 15m / 30m / 60m / 120m target" (:1376-1418) hardcoded; real targets are SLA policies (`GET /admin/sla-policies`).
 - [x] Velocity chart (~:330-440, `today|7d|30d`) bucketed in the browser from 100 incidents. Use `GET /reports/trends?bucket=day|week&from&to` (`[{date, created, resolved}]`) with recharts.
 - [x] `GET /ping` (:317) does not exist on main (404 every 5 s). Delete `measureLatency`, the latency badge and tooltip.
@@ -700,7 +700,7 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [ ] Incident creation duplicated in Tickets and Dashboard; keep one shared dialog. **Partly done (2026-11-18):** the Dashboard has its own `DeclareDialog` (`features/admin/dashboard/`); Tickets still has its own dialog and there is no shared one.
 - [x] No "needs attention" list (violated / at risk / unassigned): `/dashboard/live.atRisk`.
 - [x] 5 KPI cards (guide: max 4); numbers repeated ("Current Net Open" = card 2; "{totalActive} open tickets" in donut subtitle).
-- [ ] No Prometheus/Grafana link, no wallboard mode.
+- [ ] No Prometheus/Grafana link, no wallboard mode. **Partly done (2026-11-19):** the Operations card links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token). Wallboard mode is not built.
 - [x] Split into KpiRow, VelocityChart, PriorityDonut, CapacityList, LiveFeed, DeclareDialog; remove unused icon imports.
 
 ### G3. Tickets (`/admin/tickets`, `Tickets.tsx`, 1390 lines)
@@ -785,20 +785,20 @@ Real `GET /admin/users` (with silent mock fallback); real create/role calls with
 
 ### G7. Service graph (`/admin/services/graph`, `ServiceGraph.tsx`, 1851 lines)
 
-Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius mode, inspector. **`reactflow` still unused** (guide P1-1). Not driven by the graph endpoints.
+Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius mode, inspector. **`reactflow` still unused** (guide P1-1). Driven by the graph endpoints since #49 (2026-11-19).
 
 - [x] Nodes and edges drawn from `getAdminServices().dependencyIds`; pan, zoom +/-/reset, status chips, tier filter, inspector panel, "Edit dependencies" modal (dependencies endpoint).
 - [x] Blast-radius mode highlights transitive downstream services (`getTransitiveDownstream`, ~:160): right idea, computed client-side.
-- [ ] Use real endpoints: `GET /services/graph` (`nodes{id,name,criticality,openIncidents,hasOpenP1}`, `edges{from,to}`), `GET /services/status` (colours), `GET /services/{id}/impact` (`affected[{id,name,distance}]`) on node click. None called; states come from 100 incidents (`getOutageStatus`, ~:172-210) and cascade is flagged one hop only.
-- [ ] State names `DIRECT_OUTAGE / CASCADE_RISK / HEALTHY` don't match backend `OUTAGE / DEGRADED / HEALTHY`.
-- [ ] Layers by name heuristics ("database", "postgres", "redis", "kafka", "vpc", "aws" bottom; "payment", "auth", "sso", "catalog" middle; hardcoded fallbacks ~:255-300). Use graph depth or reactflow + auto-layout.
-- [ ] **Invented numbers in the inspector**: "ESTIMATED BLAST RADIUS $${criticality * 3680} / hr" (:1434), "Response Failure Rate (Last 30m) +95.8% SPIKE / 0.02% NOMINAL" with a fixed fake sparkline (:1543-1565), "SEV-1 ACTIVE" (:1354). Delete.
-- [ ] KPI `compliancePercent` = healthy/services (~:233), mislabelled.
+- [x] Use real endpoints: `GET /services/graph` (`nodes{id,name,criticality,openIncidents,hasOpenP1}`, `edges{from,to}`), `GET /services/status` (colours), `GET /services/{id}/impact` (`affected[{id,name,distance}]`) on node click. None called; states come from 100 incidents (`getOutageStatus`, ~:172-210) and cascade is flagged one hop only. **Done (2026-11-19):** `api/services.ts` (`getServiceGraph`, `getServiceImpact`, status board) feeds `features/admin/ServiceGraph.tsx` (#49).
+- [x] State names `DIRECT_OUTAGE / CASCADE_RISK / HEALTHY` don't match backend `OUTAGE / DEGRADED / HEALTHY`. **Done (2026-11-19):** `servicegraph/health.ts` uses the server's OUTAGE, DEGRADED and HEALTHY (#49).
+- [x] Layers by name heuristics ("database", "postgres", "redis", "kafka", "vpc", "aws" bottom; "payment", "auth", "sso", "catalog" middle; hardcoded fallbacks ~:255-300). Use graph depth or reactflow + auto-layout. **Done (2026-11-19):** `servicegraph/layout.ts` lays out from the edges only (#49).
+- [x] **Invented numbers in the inspector**: "ESTIMATED BLAST RADIUS $${criticality * 3680} / hr" (:1434), "Response Failure Rate (Last 30m) +95.8% SPIKE / 0.02% NOMINAL" with a fixed fake sparkline (:1543-1565), "SEV-1 ACTIVE" (:1354). Delete. **Done (2026-11-19):** the $/hr figure, the sparkline and the SEV-1 badge are gone (#49).
+- [x] KPI `compliancePercent` = healthy/services (~:233), mislabelled. **Done (2026-11-19):** the KPIs are real counts of outage, degraded and healthy services (#49).
 - [ ] No Major Incident Mode view (P1-2): no problem link, no root-cause path (`GET /problems/{id}/root-cause`: `probable`, `candidates`, `affectedServices`), no outage drill, no join counter. **Partly done (2026-11-18):** problem link and root cause (probable, candidates, affected services, paths as text) are on `/admin/problems/:id`; the graph screen itself still has no root-cause path, outage drill or join counter.
-- [ ] Inspector "View tickets" goes to `/admin/tickets?tab=all` without `serviceId` (Tickets doesn't read it).
+- [ ] Inspector "View tickets" goes to `/admin/tickets?tab=all` without `serviceId` (Tickets doesn't read it). **Partly done (2026-11-19):** the link goes to `/admin/tickets?serviceId=`, but `Tickets.tsx` does not read `serviceId` yet.
 - [ ] No pulse/glow on live events, no wallboard mode (P3 #1, #6).
-- [ ] Canvas fixed 1260 px, cards 240x118; breaks with many services; no fit-to-screen/minimap; mouse-only drag.
-- [ ] Split canvas / inspector / deps modal.
+- [ ] Canvas fixed 1260 px, cards 240x118; breaks with many services; no fit-to-screen/minimap; mouse-only drag. **Partly done (2026-11-19):** fit-to-screen, zoom and arrow-key pan are in `servicegraph/GraphCanvas.tsx`. The minimap is not built.
+- [x] Split canvas / inspector / deps modal. **Done (2026-11-19):** `servicegraph/` has `GraphCanvas`, `Inspector` and `DependenciesDialog` (#49).
 
 ### G8. SLA policies (`/admin/sla`, `SlaPolicies.tsx`, 988 lines)
 
@@ -819,37 +819,37 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 ### G9. Escalation settings (`/admin/escalation`, `EscalationSettings.tsx`, 137 lines)
 
 - [x] Real `GET /admin/escalation-policies` (mock fallback on empty/error).
-- [ ] Read-only; add/edit/delete live in SlaPolicies. Merge.
-- [ ] "ESCALATION TARGET TIER: Tier N (Team Lead)" hardcodes "(Team Lead)" for every level (~:110).
-- [ ] Column "AUTOMATED WORKFLOW ACTION" shows the invented `action` text; remove.
-- [ ] Wording "N minutes without acknowledgment": verify against `timeoutMinutes` semantics.
-- [ ] No empty state (falls to mock), no error state.
-- [ ] Related keys `escalation.exhausted.minutes`, `escalation.monitor.interval.seconds` editable only in Config.
+- [x] Read-only; add/edit/delete live in SlaPolicies. Merge. **Done (2026-11-19):** add level, edit timeout and remove the top level (ConfirmDialog) are in `EscalationSettings.tsx` (#50).
+- [x] "ESCALATION TARGET TIER: Tier N (Team Lead)" hardcodes "(Team Lead)" for every level (~:110). **Done (2026-11-19):** level names come from the contract (1 team lead, 2 system administrator, 3 IT manager); no mock text (#50).
+- [x] Column "AUTOMATED WORKFLOW ACTION" shows the invented `action` text; remove. **Done (2026-11-19):** the invented action column is gone (#50).
+- [x] Wording "N minutes without acknowledgment": verify against `timeoutMinutes` semantics. **Done (2026-11-19):** the wait is the server's `timeoutMinutes` (#50).
+- [x] No empty state (falls to mock), no error state. **Done (2026-11-19):** loading, empty and error states (#50).
+- [x] Related keys `escalation.exhausted.minutes`, `escalation.monitor.interval.seconds` editable only in Config. **Done (2026-11-19):** both keys are editable on the escalation screen (#50).
 
 ### G10. Categories (`/admin/categories`, `Categories.tsx`, 431 lines)
 
 - [x] Real `GET /admin/categories`, `POST /admin/categories`, `GET /admin/skills`, `POST /admin/skills` (`api/admin.ts:561-593`); create dialogs for both.
 - [x] **Category contract mismatch**: `CategoryRequest/View = {name, parentId, requiredSkillIds, active}`. UI sends/reads `description` and `defaultPriority` (`AdminCategory`, `api/admin.ts:547-553`; table column "DEFAULT PRIORITY" renders `c.defaultPriority`, subtitle `c.description`); backend has neither, so the chip is empty and descriptions are lost. Remove both; add **Parent category** (`parentId`) and **Required skills** (`requiredSkillIds[]`, multi-select from `/admin/skills`), which drive assignment eligibility.
 - [x] **Skill contract mismatch**: `SkillRequest/View = {name}`; description not persisted.
-- [ ] No edit category (`PUT /admin/categories/{id}`), deactivate (`DELETE /admin/categories/{id}`), reactivate (`PUT active:true`); an "Archived" chip exists with no control.
-- [ ] No edit/delete skill (`PUT /admin/skills/{id}`, `DELETE /admin/skills/{id}`, only when unused; show the message).
-- [ ] Show the tree (indent children), required-skill chips, eligible-technician count per category (link to coverage risk). **Partly done (2026-11-18):** parent and required-skill chips shown; no indented tree, no eligible-technician count.
+- [x] No edit category (`PUT /admin/categories/{id}`), deactivate (`DELETE /admin/categories/{id}`), reactivate (`PUT active:true`); an "Archived" chip exists with no control. **Done (2026-11-19):** edit, deactivate and reactivate in `Categories.tsx` and `categories/CategoryDialog.tsx` (#50).
+- [x] No edit/delete skill (`PUT /admin/skills/{id}`, `DELETE /admin/skills/{id}`, only when unused; show the message). **Done (2026-11-19):** rename and delete in `categories/SkillDialog.tsx`; a skill in use is refused by the server and its message is shown (#50).
+- [ ] Show the tree (indent children), required-skill chips, eligible-technician count per category (link to coverage risk). **Partly done (2026-11-19):** the indented tree and the required-skill chips are shown; the eligible-technician count per category is not.
 - [ ] Technician skills + proficiency managed nowhere (see Users).
 - [x] `api/services.ts` (`getServices/getCategories`, used by Dashboard and report form) calls non-admin `/services` and `/categories` with a `PREDEFINED_*` fallback on empty list or any error (`api/services.ts:36-60`): another silent mock. Its `CategoryItem.serviceId` is not in the contract; `GET /categories` returns a **tree**, treated as flat.
-- [ ] Header "Taxonomy & Skill Matrix" (no matrix); toasts use `e.message`; no error state.
+- [x] Header "Taxonomy & Skill Matrix" (no matrix); toasts use `e.message`; no error state. **Done (2026-11-19):** new header and error states (#50).
 
 ### G11. Config (`/admin/config`, `Config.tsx`, 188 lines)
 
 - [x] Real `GET /admin/config` and `PUT /admin/config` (`[{key,value}]`, `api/admin.ts:607-622`); success toast, refetch.
-- [ ] One flat table of ~63-76 rows (~5,900 px). Group by key prefix (priority, assignment, sla, escalation, autocat/ai, ratelimit/security, notification, dashboard, audit, verify) with search and collapsible sections (guide 5.3).
-- [ ] `ConfigItem.type` (`api/admin.ts:604`) is not in `ConfigItemView {key, value, defaultValue, description}`; every value is free text (strategy names, booleans, weights, durations). Add typed controls by key (select for the strategy keys, switches, numbers with ranges) or ask backend for type/options.
+- [x] One flat table of ~63-76 rows (~5,900 px). Group by key prefix (priority, assignment, sla, escalation, autocat/ai, ratelimit/security, notification, dashboard, audit, verify) with search and collapsible sections (guide 5.3). **Done (2026-11-19):** grouped and searchable (`Config.tsx`, `config/configMeta.ts`) (#50).
+- [x] `ConfigItem.type` (`api/admin.ts:604`) is not in `ConfigItemView {key, value, defaultValue, description}`; every value is free text (strategy names, booleans, weights, durations). Add typed controls by key (select for the strategy keys, switches, numbers with ranges) or ask backend for type/options. **Done (2026-11-19):** typed controls with ranges from `config/configMeta.ts` (#50).
 - [x] **Save sends every setting**, not only changed ones (`Object.entries(formValues)`): CONFIG_CHANGED audit noise and a 400 risk from an unrelated key. Send only keys where `value !== original`.
 - [x] "Reset" only `refetch()`es; with TanStack structural sharing the `configs` reference is unchanged so `useEffect([configs])` won't re-run and **unsaved edits stay** (likely bug; verify in the browser). Reset values explicitly.
-- [ ] Highlight modified rows; per-row "reset to default" (default column not actionable).
-- [ ] Backend validates all-or-nothing and returns `fieldErrors` like `[0].value`; only `e.message` shown. Map index to key.
-- [ ] Assignment weights (five factors) should total 100%: stacked bar + validation (P3 #10); strategy switch has no explanation and no link to the Simulator.
-- [ ] Header copy "Set Things-Tune algorithmic assignment weights..." is nonsense.
-- [ ] No units for durations.
+- [x] Highlight modified rows; per-row "reset to default" (default column not actionable). **Done (2026-11-19):** modified rows are marked and 'Use default' resets a row (#50).
+- [x] Backend validates all-or-nothing and returns `fieldErrors` like `[0].value`; only `e.message` shown. Map index to key. **Done (2026-11-19):** field errors show next to the fields (#50).
+- [ ] Assignment weights (five factors) should total 100%: stacked bar + validation (P3 #10); strategy switch has no explanation and no link to the Simulator. **Partly done (2026-11-19):** weight bars with a sum check are done. The strategy switch has no link to the Simulator yet.
+- [x] Header copy "Set Things-Tune algorithmic assignment weights..." is nonsense. **Done (2026-11-19):** header copy replaced (#50).
+- [x] No units for durations. **Done (2026-11-19):** units come from `config/configMeta.ts` (#50).
 
 
 ### G12. Audit log (`/admin/audit`, `AuditLog.tsx`, 190 lines)
@@ -863,8 +863,8 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 - [x] Chip colour by substring (`FAIL`, `LOCK`, `LOGIN`, `CONFIG`); real actions are `LOGIN_FAILED`, `ACCESS_DENIED`, `CONFIG_CHANGED`, `USER_ROLE_CHANGED`, `MFA_*`, `PASSWORD_*`...; `LOGIN` never occurs. Map explicitly.
 - [x] Expandable row with full description and `previousState -> newState` (not displayed at all).
 - [x] Header claims logins are logged (only failed logins are).
-- [ ] Events-per-hour histogram (guide 7), audit-chain visual (P3 #4), CSV export of the filtered list.
-- [ ] Normaliser invents values: `action || 'SYSTEM_ACTION'`, `description || 'System event recorded'`, `occurredAt || new Date()` (missing timestamp shows "now"), actor `'System'`. **Partly done (2026-11-18):** the audit screen no longer uses it; `getAdminAuditLogs` and its defaults remain in `api/admin.ts` for the Dashboard feed.
+- [ ] Events-per-hour histogram (guide 7), audit-chain visual (P3 #4), CSV export of the filtered list. **Partly done (2026-11-19):** the histogram covers the current page only and says so. CSV export covers all filtered pages, capped at 5000 with a warning. The audit-chain visual is not built (#51).
+- [x] Normaliser invents values: `action || 'SYSTEM_ACTION'`, `description || 'System event recorded'`, `occurredAt || new Date()` (missing timestamp shows "now"), actor `'System'`. **Done (2026-11-19):** `getAdminAuditLogs` is deleted from `api/admin.ts` (#51).
 - [x] Table font 10-11 px mono; chip fontSize 10.
 
 ### G13. Reports (`/admin/reports`, `Reports.tsx`, 214 lines)
@@ -888,18 +888,18 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
   - [x] SLA violations list: `GET /sla/violations?from&to&page&size` (`incidentCode, type RESPONSE|RESOLUTION, overdueSeconds, technician, createdAt`); `getSlaViolations` exists (`api/incidents.ts:715`), unused.
   - [x] Date range picker (`from`, `to`) shared by all charts; presets 7/30/90 days.
   - [x] Export CSV and PDF: `GET /reports/export?type=...&format=csv|pdf&from&to` (download as blob with the auth header; contract returns `text/csv` or `application/pdf`).
-  - [ ] Click a bar/slice -> filtered incident list in a drawer (guide 7 rule 6), via `GET /incidents` filters. **Partly done (2026-11-18):** priority donut slice and priority SLA bars open `/admin/tickets?priority=` instead of a drawer; service, category and technician bars are not clickable.
+  - [ ] Click a bar/slice -> filtered incident list in a drawer (guide 7 rule 6), via `GET /incidents` filters. **Partly done (2026-11-19):** the drawer opens for priority bars and donut slices, service bars and technician bars (#51). Category bars and SLA bars outside the priority view are not clickable (their rows have no ids).
   - [x] Use `recharts` (installed); one message per chart; empty states.
 - [ ] Title "Executive Analytics & SLA Reports" + subtitle (guide 5.1 #5). **Partly done (2026-11-18):** title is now "Reports" with a one-line subtitle; the long title was not used.
 
 ### G14. Backend features with no screen (admin-relevant)
 
 - [x] **Audit Verify + Seal** (`GET /audit/verify`, `POST /audit/seal`): S3 signature feature.
-- [ ] **Service Desk Simulator (S1)**: `POST /admin/simulations` (`SimulationRequest {configurations[{name, strategy, technicians, weights{skill, load, experience, priorityFit, familiarity}}] up to 3, lastIncidents, speedUp}` -> `SimulationView {results[ConfigurationView: meanWaitMinutes, meanResolveMinutes, p90ResolveMinutes, slaViolations, slaViolationPercent, fairness, unassigned, matchesRealAssigneePercent, perTechnician[], weights], best, bestReason, assumptions[], workload}`) and `POST /admin/simulations/apply`. One screen: configuration editor, grouped bar chart, assumptions panel, "Apply best".
+- [x] **Service Desk Simulator (S1)**: `POST /admin/simulations` (`SimulationRequest {configurations[{name, strategy, technicians, weights{skill, load, experience, priorityFit, familiarity}}] up to 3, lastIncidents, speedUp}` -> `SimulationView {results[ConfigurationView: meanWaitMinutes, meanResolveMinutes, p90ResolveMinutes, slaViolations, slaViolationPercent, fairness, unassigned, matchesRealAssigneePercent, perTechnician[], weights], best, bestReason, assumptions[], workload}`) and `POST /admin/simulations/apply`. One screen: configuration editor, grouped bar chart, assumptions panel, "Apply best". **Done (2026-11-19):** `features/admin/Simulator.tsx` and `simulator/ResultCharts.tsx` (grouped bars) (#48).
 - [ ] **Problems / Major Incident Mode**: `GET /problems` (`?status=OPEN`), `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve`, `DELETE /problems/{id}/incidents/{incidentId}`, `POST /problems` (`CreateProblemRequest`), `GET /problems/recurring`, `GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join` (employee banner). Admin list + detail + "Resolve whole problem" + root-cause path on the graph. **Partly done (2026-11-18):** admin list + detail + "Resolve whole problem" + remove incident + create from recurring built (known-outage banner and join were already done); root-cause path drawn on the graph is missing (paths shown as text).
-- [ ] **Demo controls (demo profile only; not in the OpenAPI export)**: `GET /admin/demo/clock` (`{now, offsetMinutes}`), `POST /admin/demo/clock/advance {minutes 1..1440}` (refresh the token after a big jump), `POST /admin/demo/outage-drill {rootServiceId}` (-> `{rootService, problemId, incidentCodes[], dependents[], note}`); show only when the endpoint answers (404 elsewhere). "Director's bar" (+10 min, start drill).
+- [ ] **Demo controls (demo profile only; not in the OpenAPI export)**: `GET /admin/demo/clock` (`{now, offsetMinutes}`), `POST /admin/demo/clock/advance {minutes 1..1440}` (refresh the token after a big jump), `POST /admin/demo/outage-drill {rootServiceId}` (-> `{rootService, problemId, incidentCodes[], dependents[], note}`); show only when the endpoint answers (404 elsewhere). "Director's bar" (+10 min, start drill). **Partly done (2026-11-19):** clock, advance (1 to 1440 minutes, quick buttons), outage drill with a problem link, token refresh (#48). A 404 is treated as demo-only. The persistent Director's bar is not built; its actions are on the page.
 - [x] **Live dashboard** `GET /dashboard/live` + STOMP `/topic/dashboard` (events and `COUNTERS` every 30 s; non-admin gets an ERROR frame; close 4001 -> refresh + reconnect). Used by the admin Dashboard (`api/dashboard.ts`, `features/admin/dashboard/`, PR #42); `realtime/useRealtime.ts` subscribes to `/topic/dashboard` and handles close 4001.
-- [ ] **Service status board** `GET /services/status`, **graph** `GET /services/graph`, **impact** `GET /services/{id}/impact`. **Partly done (2026-11-19):** the status board is built (`features/employee/ServiceStatus.tsx` at `/employee/status`, and on Employee Home). `/services/graph` and `/services/{id}/impact` are not called anywhere; the admin graph reads the admin API.
+- [x] **Service status board** `GET /services/status`, **graph** `GET /services/graph`, **impact** `GET /services/{id}/impact`. **Done (2026-11-19):** status board on Employee Home and `/employee/status`; graph, status and impact on `servicegraph/` (#49).
 - [x] **Coverage risk (E3)** screen.
 - [x] **SLA violations list** `GET /sla/violations`.
 - [x] **Post-incident report + PDF** (`/incidents/{id}/post-incident-report[/pdf]`): `api/incidents.ts`, PDF download on the employee, technician and admin incident screens (commit `39db8c3`).
@@ -907,13 +907,13 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 - [ ] **Priority what-if** `POST /priority/what-if` (+ explanation on incident detail).
 - [ ] **Technician management**: profile, availability, skills with proficiency (`PUT /admin/technicians/{id}`, `/skills`), `GET /technicians?skillId&availability`.
 - [ ] **User edit / reactivate / MFA reset** (`PUT /admin/users/{id}`, `POST /admin/users/{id}/mfa/reset`), `GET /admin/users/{id}`.
-- [ ] **Category edit/deactivate/tree/required skills; skill edit/delete.**
-- [ ] **Escalation timeout edit; business-hours calendar editor (`sla.business.*`).**
+- [x] **Category edit/deactivate/tree/required skills; skill edit/delete.** **Done (2026-11-19):** #50. The eligible-technician count per category is still missing (G10).
+- [x] **Escalation timeout edit; business-hours calendar editor (`sla.business.*`).** **Done (2026-11-19):** #50: one daily window, time zone, working days, holidays and a weekly preview.
 - [ ] **Mark duplicate / escalate / assign / edit / attachments** on admin incident detail.
 - [ ] **Intelligence tools on incident detail** (thread summary, similar, suggested resolutions, sla-risk, recommendations).
 - [ ] **Account security for admins** (`/auth/mfa*` setup with QR, enable/disable) and password reset (shared with other slices).
-- [ ] **Prometheus/Grafana link** (A8, `backend/observability/`, `/actuator/prometheus` token-guarded): no link; add an "Operations" card linking the Grafana "I-ITSM service desk" dashboard.
-- [ ] **Notification preferences / devices** (shared slice) and the "escalation exhausted" admin alerts must appear in Notifications. **Partly done (2026-11-18):** notification preferences done; no devices, no escalation-exhausted admin alerts.
+- [x] **Prometheus/Grafana link** (A8, `backend/observability/`, `/actuator/prometheus` token-guarded): no link; add an "Operations" card linking the Grafana "I-ITSM service desk" dashboard. **Done (2026-11-19):** `dashboard/OperationsCard.tsx` links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token) (#51).
+- [x] **Notification preferences / devices** (shared slice) and the "escalation exhausted" admin alerts must appear in Notifications. **Done (2026-11-19):** preferences, push devices (`PushDevicesDialog.tsx`) and an 'Escalation exhausted' badge (#51).
 - [ ] Wallboard mode, command palette, calendar heatmap (guide P3): optional.
 
 ### G15. Bugs found
@@ -934,7 +934,7 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 14. Tickets: `escalationLevel` filter param not recognised (`minEscalationLevel`); status filter lacks four statuses; "Live Backend Connected" always true.
 15. Users: "Login as User" uses password `Demo@1234` and replaces the admin session with no way back; drawer shows invented workstation/manager/designation; ticket correlation by name.
 16. `useRealtime`: admin `/topic/dashboard` invalidates a key nothing uses; no 4001 handling; no backoff. **Partly done (2026-11-18):** the dashboard keys now match `/topic/dashboard` (PR #42); 4001 handling and backoff are not done.
-17. Two `AuditEntry` types with different fields. **Partly done (2026-11-18):** the Dashboard no longer imports them; both types remain in `api/admin.ts`.
+17. Two `AuditEntry` types with different fields. **Done (2026-11-19):** the duplicate admin type is deleted (#51).
 18. No error states anywhere in the admin slice; `window.confirm` dialogs; toasts show generic axios messages. **Partly done (2026-11-18):** the Dashboard has error states, and the TechQueue and TechWorkbench toasts use `apiErrorMessage`. The rest is unchanged.
 19. 14 files copy the same dark `COLORS` object; hardcoded mono/Sora fonts; ~172 font sizes under 12 px.
 20. Orphans `Employees.tsx`, `AllIncidents.tsx`; duplicate route `/admin/incidents/:id`.
