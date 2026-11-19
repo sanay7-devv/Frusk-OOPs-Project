@@ -2,7 +2,7 @@
 
 > For Sanay (frontend). Every line is a small, separate task. `[x]` = done and checked in the code, `[ ]` = still to do.
 > Checked against **your latest work**: branch `sanay-branch` on the team repo, commit `1ea86cc` "new design and theme" (2026-11-15 23:31). Line numbers (`file:line`) refer to that commit, paths are under `frontend/src/`.
-> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Round 3 (Sections E1-E7, F1-F5, G1, G3, G4) ticked: **449 of 636 done (70.6%)**, 187 open. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
+> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Round 3 (Sections E1-E7, F1-F5, G1, G3, G4) ticked: 449 of 636 done (70.6%). **Recounted 2026-11-19: 448 of 636 done (70.4%), 188 open** (three wrong ticks undone, two G14 items ticked; see the Partly done notes). Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
 > Contract: `backend/docs/openapi/iitsm-api.json` (129 operations). Older review with the reasons behind each rule: `frontend/FRONTEND_GUIDE.md`.
 
 ## A. Where your work stands
@@ -187,7 +187,7 @@ Contract mismatches
 - [x] Debounce effect has no cancellation/stale guard `:182-215`: slow earlier response can overwrite newer.
 - [x] `affectedUsers` input: `Math.max(1, parseInt)` OK, but max 1,000,000 not enforced `:80`.
 - [x] Unused: `suggestIntake`; imports fine otherwise.
-- [x] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12).
+- [ ] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12). **Partly done (2026-11-19):** the word "PORTAL" is gone from `features/employee/ReportIncident.tsx`, but 21 font sizes under 12 px are still there (the 32 count was out of date).
 
 ### E5. `features/shared/Login.tsx` (`/login`)
 - [x] `POST /auth/login` via `login()` `:177-186`; workspace redirect `HOME[ws]`; auto-redirect if already signed in `:101-105`; offline message `api/auth.ts:62-77`.
@@ -267,7 +267,7 @@ services.ts
 - [x] `PREDEFINED_SERVICES/CATEGORIES` fake ids `:19-35`; `getServices/getCategories` silently return them on error or empty list `:37-59` -> the form submits fake `serviceId` that does not exist. Remove, show error.
 - [x] `ServiceItem` with optional description/alwaysP1, categories flattened tree with hierarchy indicators.
 notifications.ts
-- [x] Real notifications, preferences, and push device management (`listDevices`, `registerDevice`, `deleteDevice`).
+- [ ] Real notifications, preferences, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Partly done (2026-11-19):** preferences are used in `features/shared/Notifications.tsx`. `listDevices`, `registerDevice` and `deleteDevice` exist only in `api/notifications.ts`; no screen calls them.
 types.ts
 - [x] `closureReason` enum (`VERIFIED | AUTO_VERIFIED | DUPLICATE | WITHDRAWN`), `availability` enum (`AVAILABLE | BUSY | AWAY | OFF_DUTY`), `escalationLevel` integer (0..3), `ApiError.similar` typed with `source/match`, `AppNotification.eventType` and `channel` typed unions.
 - [ ] No typed client generated from `iitsm-api.json` (guide 12 suggests it).
@@ -304,7 +304,7 @@ useRealtime
 ### E12. `theme/theme.ts` and styling
 - [x] MUI theme exists with palette/typography/component overrides; `priorityColor`, `priorityLabel`, `statusColor` exported `:416-440` and used by Badge/Chip.
 - [ ] Screens bypass the theme: hex literals per file, use theme tokens where possible.
-- [ ] Text smaller than 12 px: minimum 12 px recommended.
+- [ ] Text smaller than 12 px: minimum 12 px recommended. **Count (2026-11-19):** `frontend/src` has 384 font sizes under 12 px (`fontSize` 9, 10 or 11). It had 346 at `4214195`, before `39db8c3` added more. Counted with `git grep -o -E "fontSize: ?'?(9|10|11)(\.[0-9])?(px)?'?[,} ]"`.
 - [x] Tokens for SLA states (`slaStateColor`, `slaStateLabel`) defined and exported in `theme.ts`.
 - [ ] Clean styles, professional ITIL console readability.
 - [ ] Fonts configured cleanly.
@@ -327,7 +327,7 @@ useRealtime
 - [x] Service status board (`/services/status`) on employee home and dedicated `/employee/status` page.
 - [x] SLA progress bar (`SlaBar`) + AT_RISK label.
 - [x] Post-incident report + PDF (`/incidents/{id}/post-incident-report[/pdf]`).
-- [x] Real notifications, preferences grid, and push device management (`listDevices`, `registerDevice`, `deleteDevice`).
+- [ ] Real notifications, preferences grid, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Partly done (2026-11-19):** preferences grid works (`features/shared/Notifications.tsx`). Push devices: the three functions exist only in `api/notifications.ts`; no screen calls them.
 - [x] Password reset screens, MFA login step, Account security.
 - [x] Google login working through GIS only (`VITE_GOOGLE_CLIENT_ID`, backend `GOOGLE_CLIENT_ID`).
 - [x] Saved views (`/saved-filters`) on My incidents.
@@ -661,7 +661,7 @@ useRealtime
 - [ ] Loading/empty states inconsistent: `AuditLog`, `Config`, `EscalationSettings`, `Tickets`, `Services`, `SlaPolicies`, `AdminIncidentDetail` spin; `Users`, `Dashboard`, `Reports`, `ServiceGraph`, `Categories` partly. Use `LoadingState`/`EmptyState` everywhere.
 - [ ] **Client-side counting over a capped page** (guide P0-7): `listIncidents({size: 100})` in `Dashboard.tsx` (~l.85), `Tickets.tsx` (~l.147), `Users.tsx` (~l.177), `Services.tsx:121`, `ServiceGraph.tsx` (~l.131), `SlaPolicies.tsx` (~l.131), `Reports.tsx:37`. Seed has 212 incidents, so totals/percentages are wrong. Use `/reports/overview`, `/reports/*`, `/dashboard/live`, `/services/status`, `/sla/violations` and `totalItems`.
 - [ ] **Every screen hardcodes the dark palette** in a local `const COLORS = {...}` (copy-pasted into all 14 files) instead of `tokens` from `theme/theme.ts` (already exported). `fontFamily: 'JetBrains Mono'` ~200 times (Dashboard 35, ServiceGraph 34, Users 30, Tickets 25, Services 21, SlaPolicies 19) plus `'Sora'` headings. Move to theme tokens and typography variants.
-- [ ] 172 `fontSize: 9/10/11` occurrences in admin files (guide: min 12 px); all table headers are 11 px mono uppercase.
+- [ ] 172 `fontSize: 9/10/11` occurrences in admin files (guide: min 12 px); all table headers are 11 px mono uppercase. **Count (2026-11-19):** the whole `frontend/src` now has 384 such sizes (346 before `39db8c3`), so the 172 figure is out of date; see E12.
 - [ ] **Theme changed**: 1ea86cc replaced the light blue theme with a dark "Luminary Kinetic" theme (`theme/theme.ts`: `mode: 'dark'`, primary `#6366f1`). The guide said keep light. Decide deliberately; check contrast at video resolution.
 - [ ] Jargon / invented labels (guide 5.2): "Incident Command & Reliability Center", "Live Telemetry" (Dashboard KPI 5), "LIVE QUEUE", "Active War Room", "Executive Analytics & SLA Reports", "Dynamic System Configuration ... Things-Tune", "Immutable Audit Trail", "Enterprise Workforce & User Directory", "Delegated Session Broker", "Executive Priority Override", "Force Close Ticket", "cryptographically bound to the audit log", "Zero breaches past 72h", "Taxonomy & Skill Matrix", "Tier 1 (Mission Critical)". Use plain titles (Dashboard, Incidents, Users, Services, SLA, Config, Audit log, Reports).
 - [ ] "Ticket" used in Tickets, Dashboard, AdminIncidentDetail; use "Incident".
@@ -898,11 +898,11 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 - [ ] **Service Desk Simulator (S1)**: `POST /admin/simulations` (`SimulationRequest {configurations[{name, strategy, technicians, weights{skill, load, experience, priorityFit, familiarity}}] up to 3, lastIncidents, speedUp}` -> `SimulationView {results[ConfigurationView: meanWaitMinutes, meanResolveMinutes, p90ResolveMinutes, slaViolations, slaViolationPercent, fairness, unassigned, matchesRealAssigneePercent, perTechnician[], weights], best, bestReason, assumptions[], workload}`) and `POST /admin/simulations/apply`. One screen: configuration editor, grouped bar chart, assumptions panel, "Apply best".
 - [ ] **Problems / Major Incident Mode**: `GET /problems` (`?status=OPEN`), `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve`, `DELETE /problems/{id}/incidents/{incidentId}`, `POST /problems` (`CreateProblemRequest`), `GET /problems/recurring`, `GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join` (employee banner). Admin list + detail + "Resolve whole problem" + root-cause path on the graph. **Partly done (2026-11-18):** admin list + detail + "Resolve whole problem" + remove incident + create from recurring built (known-outage banner and join were already done); root-cause path drawn on the graph is missing (paths shown as text).
 - [ ] **Demo controls (demo profile only; not in the OpenAPI export)**: `GET /admin/demo/clock` (`{now, offsetMinutes}`), `POST /admin/demo/clock/advance {minutes 1..1440}` (refresh the token after a big jump), `POST /admin/demo/outage-drill {rootServiceId}` (-> `{rootService, problemId, incidentCodes[], dependents[], note}`); show only when the endpoint answers (404 elsewhere). "Director's bar" (+10 min, start drill).
-- [ ] **Live dashboard** `GET /dashboard/live` + STOMP `/topic/dashboard` (events and `COUNTERS` every 30 s; non-admin gets an ERROR frame; close 4001 -> refresh + reconnect). Not used by the Dashboard.
-- [ ] **Service status board** `GET /services/status`, **graph** `GET /services/graph`, **impact** `GET /services/{id}/impact`.
+- [x] **Live dashboard** `GET /dashboard/live` + STOMP `/topic/dashboard` (events and `COUNTERS` every 30 s; non-admin gets an ERROR frame; close 4001 -> refresh + reconnect). Used by the admin Dashboard (`api/dashboard.ts`, `features/admin/dashboard/`, PR #42); `realtime/useRealtime.ts` subscribes to `/topic/dashboard` and handles close 4001.
+- [ ] **Service status board** `GET /services/status`, **graph** `GET /services/graph`, **impact** `GET /services/{id}/impact`. **Partly done (2026-11-19):** the status board is built (`features/employee/ServiceStatus.tsx` at `/employee/status`, and on Employee Home). `/services/graph` and `/services/{id}/impact` are not called anywhere; the admin graph reads the admin API.
 - [x] **Coverage risk (E3)** screen.
 - [x] **SLA violations list** `GET /sla/violations`.
-- [ ] **Post-incident report + PDF** (`/incidents/{id}/post-incident-report[/pdf]`).
+- [x] **Post-incident report + PDF** (`/incidents/{id}/post-incident-report[/pdf]`): `api/incidents.ts`, PDF download on the employee, technician and admin incident screens (commit `39db8c3`).
 - [ ] **Saved views** (`/saved-filters`).
 - [ ] **Priority what-if** `POST /priority/what-if` (+ explanation on incident detail).
 - [ ] **Technician management**: profile, availability, skills with proficiency (`PUT /admin/technicians/{id}`, `/skills`), `GET /technicians?skillId&availability`.
