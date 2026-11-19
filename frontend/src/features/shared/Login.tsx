@@ -25,6 +25,7 @@ import { login, googleLogin } from '../../api/auth';
 import { useAuth, HOME } from '../../auth/AuthContext';
 import { errorMessage } from '../../utils/errors';
 import { Link as RouterLink } from 'react-router-dom';
+import { tokens } from '../../theme/theme';
 import logoIcon from '../../assets/logo.png';
 
 declare global {
@@ -46,6 +47,9 @@ const SEED_CREDENTIALS = [
   { role: 'Technician', email: 'tech1@iitsm.demo', pass: 'Demo@1234', desc: 'Level 0 Workbench & incident resolution' },
   { role: 'Employee', email: 'employee1@iitsm.demo', pass: 'Demo@1234', desc: 'End-user ticketing & incident reporting' },
 ];
+
+/** Demo-only seed account panel: shown in `npm run dev`, or in a build made with VITE_SHOW_DEMO_ACCOUNTS=true (the recorded demo). */
+const SHOW_DEMO_ACCOUNTS = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === 'true';
 
 export default function Login() {
   const {
@@ -157,7 +161,7 @@ export default function Login() {
       px={2}
       py={4}
       sx={{
-        bgcolor: '#090d16',
+        bgcolor: tokens.background,
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -208,7 +212,7 @@ export default function Login() {
               width: 60,
               height: 60,
               borderRadius: '14px',
-              bgcolor: '#141824',
+              bgcolor: tokens.surfaceContainer,
               border: '1px solid rgba(99, 102, 241, 0.4)',
               display: 'inline-flex',
               alignItems: 'center',
@@ -240,7 +244,7 @@ export default function Login() {
           <Typography
             variant="body2"
             sx={{
-              color: '#94a3b8',
+              color: tokens.onSurfaceVariant,
               fontFamily: 'Geist, sans-serif',
               fontSize: 13,
             }}
@@ -311,7 +315,7 @@ export default function Login() {
                     size="small"
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
-                    sx={{ color: '#94a3b8' }}
+                    sx={{ color: tokens.onSurfaceVariant }}
                   >
                     {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                   </IconButton>
@@ -339,7 +343,7 @@ export default function Login() {
             <Link
               component={RouterLink}
               to="/forgot-password"
-              sx={{ fontSize: 12.5, color: '#4cd7f6', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+              sx={{ fontSize: 12.5, color: tokens.secondaryLight, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
             >
               Forgot password?
             </Link>
@@ -391,8 +395,8 @@ export default function Login() {
               <Typography
                 sx={{
                   fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 10,
-                  color: '#64748b',
+                  fontSize: 12,
+                  color: tokens.outline,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                 }}
@@ -406,7 +410,7 @@ export default function Login() {
         )}
 
         {/* Database Seed Accounts Reference Toggle (Demo/Development Only) */}
-        {import.meta.env.DEV && (
+        {SHOW_DEMO_ACCOUNTS && (
           <Box mt={3} textAlign="center">
             <Link
               component="button"
@@ -414,11 +418,11 @@ export default function Login() {
               onClick={() => setShowSeed(!showSeed)}
               sx={{
                 textDecoration: 'none',
-                color: '#94a3b8',
+                color: tokens.onSurfaceVariant,
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
-                '&:hover': { color: '#4cd7f6' },
+                '&:hover': { color: tokens.secondaryLight },
               }}
             >
               {showSeed ? '▲ Hide Database Credentials' : '▼ View Default Database Credentials (Demo)'}
@@ -438,9 +442,9 @@ export default function Login() {
                 <Typography
                   sx={{
                     fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 10.5,
+                    fontSize: 12,
                     fontWeight: 700,
-                    color: '#4cd7f6',
+                    color: tokens.secondaryLight,
                     mb: 1.2,
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
@@ -467,14 +471,14 @@ export default function Login() {
                       }}
                     >
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
                           {c.role}:
                         </Typography>
                         <Typography
                           sx={{
                             fontFamily: 'JetBrains Mono, monospace',
-                            fontSize: 11.5,
-                            color: '#c0c1ff',
+                            fontSize: 12,
+                            color: tokens.primaryLight,
                             fontWeight: 500,
                           }}
                         >
@@ -484,12 +488,12 @@ export default function Login() {
                       <Typography
                         sx={{
                           fontFamily: 'Geist, sans-serif',
-                          color: '#94a3b8',
-                          fontSize: 11,
+                          color: tokens.onSurfaceVariant,
+                          fontSize: 12,
                           mt: 0.2,
                         }}
                       >
-                        Password: <code style={{ color: '#4cd7f6' }}>{c.pass}</code> • {c.desc}
+                        Password: <code style={{ color: tokens.secondaryLight }}>{c.pass}</code> • {c.desc}
                       </Typography>
                     </Box>
                   ))}
@@ -501,13 +505,13 @@ export default function Login() {
 
         {/* Register Link */}
         <Box mt={2.5} textAlign="center">
-          <Typography sx={{ color: '#94a3b8', fontSize: 12.5, fontFamily: 'Geist, sans-serif' }}>
+          <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12.5, fontFamily: 'Geist, sans-serif' }}>
             Don't have an enterprise account?{' '}
             <Link
               component="button"
               sx={{
                 fontWeight: 700,
-                color: '#4cd7f6',
+                color: tokens.secondaryLight,
                 textDecoration: 'none',
                 fontFamily: 'Geist, sans-serif',
                 fontSize: 12.5,

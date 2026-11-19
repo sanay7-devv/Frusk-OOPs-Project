@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
+import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
@@ -222,18 +223,6 @@ export default function TechWorkbench() {
     enabled: serviceId != null,
   });
 
-  // Live updates: the app-wide STOMP client (realtime/useRealtime) invalidates ['unread'] on every push
-  // to /user/queue/notifications. Reload this incident's data when that happens.
-  const reloadRef = useRef<() => void>(() => undefined);
-  useEffect(() => {
-    if (isNaN(incidentId)) return undefined;
-    return queryClient.getQueryCache().subscribe((event) => {
-      if (event.type === 'updated' && event.action.type === 'invalidate' && event.query.queryKey[0] === 'unread') {
-        reloadRef.current();
-      }
-    });
-  }, [queryClient, incidentId]);
-
   const [resolveWholeProblem, setResolveWholeProblem] = useState(false);
   const allowedActions = incident?.allowedActions || [];
 
@@ -250,7 +239,8 @@ export default function TechWorkbench() {
     queryClient.invalidateQueries({ queryKey: ['incident-recommendations', incidentId] });
     if (serviceId != null) refetchImpact();
   };
-  reloadRef.current = handleRefreshAll;
+  // Live updates: server pushes (STOMP via realtime/useRealtime) reload this incident's data.
+  useLiveRefresh(handleRefreshAll, !isNaN(incidentId));
 
   const isStaffLead = !!user?.permissions?.includes('TEAM_VIEW');
   const canSummarize = isStaffLead || (incident?.assignee != null && incident.assignee.id === user?.id);

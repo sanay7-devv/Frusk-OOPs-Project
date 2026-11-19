@@ -246,7 +246,7 @@ export default function EmployeeHome() {
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
-            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em' }}>
+            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em' }}>
               EMPLOYEE WORKSPACE
             </Typography>
           </Box>
@@ -298,10 +298,10 @@ export default function EmployeeHome() {
           >
             <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#06b6d4', boxShadow: '0 0 8px #06b6d4' }} />
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#dfe2ef', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#dfe2ef', textTransform: 'uppercase' }}>
                 Summary
               </Typography>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4cd7f6' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#4cd7f6' }}>
                 {activeCount} Active / {resolvedCount} Resolved
               </Typography>
             </Box>
@@ -382,7 +382,7 @@ export default function EmployeeHome() {
                         bgcolor: '#f43f5e',
                         color: '#ffffff',
                         fontWeight: 800,
-                        fontSize: 10.5,
+                        fontSize: 12,
                         height: 20,
                         borderRadius: '4px',
                       }}
@@ -494,7 +494,7 @@ export default function EmployeeHome() {
                       bgcolor: '#f751a1',
                       color: '#ffffff',
                       fontWeight: 800,
-                      fontSize: 10.5,
+                      fontSize: 12,
                       height: 20,
                       borderRadius: '4px',
                       letterSpacing: '0.04em',
@@ -583,13 +583,13 @@ export default function EmployeeHome() {
                   color: '#4cd7f6',
                   border: '1px solid rgba(6, 182, 212, 0.3)',
                   fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 10.5,
+                  fontSize: 12,
                   fontWeight: 700,
                   height: 20,
                 }}
               />
             </Box>
-            <Typography sx={{ fontSize: 11, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography sx={{ fontSize: 12, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
               Window: {statusBoard.windowDays || 30}d basis
             </Typography>
           </Box>
@@ -629,13 +629,13 @@ export default function EmployeeHome() {
                           color: badgeColor,
                           fontFamily: 'JetBrains Mono, monospace',
                           fontWeight: 800,
-                          fontSize: 10,
+                          fontSize: 12,
                           height: 19,
                         }}
                       />
                     </Box>
                     {svc.reason && (
-                      <Typography sx={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+                      <Typography sx={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
                         {svc.reason}
                       </Typography>
                     )}
@@ -666,7 +666,7 @@ export default function EmployeeHome() {
             }}
           >
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Search Incidents
               </Typography>
               <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff', mb: 2 }}>
@@ -728,7 +728,7 @@ export default function EmployeeHome() {
                     border: '1px solid rgba(6, 182, 212, 0.35)',
                     color: '#4cd7f6',
                     fontWeight: 800,
-                    fontSize: 11,
+                    fontSize: 12,
                     height: 22,
                     borderRadius: '4px',
                   }}
@@ -789,7 +789,7 @@ export default function EmployeeHome() {
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                   Active Incidents
                 </Typography>
                 <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mt: 0.5 }}>
@@ -801,7 +801,7 @@ export default function EmployeeHome() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4cd7f6' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#4cd7f6' }}>
                 Open &amp; in progress (server total)
               </Typography>
             </Box>
@@ -826,7 +826,7 @@ export default function EmployeeHome() {
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: pendingCount > 0 ? '#ffb0cd' : '#94a3b8', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: pendingCount > 0 ? '#ffb0cd' : '#94a3b8', textTransform: 'uppercase' }}>
                   Awaiting My Action
                 </Typography>
                 <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: pendingCount > 0 ? '#f751a1' : '#ffffff', mt: 0.5 }}>
@@ -838,7 +838,7 @@ export default function EmployeeHome() {
               </Box>
             </Box>
             <Box sx={{ pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
-              <Typography sx={{ fontSize: 11.5, color: '#dfe2ef' }}>
+              <Typography sx={{ fontSize: 12, color: '#dfe2ef' }}>
                 {pendingCount > 0 ? 'SLA paused pending your clarification' : 'No pending technician queries'}
               </Typography>
             </Box>
@@ -863,7 +863,7 @@ export default function EmployeeHome() {
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                   Resolved &amp; Closed
                 </Typography>
                 <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mt: 0.5 }}>
@@ -876,7 +876,7 @@ export default function EmployeeHome() {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
               <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#6ee7b7', fontWeight: 600 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#6ee7b7', fontWeight: 600 }}>
                 Resolved &amp; verified (server total)
               </Typography>
             </Box>
@@ -927,7 +927,7 @@ export default function EmployeeHome() {
                 color: '#c0c1ff',
                 fontFamily: 'JetBrains Mono, monospace',
                 fontWeight: 700,
-                fontSize: 11,
+                fontSize: 12,
               }}
             />
           </Box>
@@ -954,7 +954,7 @@ export default function EmployeeHome() {
                       setPage(0);
                     }}
                     sx={{
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: isSelected ? 700 : 500,
                       color: isSelected ? '#ffffff' : '#94a3b8',
                       bgcolor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
@@ -1044,25 +1044,25 @@ export default function EmployeeHome() {
             <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <Box component="thead">
                 <Box component="tr" sx={{ bgcolor: '#0e121d', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <Box component="th" sx={{ py: 1.4, px: 2.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                     Incident Code
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                     Priority
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                     Issue Summary
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                     Service
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                     Status
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
                     SLA Clock &amp; Bar
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>
                     Action
                   </Box>
                 </Box>
@@ -1093,7 +1093,7 @@ export default function EmployeeHome() {
                               color: '#f43f5e',
                               border: '1px solid rgba(244, 63, 94, 0.4)',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: 9.5,
+                              fontSize: 12,
                               fontWeight: 800,
                               height: 18,
                             }}
@@ -1108,7 +1108,7 @@ export default function EmployeeHome() {
                       <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
                         {inc.title}
                       </Typography>
-                      <Typography sx={{ fontSize: 11, color: '#94a3b8', fontFamily: 'JetBrains Mono, monospace', mt: 0.2 }}>
+                      <Typography sx={{ fontSize: 12, color: '#94a3b8', fontFamily: 'JetBrains Mono, monospace', mt: 0.2 }}>
                         Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
                       </Typography>
                     </Box>
@@ -1120,7 +1120,7 @@ export default function EmployeeHome() {
                           bgcolor: 'rgba(255, 255, 255, 0.05)',
                           color: '#dfe2ef',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
-                          fontSize: 11,
+                          fontSize: 12,
                         }}
                       />
                     </Box>
@@ -1129,7 +1129,7 @@ export default function EmployeeHome() {
                     </Box>
                     <Box component="td" sx={{ py: 1.8, px: 1.5, minWidth: 160 }}>
                       {inc.status === 'RESOLVED' || inc.status === 'VERIFIED' || inc.status === 'CLOSED' ? (
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, color: '#10b981', fontWeight: 700 }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#10b981', fontWeight: 700 }}>
                           Remediated
                         </Typography>
                       ) : (
@@ -1201,7 +1201,7 @@ export default function EmployeeHome() {
                   }}
                   sx={{
                     height: 28,
-                    fontSize: 11,
+                    fontSize: 12,
                     color: '#dfe2ef',
                     bgcolor: 'rgba(18, 22, 34, 0.7)',
                     '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
@@ -1285,7 +1285,7 @@ export default function EmployeeHome() {
             <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
               {/* Technician's Question Callout */}
               <Paper sx={{ p: 1.8, bgcolor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '10px', mb: 2 }}>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: '#c0c1ff', mb: 0.5 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff', mb: 0.5 }}>
                   Technician Query:
                 </Typography>
                 {loadingReplyComments ? (
@@ -1298,7 +1298,7 @@ export default function EmployeeHome() {
                     <Typography sx={{ fontSize: 13, color: '#ffffff', fontFamily: 'Geist, sans-serif', fontWeight: 500 }}>
                       "{technicianQuestion.body}"
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: '#94a3b8', mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
+                    <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                       Asked by {technicianQuestion.author?.name || 'Assigned Technician'} • {new Date(technicianQuestion.createdAt).toLocaleString()}
                     </Typography>
                   </Box>
