@@ -25,6 +25,8 @@ import Categories from '../features/admin/Categories';
 import Config from '../features/admin/Config';
 import EscalationSettings from '../features/admin/EscalationSettings';
 import AuditLog from '../features/admin/AuditLog';
+import Simulator from '../features/admin/Simulator';
+import DemoControls from '../features/admin/DemoControls';
 import Reports from '../features/admin/Reports';
 import Register from '../features/shared/Register';
 import Login from '../features/shared/Login';
@@ -103,6 +105,8 @@ export default function AppRoutes() {
             <Route path="/admin/escalation" element={<EscalationSettings />} />
             <Route path="/admin/audit" element={<AuditLog />} />
             <Route path="/admin/reports" element={<Reports />} />
+            <Route path="/admin/simulator" element={<Simulator />} />
+            <Route path="/admin/demo" element={<DemoControls />} />
             <Route path="/admin/problems" element={<ProblemsList />} />
             <Route path="/admin/problems/:id" element={<ProblemDetail />} />
           </Route>
