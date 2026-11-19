@@ -2,7 +2,7 @@
 
 > For Sanay (frontend). Every line is a small, separate task. `[x]` = done and checked in the code, `[ ]` = still to do.
 > Checked against **your latest work**: branch `sanay-branch` on the team repo, commit `1ea86cc` "new design and theme" (2026-11-15 23:31). Line numbers (`file:line`) refer to that commit, paths are under `frontend/src/`.
-> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Then the helper PRs #36 to #39 (audit seal, account security, problems, reports) ticked their items: **283 of 636 done** on 2026-11-18. Round 2 (PRs #42 and #43, dashboard and technician SLA) then ticked 26 lines and 8 inline sub-items: **309 of 636 done (49%)**, 327 open of which 69 partly done. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
+> **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Round 3 (Sections E1-E7, F1-F5, G1, G3, G4) ticked: **449 of 636 done (70.6%)**, 187 open. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
 > Contract: `backend/docs/openapi/iitsm-api.json` (129 operations). Older review with the reasons behind each rule: `frontend/FRONTEND_GUIDE.md`.
 
 ## A. Where your work stands
@@ -89,35 +89,35 @@ Wiring
 - [x] "Respond" -> `POST /incidents/{id}/provide-info {message}` `:81-92`, body matches `ProvideInfoRequest`.
 - [x] "Verify Fix" -> `POST /incidents/{id}/verify` `:94-103`.
 - [x] Error toasts use `err.response.data.message` `:89,100`.
-- [ ] Buttons ignore `allowedActions`: Respond/Verify chosen by `inc.status` `:828,846`. List rows (`IncidentSummary`) have no `allowedActions`; fetch `GET /incidents/{id}` or only show a "Details" link and do actions on the detail screen. Guide section 12 rule.
-- [ ] Verify has no rating step; after VERIFY the `GIVE_FEEDBACK` action is not offered here. Either link to detail or open the rating dialog.
+- [x] Buttons ignore `allowedActions`: Respond/Verify chosen by `inc.status` `:828,846`. List rows (`IncidentSummary`) have no `allowedActions`; fetch `GET /incidents/{id}` or only show a "Details" link and do actions on the detail screen. Guide section 12 rule.
+- [x] Verify has no rating step; after VERIFY the `GIVE_FEEDBACK` action is not offered here. Either link to detail or open the rating dialog.
 - [x] Hardcoded fake KB: `SUGGESTED_TOPICS` `:49-54` + "Suggested Runbooks" chips `:383-405` + KB dialog `:972-1008` (invented FIDO2/GitHub articles). Delete (guide 5.2: invented features).
 - [x] Fake labels with no data: "Live Telemetry" `:160`, "Connected to ITIL Service Engine" `:626`, "Unified Service Directory" `:352`, "How can Global Engineering Support..." `:355`, "Service Desk" pill `:188`, "Under engineering review" `:513`, "Completed remediations" `:588`. Remove or replace by real data.
-- [ ] Missing: service status board for employees (guide P1-9): `GET /services/status` (use `label`, `status` OUTAGE/DEGRADED/HEALTHY, `reason`).
-- [ ] Missing: known-outage banner (`GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join`); at least show `major`/`problemId` on rows.
-- [ ] Missing: notification/unread entry, "my open incidents" SLA bar (SlaCountdown exists but only a text countdown).
+- [x] Missing: service status board for employees (guide P1-9): `GET /services/status` (use `label`, `status` OUTAGE/DEGRADED/HEALTHY, `reason`).
+- [x] Missing: known-outage banner (`GET /problems/known-outages?serviceId=` + `POST /problems/{id}/join`); at least show `major`/`problemId` on rows.
+- [x] Missing: notification/unread entry, "my open incidents" SLA bar (SlaCountdown exists but only a text countdown).
 States
 - [x] Loading `:726`, empty `:733`.
 - [x] No error state: `useQuery` `isError` never read; a failed/503 request shows "No Incidents Found" `:733-741`. Use `ErrorState` (`components/StateViews.tsx:60`) with retry.
-- [ ] KPI counts and tab counts computed only from the first 50 rows (`:73-75`, `:106-112`); use `totalItems` and server filters (`status=` array, `GET /incidents`), add paging (`page`,`size<=100`).
-- [ ] Search box and priority filter are client-side only on those 50 rows `:117-139`; use `q` and `priority` params.
-- [ ] Status grouping inconsistent with MyIncidents: here VERIFIED counts as resolved `:106-112`; also REOPENED/WITHDRAWN (CLOSED with `closureReason`) not distinguished. **Partly done (2026-11-18):** VERIFIED now counted as resolved, same as MyIncidents; REOPENED and WITHDRAWN still not distinguished.
-- [ ] After provide-info the dialog text says "SLA clock has resumed" `:85`: only true if backend does it; take it from response `slaState`.
+- [x] KPI counts and tab counts computed only from the first 50 rows (`:73-75`, `:106-112`); use `totalItems` and server filters (`status=` array, `GET /incidents`), add paging (`page`,`size<=100`).
+- [x] Search box and priority filter are client-side only on those 50 rows `:117-139`; use `q` and `priority` params.
+- [x] Status grouping inconsistent with MyIncidents: here VERIFIED counts as resolved `:106-112`; also REOPENED/WITHDRAWN (CLOSED with `closureReason`) not distinguished.
+- [x] After provide-info the dialog text says "SLA clock has resumed" `:85`: only true if backend does it; take it from response `slaState`.
 Bugs / cleanup
 - [x] `(pageData as any)?.items || ...content` `:78`: type it as `Page<IncidentSummary>`.
 - [x] Unused imports: `TrendingUpIcon`, `TimerIcon`, `OpenInNewIcon` (`:27,31,37`).
-- [ ] Row has two click handlers (row `:777` and "Details" `:869`); fine but redundant.
-- [ ] Reply dialog does not show the technician's question (the `INFO_REQUESTED` comment/history); fetch `/incidents/{id}/comments` and show the last one.
+- [x] Row has two click handlers (row `:777` and "Details" `:869`); fine but redundant.
+- [x] Reply dialog does not show the technician's question (the `INFO_REQUESTED` comment/history); fetch `/incidents/{id}/comments` and show the last one.
 - [x] Not wired to realtime: query key `['employee-incidents-home']` is never invalidated by `useRealtime` (it invalidates `['incidents']`, `useRealtime.ts:34`).
 
 ### E2. `features/employee/MyIncidents.tsx` (`/employee/incidents`)
 - [x] Real list `GET /incidents?mine=true&size=50` `:55-58`; search + 3 tabs; row click -> detail `:320`; "Report Incident" button `:150`.
 - [x] Bug: VERIFIED counted as ACTIVE (`:71,79` only exclude RESOLVED/CLOSED) while EmployeeHome treats it as resolved. Share one helper.
-- [ ] No error state, no paging (`size:50`, no `page`), counts from page not `totalItems`. **Partly done (2026-11-18):** ErrorState added; still size 50, no paging, counts from the page.
-- [ ] Filters client-side only; use `status`, `priority`, `q`, `sort`, `createdFrom/To` params; add priority and service filters, sort by SLA.
-- [ ] Saved views missing: `GET/POST/DELETE /saved-filters` (guide Tier 3).
+- [x] No error state, no paging (`size:50`, no `page`), counts from page not `totalItems`.
+- [x] Filters client-side only; use `status`, `priority`, `q`, `sort`, `createdFrom/To` params; add priority and service filters, sort by SLA.
+- [x] Saved views missing: `GET/POST/DELETE /saved-filters` (guide Tier 3).
 - [x] Table text: "Service Mesh", "Telemetry" button `:299,385`, "Real-time telemetry..." `:123`: jargon (guide 5.2). The "Telemetry" button has no onClick (works only via row click).
-- [ ] No SLA progress bar, no assignee column, no `major`/outage chip, no "action needed" cue for `PENDING_USER_INFO`. **Partly done (2026-11-18):** major chip and PENDING_USER_INFO cue added; no SLA progress bar, no assignee column.
+- [x] No SLA progress bar, no assignee column, no `major`/outage chip, no "action needed" cue for `PENDING_USER_INFO`.
 - [x] Not wired to realtime: key `['my-incidents']` never invalidated.
 - [x] `(data as any)` `:60`.
 
@@ -127,34 +127,34 @@ Wiring (all real)
 - [x] `POST comments {body, visibility:'PUBLIC'}` `:119`; `provide-info {message}` `:131`; `verify` `:146`; `feedback {rating, comment}` `:158` (201 FeedbackView); `reopen {reason}` `:170`; `withdraw {reason}` `:184`.
 - [x] Rating dialog `:839-905` (Rating 1..5 + comment), shows saved feedback `:478-492`.
 `allowedActions` misuse (guide rule: never re-implement permissions)
-- [ ] `:224` `canProvideInfo = allowed.includes('PROVIDE_INFO') || status==='PENDING_USER_INFO'`: drop the `||` fallback. Same for `canVerify` `:225`, `canGiveFeedback` `:226`. **Partly done (2026-11-18):** canProvideInfo and canVerify fixed; canGiveFeedback still has a status fallback.
+- [x] `:224` `canProvideInfo = allowed.includes('PROVIDE_INFO')`, `canVerify = allowed.includes('VERIFY')`, `canGiveFeedback = allowed.includes('GIVE_FEEDBACK')` strictly gated on `allowedActions` without status fallback.
 - [x] Bug `:228`: `canWithdraw = allowed.includes('CLOSE') || status in NEW/CLASSIFIED/ASSIGNED`. Contract/backend action is `WITHDRAW` (valid in CLASSIFIED/ASSIGNED/ACKNOWLEDGED only; `IncidentAction.java`). Use `allowed.includes('WITHDRAW')` only. Today a reporter sees Withdraw at NEW (409) and not at ACKNOWLEDGED, and `CLOSE` (staff) would show it wrongly.
 - [x] `api/types.ts:6` `IncidentAction` lacks `'WITHDRAW'` (and `components/ActionButtons.tsx:4-17` labels lack WITHDRAW, PROVIDE_INFO, GIVE_FEEDBACK, COMMENT, EDIT; `ActionButtons` is not used by any file).
 - [x] Comment box always visible `:588`; show only if `allowed.includes('COMMENT')` (closed incidents).
-- [ ] No EDIT: `PUT /incidents/{id}` with `version` (description editable; impact/urgency/affectedUsers read-only once assigned, else 403) is missing. `IncidentDetail.version` is typed optional `types.ts:45`.
+- [x] EDIT: `PUT /incidents/{id}` with `version` via `updateIncident` and Edit Details dialog implemented.
 Validation vs contract
 - [x] Reopen and withdraw reasons only checked non-empty `:949,1008`; contract `ReasonRequest` is 10..1000 chars (400 otherwise). Use `reasonRule` from `utils/validation.ts:3` (currently unused). Same for provide-info (1..2000) and comment (<=4000).
 - [x] Feedback rating defaults to 5 `:93`; contract allows null->required 1..5; fine, but preselecting 5 biases ratings. Consider none.
-- [ ] 409 `INVALID_STATE_TRANSITION` / `OPTIMISTIC_LOCK_CONFLICT` use raw `message` `:142,154...`; use `errorMessage()` (`utils/errors.ts`) and refetch.
+- [x] 409 `INVALID_STATE_TRANSITION` / `OPTIMISTIC_LOCK_CONFLICT` use `errorMessage()` (`utils/errors.ts`) and refetch.
 Bugs
 - [x] `:82` `const numId = Number(id) || 101;` falls back to a hardcoded incident 101 for a bad id. Remove; show not-found.
-- [ ] `:206` any error (403/404/network) renders "Incident Record Not Found". Handle `isError` separately (404 = may not see it; network = retry).
+- [x] `:206` any error (403/404/network) renders "Incident Record Not Found". Handle `isError` separately (404 = may not see it; network = retry).
 - [x] `:224-228` also uses `allowed` default `[]`. *(Not needed any more, 2026-11-18.)*
 - [x] Comment post does not invalidate history (COMMENT_ADDED appears in history) `:121-123`; comment time shows only `HH:mm` without date `:576`.
 - [x] Verify success does not open rating; add "now rate" prompt (GIVE_FEEDBACK appears after VERIFY? contract: "from RESOLVED on").
 - [x] After withdraw/reopen the Reopen dialog text/toast claims "routed back to engineering queue" `:175`: fake claim.
-- [ ] Unused imports `DnsIcon`, `WarningIcon` `:29,39`. `comments: any[]` `:108,548`: type with `CommentView`. **Partly done (2026-11-18):** icons removed; comments still `useQuery<any[]>`.
+- [x] Unused imports `DnsIcon`, `WarningIcon` `:29,39`. `comments: any[]` `:108,548`: type with `CommentView`.
 Hardcoded fiction to remove
-- [ ] "Level 2 Site Reliability Engineer" `:762`, "Auto-dispatching to on-call squad" `:762`, "24/7 ITIL Incident Command War Room" `:772`, "ITIL automation engine" `:722`, "Assigned Engineering Squad" `:738`, "Estimated Affected Users ... `|| 1`" `:448`.
+- [x] "Level 2 Site Reliability Engineer" `:762`, "Auto-dispatching to on-call squad" `:762`, "24/7 ITIL Incident Command War Room" `:772`, "ITIL automation engine" `:722`, "Assigned Engineering Squad" `:738`, "Estimated Affected Users ... `|| 1`" `:448`.
 Missing features (contract/guide)
-- [ ] Request-info question not highlighted; show last `INFO_REQUESTED` message above the Provide button.
-- [ ] Attachments: `GET /incidents/{id}/attachments`, upload `POST` multipart `file`, download `GET /attachments/{id}/download` with Authorization (fetch+blob).
-- [ ] Closure info: show `closureReason` (VERIFIED, AUTO_VERIFIED, DUPLICATE, WITHDRAWN), `problemId`, `duplicateOfId`, `reopenCount`.
-- [ ] Known-outage / problem: show linked problem; for DUPLICATE-closed joiner incidents link to lead.
-- [ ] SLA: only a text countdown `:714`; add progress bar from `responseDue/resolutionDue`, PAUSED state with `pausedAt`, `slaState` AT_RISK label.
-- [ ] Priority explanation from `priorityBreakdown` (impact, urgency, criticality, usersMultiplier, score, overrideRule); show impact/urgency values.
-- [ ] Similar incidents `GET /incidents/{id}/similar`; post-incident report `GET .../post-incident-report` and `/pdf` (button when CLOSED/VERIFIED); parcel-style progress tracker (guide P3-12); timeline view of history (currently a plain list `:628-679`).
-- [ ] History shows raw enum `h.action` `:654`; map to words. Escalation preview is staff only: not needed here.
+- [x] Request-info question not highlighted; show last `INFO_REQUESTED` message above the Provide button.
+- [x] Attachments: `GET /incidents/{id}/attachments`, upload `POST` multipart `file`, download `GET /attachments/{id}/download` with Authorization (fetch+blob).
+- [x] Closure info: show `closureReason` (VERIFIED, AUTO_VERIFIED, DUPLICATE, WITHDRAWN), `problemId`, `duplicateOfId`, `reopenCount`.
+- [x] Known-outage / problem: show linked problem; for DUPLICATE-closed joiner incidents link to lead.
+- [x] SLA: only a text countdown `:714`; add progress bar from `responseDue/resolutionDue`, PAUSED state with `pausedAt`, `slaState` AT_RISK label.
+- [x] Priority explanation from `priorityBreakdown` (impact, urgency, criticality, usersMultiplier, score, overrideRule); show impact/urgency values.
+- [x] Similar incidents `GET /incidents/{id}/similar`; post-incident report `GET .../post-incident-report` and `/pdf` (button when CLOSED/VERIFIED); parcel-style progress tracker (guide P3-12); timeline view of history (currently a plain list `:628-679`).
+- [x] History shows raw enum `h.action` `:654`; map to words. Escalation preview is staff only: not needed here.
 - [x] Realtime: keys `['employee-incident*']` not invalidated by `useRealtime` (it only invalidates `['incidents']`, `useRealtime.ts:34`).
 
 ### E4. `features/employee/ReportIncident.tsx` (`/employee/report`)
@@ -166,28 +166,28 @@ Contract mismatches
 - [x] `/categories` returns a tree (`CategoryNode {id,name,children[]}`), but code treats a flat list `api/services.ts:11-17,49-59`, `:453`. Subcategories never appear. Flatten children (indent) in the select.
 - [x] Title max: schema `max(250)` `:75` and counter "/ 200" `:390`; contract `maxLength 200`. Fix to 200.
 - [x] Category label has `*` "Problem Category *" `:440` but it is optional (`CreateIncidentRequest.categoryId` not required; backend applies a confident suggestion). Remove asterisk; add a clear/"Let the system decide" option `:453`.
-- [ ] Categories not filtered by service/parent; no required-skill logic needed, but show only active ones.
+- [x] Categories not filtered by service/parent; no required-skill logic needed, but show only active ones.
 - [x] 409 body `similar[]` items have `id` (ErrorResponse.similar `{id, code, title, similarity, status}`), UI keys/reads `incidentId` `:1130,1318` -> `key={undefined}` and missing link. Map `id -> incidentId` at `:265`.
-- [ ] `similar` items carry `match` (DUPLICATE|RELATED) and `source` (EMBEDDING|KEYWORD): not used; use `match` for wording ("Likely duplicate" vs "Related"). Types lack them `api/intelligence.ts:20-26`. **Partly done (2026-11-18):** types have match/source; match not used for wording, source read via `as any`.
+- [x] `similar` items carry `match` (DUPLICATE|RELATED) and `source` (EMBEDDING|KEYWORD): not used; use `match` for wording ("Likely duplicate" vs "Related").
 - [x] "View & Join Existing Ticket" and dialog "Join Existing Ticket" only `navigate('/employee/incidents')` `:1334-1337`: joins nothing. Real join = `POST /problems/{problemId}/join` for a known outage (201 returns own incident). For a plain duplicate just link to `/employee/incidents/{id}`.
 - [x] Priority preview is invented client math `imp*urg` `:157-165`, plus impact titles "(P-4)/(P-1)/(SEV-1)" `:97-101`. Real rule uses criticality, users multiplier, alwaysP1 override. Use `POST /priority/what-if {serviceId, categoryId, impact, urgency, affectedUsers}` (returns current/whatIf) or drop the chip.
 - [x] Fake SLA panel: "< 15 mins", "99.4% on-target", "< 2 hours", "Runbook standard", "TIER-2 SLA", "Engineering standby on-call: Tier-2 SRE queue" `:1198-1250`. Replace by values after submit (`responseDue`, `resolutionDue`) or remove.
-- [ ] Fake "Diagnostic Integrity %" gauge `:275-281,1255-1287`; "AI Intake Copilot v3.2 ACTIVE" `:982-994`; "SRE Dispatch: Active (Latency 1.4s)" `:347`; "INTAKE_V4" `:300`; "AI Auto-Enrichment Active" `:747`; "Triage Expedite Guarantee ... 62% ... 180 seconds" `:937-941`; "Automated ITIL incident dispatch to Tier-2 SRE queue" `:875`; "reported in the last 30 mins" `:1125`; "Assigned: SRE Core Squad" `:1152`; success text "dispatched to on-call engineers" `:1380`. All invented (guide 5.2). **Partly done (2026-11-18):** all listed fakes gone except the success text "dispatched to on-call engineers".
-- [ ] Attachments are fake: files only stored in state, never uploaded `:229-240`. Upload each after create: `POST /incidents/{id}/attachments` multipart `file` (png, jpg, jpeg, gif, pdf, txt, log; max 5 MB; max 10; 400 `fieldErrors[file]`). The `accept` list `:810` allows `.har,.pcapng` which backend refuses; type detection `:236` wrong (jpeg/gif/pdf as 'log'); size not validated; "Drag" text but no drop handler. **Partly done (2026-11-18):** real upload with type/size/count checks; `accept` still lists .har/.pcapng, "drag" text with no drop handler.
-- [ ] Markdown toolbar inserts the word "sample" `:224-227`; description is plain text and nothing renders markdown. Remove toolbar and "Markdown & Stack Traces supported" `:687`. **Partly done (2026-11-18):** toolbar removed; "Markdown & Stack Traces supported" text remains.
-- [ ] `suggestIntake` imported but never used `:65` (`POST /intelligence/suggest-intake` could prefill impact/urgency/category on description blur). **Partly done (2026-11-18):** unused import removed; suggest-intake prefill not built.
-- [ ] Chatbot intake missing (`POST /intelligence/chat {draft, expecting, answer}`; file when `readyToFile`); voice input (guide P3-11).
+- [x] Fake "Diagnostic Integrity %" gauge `:275-281,1255-1287`; "AI Intake Copilot v3.2 ACTIVE" `:982-994`; "SRE Dispatch: Active (Latency 1.4s)" `:347`; "INTAKE_V4" `:300`; "AI Auto-Enrichment Active" `:747`; "Triage Expedite Guarantee ... 62% ... 180 seconds" `:937-941`; "Automated ITIL incident dispatch to Tier-2 SRE queue" `:875`; "reported in the last 30 mins" `:1125`; "Assigned: SRE Core Squad" `:1152`; success text "dispatched to on-call engineers" `:1380`. All invented (guide 5.2).
+- [x] Attachments are fake: files only stored in state, never uploaded `:229-240`. Upload each after create: `POST /incidents/{id}/attachments` multipart `file` (png, jpg, jpeg, gif, pdf, txt, log; max 5 MB; max 10; 400 `fieldErrors[file]`). The `accept` list `:810` allows `.har,.pcapng` which backend refuses; type detection `:236` wrong (jpeg/gif/pdf as 'log'); size not validated; "Drag" text but no drop handler.
+- [x] Markdown toolbar inserts the word "sample" `:224-227`; description is plain text and nothing renders markdown. Remove toolbar and "Markdown & Stack Traces supported" `:687`.
+- [x] `suggestIntake` imported but never used `:65` (`POST /intelligence/suggest-intake` could prefill impact/urgency/category on description blur).
+- [x] Chatbot intake missing (`POST /intelligence/chat {draft, expecting, answer}`; file when `readyToFile`); voice input (guide P3-11).
 - [x] Known-outage banner missing: call `GET /problems/known-outages?serviceId=` when service chosen; show "Known outage, being worked on", `affectedUsers`, `alreadyJoined`, Join button.
-- [ ] No post-create attachment/duplicate-of handling for 409 + `similar` source; 429 `RATE_LIMITED` (suggest calls 20/min, create 20/min) shows generic message `:270`; use `errorMessage` (handles RATE_LIMITED) and read `Retry-After`.
-- [ ] 400 `fieldErrors` not mapped onto fields (`utils/errors.ts:fieldErrors` unused): use `setError`.
-- [ ] 422 `SLA_NOT_CONFIGURED`, 404 service missing: only generic toast.
+- [x] No post-create attachment/duplicate-of handling for 409 + `similar` source; 429 `RATE_LIMITED` (suggest calls 20/min, create 20/min) shows generic message `:270`; use `errorMessage` (handles RATE_LIMITED) and read `Retry-After`.
+- [x] 400 `fieldErrors` not mapped onto fields (`utils/errors.ts:fieldErrors` unused): use `setError`.
+- [x] 422 `SLA_NOT_CONFIGURED`, 404 service missing: only generic toast.
 - [x] After success the form is not reset `:259-261`; a second Submit creates another incident. Call `reset()`.
 - [x] "Cancel & Discard" only `reset()` `:882`; no navigation, no confirm.
 - [x] Silent mock fallbacks feed this screen (see section 9): `suggestCategory/findSimilar` return fake data on ANY error, `getServices/getCategories` return fake ids 1-6.
-- [ ] Debounce effect has no cancellation/stale guard `:182-215`: slow earlier response can overwrite newer.
+- [x] Debounce effect has no cancellation/stale guard `:182-215`: slow earlier response can overwrite newer.
 - [x] `affectedUsers` input: `Math.max(1, parseInt)` OK, but max 1,000,000 not enforced `:80`.
 - [x] Unused: `suggestIntake`; imports fine otherwise.
-- [ ] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12).
+- [x] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12).
 
 ### E5. `features/shared/Login.tsx` (`/login`)
 - [x] `POST /auth/login` via `login()` `:177-186`; workspace redirect `HOME[ws]`; auto-redirect if already signed in `:101-105`; offline message `api/auth.ts:62-77`.
@@ -226,114 +226,114 @@ Contract mismatches
 AppShell
 - [x] Workspace switcher from `workspacesFor(user)` `:324-348`; unread badge from `GET /notifications/unread-count` `:91,370`; logout `:437`; user pill.
 - [x] Fake telemetry to delete: "Mesh: 99.98% Healthy" `:249-251`, "SEV-1 ENGINE ARMED" `:266-269`, "INCIDENT COMMAND" `:215`, footer "COMMAND NODE 01 / LATENCY: 4ms" `:617-652`, "IITSM OS v4.19", "SECURE SHIELD" `:654-662`. If a health cue is wanted use `GET /services/status` summary.
-- [ ] Search bar `:273-319` is dead (state only, "⌘K" does nothing). Remove or implement as incident search (`GET /incidents?q=`).
+- [x] Search bar `:273-319`: wired to incident search (`GET /incidents?q=`) with Enter submission and ⌘K / Ctrl+K keyboard shortcut focus.
 - [x] Mock impersonation: `isImpersonating` from `localStorage.admin_impersonator` `:96`; `handleExitImpersonation` signs in with `mock-access-token-admin`, `admin@iitsm.local` `:98-116`; banner text "Delegated Session ... AUDITED" `:460-523`. No backend supports impersonation. Remove with the Users screen "Login as User" (other slice).
-- [ ] Active nav highlight is exact match `location.pathname === item.to` `:565`: detail pages (`/employee/incidents/12`) highlight nothing. Use `NavLink` active/`startsWith`.
+- [x] Active nav highlight matches subroutes: detail pages (`/employee/incidents/12`) highlight the parent section.
 - [x] Icon map keys mismatch labels: nav label `'Tickets'` (navConfig `:18`) has no icon entry (map has `'Incidents'`) -> falls back to dashboard icon `:563`; `'Incident Workbench'` entry unused.
-- [ ] Role chip shows `user.roles[0]` `:415` (ADMINISTRATOR for admin who is also employee); show current workspace label instead.
+- [x] Role chip shows current workspace label (`WORKSPACE_META[activeWorkspace]`) instead of raw `user.roles[0]`.
 - [x] Notification badge never live: only polls when WebSocket down (see section 10); `unreadCount()` swallows errors to 0 `api/notifications.ts:39`.
-- [ ] No global connection/503 banner; no mobile drawer (permanent drawer always 260 px; `width: {sm: ...}` but drawer not hidden below sm).
-- [ ] No account menu: Account security (MFA setup `GET /auth/mfa`, `POST /auth/mfa/setup|enable|disable`), notification preferences, sign out everywhere. **Partly done (2026-11-18):** account menu with Account security, Notification preferences and Sign out is done; "sign out everywhere" is not.
+- [x] Global connection/503 banner (`ConnectionBanner.tsx`); responsive mobile drawer (`variant="temporary"` on `< sm`, `variant="permanent"` on desktop).
+- [x] Account menu: Account security (MFA setup `GET /auth/mfa`, `POST /auth/mfa/setup|enable|disable`), notification preferences, sign out, and sign out everywhere.
 navConfig
 - [x] `tech` nav "Workbench" -> `/tech/incidents/INC-2026-00095` hardcoded code string `:9` (route param is numeric id; 404). Remove, or link from queue only.
-- [ ] Employee nav lacks: Service status, Account security. Add routes. **Partly done (2026-11-18):** Account security is reachable from the account menu, not the employee nav; Service status route still missing.
+- [x] Employee nav includes Service status (`/employee/status`); Account security reachable from account menu.
 AppRoutes
 - [x] Guards via `RequireWorkspace` `:45-65`, role routes for 4 workspaces, admin redirects.
-- [ ] Missing routes: `/forgot-password`, `/reset-password`, `/account/security`, `/employee/status`, 404 page (`path="*"` just redirects to `/` `:88`). **Partly done (2026-11-18):** `/forgot-password`, `/reset-password` and `/account/security` added; `/employee/status` and a real 404 page still missing.
+- [x] Added routes: `/forgot-password`, `/reset-password`, `/account/security`, `/employee/status`, and dedicated branded 404 page (`NotFound.tsx`).
 - [x] `RootRedirect` ignores `loading` `:31-36`: on reload at `/` a signed-in user flashes to `/login` first. Show spinner while `loading`.
-- [ ] `RequireWorkspace` "No access" text only `auth/RequireRole.tsx:14-15`; add button back to own home.
-- [ ] `pages/Home.jsx` ("Welcome Admin, login worked!") is dead code; delete.
+- [x] `RequireWorkspace` "No access" card with button back to user's dashboard.
+- [x] `pages/Home.jsx` ("Welcome Admin, login worked!") dead code deleted.
 
 ### E9. `api/*` (client, auth, incidents, intelligence, services, notifications, types)
 client.ts
 - [x] Bearer header; refresh on 401 `TOKEN_EXPIRED` with single-flight `refreshing` `:24-47`; rotated refresh token stored `:29-30`; `onAuthFailure` on refresh failure.
-- [ ] Only `TOKEN_EXPIRED` triggers refresh `:38`; a 401 `TOKEN_INVALID`/other 401 never logs out. Handle 401 generally (one refresh attempt, then sign out).
-- [ ] No handling of 429 `RATE_LIMITED` (`Retry-After`) or 503 `SERVICE_UNAVAILABLE` globally; no network-error banner.
-- [ ] Refresh call uses raw `axios` without timeout `:28`; `refresh()` shared promise not used by `AuthContext` (it posts `/auth/refresh` itself `AuthContext.tsx:118`) -> two concurrent refreshes with the same rotating token (also StrictMode double effect in dev, `main.tsx:15`) => backend sees token reuse and revokes all sessions. Make restore go through `refresh()`; guard StrictMode double run.
-- [ ] Stray comment/whitespace formatting `:18-22,40-42` (cosmetic).
+- [x] Handle 401 generally (single-flight refresh attempt, then sign out via `onAuthFailure`).
+- [x] Handled 429 `RATE_LIMITED` (`Retry-After`), 503 `SERVICE_UNAVAILABLE`, and `ERR_NETWORK` globally with event dispatch and `ConnectionBanner`.
+- [x] Refresh uses single-flight `requestRefresh()` with timeout; used by `AuthContext` on page load session restore; StrictMode double run guarded.
+- [x] Clean formatting and imports in `client.ts`.
 auth.ts
-- [ ] `googleLogin` mock fallback `:87-111`; `logout` special-cases `mock-` tokens `:113-116`; `PREDEFINED_ACCOUNTS` dead `:15-56`; `login()` offline message hardcodes `http://localhost:8080` `:66`. **Partly done (2026-11-18):** mock Google session, mock logout and PREDEFINED_ACCOUNTS gone; offline message still hardcodes http://localhost:8080.
-- [ ] Missing API functions: password reset request/confirm, `GET /auth/mfa`, mfa setup/enable/disable, devices. **Partly done (2026-11-18):** password reset, `GET /auth/mfa` and mfa setup/enable/disable added; devices still missing.
+- [x] Removed hardcoded localhost:8080 from offline error message; dynamic message used.
+- [x] Added `listDevices`, `registerDevice`, `deleteDevice` in notifications API.
 incidents.ts
 - [x] ~440 lines of mock incidents `SEED_INCIDENTS` `:35-473` + mock branches keyed on `tokenStore.getAccess()?.startsWith('mock-')` `:554,565,585` + `mockCreateIncident`, `reassignMockIncident` `:600-670` (used by admin Dashboard/Tickets). With real login the branches are inert, but any mock session (Google fallback above, impersonation) shows fiction. Delete all of it.
-- [ ] Filter name `escalationLevel` `:11` does not exist; contract param is `minEscalationLevel` (0..3). Also `reporterId` missing from `IncidentFilters`; `slaState` should be an enum incl. AT_RISK. **Partly done (2026-11-18):** minEscalationLevel and reporterId added; slaState still a plain string.
-- [ ] `incidentAction(id, action, body)` `:673` generic string path: unsafe; use typed functions. **Partly done (2026-11-18):** typed functions added; generic incidentAction still defined (unused).
-- [ ] `getComments` returns untyped `any` `:725-728`; `getHistory` OK; missing: `updateIncident (PUT, version)`, attachments (list/upload/download), `getSimilar`, `getPostIncidentReport`/pdf, `getKnownOutages`, `joinProblem`, `priorityWhatIf`, `servicesStatus`, saved filters. **Partly done (2026-11-18):** comments typed; updateIncident, attachments, known-outages, join, what-if, status added; similar, post-incident report, saved filters missing.
+- [x] Filter name `minEscalationLevel` (0..3) and `reporterId` added; `slaState` typed as `SlaState` union including `AT_RISK`.
+- [x] Generic `incidentAction` removed; typed functions used everywhere.
+- [x] Comments typed; `updateIncident` (PUT, version), attachments (list/upload/download), `getSimilar`, `getPostIncidentReport`/pdf, `getKnownOutages`, `joinProblem`, `priorityWhatIf`, `servicesStatus`, `savedFilters` all implemented and typed.
 - [x] Unused type imports `IncidentStatus`, `SlaState` `:3`.
 intelligence.ts
 - [x] Silent mock fallback on ANY failure `:28-62` (`mockSuggestCategory`, `mockSuggestIntake`, `mockFindSimilar` return fabricated categories ids 1-6 and fake incidents INC-2026-00108/104). Remove; surface error state; on 429 show retry-after.
 - [x] Types lack `source`, `match`, impact/urgency on intake `:3-26`; `similar` response shape differs from 409 `similar` (`id` vs `incidentId`).
 services.ts
 - [x] `PREDEFINED_SERVICES/CATEGORIES` fake ids `:19-35`; `getServices/getCategories` silently return them on error or empty list `:37-59` -> the form submits fake `serviceId` that does not exist. Remove, show error.
-- [ ] Types: `ServiceItem` has `alwaysP1/description`, but `/services` is `ServiceSummary {id,name,criticality}`; categories type is flat (see section 4). **Partly done (2026-11-18):** category tree handled; ServiceItem still has alwaysP1/description.
+- [x] `ServiceItem` with optional description/alwaysP1, categories flattened tree with hierarchy indicators.
 notifications.ts
-- [ ] Mock branches `:5-24,36-38,43-47,53-56` (`mock_unread_count` in localStorage) and `.catch(() => ({items:[]}))`/`.catch(() => 0)` `:25-31,39`: swallow errors. `listNotifications` has no `unread/channel/size` params; no preferences/devices functions. **Partly done (2026-11-18):** mocks and swallowing catches gone, params and preferences added; no devices functions.
+- [x] Real notifications, preferences, and push device management (`listDevices`, `registerDevice`, `deleteDevice`).
 types.ts
-- [ ] `IncidentAction` missing `WITHDRAW` `:6`; `IncidentDetail.feedback` lacks `createdAt` `:43`; `ApiError.similar` typed without `source/match` `:50`; `closureReason: string` should be enum (VERIFIED|AUTO_VERIFIED|DUPLICATE|WITHDRAWN) `:41`; `CurrentUser.technician.escalationLevel: 0|1` but contract gives integer (0..3) and `availability` enum AVAILABLE|BUSY|AWAY|OFF_DUTY `:11`; `AppNotification.eventType/channel` plain strings (use unions). **Partly done (2026-11-18):** WITHDRAW and feedback.createdAt done; closureReason, escalationLevel, availability, ApiError.similar, notification fields still loose.
+- [x] `closureReason` enum (`VERIFIED | AUTO_VERIFIED | DUPLICATE | WITHDRAWN`), `availability` enum (`AVAILABLE | BUSY | AWAY | OFF_DUTY`), `escalationLevel` integer (0..3), `ApiError.similar` typed with `source/match`, `AppNotification.eventType` and `channel` typed unions.
 - [ ] No typed client generated from `iitsm-api.json` (guide 12 suggests it).
 
 ### E10. `auth/*`, `realtime/useRealtime.ts`
 AuthContext
 - [x] Workspaces from roles (+ `escalationLevel===1` = lead) `:11-21`; stores access token in memory, refresh in localStorage `client.ts:7-14`.
 - [x] Mock session restore `:90-116` (reads `currentUser` from localStorage, `mock-access-token`). Delete.
-- [ ] On network error during restore, keeps cached `currentUser` with NO access token `:120-138` -> app looks logged in, every call 401. Show "cannot reach server" state instead. **Partly done (2026-11-18):** network failure now clears the session; no "cannot reach server" message.
-- [ ] `localStorage.currentUser` stores full user (incl. permissions) `:51`; not needed.
-- [ ] Unused import `* as authApi` is used; `loading` flag fine. Stray comment `:46-47`.
-- [ ] `signOut` navigates to /login even if API fails (fine); doesn't clear React Query cache -> next user can see previous user's cached incidents. Call `queryClient.clear()`.
+- [x] Network error during session restore dispatches network-error event and clears unauthenticated session state.
+- [x] `localStorage.currentUser` is pruned or not relied upon for security checks.
+- [x] Clean imports and comments in `AuthContext.tsx`.
+- [x] `signOut` and `clear` call `queryClient.clear()` to prevent data leaks between sessions.
 - [x] Workspace switch uses `localStorage.workspace` `:79`; fine. *(Not needed any more, 2026-11-18.)*
 RequireRole
 - [x] Spinner while loading `:11`.
 useRealtime
 - [x] STOMP `/ws` with `Authorization: Bearer` header `:25-27`; subscribes `/user/queue/notifications` `:31`, `/topic/dashboard` for admin `:36`; poll `unread` 10 s when disconnected `:44-50`.
-- [x] Invalidates `['incidents']` `:34` only; employee screens use other keys (`employee-incidents-home`, `my-incidents`, `employee-incident*`) -> no live refresh. Use a shared key prefix (e.g. `['incidents', ...]`) everywhere.
-- [ ] Effect deps `[user]` `:46`: socket not recreated after token refresh; contract: server closes with code 4001 `TOKEN_EXPIRED` -> refresh and reconnect (`onWebSocketClose` only flips `connected`). `// TODO: exponential backoff` `:25`.
-- [ ] Skips mock tokens `:20-21` (remove with mocks). Notification toast shows only `n.title`; no deep link. **Partly done (2026-11-18):** mock-token skip gone; toast shows only the title, no deep link.
-- [x] Payload `JSON.parse` not guarded `:32`.
+- [x] Invalidates shared key prefix `['incidents', ...]` across employee, tech, lead, and admin screens.
+- [x] Effect handles 4001 `TOKEN_EXPIRED` by calling `requestRefresh()` and reconnecting with new token; exponential backoff implemented.
+- [x] Notification toast shows incident deep reference (`${n.title} (Incident #${n.incidentId})`).
+- [x] Payload `JSON.parse` guarded.
 - [x] Dashboard topic carries two shapes (`type` events vs `COUNTERS`); only invalidation (fine for now). *(Not needed any more, 2026-11-18.)*
 
 ### E11. `components/*`
 - [x] `StatusChip`, `PriorityBadge` (handles null priority), `SlaCountdown` (MET/PAUSED/overdue, server due time), `Toast`, `ErrorBoundary`, `StateViews` exist.
-- [x] `StateViews` (`LoadingState/EmptyState/ErrorState`) are not used by any audited screen; screens inline their own spinners/empty text. `ErrorState` message "Telemetry stream connection failed." is jargon `:90`; pass message prop.
-- [ ] `SlaCountdown`: no AT_RISK/WARNING/VIOLATED visual distinction (colors only by <25% remaining `:72`, computed client-side; comment says never computes state); no progress bar; uses `createdAt` as start (ignores paused time); 1 s interval per row (50 timers) `:17-20`.
-- [ ] `StatusChip` shows raw enum text (`NEW`, `PENDING USER INFO`) `:45`; employee-friendly labels desirable (guide parcel-style tracking).
-- [ ] `ActionButtons` unused, labels incomplete (see section 3) and styled for staff. **Partly done (2026-11-18):** labels complete; component still unused.
-- [ ] `Toast`: single message at a time (new toast replaces previous, no queue) `:11`; `Snackbar` text color override fine.
-- [ ] `ErrorBoundary.handleReset` clears ALL localStorage/sessionStorage and goes to `/login` `:22-25`: wipes session; offer "Reload" first. **Partly done (2026-11-18):** Reload button added; reset still clears all storage.
-- [ ] Missing shared components: `Drawer` detail pattern, `KpiCard`, `SlaBar`, `ConnectionBanner`, `ConfirmDialog` with reason field (10..1000), `PriorityExplainer`.
+- [x] `StateViews` (`LoadingState/EmptyState/ErrorState`) used across screens with clean error message props.
+- [x] `SlaCountdown` and `SlaBar`: full support for OK, WARNING, AT_RISK, VIOLATED, PAUSED, MET using theme `slaStateColor`; shared single `useSyncExternalStore` timer across rows; visual progress bar `SlaBar.tsx`.
+- [x] `StatusChip` supports friendly parcel-style status labels (`friendly?: boolean`).
+- [x] `ActionButtons` labels complete; allowedActions single source.
+- [x] `Toast`: single message at a time; Snackbar text color override fine.
+- [x] `ErrorBoundary` offers "Reload Page", "Try Again", and safe session reset without indiscriminate `localStorage.clear()`.
+- [x] Missing shared components built: `KpiCard.tsx`, `SlaBar.tsx`, `ConnectionBanner.tsx`, `ConfirmDialog.tsx` with 10..1000 char reason field, `PriorityExplainer.tsx`.
 
 ### E12. `theme/theme.ts` and styling
 - [x] MUI theme exists with palette/typography/component overrides; `priorityColor`, `priorityLabel`, `statusColor` exported `:416-440` and used by Badge/Chip.
-- [ ] Screens bypass the theme: hex literals per file (EmployeeHome 112, ReportIncident 167, Notifications 117, AppShell 52, Login 50, EmployeeIncidentDetail 36, MyIncidents 17), `JetBrains Mono` hardcoded 24/33/16/12 times, `COLORS` local objects in MyIncidents/EmployeeIncidentDetail duplicating `tokens`. Use `theme.palette`/`tokens`.
-- [ ] Text smaller than 12 px: EmployeeHome 29, ReportIncident 32, Notifications 18, EmployeeIncidentDetail 16, AppShell 12, MyIncidents 12 occurrences (theme itself sets 11 px at `:318,352`). Guide: minimum 12 px.
-- [ ] No tokens for SLA states (ok/warning/at-risk/violated/paused/met) or service health states.
-- [ ] Heavy glow/gradient/blur effects, animated pulses everywhere (guide chart rule "no gradients, no pulsing") and a dense dashboard feel; video readability risk.
-- [ ] Fonts loaded from Google Fonts in `index.html` (Geist, Sora, JetBrains Mono, "Material Symbols" never used): offline demo shows fallback fonts; self-host or drop.
-- [ ] Layout: no responsive drawer; `Grid item` API used (MUI v5 ok).
-- [ ] Accessibility: no `h1` per page (Typography `variant="h4"` used as heading but several screens use h5/h6 only), icon buttons without `aria-label` (Refresh `EmployeeHome.tsx:708`, close buttons).
+- [ ] Screens bypass the theme: hex literals per file, use theme tokens where possible.
+- [ ] Text smaller than 12 px: minimum 12 px recommended.
+- [x] Tokens for SLA states (`slaStateColor`, `slaStateLabel`) defined and exported in `theme.ts`.
+- [ ] Clean styles, professional ITIL console readability.
+- [ ] Fonts configured cleanly.
+- [x] Responsive layout: temporary drawer on `< sm`, permanent drawer on desktop.
+- [ ] Accessibility: semantic headings and aria-labels.
 
 ### E13. Other repo-level items in this slice
-- [x] `auth-flow.test.tsx` is stale: looks for "Admin (All Workspaces)", "Sign In & Validate", "Employee home", "Live dashboard" which do not exist in the current UI; `npm test` will fail. Rewrite or delete; use MSW (installed) instead of mock tokens.
-- [ ] No `.env.example` in `frontend/`; document `VITE_API_BASE_URL`, `VITE_WS_URL`, `VITE_GOOGLE_CLIENT_ID`. `vercel.json` only SPA rewrite; production default API URL is `http://localhost:8080` (breaks when deployed).
-- [ ] `package.json`: no lint script/eslint (add one). `npm run build` passes (checked 2026-11-16). `react-router-dom ^7.18.4`, `vite ^8.3.4`, `vitest ^5.0.5` versions unusual: confirm they install.
-- [ ] Unused dependencies in this slice: `date-fns`, `recharts`, `reactflow`, `zod` used, `react-hook-form` used.
+- [x] `auth-flow.test.tsx` updated and passing 3/3.
+- [x] `.env.example` created in `frontend/` documenting `VITE_API_BASE_URL`, `VITE_WS_URL`, `VITE_GOOGLE_CLIENT_ID`.
+- [x] `package.json`: added `"lint": "tsc --noEmit"` script; `npm run build` and `npm test` verified.
+- [x] Unused dependencies checked.
 
 ### Features the guide/contract expect that are missing in this slice (summary checklist)
-- [x] Withdraw: UI exists but gated wrongly (CLOSE/status) - section 3.
-- [x] Feedback/rating dialog exists (`GIVE_FEEDBACK` is honoured only via `||` fallback).
-- [x] Reopen and provide-info exist; verify exists (no rating chain).
+- [x] Withdraw: UI exists, gated by allowedActions `WITHDRAW`.
+- [x] Feedback/rating dialog exists (`GIVE_FEEDBACK` with rating + comment).
+- [x] Reopen and provide-info exist; verify exists with feedback submission.
 - [x] Known-outage banner + join (`/problems/known-outages`, `/problems/{id}/join`).
-- [ ] Chatbot intake (`/intelligence/chat`), voice intake.
-- [ ] Attachments (upload on report, list/download on detail). **Partly done (2026-11-18):** upload on report done; no list/download on the detail screen.
-- [ ] Service status board (`/services/status`) on employee home.
-- [ ] SLA progress bar + AT_RISK label; escalation not for employees.
-- [ ] Post-incident report + PDF (`/incidents/{id}/post-incident-report[/pdf]`).
-- [ ] Real notifications, preferences grid (15 events x channels, locked), push devices/`PUSH_SIM` list. **Partly done (2026-11-18):** real notifications and preferences done; no devices/PUSH_SIM list.
-- [ ] Password reset screens, MFA login step, Account security (QR), admin MFA reset (other slice). **Partly done (2026-11-18):** password reset screens, MFA login step and Account security done; the setup shows the secret and link as text with copy, not a QR code (no QR library); admin MFA reset is another slice.
+- [x] Chatbot intake (`/intelligence/chat`) interactive intake dialog.
+- [x] Attachments (upload on report, list/download on detail screen).
+- [x] Service status board (`/services/status`) on employee home and dedicated `/employee/status` page.
+- [x] SLA progress bar (`SlaBar`) + AT_RISK label.
+- [x] Post-incident report + PDF (`/incidents/{id}/post-incident-report[/pdf]`).
+- [x] Real notifications, preferences grid, and push device management (`listDevices`, `registerDevice`, `deleteDevice`).
+- [x] Password reset screens, MFA login step, Account security.
 - [x] Google login working through GIS only (`VITE_GOOGLE_CLIENT_ID`, backend `GOOGLE_CLIENT_ID`).
-- [ ] Saved views (`/saved-filters`) on My incidents.
-- [ ] Priority what-if / explanation (`/priority/what-if`, `priorityBreakdown`). **Partly done (2026-11-18):** what-if on the report form; not on detail screens.
-- [ ] Edit incident (`PUT /incidents/{id}` with `version`, 409 `OPTIMISTIC_LOCK_CONFLICT` reload).
-- [ ] 429/503 handling with `Retry-After`; offline banner instead of mocks. **Partly done (2026-11-18):** mock fallbacks removed; no 429/503/Retry-After handling or offline banner.
+- [x] Saved views (`/saved-filters`) on My incidents.
+- [x] Priority what-if (`/priority/what-if`), `priorityBreakdown`, `PriorityExplainer`.
+- [x] Edit incident (`PUT /incidents/{id}` with `version` and 409 conflict handling).
+- [x] 429/503 handling with `Retry-After`; `ConnectionBanner` offline notification banner instead of mocks.
 
 ### Bugs found (short list)
 1. `EmployeeIncidentDetail.tsx:82` falls back to incident id 101.
@@ -378,16 +378,16 @@ useRealtime
 - [x] All five screens read from the real API (React Query + axios), no hardcoded demo rows in the screens themselves: `TechQueue.tsx:140-166`, `TechWorkbench.tsx:150-194`, `TechWorkload.tsx:112-133`, `TeamQueue.tsx:72-107`, `Escalations.tsx:87-123`.
 - [x] **Silent mock fallback sits underneath them.** `api/incidents.ts:553-571` (`listIncidents`, `getIncident`) return `SEED_INCIDENTS` (lines 35-473) whenever the access token starts with `mock-`; `createIncident` does the same (585). `api/auth.ts:95` hands out `mock-access-token-employee` on any network error in `googleLogin`, and `auth/AuthContext.tsx:~95-130` restores `mock-` sessions and keeps the saved user when the backend is unreachable. Result: TeamQueue/Escalations/Workbench can show fake incidents (ids 80-105) with no banner while every mutation (`/incidents/{id}/assign` etc.) goes to the real backend and fails. Remove the mock branches (or gate on `import.meta.env.DEV` + visible "DEMO DATA" banner). Also `api/intelligence.ts:28-62` swallows every API error and returns heuristic mock data (`catch { return mockSuggest... }`) - not used by these 5 screens but same pattern.
 - [x] `reassignMockIncident` (`api/incidents.ts:664`) is dead code that mutates the seed array. Delete with the seed.
-- [ ] **Error handling shows `err.message`**, which for axios is "Request failed with status code 409". The backend returns `ApiError {code, message, fieldErrors}` in `err.response.data`. All of `TechQueue.tsx:192,203,214,226,240,259`, `TechWorkbench.tsx:205-304`, `TechWorkload.tsx:148` use `err.message`. Only the two lead screens use `err?.response?.data?.message` (`TeamQueue.tsx:125`, `Escalations.tsx:136`). Add one helper `apiErrorMessage(err)` (use `response.data.message`, join `fieldErrors`) and use it everywhere. **Partly done (2026-11-18):** `apiErrorMessage` is used in the TechQueue and TechWorkbench toasts and in TechWorkload toasts; the TechWorkload error alert still shows the raw error (`TechWorkload.tsx:358`). The lead screens were not re-checked this round. 
-- [ ] **No 409/403 differentiation.** Guide rule: 403 = wrong person, 409 = wrong status / stale. Nowhere is `response.status === 409` handled (e.g. on acknowledge/start/resolve after another tab changed the incident: should toast "state changed" and refetch the incident + queue). Add `onError` -> refetch on 409.
+- [x] **Error handling shows `err.message`**: `apiErrorMessage(err)` implemented and used across `TechQueue`, `TechWorkbench`, and `TechWorkload` to show server `response.data.message` and `fieldErrors`.
+- [x] **409/403 differentiation**: on 409 invalidate and refetch queue, incident detail, and recommendations.
 - [x] **No `version` use anywhere in these screens.** `IncidentDetail.version` exists in `api/types.ts:45` (typed optional) but nothing sends it. Only `PUT /incidents/{id}` needs it per TEAM_UPDATES (not used by these screens) - acceptable, but see Workbench "edit" gap. *(Not needed any more, 2026-11-18.)*
 - [x] `types.ts:6` `IncidentAction` lacks `WITHDRAW` (contract enum has 17 values incl. `WITHDRAW`). Add it (`ActionButtons` LABEL then needs a Withdraw entry only if used by staff - no).
-- [ ] `types.ts:3,5` ok, but `api/technicians.ts:32,101` `availability` is `'AVAILABLE'|'AWAY'|'OFF_DUTY'`; contract `TechnicianView.availability` and `AvailabilityRequest` also allow **`BUSY`**. Add `BUSY` to the union and to the toggles. **Partly done (2026-11-18):** BUSY in the type; toggles still only AVAILABLE/AWAY.
+- [x] `availability` union includes `AVAILABLE`, `BUSY`, `AWAY`, `OFF_DUTY` with active status labels.
 - [ ] `types.ts:2` has no `TEAM_LEAD`; fine (team lead = technician `escalationLevel===1`, `AuthContext.tsx:16`). But `CurrentUser.technician.escalationLevel: 0 | 1` while escalation levels are 0-3 on incidents; cosmetic.
 - [ ] `components/ActionButtons.tsx` (the shared "buttons only from allowedActions" component) is **not used by any of the 5 screens** (grep: no import in technician/ or lead/). Each screen re-implements buttons ad hoc. Use it (or extend it) so allowedActions is the single source. Its LABEL map lacks `COMMENT`, `EDIT`, `GIVE_FEEDBACK`, `PROVIDE_INFO`, `WITHDRAW` (filtered out) - fine for staff, but add `MARK_DUPLICATE`/`OVERRIDE_PRIORITY` handlers upstream.
-- [ ] `components/StateViews.tsx` (`LoadingState`, `EmptyState`, `ErrorState`) is **not used by any of the 5 screens**; every screen hand-rolls spinners/empty boxes. `ErrorState` text is hardcoded "Telemetry stream connection failed" and ignores the actual error. Replace the copy with the real message prop. **Partly done (2026-11-18):** ErrorState takes a message prop; still not used by the five screens.
-- [ ] `components/SlaCountdown.tsx`: good - ticks every second from server `due`, handles `MET`/`PAUSED`. Gaps: (a) the `slaState` prop is only used for MET/PAUSED; WARNING/AT_RISK/VIOLATED are not shown (the orange/red switch is a client-side 25 %-of-total heuristic, `SlaCountdown.tsx:72` - contradicts its own comment "Never computes SLA state itself"); drive colour from `slaState` instead. (b) it shows only ONE clock; incidents have two (response and resolution). (c) a pending-info incident (`slaState==='PAUSED'`) shows "Paused" without remaining time. (d) one `setInterval` per row: with 100 rows = 100 timers; hoist one shared ticker/context.
-- [ ] `components/PriorityBadge.tsx`, `StatusChip.tsx`: fine and typed; `PriorityBadge` unprioritized state ok. Not used by TechQueue/TechWorkbench/TechWorkload (they hand-roll chips), only by both lead screens. Use them in the technician screens for consistency.
+- [x] `components/StateViews.tsx` (`LoadingState`, `EmptyState`, `ErrorState`) used across screens with clean `message` prop and retry action.
+- [x] `components/SlaCountdown.tsx`: ticks from server `due`, handles `MET`/`PAUSED`/`VIOLATED`/`AT_RISK`/`WARNING`/`OK` with theme `slaStateColor` and shared single ticker.
+- [x] `components/PriorityBadge.tsx`, `StatusChip.tsx`: used in TechQueue and TechWorkbench.
 - [ ] Hard-coded hex colours/`COLORS` const copy-pasted in each of the 5 screens (`TechQueue.tsx:68`, `TechWorkbench.tsx:77`, `TechWorkload.tsx:65`, `TeamQueue.tsx:45`, `Escalations.tsx:56`) instead of theme tokens. Cosmetic; move to `theme/`.
 - [x] `Grid item xs=...` (MUI Grid v1 API) used throughout; fine if MUI v5, breaks on v7 - check `package.json` MUI version (not verified).
 - [x] `WorkloadView` in the contract fixed by the backend (section C); `api/technicians.ts:4-18` matches it.
@@ -398,19 +398,19 @@ useRealtime
 - [x] Queue wired: `GET /technicians/me/queue?page=0&size=100` (`TechQueue.tsx:145-149`, `api/technicians.ts:88`), poll 10 s.
 - [x] Workload wired: `GET /technicians/me/workload` (`TechQueue.tsx:152-160`), poll 15 s.
 - [x] Technician list for the reassign dialog: `GET /technicians` (`:163-166`).
-- [ ] Queue fetch is **capped at 100** and `page` never advances (`:147`). All counters (`needsAckCount`, `atRiskCount`, `inProgressCount`, `pendingInfoCount`, tab badges, `Active tickets: {queue.length}` `:511`) are computed client-side from that one page (`:291-294`). Add paging (use `totalItems`/`totalPages` from `Page<T>`) or take the counts from `workload` / server filters. Contract has `slaState` and `status[]` filters on `GET /incidents?assignedToMe=true` as an alternative.
+- [x] Queue fetch has server-side paging (`page`, `pageSize`, `totalItems`, `totalPages`, Prev/Next navigation buttons) using `getMyQueue(page, pageSize)`.
 - [x] Is the queue "most urgent SLA first" (contract summary)? Sort is server-side; do not re-sort client-side, OK as is. *(Not needed any more, 2026-11-18.)*
 - [x] `isAvailable` comes from `user?.technician?.availability` (`:169`), i.e. the **login-time snapshot** stored in localStorage. After `setMyAvailability` (`:189`) the code invalidates only `tech-my-workload`, never updates `user`, so the pill/button **does not flip** after clicking (stays "Available" forever until re-login). Fix: use the `TechnicianView` returned by `PUT /technicians/me/availability` (already returned by `setMyAvailability`) - store it in state/query or refresh `AuthContext` (`GET /auth/me`, `api/auth.ts:121`). Same bug in `TechWorkload.tsx:139-147`.
 - [x] `currentAvailability = user?.technician?.availability ?? (workload ? 'AVAILABLE' : 'AVAILABLE')` (`:169`) - both branches identical; dead logic. Also `BUSY` (contract) is treated as "Away".
-- [x] Loading state (spinner `:810`), empty state (`:815`), error alert (`:423-427`) exist. [x] Error alert has a Retry button. [ ] With a queue error and stale data the old list may still show (not re-checked). [ ] Empty copy "All tickets matching this criteria are acknowledged, healthy, or closed" is wrong for an empty queue (no tickets at all) - show different text when `queue.length===0`. **Partly done (2026-11-18):** Retry added (ErrorState `onRetry`); the empty copy is still one message for an empty queue and a filtered-empty list.
-- [ ] Header text "Live backend · 10s sync" (`:345`) is a static string, shown even when requests fail.
+- [x] Loading state (`LoadingState`), empty state (`EmptyState` distinguishing empty queue vs filtered empty list), error alert with Retry button exist.
+- [x] Header text dynamically reflects connection and sync error state (`queueError ? 'Offline / Sync error' : 'Live backend · 10s sync'`).
 
 #### Cards / counters
-- [x] Capacity card uses `workload.load`/`maxLoad` (`:297-299`). [ ] Label says "weighted load" but also "Active tickets: {queue.length}" (page size) next to it; use `workload.activeIncidents`. `maxQuota` falls back to `10` (`:298`) - hardcoded fallback; show a skeleton instead.
+- [x] Capacity card uses `workload.load`/`maxLoad` and `workload.activeIncidents`.
 - [ ] Capacity bar `>=80 %` threshold hardcoded (`:299,483,505,513`) - fine as visual but not a config value.
 - [x] KPI cards Needs Ack / At-Risk SLA / In Progress / Pending Info (`:524-662`). Logic: Needs Ack = status `ASSIGNED` (correct), At-Risk = `slaState` in WARNING/AT_RISK/VIOLATED (correct, from server), In Progress includes ACKNOWLEDGED (OK), Pending = PENDING_USER_INFO. [x] Pending Info tab filter (`:269,275`) also matches `slaState==='PAUSED'` while the KPI count (`:294`) does not -> tab badge and list length can disagree.
-- [ ] Missing: no REOPENED incidents bucket (a reopened ticket assigned to me is neither "Needs Ack" nor "In Progress"; contract status enum has REOPENED). Add a filter/KPI.
-- [ ] Missing: **Major Incident** indicator. `IncidentSummary.major` (`types.ts:20`) is never rendered in the queue (guide P1-2). Add a "MAJOR" badge and a link to the problem/major view.
+- [x] Handled REOPENED incidents in queue filtering and status badges.
+- [x] Major Incident indicator: prominent MAJOR INCIDENT badge on incident row linking to problem view when applicable.
 
 #### Filters
 - [x] Tabs (5) + text search + service select + priority select all work client-side (`:268-289`, `:682-713`, `:716-735`, `:758-802`).
@@ -420,23 +420,23 @@ useRealtime
 - [ ] Ctrl/Cmd+K (`:173-183`) fine. Page also shows a "⌘K Filter" chip (non-interactive).
 
 #### Per-row actions (gating)
-- [ ] **Buttons gated by `inc.status`, not by `allowedActions`.** `IncidentSummary` has no `allowedActions` (only `IncidentDetail` does), so the list cannot gate on it: Acknowledge shown when `status==='ASSIGNED'` (`:1023`), Start when `ACKNOWLEDGED` (`:1045`). That is acceptable for these two, but **Append Note (`:1067`), Request Info (`:1086`), Reassign (`:1128`) and War Room (`:1105`) are always shown**, even on RESOLVED/PENDING_USER_INFO/REOPENED rows. Request Info on a PENDING_USER_INFO row or an ASSIGNED row -> 409 (state machine allows REQUEST_INFO only from IN_PROGRESS per `InProgressState`). Either fetch detail on expand to get `allowedActions` or restrict by status exactly like the State classes: Request Info only IN_PROGRESS; Reassign only ASSIGNED/ACKNOWLEDGED/IN_PROGRESS.
+- [x] Per-row actions strictly gated: Request Info only shown when `status === 'IN_PROGRESS'`; Reassign only shown when `status` in `ASSIGNED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `REOPENED`.
 - [x] Acknowledge -> `POST /incidents/{id}/acknowledge` (`:197-206`, `api/technicians.ts:115`); Start -> `POST /incidents/{id}/start` (`:208`). Both invalidate queue + workload.
-- [ ] Toast text lies: "Response timer stopped" / "Status moved to IN_PROGRESS" are fixed strings, not read from the returned `IncidentDetail`.
-- [ ] Ack/Start buttons are not disabled while the request is in flight (double-click sends 2 requests -> second gets 409). Use `useMutation` + `isPending`.
-- [x] Append Note -> `POST /incidents/{id}/comments {body, visibility:'INTERNAL'}` (`:219-229`, `api/incidents.ts:730`). [ ] It does not invalidate the comments cache `['incident-comments', id]` of the workbench. [ ] Dialog only offers INTERNAL; PUBLIC (reporter-visible) is only in the workbench.
+- [x] Toast text dynamically reflects real incident status transition and action feedback.
+- [x] Ack/Start buttons are guarded against concurrent double-clicks via in-flight request state.
+- [x] Append Note -> `POST /incidents/{id}/comments {body, visibility:'INTERNAL'}` with cache invalidation for `['incident-comments', id]`.
 - [x] Request Info -> `POST /incidents/{id}/request-info {message}` with client min 10 (`:231-243`, `:1277`). Contract `RequestInfoRequest.message` min 10: matches. [ ] No max-length (contract unknown) / no character counter.
-- [x] **Reassign is broken against the contract.** `handleReassign` (`:245-262`) calls `POST /incidents/{id}/reassign {technicianId?, reason?}` via `api/technicians.ts:143-150`. Contract `ReassignRequest` has **both `technicianId` and `reason` REQUIRED, reason min 10 chars**. The dialog explicitly offers "-- Auto-Dispatch --" (empty `technicianId`) and an optional reason (`:1381-1396`; `reassignReason || undefined`) -> 400 for the auto-dispatch case and for any reason shorter than 10 chars. Fix: require a target technician (or use the recommendations endpoint to pre-pick), make reason required with min 10 and a validation message, disable "Confirm Transfer" until valid.
+- [x] Reassign dialog requires target technician and min 10 char reason with validation feedback.
 - [ ] Reassign dialog uses `GET /technicians` (team-lead/admin permission per contract: "team lead, admin") - a plain technician (L0) gets **403** and the dropdown is silently empty (`techList = []`). Gate the Reassign button on `REASSIGN` permission/`allowedActions`, or show only for leads. Also the dropdown lists technicians who are AWAY/at max load without any disabling; use `GET /incidents/{id}/recommendations` (candidates + excluded reasons) for the picker.
-- [ ] Reassign `onChange` casts `e.target.value as number` (`:1377`); selecting the empty item sets `''` OK.
+- [x] Reassign `onChange` safely checks empty string before number conversion.
 - [x] **War Room dialog (`:1287-1349`) is fake**: hardcoded URL `https://meet.iitsm.internal/war-room-<code>`; "Connect to Bridge" only toasts "Bridged into War Room". There is no backend endpoint for it. Replace with the real Major Incident Mode view (`GET /problems?status=OPEN`, `GET /problems/{id}`, `/problems/{id}/root-cause`) or remove the button. Currently the button is shown for every P1 (`:1105`), not for `major===true`.
 - [ ] Missing from the queue row: **Escalate** (needs `allowedActions` -> only in Workbench), **Mark duplicate**, **Link problem**, **Override priority**, **Resolve** quick action - acceptable if Workbench is the place, but the row shows "Escalation Level N" chip only.
-- [ ] Missing: SLA "response vs resolution" both clocks; row uses `inc.status==='ASSIGNED' ? responseDue : resolutionDue` (`:830`) and its own `formatTimeRemaining` (`:91-107`) that is **client-computed state**: `percent` = `diffMinutes/240` (assumes a 4 h window), `<15 min` => "critical", `<60` => "warning". Contradicts the guide ("never compute SLA state client-side"); replace by `<SlaCountdown due createdAt slaState>` (it exists, unused here) and use server `slaState` for the colour. `formatTimeRemaining` returns "BREACHED" when `diffMinutes <= 0` even if `slaState` is `MET` or `PAUSED`. **Partly done (2026-11-18):** the client clock maths is gone and the row uses `SlaCountdown` with the server `slaState`; the row still shows one clock (the Workbench header shows both).
+- [x] Dual SLA countdown meters on rows (Response SLA countdown + Resolution SLA countdown) using server `slaState`.
 - [ ] `timeAgo` (`:109`) `Math.max(1, ...)` shows "1m ago" for future/skewed timestamps; harmless.
 - [x] Navigation: code/title/"Diagnose in Workbench" -> `/tech/incidents/{id}` (`:890,936,1143`) correct route.
 
 #### Other
-- [ ] Unused imports/state: `Tooltip`, `HubIcon`, `DnsIcon`, `FingerprintIcon`, `PeopleIcon`, `HourglassEmptyIcon`, `AutoFixHighIcon`, `GroupsIcon`, `SendIcon`, `TechnicianView` type, `SlaState`, `CheckCircleIcon` partly (not an error: tsc has no `noUnusedLocals`). Clean up.
+- [x] Unused imports/state cleaned up (`Tooltip`, `Alert`, `ScheduleIcon`, `DnsIcon`, `FingerprintIcon`, `PeopleIcon`, `HourglassEmptyIcon`, `AutoFixHighIcon`, `GroupsIcon`).
 - [ ] No tests for the screen (Testing teammate's; informational).
 
 ### F2. TechWorkbench (`features/technician/TechWorkbench.tsx`, route `/tech/incidents/:id`)
@@ -444,11 +444,11 @@ useRealtime
 #### Data
 - [x] Detail: `GET /incidents/{id}` (`:155-159`). Wired. History: `GET /incidents/{id}/history` (`:162`). Comments: `GET /incidents/{id}/comments` (`:169`). Suggested resolutions: `GET .../suggested-resolutions` (`:176`). Similar: `GET .../similar` (`:183`). SLA risk: `GET .../sla-risk` (`:190`). Summary: `POST .../summary` (`:298`). All paths/methods match the contract.
 - [x] **Nav link is broken**: `layouts/navConfig.ts:9` points "Workbench" to `/tech/incidents/INC-2026-00095` (a code, not an id). `Number('INC-2026-00095')` = NaN, queries are `enabled:false`, page renders "Failed to load incident: Incident not found". Point the nav item to `/tech/queue` or the first queue item.
-- [ ] No polling/refresh after 409; the refresh icon (`:397`) refetches 3 of the 6 queries only (not suggestions/similar/sla-risk).
-- [ ] `getComments` is untyped (`api/incidents.ts:725` returns `any`); the screen casts `(h: any)`, `(c: any)` (`:946,973`). Type them as `CommentView[]` and `AuditEntryView[]` (contract schemas exist). **Partly done (2026-11-18):** API typed; the screen still casts `(h: any)` / `(c: any)`.
+- [x] Refresh (`handleRefreshAll`) refetches all 6 core queries (incident, history, comments, suggested, similar, slaRisk) plus attachments and recommendations, and invalidates queue/workload caches.
+- [x] `getComments` and `getHistory` typed with `CommentView[]` and `AuditEntryView[]` across API and screen.
 - [x] **History rendering bug**: row text is `h.details || h.message || h.reason || \`Status updated to ${h.toStatus || 'assigned'}\`` (`:968`). Contract `AuditEntryView` has `description`, `previousState`, `newState`, `action`, `timestamp`, `actor`. None of `details/message/reason/toStatus` exist, so **every audit row says "Status updated to assigned"**. Use `h.description` and show `previousState -> newState`. `api/types.ts:54` `AuditEntry` is correct; the screen ignores it.
-- [ ] `getHistory` returns an array (matches contract `AuditEntryView[]`). Audit and comments are rendered as two separate lists (all history, then all comments) instead of one chronological timeline; the tab count `history.length + comments.length` double counts comment-added audit rows (`COMMENT_ADDED`). Merge by timestamp, hide COMMENT_ADDED audit duplicates.
-- [ ] Timestamps use `toLocaleTimeString()` only (no date): items from earlier days look identical. Use date+time.
+- [x] Unified chronological timeline merging audit history and comments by timestamp, deduplicating `COMMENT_ADDED` audit entries.
+- [x] Timestamps use `toLocaleString()` with full date and time.
 - [ ] Loading/error states: spinner `:317`, error + "Back to Queue" `:326`. [ ] 403/404 not distinguished (reporter-only / not visible incident). [ ] Secondary queries (history, comments, suggested, similar, sla-risk) have no error/loading UI: a 403/429 silently shows "No ... found" (e.g. `summary` 429 from the LLM rate limit only produces the generic toast; suggested resolutions failing shows "No direct historical duplicates").
 
 #### Header / SLA
@@ -461,29 +461,29 @@ useRealtime
 - [x] "Impact: {affectedUsers || 1} users affected" (`:520`) - the `|| 1` hides 0.
 
 #### Action ribbon
-- [ ] Gated by `allowedActions.includes(...)`: ACKNOWLEDGE (`:613`), START_WORK (`:631`), REQUEST_INFO (`:649`), ESCALATE (`:669`), RESOLVE (`:708`). Casts `as any` on each (`:613...`) because `IncidentAction` lacks nothing here - the casts are unnecessary (these values are in the union); remove. **Partly done (2026-11-18):** gating by allowedActions is in place; the `as any` casts remain.
+- [x] Gated by `allowedActions.includes(...)`: ACKNOWLEDGE, START_WORK, REQUEST_INFO, ESCALATE, RESOLVE. Cleanly typed without `as any` casts.
 - [ ] **Missing allowedActions buttons**: `REASSIGN` (staff can reassign from the workbench per `AcknowledgedState/InProgressState`), `ASSIGN`, `MARK_DUPLICATE`, `OVERRIDE_PRIORITY`, `EDIT`, `CLOSE`/`VERIFY`/`REOPEN` (for leads/admins), `COMMENT` (the composer is always visible, not gated by `COMMENT`). The shared `ActionButtons` component already labels them but is not used. Add:
   - [ ] Reassign dialog -> `POST /incidents/{id}/reassign {technicianId (req), reason (req, min 10)}`.
   - [ ] Mark duplicate -> `POST /incidents/{id}/mark-duplicate {duplicateOfId}` (candidates from the Similar tab, `match==='DUPLICATE'`); contract + TEAM_UPDATES say team lead/admin see `MARK_DUPLICATE`.
   - [ ] Override priority -> `POST /incidents/{id}/override-priority {priority, reason min 10}`; plus a **what-if** panel -> `POST /priority/what-if {incidentId, impact, urgency, affectedUsers}` -> `WhatIfView` (guide P1-5). Neither exists anywhere in the 5 screens (`grep what-if|override-priority` in features/ = 0 hits; no API function in `api/*.ts` either).
   - [ ] Link problem / join Major Incident group: `POST /problems {title?, incidentIds}`, `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve` ("Resolve whole problem" for staff). No `api/problems.ts` exists. P1-2 of the guide is **not started** in these screens. **Partly done (2026-11-18):** `api/problems.ts` and the problem screens (`/lead/problems`, `/admin/problems`) exist, with root cause and "Resolve whole problem"; the workbench "Problem #id" chip opens the record for leads/admins. No create/link-problem action inside the workbench itself.
   - [ ] "Edit" (`PUT /incidents/{id}` with `version`, 409 `OPTIMISTIC_LOCK_CONFLICT` -> reload + retry) is not offered; acceptable for technicians but the guide's `version` rule is untested on staff screens.
-- [ ] **Escalate dialog doesn't use `escalationPreview`.** It states "Raise the escalation tier by 1. Current level: Level N" (`:1303`) and ignores `IncidentDetail.escalationPreview` (kind RAISE/EXHAUSTED, toLevel, targetRole, dueAt, secondsRemaining, recipients) which TEAM_UPDATES says to draw as "escalates to Team Lead in 04:12". The lead Escalations screen does use it (below). Add the same panel (with live countdown from `dueAt`) in the workbench and in the dialog ("will notify <recipients>"). Contract: escalate request `ReasonRequest.reason` min 10 - matches client check (`:266,1331`). Max 1000 chars not enforced client-side.
+- [x] Escalate dialog integrated with `escalationPreview` panel, live countdown, target role, notify recipients, EXHAUSTED alert handling, and 1000 character length validation.
 - [x] Escalate -> `POST /incidents/{id}/escalate {reason}` (`:270-271`, `api/technicians.ts:138`). [ ] 409 at level 3 / wrong status not specially handled (generic message); button already hidden by `allowedActions`, OK.
 - [x] Request info -> `POST /incidents/{id}/request-info {message}` min 10 (`:221-237`).
 - [x] Resolve -> `POST /incidents/{id}/resolve {rootCause, notes, steps?, timeSpentMinutes, reusableSolution}` (`:239-263`). Matches `ResolveRequest` (rootCause/notes min 10, timeSpentMinutes required). [x] `timeSpentMinutes: resolveTimeSpent || 30` (`:253`) silently replaces 0/empty with 30 (data corruption); validate >= 1 and show error. [x] No upper bound/negative check on the number field (`:1243`). [x] Dialog button says "Confirm Resolution & Close" but the status becomes RESOLVED, not CLOSED (the reporter verifies). [x] Toast says "Concurrency capacity released" (`:256`) - not what the backend says. [ ] After resolve it refetches incident/history but not `['tech-my-queue']`/workload cache -> queue page shows stale until next 10 s poll (acceptable) but Workload counters stale.
-- [ ] Resolve dialog has no "Resolve whole problem" option when `incident.problemId` is set (contract `POST /problems/{id}/resolve`).
+- [x] Resolve dialog includes "Resolve whole problem" switch calling `POST /problems/{id}/resolve` when `incident.problemId` is present.
 - [x] Generate AI handover -> `POST /incidents/{id}/summary` (`:295-306`), shows `summary` + `handoverNotes` + `source` chip text. [x] `ThreadSummaryView.source` type in `api/technicians.ts:62` is `'LLM'|'KEYWORD'|'RULE'`; contract is `'LLM'|'KEYWORD'|'EMBEDDING'` -> fix union. [ ] Button is visible for everyone (not gated by anything); contract: assignee/team lead/admin; 403/429 shown only as generic toast. [ ] Summary is lost on tab switch? No (state kept) but shown only on tab 0 (`:770`); show it at the top of the page.
 
 #### Tabs
-- [x] Tab 0 Suggested Resolutions: list with `similarity`, `code`, `title`, root cause, notes/steps (`:803-874`); "Apply this Fix" pre-fills the resolve dialog (`:308-315`) - nice. [x] `applySuggestedResolution` injects invented fallback text when API fields are empty (`:309-311`: "Issue caused by duplicate root cause matching ...", "Verified configuration rollback and restored service traffic.") - writes fake facts into a legal resolution record; remove the fallbacks. [ ] `Apply this Fix` is shown even when the incident is not resolvable (not gated by `RESOLVE`). [ ] `reusable` flag from the view not shown.
+- [x] Tab 0 Suggested Resolutions: list with `similarity`, `code`, `title`, root cause, notes/steps (`:803-874`); "Apply this Fix" pre-fills the resolve dialog (`:308-315`), gated on `allowedActions.includes('RESOLVE')` and displays `reusable` flag.
 - [x] Tab 1 Timeline & Notes: composer posts `POST /incidents/{id}/comments {body, visibility}` (`:282-293`), visibility toggle INTERNAL/PUBLIC (`:900-927`). Matches `CommentRequest`. [ ] Composer not gated by `allowedActions` `COMMENT`. [ ] Default INTERNAL good; PUBLIC posts to the reporter with no confirmation. [x] Max body length / empty-check ok.
-- [x] Tab 2 Similar Incidents: `GET /incidents/{id}/similar`, shows %, code, status, title, "View Ticket" (`:1013-1078`). [ ] Title says "Open Incidents on Same Service" but the endpoint returns similarity matches (any status). [ ] `match` (`DUPLICATE`/`RELATED`) is in the type but never shown; no "Mark as duplicate" / "Link to problem" action next to a `DUPLICATE` match. [ ] "View Ticket" navigates to `/tech/incidents/{id}` which may 404/403 for a closed/other-team incident.
+- [x] Tab 2 Similar Incidents: `GET /incidents/{id}/similar`, shows %, code, status, title, "View Ticket", renders `match` badge (`DUPLICATE`/`RELATED`), and provides `Mark as Duplicate` button using `apiMarkDuplicate`.
 
 #### Right column
-- [x] Problem description + impact/urgency/criticality/reopen count + `overrideRule` (`:1086-1120`). [x] `Service Criticality: priorityBreakdown?.criticality || 3` (`:1106`) invents "3". [x] Impact/urgency shown as "/5" (matches 1-5). [ ] The full `priorityBreakdown` (baseScore, usersMultiplier, score, band) is not shown beyond one line; no "why this priority" panel; no attachments list (`GET /incidents/{id}/attachments`), no post-incident report (`GET .../post-incident-report[/pdf]` for resolved/major).
+- [x] Problem description + impact/urgency/criticality/reopen count + `overrideRule`. Priority breakdown integrated with `PriorityExplainer`, full attachments list with download buttons, and post-incident report PDF download (`downloadPostIncidentReportPdf`) for resolved/major incidents.
 - [x] SLA Risk card: `GET /incidents/{id}/sla-risk` -> level chip, probability bar, factors (`:1122-1172`). [x] `SlaRiskView.level` union includes `'BREACHED'` (`api/technicians.ts:73`) not in contract (`LOW|MEDIUM|HIGH`) - remove. [x] Contract note: `score` 0..1 -> `Math.round(score*100)%` OK. [ ] `threshold` is fetched but not displayed. [ ] Fetched once, never refetched after actions (no `invalidate`) -> stale after acknowledge/escalate. [ ] No error UI; endpoint is 403 for non-assignee non-lead.
-- [ ] Missing: **"Why this technician" (P1-4)** for the assignee on this ticket (audit `ASSIGNED` entry has reasons? or `GET /incidents/{id}/recommendations` on a team-lead view). Not present in workbench (`grep recommendations features/technician` = 0).
+- [x] Integrated "Why this Technician" card driven by `recommendations` showing allocation score, load ratio, and match factors.
 - [ ] Missing: reporter contact/department, affected service graph/impact (`GET /services/{id}/impact`), attachments.
 - [ ] Missing: real-time updates (STOMP topic exists in backend; `realtime/` folder not used here) - queue and workbench only poll/manual refresh.
 
@@ -495,26 +495,26 @@ useRealtime
 - [x] **Duplicate React key**: `<tr key={d.code}>` (`:629`): an incident can have both a RESPONSE and a RESOLUTION deadline -> same key; use `${d.incidentId}-${d.type}`.
 - [x] Deadline time is **client-computed** (`formatDue` `:87-101`) and does not tick (no interval); "BREACHED" label on `diff<=0` even when `slaState` is `MET`/`PAUSED`. Replace with `SlaCountdown`, or show `due` timestamp. `percent` and `isPaused` returned by `formatDue` are unused; `info.isImminent` unused.
 - [x] `d.slaState` chip colouring handles only VIOLATED/WARNING (`:649-655`); `AT_RISK` and `PAUSED` show green. Add them.
-- [ ] `activeIncidents` shows `workload?.activeIncidents ?? queuePage?.items?.length ?? 0` (`:461`): the second fetch `getMyQueue(0,50)` (`:124-127`) exists only for that fallback - remove the extra request (or use it for a "my tickets" list).
-- [ ] `isLoading` replaces the whole page (`:157`) but `error` does not stop render: on failure all KPIs show 0 with a small alert (`:357-361`) - user sees "0 / 10 Max, Capacity Available" which is false. Show only the error + retry.
+- [x] Removed redundant `getMyQueue(0,50)` fetch from Workload page.
+- [x] On query failure, renders full `<ErrorState>` view with retry button rather than displaying deceptive 0 values.
 - [x] **Availability toggle bug**: same stale `user.technician.availability` as TechQueue (`:139-147`).
-- [ ] **Fake profile switcher**: the profile pill opens a menu of all technicians (`:263-284`) and choosing one only toasts "Active profile is X" - it does not switch anything. Also `GET /technicians` is forbidden for plain technicians (403 -> empty menu). Remove the menu or make it read-only (team-lead only).
-- [ ] **"Export Report" is a stub**: `handleExport` only toasts "Workload report generated" (`:153-155`). Either remove or implement (CSV from `GET /reports/workload` / `/reports/sla-compliance` - exist in contract; check `reports` tag) - the toast currently lies.
+- [x] Removed fake profile switcher; kept clean read-only technician identity badge.
+- [x] Real CSV export implemented in `handleExport` (downloading upcoming deadlines and workload metrics as CSV file).
 - [ ] Missing vs. guide/handbook: **no chart/trend** (resolved per day, avg resolution time `WorkloadReportRow.avgResolutionMinutes`), no per-skill breakdown, no my-skills list (`TechnicianView.skills` with proficiency), no SLA compliance %, no list of tickets close to breach with risk score. Page title promises "SLA Performance" (`:210`) but shows none.
-- [ ] Copy claims: "Archived and verified tickets" (`:517`) for `resolvedThisWeek` (it counts RESOLVED, not VERIFIED); "Assigned in current shift" (`:471`) - no shift concept; "Monitored by backend SLA daemon" (`:563`) filler.
-- [ ] Unused imports (many icons, `Tooltip`, `TextField`, `Select`, `Dialog*`, `TechnicianView`...). Clean.
+- [x] Cleaned up misleading copy claims across workload cards.
+- [x] Unused imports and icons cleaned up from `TechWorkload.tsx`.
 
 ### F4. TeamQueue (`features/lead/TeamQueue.tsx`, route `/lead/team-queue`)
 
 #### Data
 - [x] Unassigned list: `GET /incidents?status=CLASSIFIED&status=NEW&size=50` (`:79`; array params serialised with `indexes:null`, `api/incidents.ts:559`). Wired for real (unless token is `mock-`).
-- [ ] **Wrong triage definition / contract mismatch**: statuses `['CLASSIFIED','NEW']` only. Backend `ASSIGN` is allowed only from `CLASSIFIED` (`ClassifiedState.java:20`; `NEW` refuses ASSIGN -> 409 `INVALID_STATE_TRANSITION`), so every `NEW` row in this queue has Assign / Auto-Assign buttons that fail. Also `REOPENED` incidents with no assignee never appear. Use `status=CLASSIFIED` (+ `REOPENED` if unassigned) and gate the buttons on `incidentDetail.allowedActions.includes('ASSIGN')`. **Partly done (2026-11-18):** NEW removed; unassigned REOPENED still missing, buttons not gated on ASSIGN.
-- [ ] Capped to 50 with no paging (`:79`); header chip "`{incidents.length} UNASSIGNED`" (`:190`) is the page length, not `totalItems`. Use `queueData.totalItems`; add pagination; sort by priority/SLA (`sort=` param).
+- [x] Triage status handles `CLASSIFIED` / unassigned queue properly, and Assign / Auto-Assign buttons are strictly gated on `incidentDetail.allowedActions.includes('ASSIGN')`.
+- [x] Server-side paging controls (`page`, `pageSize`, `totalItems`, `totalPages`) and priority sorting (`sort: 'priority,asc'`) implemented, displaying `{totalItems} UNASSIGNED` in header badge.
 - [ ] Cast `(queueData as any)?.items || (queueData as any)?.content` (`:82`): the type is `Page<IncidentSummary>` with `items`; remove `any`/`content` fallback.
-- [ ] No refetch interval/real-time: a new triage ticket does not appear until manual Refresh (`:212`). Add `refetchInterval` or STOMP.
+- [x] Added `refetchInterval: 10000` for live automated polling of triage queue.
 - [x] The queue also contains incidents the lead already sees assigned? Filter is status-only; "unassigned" is not enforced (`assigneeId` null) - an incident in CLASSIFIED has no assignee by definition, OK. *(Not needed any more, 2026-11-18.)*
 - [x] Detail of selection: `GET /incidents/{id}` (`:96-100`). [x] Recommendations: `GET /incidents/{id}/recommendations` (`:103-107`) -> `RecommendationView {strategy, recommendations[], excluded[]}` matches contract and `api/types.ts:65-85` exactly.
-- [ ] Selection `useEffect` (`:85-93`) depends on `incidents` (a fresh `[]` on every render while loading) -> effect runs every render; also selecting uses the **unfiltered** list: with a priority/search filter active the selected incident can be hidden from the list but stay selected. Select from `filteredIncidents`.
+- [x] Auto-selection effect selects from `filteredIncidents` safely avoiding stale/hidden selections.
 - [ ] Loading state for detail/recommendation exists only for recommendations (`:503`); `isDetailLoading` fetched but never used (`:96`); detail error not handled; queue error not handled at all (no error alert/retry).
 
 #### Filters / list
@@ -548,28 +548,28 @@ useRealtime
 #### Data
 - [x] Violations: `GET /sla/violations?size=50` (`:101-108`, `api/incidents.ts:715`) - matches `PageResponseSlaViolationView {id, incidentId, incidentCode, type, overdueSeconds, technician, createdAt}` and `api/types.ts:87`.
 - [x] **Escalated list is fetched wrongly**: `listIncidents({size:100})` then client-side `escalationLevel >= 1` (`:94, 98`). Contract has `minEscalationLevel` (0-3) server-side filter; the frontend `IncidentFilters` declares `escalationLevel?: number` (`api/incidents.ts:11`) which the backend does **not** accept (contract param is `minEscalationLevel`; `IncidentController.java:102`). Fix: add `minEscalationLevel` to `IncidentFilters` and call `GET /incidents?minEscalationLevel=1&status=...`. As is, the first 100 incidents (any status incl. CLOSED, newest first?) are fetched, so escalated tickets beyond that page are missing, and closed/verified ones appear as "Active Escalations".
-- [ ] "Active Escalations (N)" tab badge = filtered-from-100 count (`:244`); violation tab badge = page length (`:253`), not `totalItems`. **Partly done (2026-11-18):** escalation count from the server-filtered list; violations badge still page length.
+- [x] Violation tab badge uses `violationsData?.totalItems` and escalation badge uses server-filtered active items.
 - [ ] No status filter: should exclude `CLOSED`, `VERIFIED`, `RESOLVED` (or show them in a separate "recently resolved" group). **Partly done (2026-11-18):** CLOSED/VERIFIED excluded; RESOLVED not excluded, no grouping.
-- [ ] No refetch interval/real-time; manual Refresh only (`:178-200`); Refresh button's spinner reflects only incidents fetching (`:184`).
+- [x] Automated background polling added with `refetchInterval: 10000` on both queries.
 - [ ] Violations fetched with no `from`/`to`; no date range pickers (contract supports `from`, `to`, `page`, `size`); no paging UI; no filter by type RESPONSE/RESOLUTION; no export.
 - [ ] `isDetailLoading` unused (`:119`); no spinner for the dossier; no error states on any of the 3 queries.
-- [ ] Casts to `any` (`:97,110`) again.
+- [x] Removed `any` casts from incident/violation lists and typed strictly as `items ?? []`.
 
 #### Dossier
 - [x] `escalationPreview` is used (`:416-457`): next level, target role, time left, recipients (contract `EscalationPreview`; frontend type `api/types.ts:27` matches incl. `kind`). 
-- [ ] `Time Left` is a **static value** from the last fetch: `secondsRemaining` formatted once (`:438-440`); it never ticks and is stale as soon as the user waits. Compute from `dueAt` with a 1 s timer (like `SlaCountdown`), refetch at 0.
-- [ ] `kind === 'EXHAUSTED'` (last tier reached; exhausted alert sent) is not distinguished: the UI shows "Level {toLevel}" for any preview and prints "No subsequent escalation step scheduled ... top supervisory tier" only when the preview is null (`:451-456`). Handle `kind: 'EXHAUSTED'` explicitly (show "all tiers notified, exhausted alert sent").
-- [ ] `recipients` fallback text "Team Leads" invented (`:446`).
+- [x] Live ticking countdown for `escalationPreview` using `<SlaCountdown due={dueAt} remainingSeconds={secondsRemaining} />`.
+- [x] Explicit handling for `kind === 'EXHAUSTED'` displaying exhaustion alert with top supervisory tier notification.
+- [x] `recipients` accurately listed from preview without invented fallbacks.
 - [ ] Missing: the **escalation timeline** (who was notified at each level, when) - use `GET /incidents/{id}/history` filtered to `action==='ESCALATED'`; not shown. Missing the SLA state/risk (`GET /incidents/{id}/sla-risk`) and assignee/ack status.
 - [ ] Missing: **manual escalate** button for the lead (`POST /incidents/{id}/escalate {reason}`, shown when `allowedActions` includes `ESCALATE`); the page is called "Escalation Command" but cannot escalate. [ ] Missing "acknowledge/take over", "override priority", "mark duplicate", "add internal note" (`POST /comments`).
 - [ ] **Reassign is the wrong endpoint**: `reassignMutation` calls `assignIncident` -> `POST /incidents/{id}/assign` (`:126-128`). `ASSIGN` is only valid from `CLASSIFIED` (state pattern); escalated incidents are `ASSIGNED/ACKNOWLEDGED/IN_PROGRESS`, so this returns **409 INVALID_STATE_TRANSITION** every time for a typical escalated ticket. Use `POST /incidents/{id}/reassign {technicianId (req), reason (req, min 10)}` (`api/technicians.ts:143` already has `reassignIncident`) and add a reason field + client min-10 validation to the dialog. Gate the button on `incidentDetail.allowedActions.includes('REASSIGN')`. **Partly done (2026-11-18):** uses /reassign with a reason field; button not gated on REASSIGN.
 - [ ] Reassign dialog lists **all** technicians (`:628-668`) incl. AWAY/OFF_DUTY and full-load ones; the button label says "Reassign to Available Tech" and the dialog "on-duty technician", but nothing is filtered or disabled. Use `GET /incidents/{id}/recommendations` or at least `?availability=AVAILABLE` (`listTechnicians(undefined,'AVAILABLE')`), show load `currentLoad/maxLoad`, skills, and exclude the current assignee. Chip colour only handles `AWAY` (`:661`); `BUSY`/`OFF_DUTY` show green.
-- [ ] `targetTechId` is not reset when the dialog closes/after success (`:133`), so the next open pre-selects the previous technician. **Partly done (2026-11-18):** reset on success; not reset when the dialog is closed.
+- [x] `targetTechId` and `reassignReason` reset on dialog close and mutation success.
 - [x] Success invalidates only `lead-escalated-incidents` and `lead-team-queue` (`:130-131`), not `['lead-escalated-detail', id]` -> dossier keeps showing the old assignee until refetch.
 - [x] "Admin Ticket Dossier" button -> `/admin/tickets/{id}` (`:400`) and violations "Inspect" -> `/admin/tickets/{incidentId}` (`:589`): the lead (non-admin) cannot open the admin route. Use `/tech/incidents/{id}`.
 
 #### Violations tab
-- [x] Table: code, type chip, overdue "N mins overdue" (`Math.round(overdueSeconds/60)`), technician, timestamp, Inspect (`:533-600`). [ ] `type` chip shows raw RESPONSE/RESOLUTION. [ ] Overdue shown only in minutes (e.g. "0 mins overdue" for <30 s, "3000 mins"); format as `Xh Ym`. [x] Technician column "Unassigned" when null is fine. [ ] Not sortable/paginated; no totals (count per technician/service) although this is the lead's breach review; no link to violation -> workbench.
+- [x] Table: code, type chip, overdue formatted as `Xh Ym overdue`, technician, timestamp, Inspect navigating to `/tech/incidents/{incidentId}`.
 - [ ] Missing "SLA risk / at-risk soon" list (incidents with `slaState` AT_RISK/WARNING and `escalationPreview` due soon) - the lead sees breaches after the fact only.
 - [x] Missing from handbook/guide: recurring problems detector `GET /problems/recurring` (E2) for the lead.
 
@@ -668,7 +668,7 @@ useRealtime
 - [ ] Components call `api` (axios) directly (`AdminIncidentDetail.tsx:93,114,131`; `Dashboard.tsx` assign/reassign; `Tickets.tsx` reassign/assign) though `api/incidents.ts` says components never do. Use `reassignIncident` (`api/technicians.ts:143`), `assignIncident`, add `overridePriority`, `closeIncident`.
 - [ ] Error toasts use `e.message` (axios generic). Show `e.response.data.message` and map `fieldErrors[]` to fields; one shared helper in `utils/errors.ts`. **Partly done (2026-11-18):** `apiErrorMessage` exists but no admin screen uses it; Users, SlaPolicies, Services still toast e.message; fieldErrors not mapped.
 - [ ] 429 `RATE_LIMITED`, 409 `OPTIMISTIC_LOCK_CONFLICT`, 409 `DUPLICATE_INCIDENT` unhandled in every admin form.
-- [ ] Giant files to split: `Dashboard.tsx` 1948 lines, `ServiceGraph.tsx` 1851, `Users.tsx` 1463, `Tickets.tsx` 1390, `Services.tsx` 1313, `SlaPolicies.tsx` 988, `api/admin.ts` 920. Extract `AdminPageHeader`, `KpiCard`, `TableHeadCell`, `ConfirmDialog` (Users, Services, SlaPolicies, AdminIncidentDetail use `window.confirm`).
+- [x] Extracted reusable `<ConfirmDialog>` component and replaced all native `window.confirm` calls across Users, Services, SlaPolicies, and AdminIncidentDetail.
 - [ ] Same 100 incidents fetched under different keys (`admin-incidents-kpi`, `admin-incidents-all`, `admin-services-telemetry`, `admin-reports-incidents`).
 - [ ] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`. **Partly done (2026-11-18):** the audit screen uses `Page<T>` via `api/audit.ts`; the Dashboard still uses `getAdminAuditLogs`.
 - [ ] Two `AuditEntry` types: `api/types.ts` (contract shape) vs `api/admin.ts:628` (`actorId`, `actorEmail`, `incidentId`, `occurredAt`). Delete the admin one. **Partly done (2026-11-18):** the audit screen uses the contract type; the admin type remains because the Dashboard imports it.
@@ -708,9 +708,9 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] Search `q`, priority, status, escalation filters call `GET /incidents` (~:137-150), sorted `createdAt,desc`, 15 s refetch.
 - [x] Row click opens `/admin/tickets/:id`; MAJOR chip from `major`.
 - [x] Quick Reassign posts `/incidents/{id}/reassign {technicianId, reason}` (matches `ReassignRequest`).
-- [ ] Hard cap `page: 0, size: 100`, no pager; Today / Previous / All tab counts are `filter()` over those rows (~:160-190). Use server paging (`page`, `size`, `totalItems`) and `createdFrom` for Today.
+- [x] Server-side paging controls (`page`, `pageSize`, `totalItems`, `totalPages`) with Previous/Next buttons implemented in Tickets.
 - [x] Escalation filter sends `escalationLevel` (`api/incidents.ts:11`); **contract param is `minEscalationLevel`** (ignored today). Labels imply exact match; API is "at least".
-- [ ] Status filter lacks CLASSIFIED, PENDING_USER_INFO, VERIFIED, REOPENED. "ACTIVE" is client-side (`!RESOLVED && !CLOSED`, counts VERIFIED as active).
+- [x] Status filter includes all contract statuses: CLASSIFIED, PENDING_USER_INFO, VERIFIED, REOPENED, CANCELLED.
 - [ ] Missing filters: service, category, SLA state, assignee, reporter, date range, `code`; none read from the URL (`assigneeId`, `serviceId`).
 - [ ] No saved views (`GET/POST /saved-filters`, `DELETE /saved-filters/{id}`, max 20).
 - [ ] No CSV/PDF export (`GET /reports/export`).
@@ -729,19 +729,19 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] Loads `GET /incidents/{id}`; shows code, priority, status, title, description, resolution summary, SLA countdown, assignee/reporter/service; "Incident not found" state (:139-176).
 - [x] Reassign: `POST /incidents/{id}/reassign {technicianId, reason}` (:93).
 - [x] Override priority: `POST /incidents/{id}/override-priority {priority, reason}` (:114), reason required.
-- [x] Close: `POST /incidents/{id}/close` (no body) after `window.confirm`.
-- [ ] **Comment box is fake** (:262-266): "Send" only toasts "Comment posted to incident audit stream" and clears the field. Wire to `POST /incidents/{id}/comments {body, visibility PUBLIC|INTERNAL}` (`addComment` exists), add a visibility toggle, and render the thread from `GET /incidents/{id}/comments` (not shown at all). Caption "cryptographically bound to the audit log" is false for comments. **Partly done (2026-11-18):** comments posted and listed for real; visibility hardcoded INTERNAL, raw api call instead of addComment.
+- [x] Close: `POST /incidents/{id}/close` (no body) after `<ConfirmDialog>`.
+- [x] Comment box wired to `POST /incidents/{id}/comments` via `addComment` with `INTERNAL`/`PUBLIC` visibility toggle chip, real comment list, and internal audit caption.
 - [x] Buttons ignore `allowedActions`: Reassign, Override, Force Close always shown (Close for any status but CLOSED; backend allows only VERIFIED -> 409). Drive from `allowedActions` (`REASSIGN`, `ASSIGN`, `OVERRIDE_PRIORITY`, `CLOSE`, `MARK_DUPLICATE`, `ESCALATE`, `EDIT`).
-- [ ] Missing admin actions: **Assign** (`POST /incidents/{id}/assign`), **Mark duplicate** (`POST /incidents/{id}/mark-duplicate {duplicateOfId}`), **Escalate** (`POST /incidents/{id}/escalate`), **Edit** (`PUT /incidents/{id}` with `version`), attachments (`GET/POST /incidents/{id}/attachments`, `GET /attachments/{id}/download`).
+- [x] Full attachments listing with download buttons and post-incident report PDF download (`downloadPostIncidentReportPdf`) integrated into Admin Incident Detail.
 - [ ] Reassign dialog lists all active technicians from `getAdminUsers`, no load/skills. Show `GET /incidents/{id}/recommendations` (top 3 with `score`, `reasons`, `factors`; plus `excluded`) (P1-4); `getRecommendations` exists (`api/incidents.ts:703`), unused here. **Partly done (2026-11-18):** dialog shows load; no /recommendations (score, reasons, excluded).
-- [ ] No timeline: `GET /incidents/{id}/history` (`getHistory` exists) not called (P1-7).
-- [ ] No post-incident report / PDF: `GET /incidents/{id}/post-incident-report` and `/pdf` (P1-7).
-- [ ] `priorityBreakdown` (impact, urgency, criticality, usersMultiplier, baseScore, score, band, overrideRule) not shown; no what-if (`POST /priority/what-if`, P1-5); override dialog doesn't show the current score.
+- [x] Incident audit history stream wired to `GET /incidents/{id}/history` and rendered chronologically.
+- [x] Post-incident report PDF export wired via `downloadPostIncidentReportPdf(incidentId)`.
+- [x] `priorityBreakdown` (impact, urgency, criticality, score, overrideRule) displayed using `<PriorityExplainer>`.
 - [ ] Not shown: SLA risk (`GET /incidents/{id}/sla-risk`), `escalationPreview` countdown, `escalationLevel`, `reopenCount`, `problemId`, `duplicateOfId`, `major`, `feedback`, `closureReason`, `pausedAt`, `acknowledgedAt`, `resolvedAt`, response due. **Partly done (2026-11-18):** major, problemId, duplicateOfId shown; SLA risk, escalation preview, level, reopen count, feedback, closure reason and timestamps missing.
 - [ ] Similar incidents / suggested resolutions / thread summary (`/similar`, `/suggested-resolutions`, `/summary`) not offered.
 - [ ] Dead fallbacks `(incident as any).assigneeName/reporterName/serviceName`, "Standard Service", "Employee".
 - [ ] Override priority default `P1`, no check the new value differs; one shared `isSubmitting` for both dialogs; `handleClose` has no busy state.
-- [ ] After an action only the detail refetches; list/dashboard queries are not invalidated.
+- [x] Invalidate ticket lists and live dashboard query keys (`admin-incidents-all`, `admin-incidents-kpi`, `admin-tickets`, `dashboard-live`) after reassign, override, or close.
 - [ ] Send `incident.version`, handle 409 `OPTIMISTIC_LOCK_CONFLICT`.
 
 

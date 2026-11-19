@@ -16,11 +16,8 @@ import {
   DialogContent,
   DialogActions,
   LinearProgress,
-  Tooltip,
   MenuItem,
   Select,
-  CircularProgress,
-  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -28,21 +25,13 @@ import {
   Warning as WarningIcon,
   Sync as SyncIcon,
   PauseCircle as PauseCircleIcon,
-  Schedule as ScheduleIcon,
   ArrowForward as ArrowForwardIcon,
   EditNote as EditNoteIcon,
   Chat as ChatIcon,
   Send as SendIcon,
   ErrorOutline as ErrorOutlineIcon,
-  Dns as DnsIcon,
   Hub as HubIcon,
-  Fingerprint as FingerprintIcon,
-  People as PeopleIcon,
-  HourglassEmpty as HourglassEmptyIcon,
-  AutoFixHigh as AutoFixHighIcon,
-  Groups as GroupsIcon,
   Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
   Refresh as RefreshIcon,
   PlayArrow as PlayArrowIcon,
 } from '@mui/icons-material';
@@ -134,16 +123,19 @@ export default function TechQueue() {
   const [reassignIncident, setReassignIncident] = useState<IncidentSummary | null>(null);
   const [reassignTargetId, setReassignTargetId] = useState<number | ''>('');
   const [reassignReason, setReassignReason] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [actionInProgressId, setActionInProgressId] = useState<number | null>(null);
 
-  // 1. Fetch real technician queue
+  // 1. Fetch real technician queue with server-side paging
   const {
     data: queuePage,
     isLoading: isQueueLoading,
     error: queueError,
     refetch: refetchQueue,
   } = useQuery({
-    queryKey: ['tech-my-queue'],
-    queryFn: () => getMyQueue(0, 100),
+    queryKey: ['tech-my-queue', page, pageSize],
+    queryFn: () => getMyQueue(page, pageSize),
     refetchInterval: 10000,
   });
 
@@ -165,6 +157,8 @@ export default function TechQueue() {
   });
 
   const queue = queuePage?.items ?? [];
+  const totalItems = queuePage?.totalItems ?? queue.length;
+  const totalPages = queuePage?.totalPages ?? 1;
   // Newest known value wins: the response of our own PUT, then the technician list, then the sign-in profile.
   const [availabilityOverride, setAvailabilityOverride] = useState<TechnicianView['availability'] | null>(null);
   const me = techList.find((t) => t.email === user?.email);
@@ -205,24 +199,30 @@ export default function TechQueue() {
   };
 
   const handleAcknowledge = async (id: number) => {
+    setActionInProgressId(id);
     try {
-      await acknowledgeIncident(id);
-      toast(`Incident acknowledged. Response timer stopped.`, 'success');
+      const res = await acknowledgeIncident(id);
+      toast(`Incident ${res?.code || `#${id}`} acknowledged. Response timer stopped.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+    } finally {
+      setActionInProgressId(null);
     }
   };
 
   const handleStartWork = async (id: number) => {
+    setActionInProgressId(id);
     try {
-      await startIncident(id);
-      toast(`Work started on incident. Status moved to IN_PROGRESS.`, 'success');
+      const res = await startIncident(id);
+      toast(`Work started on ${res?.code || `#${id}`}. Status moved to IN_PROGRESS.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+    } finally {
+      setActionInProgressId(null);
     }
   };
 
@@ -231,6 +231,8 @@ export default function TechQueue() {
     try {
       await addComment(noteModalIncident.id, noteText.trim(), 'INTERNAL');
       toast(`Investigation note appended to timeline for ${noteModalIncident.code}.`, 'info');
+      queryClient.invalidateQueries({ queryKey: ['incident-comments', noteModalIncident.id] });
+      queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       setNoteModalIncident(null);
       setNoteText('');
     } catch (err: any) {
@@ -337,9 +339,9 @@ export default function TechQueue() {
                 px: 1.5,
                 py: 0.4,
                 borderRadius: 3,
-                bgcolor: 'rgba(99, 102, 241, 0.15)',
-                color: COLORS.primary,
-                border: '1px solid rgba(99, 102, 241, 0.3)',
+                bgcolor: queueError ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                color: queueError ? COLORS.error : COLORS.primary,
+                border: `1px solid ${queueError ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
                 fontSize: 11.5,
                 fontWeight: 700,
                 fontFamily: 'JetBrains Mono, monospace',
@@ -350,12 +352,12 @@ export default function TechQueue() {
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  bgcolor: COLORS.primary,
-                  boxShadow: '0 0 8px #6366f1',
+                  bgcolor: queueError ? COLORS.error : COLORS.primary,
+                  boxShadow: queueError ? '0 0 8px #f43f5e' : '0 0 8px #6366f1',
                   animation: 'pulse 1.5s infinite',
                 }}
               />
-              Live backend · 10s sync
+              {queueError ? 'Offline / Sync error' : 'Live backend · 10s sync'}
             </Box>
             <Chip
               label="⌘K Filter"
@@ -819,7 +821,13 @@ export default function TechQueue() {
         {isQueueLoading ? (
           <LoadingState />
         ) : filteredQueue.length === 0 ? (
-          <EmptyState message="No incidents match this view." />
+          <EmptyState
+            message={
+              queue.length === 0
+                ? 'Your queue is completely clear. No tickets assigned to you right now.'
+                : 'No incidents match your current filter criteria.'
+            }
+          />
         ) : (
           filteredQueue.map((inc) => {
             const isCritical = inc.priority === 'P1';
@@ -859,6 +867,21 @@ export default function TechQueue() {
                   <Box sx={{ maxWidth: 880 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
                       <PriorityBadge priority={inc.priority} />
+                      {inc.major && (
+                        <Chip
+                          label="MAJOR INCIDENT"
+                          size="small"
+                          sx={{
+                            bgcolor: '#ef4444',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            fontSize: 10,
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            height: 20,
+                          }}
+                        />
+                      )}
                       <Typography
                         onClick={() => navigate(`/tech/incidents/${inc.id}`)}
                         sx={{
@@ -939,22 +962,43 @@ export default function TechQueue() {
                     </Box>
                   </Box>
 
-                  {/* SLA Countdown Meter Component */}
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      bgcolor: COLORS.surfaceContainerLowest,
-                      border: `1px solid ${COLORS.border}`,
-                      minWidth: 220,
-                    }}
-                  >
-                    <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
-                      {inc.status === 'ASSIGNED' ? 'Response due' : 'Resolution due'}
-                    </Typography>
-                    <SlaCountdown due={targetDue} createdAt={inc.createdAt} slaState={inc.slaState} />
-                  </Paper>
+                  {/* SLA Countdown Meter Component (Response & Resolution clocks) */}
+                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                    {inc.responseDue && (
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: COLORS.surfaceContainerLowest,
+                          border: `1px solid ${COLORS.border}`,
+                          minWidth: 190,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                          Response SLA
+                        </Typography>
+                        <SlaCountdown due={inc.responseDue} createdAt={inc.createdAt} slaState={inc.status === 'ASSIGNED' ? inc.slaState : 'MET'} />
+                      </Paper>
+                    )}
+                    {inc.resolutionDue && (
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: COLORS.surfaceContainerLowest,
+                          border: `1px solid ${COLORS.border}`,
+                          minWidth: 190,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                          Resolution SLA
+                        </Typography>
+                        <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
+                      </Paper>
+                    )}
+                  </Box>
                 </Box>
 
                 {/* Bottom Quick-Action Toolbar */}
@@ -974,6 +1018,7 @@ export default function TechQueue() {
                       <Button
                         size="small"
                         variant="contained"
+                        disabled={actionInProgressId === inc.id}
                         onClick={() => handleAcknowledge(inc.id)}
                         startIcon={<BoltIcon sx={{ fontSize: 16 }} />}
                         sx={{
@@ -988,7 +1033,7 @@ export default function TechQueue() {
                           '&:hover': { bgcolor: '#e11d48' },
                         }}
                       >
-                        Acknowledge Ticket
+                        {actionInProgressId === inc.id ? 'Acknowledging...' : 'Acknowledge Ticket'}
                       </Button>
                     )}
 
@@ -996,6 +1041,7 @@ export default function TechQueue() {
                       <Button
                         size="small"
                         variant="contained"
+                        disabled={actionInProgressId === inc.id}
                         onClick={() => handleStartWork(inc.id)}
                         startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
                         sx={{
@@ -1010,7 +1056,7 @@ export default function TechQueue() {
                           '&:hover': { bgcolor: COLORS.primaryContainer },
                         }}
                       >
-                        Start Investigation
+                        {actionInProgressId === inc.id ? 'Starting...' : 'Start Investigation'}
                       </Button>
                     )}
 
@@ -1033,24 +1079,26 @@ export default function TechQueue() {
                       Append Note
                     </Button>
 
-                    <Button
-                      size="small"
-                      onClick={() => setRequestInfoIncident(inc)}
-                      startIcon={<ChatIcon sx={{ fontSize: 15 }} />}
-                      sx={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: COLORS.onSurface,
-                        bgcolor: COLORS.surfaceContainerLow,
-                        border: `1px solid ${COLORS.border}`,
-                        textTransform: 'none',
-                        px: 1.5,
-                        borderRadius: 1.5,
-                        '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
-                      }}
-                    >
-                      Request Info
-                    </Button>
+                    {inc.status === 'IN_PROGRESS' && (
+                      <Button
+                        size="small"
+                        onClick={() => setRequestInfoIncident(inc)}
+                        startIcon={<ChatIcon sx={{ fontSize: 15 }} />}
+                        sx={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: COLORS.onSurface,
+                          bgcolor: COLORS.surfaceContainerLow,
+                          border: `1px solid ${COLORS.border}`,
+                          textTransform: 'none',
+                          px: 1.5,
+                          borderRadius: 1.5,
+                          '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
+                        }}
+                      >
+                        Request Info
+                      </Button>
+                    )}
 
                     {inc.major && problemBase && (
                       <Button
@@ -1075,18 +1123,20 @@ export default function TechQueue() {
                   </Box>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Button
-                      size="small"
-                      onClick={() => setReassignIncident(inc)}
-                      sx={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: COLORS.onSurfaceVariant,
-                        textTransform: 'none',
-                      }}
-                    >
-                      Reassign
-                    </Button>
+                    {['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'REOPENED'].includes(inc.status) && (
+                      <Button
+                        size="small"
+                        onClick={() => setReassignIncident(inc)}
+                        sx={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: COLORS.onSurfaceVariant,
+                          textTransform: 'none',
+                        }}
+                      >
+                        Reassign
+                      </Button>
+                    )}
                     <Button
                       size="small"
                       variant="outlined"
@@ -1110,6 +1160,65 @@ export default function TechQueue() {
               </Paper>
             );
           })
+        )}
+
+        {/* Server-side Pagination Bar */}
+        {totalItems > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 2,
+              mt: 3,
+              p: 2,
+              borderRadius: 2.5,
+              bgcolor: COLORS.surfaceContainer,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+              Showing {queue.length > 0 ? page * pageSize + 1 : 0}–{Math.min((page + 1) * pageSize, totalItems)} of {totalItems} incidents
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                sx={{
+                  borderColor: COLORS.border,
+                  color: COLORS.onSurface,
+                  textTransform: 'none',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  '&:disabled': { opacity: 0.4 },
+                }}
+              >
+                Previous Page
+              </Button>
+              <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.primary, fontFamily: 'JetBrains Mono, monospace' }}>
+                Page {page + 1} of {Math.max(1, totalPages)}
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={page + 1 >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                sx={{
+                  borderColor: COLORS.border,
+                  color: COLORS.onSurface,
+                  textTransform: 'none',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  '&:disabled': { opacity: 0.4 },
+                }}
+              >
+                Next Page
+              </Button>
+            </Box>
+          </Box>
         )}
       </Box>
 
@@ -1260,7 +1369,7 @@ export default function TechQueue() {
                 fullWidth
                 size="small"
                 value={reassignTargetId}
-                onChange={(e) => setReassignTargetId(e.target.value as number)}
+                onChange={(e) => setReassignTargetId(e.target.value === '' ? '' : Number(e.target.value))}
                 displayEmpty
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 2, color: COLORS.onSurface, mb: 2, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
               >

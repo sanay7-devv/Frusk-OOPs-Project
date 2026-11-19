@@ -1,4 +1,4 @@
-import { useState, useId } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,55 +9,28 @@ import {
   Button,
   Chip,
   IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  Menu,
   CircularProgress,
   Alert,
 } from '@mui/material';
 import {
-  HourglassTop as HourglassTopIcon,
   Verified as VerifiedIcon,
   Timer as TimerIcon,
   TaskAlt as TaskAltIcon,
-  TrendingUp as TrendingUpIcon,
-  ArrowDownward as ArrowDownwardIcon,
   ArrowForward as ArrowForwardIcon,
-  Badge as BadgeIcon,
-  Psychology as PsychologyIcon,
-  SwapHoriz as SwapHorizIcon,
-  RingVolume as RingVolumeIcon,
-  StackedBarChart as StackedBarChartIcon,
-  MilitaryTech as MilitaryTechIcon,
-  VerifiedUser as VerifiedUserIcon,
   Refresh as RefreshIcon,
   Download as DownloadIcon,
-  UnfoldMore as UnfoldMoreIcon,
   ChevronRight as ChevronRightIcon,
-  CrisisAlert as CrisisAlertIcon,
-  Schedule as ScheduleIcon,
-  PauseCircle as PauseCircleIcon,
-  Mail as MailIcon,
-  Tune as TuneIcon,
-  Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
-  PlayArrow as PlayArrowIcon,
 } from '@mui/icons-material';
 
 import { useToast } from '../../components/Toast';
 import { apiErrorMessage } from '../../utils/errors';
 import SlaCountdown from '../../components/SlaCountdown';
+import { ErrorState } from '../../components/StateViews';
 import { slaStateColor, slaStateLabel } from '../../theme/theme';
 import { useAuth } from '../../auth/AuthContext';
 import {
   getMyWorkload,
-  getMyQueue,
   listTechnicians,
   setMyAvailability,
   type WorkloadView,
@@ -108,13 +81,7 @@ export default function TechWorkload() {
     refetchInterval: 15000,
   });
 
-  // 2. Fetch queue items to show active tickets
-  const { data: queuePage } = useQuery({
-    queryKey: ['tech-my-queue'],
-    queryFn: () => getMyQueue(0, 50),
-  });
-
-  // 3. Fetch technicians list for switcher
+  // 2. Fetch technicians list
   const { data: techList = [] } = useQuery({
     queryKey: ['technicians-list'],
     queryFn: () => listTechnicians(),
@@ -150,7 +117,19 @@ export default function TechWorkload() {
   };
 
   const handleExport = () => {
-    toast(`Workload report generated for ${user?.name || 'Technician'}.`, 'success');
+    const rows = [
+      ['Incident Code', 'Deadline Type', 'SLA State', 'Due Timestamp'],
+      ...deadlines.map((d) => [d.code, d.type, d.slaState, d.due]),
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `workload-${user?.name || 'technician'}-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast('Workload deadlines report exported to CSV.', 'success');
   };
 
   if (isLoading) {
@@ -158,6 +137,17 @@ export default function TechWorkload() {
       <Box sx={{ p: 6, textAlign: 'center', bgcolor: COLORS.surface, minHeight: '100vh' }}>
         <CircularProgress size={40} sx={{ color: COLORS.primary, mb: 2 }} />
         <Typography variant="h6" sx={{ color: COLORS.onSurface }}>Loading Workload &amp; Capacity metrics...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 4, bgcolor: COLORS.surface, minHeight: '100vh', maxWidth: 640, mx: 'auto', mt: 4 }}>
+        <ErrorState
+          onRetry={() => refetchWorkload()}
+          message={`Failed to load workload metrics from server: ${apiErrorMessage(error)}`}
+        />
       </Box>
     );
   }
@@ -218,7 +208,6 @@ export default function TechWorkload() {
             {/* Technician Profile Pill */}
             <Paper
               elevation={0}
-              onClick={(e) => setTechnicianAnchor(e.currentTarget)}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -228,8 +217,6 @@ export default function TechWorkload() {
                 bgcolor: COLORS.surfaceContainerLowest,
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: 2,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: COLORS.surfaceContainerLow },
               }}
             >
               <Box
@@ -250,37 +237,13 @@ export default function TechWorkload() {
               </Box>
               <Box sx={{ pr: 0.5 }}>
                 <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.1 }}>
-                  {user?.name || 'Technician 1'}
+                  {user?.name || 'Technician'}
                 </Typography>
                 <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, lineHeight: 1 }}>
                   {user?.technician?.escalationLevel === 1 ? 'Team Lead (L1)' : 'Technician (L0)'}
                 </Typography>
               </Box>
-              <UnfoldMoreIcon sx={{ fontSize: 17, color: COLORS.onSurfaceVariant }} />
             </Paper>
-
-            <Menu
-              anchorEl={technicianAnchor}
-              open={Boolean(technicianAnchor)}
-              onClose={() => setTechnicianAnchor(null)}
-              PaperProps={{
-                sx: { borderRadius: 2, border: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainer },
-              }}
-            >
-              {techList.map((t) => (
-                <MenuItem
-                  key={t.id}
-                  selected={t.email === user?.email}
-                  onClick={() => {
-                    setTechnicianAnchor(null);
-                    toast(`Active profile is ${t.name} (${t.email})`, 'info');
-                  }}
-                  sx={{ fontSize: 13, color: COLORS.onSurface }}
-                >
-                  {t.name} (Load: {t.currentLoad}/{t.maxLoad}, {t.availability})
-                </MenuItem>
-              ))}
-            </Menu>
 
             {/* Availability Pill */}
             <Paper
@@ -457,7 +420,7 @@ export default function TechWorkload() {
                   Active Incidents
                 </Typography>
                 <Typography sx={{ fontSize: 28, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.1 }}>
-                  {workload?.activeIncidents ?? queuePage?.items?.length ?? 0}
+                  {workload?.activeIncidents ?? 0}
                 </Typography>
               </Box>
               <TaskAltIcon sx={{ fontSize: 32, color: COLORS.primary }} />
@@ -467,7 +430,7 @@ export default function TechWorkload() {
                 Live Queue Tickets
               </Typography>
               <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                Assigned in current shift
+                Currently assigned to you
               </Typography>
             </Box>
           </Paper>
@@ -513,7 +476,7 @@ export default function TechWorkload() {
                 Completed Resolutions
               </Typography>
               <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                Archived and verified tickets
+                Resolved tickets this calendar week
               </Typography>
             </Box>
           </Paper>
@@ -559,7 +522,7 @@ export default function TechWorkload() {
                 Next Commitments
               </Typography>
               <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                Monitored by backend SLA daemon
+                Upcoming SLA commitment deadlines
               </Typography>
             </Box>
           </Paper>

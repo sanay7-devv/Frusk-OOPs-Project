@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
+  Alert,
   Grid,
   Paper,
   Button,
@@ -93,9 +94,10 @@ export default function Escalations() {
   } = useQuery({
     queryKey: ['lead-escalated-incidents'],
     queryFn: () => listIncidents({ minEscalationLevel: 1, size: 100 }),
+    refetchInterval: 10000,
   });
 
-  const allIncidents: IncidentSummary[] = (incidentsData as any)?.items || (incidentsData as any)?.content || [];
+  const allIncidents: IncidentSummary[] = incidentsData?.items ?? [];
   const escalatedIncidents = allIncidents.filter((i) => !['CLOSED', 'VERIFIED'].includes(i.status));
 
   // 2. Fetch SLA violations
@@ -106,9 +108,10 @@ export default function Escalations() {
   } = useQuery({
     queryKey: ['lead-sla-violations'],
     queryFn: () => getSlaViolations({ size: 50 }),
+    refetchInterval: 10000,
   });
 
-  const violations: SlaViolationView[] = (violationsData as any)?.items || (violationsData as any)?.content || [];
+  const violations: SlaViolationView[] = violationsData?.items ?? [];
 
   // 3. Fetch technicians for reassignment
   const { data: technicians = [] } = useQuery<TechnicianView[]>({
@@ -153,6 +156,16 @@ export default function Escalations() {
     }
     return true;
   });
+
+  useEffect(() => {
+    if (filteredEscalated.length > 0) {
+      if (!selectedIncidentId || !filteredEscalated.some((i) => i.id === selectedIncidentId)) {
+        setSelectedIncidentId(filteredEscalated[0].id);
+      }
+    } else {
+      setSelectedIncidentId(null);
+    }
+  }, [filteredEscalated, selectedIncidentId]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
@@ -254,7 +267,7 @@ export default function Escalations() {
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TimerOffIcon sx={{ fontSize: 16, color: COLORS.warning }} />
-                <span>SLA Violations ({violations.length})</span>
+                <span>SLA Violations ({violationsData?.totalItems ?? violations.length})</span>
               </Box>
             }
           />
@@ -439,32 +452,53 @@ export default function Escalations() {
                         Next Escalation Target &amp; Countdown
                       </Typography>
                       <Grid container spacing={2}>
-                        <Grid item xs={6} sm={3}>
-                          <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Next Level</Typography>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.error, fontFamily: 'JetBrains Mono, monospace' }}>
-                            Level {incidentDetail.escalationPreview.toLevel}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} sm={3}>
-                          <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Target Role</Typography>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
-                            {incidentDetail.escalationPreview.targetRole}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} sm={3}>
-                          <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Time Left</Typography>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.warning, fontFamily: 'JetBrains Mono, monospace' }}>
-                            {incidentDetail.escalationPreview.secondsRemaining > 0
-                              ? `${Math.floor(incidentDetail.escalationPreview.secondsRemaining / 60)}m ${incidentDetail.escalationPreview.secondsRemaining % 60}s`
-                              : 'Due Now'}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} sm={3}>
-                          <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Recipients</Typography>
-                          <Typography sx={{ fontSize: 12, fontWeight: 600, color: COLORS.onSurface }} noWrap>
-                            {incidentDetail.escalationPreview.recipients.map((r) => r.name).join(', ') || 'Team Leads'}
-                          </Typography>
-                        </Grid>
+                        {incidentDetail.escalationPreview.kind === 'EXHAUSTED' ? (
+                          <Grid item xs={12}>
+                            <Alert
+                              severity="warning"
+                              sx={{
+                                bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                color: '#fcd34d',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                fontSize: 12,
+                                py: 0.5,
+                              }}
+                            >
+                              Escalation Exhausted: All supervisory tiers notified. Top supervisory tier reached.
+                            </Alert>
+                          </Grid>
+                        ) : (
+                          <>
+                            <Grid item xs={6} sm={3}>
+                              <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Next Level</Typography>
+                              <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.error, fontFamily: 'JetBrains Mono, monospace' }}>
+                                Level {incidentDetail.escalationPreview.toLevel}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={6} sm={3}>
+                              <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Target Role</Typography>
+                              <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
+                                {incidentDetail.escalationPreview.targetRole}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={6} sm={3}>
+                              <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Time Left</Typography>
+                              <Box sx={{ pt: 0.2 }}>
+                                <SlaCountdown
+                                  due={incidentDetail.escalationPreview.dueAt}
+                                  remainingSeconds={incidentDetail.escalationPreview.secondsRemaining}
+                                  slaState={incidentDetail.slaState}
+                                />
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6} sm={3}>
+                              <Typography sx={{ fontSize: 10.5, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Recipients</Typography>
+                              <Typography sx={{ fontSize: 12, fontWeight: 600, color: COLORS.onSurface }} noWrap>
+                                {incidentDetail.escalationPreview.recipients.map((r) => r.name).join(', ') || 'Leadership'}
+                              </Typography>
+                            </Grid>
+                          </>
+                        )}
                       </Grid>
                     </Box>
                   ) : (
@@ -479,6 +513,7 @@ export default function Escalations() {
                   <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                     <Button
                       variant="contained"
+                      disabled={!incidentDetail.allowedActions?.includes('REASSIGN')}
                       onClick={() => setReassignModalOpen(true)}
                       startIcon={<AssignIcon sx={{ fontSize: 16 }} />}
                       sx={{
@@ -594,7 +629,12 @@ export default function Escalations() {
                         />
                       </TableCell>
                       <TableCell sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: COLORS.warning }}>
-                        {Math.round(v.overdueSeconds / 60)} mins overdue
+                        {(() => {
+                          const totalMinutes = Math.round(v.overdueSeconds / 60);
+                          const h = Math.floor(totalMinutes / 60);
+                          const m = totalMinutes % 60;
+                          return h > 0 ? `${h}h ${m}m overdue` : `${m}m overdue`;
+                        })()}
                       </TableCell>
                       <TableCell sx={{ fontSize: 13, color: COLORS.onSurface }}>
                         {v.technician?.name || 'Unassigned'}
@@ -624,7 +664,11 @@ export default function Escalations() {
       {/* REASSIGNMENT DIALOG */}
       <Dialog
         open={reassignModalOpen}
-        onClose={() => setReassignModalOpen(false)}
+        onClose={() => {
+          setReassignModalOpen(false);
+          setTargetTechId(null);
+          setReassignReason('');
+        }}
         maxWidth="xs"
         fullWidth
         PaperProps={{
@@ -702,7 +746,14 @@ export default function Escalations() {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setReassignModalOpen(false)} sx={{ color: COLORS.onSurfaceVariant, textTransform: 'none' }}>
+          <Button
+            onClick={() => {
+              setReassignModalOpen(false);
+              setTargetTechId(null);
+              setReassignReason('');
+            }}
+            sx={{ color: COLORS.onSurfaceVariant, textTransform: 'none' }}
+          >
             Cancel
           </Button>
           <Button

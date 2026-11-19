@@ -108,6 +108,8 @@ export default function Tickets() {
     searchParams.get('status') === 'ACTIVE' ? 'ACTIVE' : searchParams.get('status') || 'ALL'
   );
   const [levelFilter, setLevelFilter] = useState<string>('ALL');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   // Dialog states
   const [declareOpen, setDeclareOpen] = useState(false);
@@ -147,21 +149,23 @@ export default function Tickets() {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ['admin-incidents-list', q, priorityFilter, statusFilter, levelFilter],
+    queryKey: ['admin-incidents-list', q, priorityFilter, statusFilter, levelFilter, page, pageSize],
     queryFn: () =>
       listIncidents({
         q: q.trim() || undefined,
         priority: priorityFilter !== 'ALL' ? [priorityFilter] : undefined,
         status: statusFilter === 'ACTIVE' ? undefined : statusFilter !== 'ALL' ? [statusFilter] : undefined,
         minEscalationLevel: levelFilter !== 'ALL' ? Number(levelFilter) : undefined,
-        page: 0,
-        size: 100,
+        page,
+        size: pageSize,
         sort: 'createdAt,desc',
       }),
     refetchInterval: 15000,
   });
 
   const allIncidents: any[] = (incidentPage as any)?.items || (incidentPage as any)?.content || [];
+  const totalItems = incidentPage?.totalItems ?? allIncidents.length;
+  const totalPages = incidentPage?.totalPages ?? 1;
 
   // Helper to check if a date belongs to today (local calendar date)
   const isCreatedToday = (dateStr?: string) => {
@@ -843,10 +847,34 @@ export default function Tickets() {
                   <span style={{ color: '#c084fc' }}>In Progress</span>
                 </Box>
               </MenuItem>
+              <MenuItem value="PENDING_USER_INFO">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fb923c' }} />
+                  <span>Pending User Info</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="CLASSIFIED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#38bdf8' }} />
+                  <span>Classified</span>
+                </Box>
+              </MenuItem>
               <MenuItem value="RESOLVED">
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
                   <span style={{ color: '#34d399' }}>Resolved</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="VERIFIED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#059669' }} />
+                  <span>Verified</span>
+                </Box>
+              </MenuItem>
+              <MenuItem value="REOPENED">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f43f5e' }} />
+                  <span>Reopened</span>
                 </Box>
               </MenuItem>
               <MenuItem value="CLOSED">
@@ -1190,6 +1218,63 @@ export default function Tickets() {
           </Table>
         )}
       </TableContainer>
+
+      {/* Server Pagination Bar */}
+      {totalItems > 0 && (
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: 2,
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            borderTop: 'none',
+            borderRadius: '0 0 12px 12px',
+          }}
+        >
+          <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+            Showing {allIncidents.length > 0 ? page * pageSize + 1 : 0}–{Math.min((page + 1) * pageSize, totalItems)} of {totalItems} total incidents
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              sx={{
+                borderColor: COLORS.border,
+                color: COLORS.onSurface,
+                textTransform: 'none',
+                fontSize: 12,
+                fontWeight: 600,
+                '&:disabled': { opacity: 0.4 },
+              }}
+            >
+              Previous Page
+            </Button>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.primary, fontFamily: 'JetBrains Mono, monospace' }}>
+              Page {page + 1} of {Math.max(1, totalPages)}
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={page + 1 >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              sx={{
+                borderColor: COLORS.border,
+                color: COLORS.onSurface,
+                textTransform: 'none',
+                fontSize: 12,
+                fontWeight: 600,
+                '&:disabled': { opacity: 0.4 },
+              }}
+            >
+              Next Page
+            </Button>
+          </Box>
+        </Box>
+      )}
 
       {/* 6. Quick Assign / Reassign Dialog */}
       <Dialog

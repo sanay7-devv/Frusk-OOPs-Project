@@ -55,6 +55,7 @@ import {
   deriveServiceTier,
 } from '../../api/admin';
 import { listIncidents } from '../../api/incidents';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { useToast } from '../../components/Toast';
 
 const COLORS = {
@@ -282,14 +283,22 @@ export default function Services() {
     }
   };
 
-  const handleDeleteService = async (id: number, serviceName: string) => {
-    if (!window.confirm(`Are you sure you want to retire and deactivate service "${serviceName}"?`)) return;
+  const [retireServiceTarget, setRetireServiceTarget] = useState<{ id: number; name: string } | null>(null);
+
+  const handleDeleteService = (id: number, serviceName: string) => {
+    setRetireServiceTarget({ id, name: serviceName });
+  };
+
+  const handleConfirmRetire = async () => {
+    if (!retireServiceTarget) return;
     try {
-      await deleteAdminService(id);
-      toast(`Service ${serviceName} retired successfully`, 'info');
+      await deleteAdminService(retireServiceTarget.id);
+      toast(`Service ${retireServiceTarget.name} retired successfully`, 'info');
       refetchServices();
     } catch (e: any) {
       toast(e.message || 'Failed to retire service', 'error');
+    } finally {
+      setRetireServiceTarget(null);
     }
   };
 
@@ -1308,6 +1317,17 @@ export default function Services() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Confirm Retire Service Dialog */}
+      <ConfirmDialog
+        open={Boolean(retireServiceTarget)}
+        onClose={() => setRetireServiceTarget(null)}
+        onConfirm={handleConfirmRetire}
+        title="Retire and Deactivate Service"
+        description={`Are you sure you want to retire and deactivate service "${retireServiceTarget?.name}"? Dependent services will be impacted.`}
+        confirmColor="error"
+        confirmLabel="Retire Service"
+      />
     </Box>
   );
 }

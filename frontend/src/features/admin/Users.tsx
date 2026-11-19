@@ -63,6 +63,7 @@ import {
 } from '../../api/admin';
 import { listIncidents } from '../../api/incidents';
 import type { IncidentDetail, RoleType } from '../../api/types';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const COLORS = {
   surface: '#090d16',
@@ -320,18 +321,25 @@ export default function Users() {
     }
   };
 
-  const handleDeactivate = async (targetUser: AdminUser) => {
-    const actionLabel = targetUser.active ? 'deactivate' : 'reactivate';
-    if (!window.confirm(`Are you sure you want to ${actionLabel} account for ${targetUser.name}?`)) return;
+  const [confirmDeactivateUser, setConfirmDeactivateUser] = useState<AdminUser | null>(null);
+
+  const handleDeactivate = (targetUser: AdminUser) => {
+    setConfirmDeactivateUser(targetUser);
+  };
+
+  const handleConfirmDeactivate = async () => {
+    if (!confirmDeactivateUser) return;
     try {
-      await deactivateAdminUser(targetUser.id);
-      toast(`Successfully updated status for ${targetUser.name}`, 'info');
+      await deactivateAdminUser(confirmDeactivateUser.id);
+      toast(`Successfully updated status for ${confirmDeactivateUser.name}`, 'info');
       refetchUsers();
-      if (inspectUser && inspectUser.id === targetUser.id) {
+      if (inspectUser && inspectUser.id === confirmDeactivateUser.id) {
         setInspectUser({ ...inspectUser, active: !inspectUser.active });
       }
     } catch (e: any) {
       toast(e.message || 'Operation failed', 'error');
+    } finally {
+      setConfirmDeactivateUser(null);
     }
   };
 
@@ -1460,6 +1468,17 @@ export default function Users() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Confirm Deactivate / Reactivate User Dialog */}
+      <ConfirmDialog
+        open={Boolean(confirmDeactivateUser)}
+        onClose={() => setConfirmDeactivateUser(null)}
+        onConfirm={handleConfirmDeactivate}
+        title={`${confirmDeactivateUser?.active ? 'Deactivate' : 'Reactivate'} Account`}
+        description={`Are you sure you want to ${confirmDeactivateUser?.active ? 'deactivate' : 'reactivate'} account for ${confirmDeactivateUser?.name}?`}
+        confirmColor={confirmDeactivateUser?.active ? 'error' : 'primary'}
+        confirmLabel={confirmDeactivateUser?.active ? 'Deactivate' : 'Reactivate'}
+      />
     </Box>
   );
 }

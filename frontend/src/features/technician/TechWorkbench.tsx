@@ -58,9 +58,22 @@ import { useToast } from '../../components/Toast';
 import { apiErrorMessage } from '../../utils/errors';
 import PriorityBadge from '../../components/PriorityBadge';
 import SlaCountdown from '../../components/SlaCountdown';
+import PriorityExplainer from '../../components/PriorityExplainer';
 import { useAuth } from '../../auth/AuthContext';
 import { useProblemBasePath } from '../problems/problemAccess';
-import { getIncident, getHistory, getComments, addComment } from '../../api/incidents';
+import {
+  getIncident,
+  getHistory,
+  getComments,
+  addComment,
+  listAttachments,
+  downloadPostIncidentReportPdf,
+  getRecommendations,
+  markDuplicate as apiMarkDuplicate,
+  overridePriority as apiOverridePriority,
+} from '../../api/incidents';
+import { resolveProblem } from '../../api/problems';
+import type { CommentView, AuditEntry, AttachmentView, RecommendationView } from '../../api/types';
 import {
   acknowledgeIncident,
   startIncident,
@@ -160,35 +173,61 @@ export default function TechWorkbench() {
   });
 
   // 4. Fetch Suggested Resolutions
-  const { data: suggestedResolutions = [] } = useQuery({
+  const { data: suggestedResolutions = [], refetch: refetchSuggestions } = useQuery({
     queryKey: ['incident-suggested', incidentId],
     queryFn: () => getSuggestedResolutions(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 5. Fetch Similar Incidents
-  const { data: similarIncidents = [] } = useQuery({
+  const { data: similarIncidents = [], refetch: refetchSimilar } = useQuery({
     queryKey: ['incident-similar', incidentId],
     queryFn: () => getSimilarIncidents(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 6. Fetch SLA Risk
-  const { data: slaRisk } = useQuery({
+  const { data: slaRisk, refetch: refetchSlaRisk } = useQuery({
     queryKey: ['incident-sla-risk', incidentId],
     queryFn: () => getSlaRisk(incidentId),
     enabled: !isNaN(incidentId),
   });
 
+  // 7. Fetch Attachments
+  const { data: attachments = [], refetch: refetchAttachments } = useQuery<AttachmentView[]>({
+    queryKey: ['incident-attachments', incidentId],
+    queryFn: () => listAttachments(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  // 8. Fetch Recommendations for Assignee Breakdown
+  const { data: recommendations } = useQuery<RecommendationView>({
+    queryKey: ['incident-recommendations', incidentId],
+    queryFn: () => getRecommendations(incidentId),
+    enabled: !isNaN(incidentId),
+  });
+
+  const [resolveWholeProblem, setResolveWholeProblem] = useState(false);
   const allowedActions = incident?.allowedActions || [];
+
+  const handleRefreshAll = () => {
+    refetchIncident();
+    refetchHistory();
+    refetchComments();
+    refetchSuggestions();
+    refetchSimilar();
+    refetchSlaRisk();
+    refetchAttachments();
+    queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+    queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+  };
 
   // Actions
   const handleAcknowledge = async () => {
     try {
       await acknowledgeIncident(incidentId);
       toast('Incident acknowledged. Response SLA clock stopped.', 'success');
-      refetchIncident();
-      refetchHistory();
+      handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -198,8 +237,7 @@ export default function TechWorkbench() {
     try {
       await startIncident(incidentId);
       toast('Work started on incident. Status moved to IN_PROGRESS.', 'success');
-      refetchIncident();
-      refetchHistory();
+      handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -215,9 +253,7 @@ export default function TechWorkbench() {
       toast('Clarification request sent to reporter. SLA clock is PAUSED.', 'warning');
       setIsRequestInfoOpen(false);
       setRequestInfoText('');
-      refetchIncident();
-      refetchHistory();
-      refetchComments();
+      handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -246,9 +282,23 @@ export default function TechWorkbench() {
         reusableSolution: resolveReusable,
       });
       toast(`${incident?.code ?? 'Incident'} is now ${updated.status.replace(/_/g, ' ')}.`, 'success');
+
+      if (resolveWholeProblem && incident?.problemId) {
+        try {
+          await resolveProblem(incident.problemId, {
+            rootCause: resolveRootCause.trim(),
+            notes: resolveNotes.trim(),
+            steps: resolveSteps.trim() || undefined,
+            timeSpentMinutes: minutes,
+          });
+          toast(`Linked Problem record #${incident.problemId} also resolved.`, 'success');
+        } catch (problemErr: any) {
+          toast(`Incident resolved, but problem closure returned: ${apiErrorMessage(problemErr)}`, 'warning');
+        }
+      }
+
       setIsResolveOpen(false);
-      refetchIncident();
-      refetchHistory();
+      handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -259,13 +309,16 @@ export default function TechWorkbench() {
       toast('Escalation reason must be at least 10 characters long.', 'warning');
       return;
     }
+    if (escalateReason.trim().length > 1000) {
+      toast('Escalation reason cannot exceed 1000 characters.', 'warning');
+      return;
+    }
     try {
       await escalateIncident(incidentId, escalateReason.trim());
       toast('Incident escalation level raised. High-priority alert dispatched.', 'warning');
       setIsEscalateOpen(false);
       setEscalateReason('');
-      refetchIncident();
-      refetchHistory();
+      handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -304,6 +357,38 @@ export default function TechWorkbench() {
     setResolveReusable(true);
     setIsResolveOpen(true);
     toast(`Filled the resolve form from ${res.code}. Review it before you resolve.`, 'info');
+  };
+
+  const timelineEntries = [
+    ...history
+      .filter((h) => h.action !== 'COMMENT_ADDED')
+      .map((h, idx) => ({
+        key: `h-${idx}-${h.timestamp}`,
+        type: 'audit' as const,
+        timestamp: h.timestamp || '',
+        actor: h.actor?.name || 'System',
+        badge: h.action || 'AUDIT',
+        text: h.description || (h.previousState && h.newState ? `${h.previousState} → ${h.newState}` : h.action?.replace(/_/g, ' ') || 'Event recorded'),
+      })),
+    ...comments.map((c) => ({
+      key: `c-${c.id}`,
+      type: 'comment' as const,
+      timestamp: c.createdAt || '',
+      actor: c.author?.name || 'User',
+      badge: c.visibility || 'PUBLIC',
+      text: c.body,
+      visibility: c.visibility,
+    })),
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  const formatTimelineDate = (ts?: string) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return (
+      d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+      ' ' +
+      d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    );
   };
 
   if (isLoading) {
@@ -383,7 +468,7 @@ export default function TechWorkbench() {
               <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurface }}>
                 {user?.name || 'Technician'} // Assigned SRE
               </Typography>
-              <IconButton size="small" onClick={() => { refetchIncident(); refetchHistory(); refetchComments(); }} sx={{ color: COLORS.onSurfaceVariant, p: 0.2 }}>
+              <IconButton size="small" onClick={handleRefreshAll} sx={{ color: COLORS.onSurfaceVariant, p: 0.2 }}>
                 <RefreshIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Paper>
@@ -600,7 +685,7 @@ export default function TechWorkbench() {
               borderTop: `1px solid ${COLORS.border}`,
             }}
           >
-            {allowedActions.includes('ACKNOWLEDGE' as any) && (
+            {allowedActions.includes('ACKNOWLEDGE') && (
               <Button
                 variant="contained"
                 onClick={handleAcknowledge}
@@ -618,7 +703,7 @@ export default function TechWorkbench() {
               </Button>
             )}
 
-            {allowedActions.includes('START_WORK' as any) && (
+            {allowedActions.includes('START_WORK') && (
               <Button
                 variant="contained"
                 onClick={handleStartWork}
@@ -636,7 +721,7 @@ export default function TechWorkbench() {
               </Button>
             )}
 
-            {allowedActions.includes('REQUEST_INFO' as any) && (
+            {allowedActions.includes('REQUEST_INFO') && (
               <Button
                 variant="outlined"
                 onClick={() => setIsRequestInfoOpen(true)}
@@ -656,7 +741,7 @@ export default function TechWorkbench() {
               </Button>
             )}
 
-            {allowedActions.includes('ESCALATE' as any) && (
+            {allowedActions.includes('ESCALATE') && (
               <Button
                 variant="outlined"
                 onClick={() => setIsEscalateOpen(true)}
@@ -695,7 +780,7 @@ export default function TechWorkbench() {
               {isSummarizing ? 'Analyzing...' : 'Generate AI Handover'}
             </Button>
 
-            {allowedActions.includes('RESOLVE' as any) && (
+            {allowedActions.includes('RESOLVE') && (
               <Box sx={{ ml: 'auto' }}>
                 <Button
                   variant="contained"
@@ -749,7 +834,7 @@ export default function TechWorkbench() {
                 }}
               >
                 <Tab icon={<AutoFixHighIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Suggested Resolutions (${suggestedResolutions.length})`} />
-                <Tab icon={<TimelineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Timeline & Notes (${history.length + comments.length})`} />
+                <Tab icon={<TimelineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Timeline & Notes (${timelineEntries.length})`} />
                 <Tab icon={<HubIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Similar Incidents (${similarIncidents.length})`} />
               </Tabs>
             </Box>
@@ -822,6 +907,19 @@ export default function TechWorkbench() {
                                 color: COLORS.success,
                               }}
                             />
+                            {res.reusable && (
+                              <Chip
+                                label="Reusable Fix"
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  bgcolor: 'rgba(99, 102, 241, 0.15)',
+                                  color: COLORS.primary,
+                                }}
+                              />
+                            )}
                             <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
                               {res.code}
                             </Typography>
@@ -829,20 +927,22 @@ export default function TechWorkbench() {
                               {res.title}
                             </Typography>
                           </Box>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => applySuggestedResolution(res)}
-                            sx={{
-                              borderColor: COLORS.primary,
-                              color: COLORS.primary,
-                              textTransform: 'none',
-                              fontSize: 11.5,
-                              fontWeight: 700,
-                            }}
-                          >
-                            Apply this Fix
-                          </Button>
+                          {allowedActions.includes('RESOLVE') && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => applySuggestedResolution(res)}
+                              sx={{
+                                borderColor: COLORS.primary,
+                                color: COLORS.primary,
+                                textTransform: 'none',
+                                fontSize: 11.5,
+                                fontWeight: 700,
+                              }}
+                            >
+                              Apply this Fix
+                            </Button>
+                          )}
                         </Box>
                         <Box sx={{ bgcolor: COLORS.surfaceContainerLowest, p: 1.5, borderRadius: 1.5, mb: 1 }}>
                           <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
@@ -930,72 +1030,73 @@ export default function TechWorkbench() {
 
                 {/* Unified Timeline entries */}
                 <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1.5 }}>
-                  Audit Trail &amp; Comments
+                  Unified Audit Trail &amp; Engineering Activity ({timelineEntries.length})
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {history.map((h: any, idx: number) => (
-                    <Box
-                      key={`hist-${idx}`}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        bgcolor: COLORS.surfaceContainer,
-                        borderLeft: `3px solid ${COLORS.primary}`,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip label={h.action || 'AUDIT'} size="small" sx={{ height: 18, fontSize: 10, fontWeight: 800 }} />
-                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
-                            {h.actor?.name || 'System'}
+                  {timelineEntries.length === 0 ? (
+                    <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                      No events or notes recorded on this incident yet.
+                    </Typography>
+                  ) : (
+                    timelineEntries.map((item) => (
+                      <Box
+                        key={item.key}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: COLORS.surfaceContainer,
+                          borderLeft: `3px solid ${
+                            item.type === 'comment'
+                              ? item.visibility === 'INTERNAL'
+                                ? COLORS.tertiary
+                                : COLORS.secondary
+                              : COLORS.primary
+                          }`,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label={item.badge}
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: 10,
+                                fontWeight: 800,
+                                bgcolor:
+                                  item.type === 'comment'
+                                    ? item.visibility === 'INTERNAL'
+                                      ? 'rgba(247, 81, 161, 0.15)'
+                                      : 'rgba(6, 182, 212, 0.15)'
+                                    : 'rgba(99, 102, 241, 0.15)',
+                                color:
+                                  item.type === 'comment'
+                                    ? item.visibility === 'INTERNAL'
+                                      ? COLORS.tertiary
+                                      : COLORS.secondary
+                                    : COLORS.primary,
+                              }}
+                            />
+                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+                              {item.actor}
+                            </Typography>
+                          </Box>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                            {formatTimelineDate(item.timestamp)}
                           </Typography>
                         </Box>
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
-                          {h.timestamp ? new Date(h.timestamp).toLocaleTimeString() : ''}
+                        <Typography
+                          sx={{
+                            fontSize: 12.5,
+                            color: item.type === 'comment' ? COLORS.onSurface : COLORS.onSurfaceVariant,
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          {item.text}
                         </Typography>
                       </Box>
-                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
-                        {h.description || (h.previousState && h.newState ? `${h.previousState} → ${h.newState}` : h.action?.replace(/_/g, ' ') || 'Event recorded')}
-                      </Typography>
-                    </Box>
-                  ))}
-
-                  {comments.map((c: any) => (
-                    <Box
-                      key={`comm-${c.id}`}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        bgcolor: COLORS.surfaceContainer,
-                        borderLeft: `3px solid ${c.visibility === 'INTERNAL' ? COLORS.tertiary : COLORS.secondary}`,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip
-                            label={c.visibility || 'PUBLIC'}
-                            size="small"
-                            sx={{
-                              height: 18,
-                              fontSize: 10,
-                              fontWeight: 800,
-                              bgcolor: c.visibility === 'INTERNAL' ? 'rgba(247, 81, 161, 0.15)' : 'rgba(6, 182, 212, 0.15)',
-                              color: c.visibility === 'INTERNAL' ? COLORS.tertiary : COLORS.secondary,
-                            }}
-                          />
-                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
-                            {c.author?.name || 'User'}
-                          </Typography>
-                        </Box>
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
-                          {c.createdAt ? new Date(c.createdAt).toLocaleTimeString() : ''}
-                        </Typography>
-                      </Box>
-                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, whiteSpace: 'pre-wrap' }}>
-                        {c.body}
-                      </Typography>
-                    </Box>
-                  ))}
+                    ))
+                  )}
                 </Box>
               </Box>
             )}
@@ -1004,16 +1105,16 @@ export default function TechWorkbench() {
             {activeTab === 2 && (
               <Box sx={{ p: 2.5 }}>
                 <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1 }}>
-                  Open Incidents on Same Service
+                  Historical &amp; Correlated Similar Incidents
                 </Typography>
                 <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mb: 2 }}>
-                  Candidates for correlation or duplicate linking.
+                  Candidates for correlation, knowledge extraction, or duplicate linking across services.
                 </Typography>
 
                 {similarIncidents.length === 0 ? (
                   <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
                     <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-                      No active similar incidents detected for this service.
+                      No similar incidents detected.
                     </Typography>
                   </Paper>
                 ) : (
@@ -1029,12 +1130,13 @@ export default function TechWorkbench() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
+                          gap: 2,
                         }}
                       >
-                        <Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
                             <Chip
-                              label={`${Math.round(s.similarity * 100)}% SIMILAR`}
+                              label={`${Math.round(s.similarity * 100)}% Match`}
                               size="small"
                               sx={{
                                 height: 20,
@@ -1044,6 +1146,19 @@ export default function TechWorkbench() {
                                 color: COLORS.primary,
                               }}
                             />
+                            {s.match && (
+                              <Chip
+                                label={s.match}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  bgcolor: s.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                                  color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.secondary,
+                                }}
+                              />
+                            )}
                             <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
                               {s.code}
                             </Typography>
@@ -1053,14 +1168,40 @@ export default function TechWorkbench() {
                             {s.title}
                           </Typography>
                         </Box>
-                        <Button
-                          size="small"
-                          onClick={() => navigate(`/tech/incidents/${s.incidentId}`)}
-                          endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
-                          sx={{ textTransform: 'none', color: COLORS.primary, fontSize: 12, fontWeight: 700 }}
-                        >
-                          View Ticket
-                        </Button>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {allowedActions.includes('MARK_DUPLICATE') && s.match === 'DUPLICATE' && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={async () => {
+                                try {
+                                  await apiMarkDuplicate(incidentId, s.incidentId);
+                                  toast(`Marked ${incident.code} as duplicate of ${s.code}`, 'success');
+                                  handleRefreshAll();
+                                } catch (e) {
+                                  toast(apiErrorMessage(e), 'error');
+                                }
+                              }}
+                              sx={{
+                                textTransform: 'none',
+                                color: COLORS.error,
+                                borderColor: 'rgba(244, 63, 94, 0.4)',
+                                fontSize: 11.5,
+                                fontWeight: 700,
+                              }}
+                            >
+                              Mark as Duplicate
+                            </Button>
+                          )}
+                          <Button
+                            size="small"
+                            onClick={() => navigate(`/tech/incidents/${s.incidentId}`)}
+                            endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                            sx={{ textTransform: 'none', color: COLORS.primary, fontSize: 12, fontWeight: 700 }}
+                          >
+                            View Ticket
+                          </Button>
+                        </Box>
                       </Paper>
                     ))}
                   </Box>
@@ -1160,6 +1301,96 @@ export default function TechWorkbench() {
                 )}
               </Paper>
             )}
+
+            {/* Priority Explainer Panel */}
+            <PriorityExplainer
+              priority={incident.priority}
+              impact={incident.impact}
+              urgency={incident.urgency}
+              score={incident.priorityBreakdown?.score}
+              overrideRule={incident.priorityBreakdown?.overrideRule}
+            />
+
+            {/* Attachments Section */}
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
+                Attachments ({attachments.length})
+              </Typography>
+              {attachments.length === 0 ? (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                  No evidence files or logs attached.
+                </Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {attachments.map((att) => (
+                    <Box key={att.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurface }}>
+                        {att.filename} ({Math.round(att.sizeBytes / 1024)} KB)
+                      </Typography>
+                      <Button size="small" href={`/api/attachments/${att.id}/download`} target="_blank" sx={{ textTransform: 'none', fontSize: 11 }}>
+                        Download
+                      </Button>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Paper>
+
+            {/* Post Incident Report (if applicable) */}
+            {(incident.status === 'RESOLVED' || incident.status === 'CLOSED' || incident.status === 'VERIFIED' || incident.major) && (
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
+                  Post-Incident Audit Dossier
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>
+                  Download signed compliance post-incident report PDF.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={async () => {
+                    try {
+                      const blob = await downloadPostIncidentReportPdf(incidentId);
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `incident-report-${incident.code}.pdf`;
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      toast('Post-incident report PDF downloaded.', 'success');
+                    } catch (e) {
+                      toast(apiErrorMessage(e), 'error');
+                    }
+                  }}
+                  sx={{ borderColor: COLORS.secondary, color: COLORS.secondary, textTransform: 'none', fontSize: 12, fontWeight: 700 }}
+                >
+                  Download Post-Incident PDF
+                </Button>
+              </Paper>
+            )}
+
+            {/* Why This Technician / Allocation Recommendation */}
+            {recommendations && recommendations.recommendations && recommendations.recommendations.length > 0 && (
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
+                  Why This Technician ({recommendations.strategy || 'BEST_MATCH'})
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>
+                  Allocation scoring and rationale for current assignee:
+                </Typography>
+                {recommendations.recommendations.slice(0, 1).map((r) => (
+                  <Box key={r.technicianId} sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>{r.name}</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.primary }}>{r.score}% Match</Typography>
+                    </Box>
+                    {r.reasons && r.reasons.map((reason, idx) => (
+                      <Typography key={idx} sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>• {reason}</Typography>
+                    ))}
+                  </Box>
+                ))}
+              </Paper>
+            )}
           </Box>
         </Grid>
       </Grid>
@@ -1229,7 +1460,7 @@ export default function TechWorkbench() {
               />
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               <TextField
                 type="number"
                 size="small"
@@ -1252,6 +1483,23 @@ export default function TechWorkbench() {
                 label={<Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>Mark as Reusable Fix for AI</Typography>}
               />
             </Box>
+
+            {incident.problemId && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={resolveWholeProblem}
+                    onChange={(e) => setResolveWholeProblem(e.target.checked)}
+                    color="secondary"
+                  />
+                }
+                label={
+                  <Typography sx={{ fontSize: 12.5, color: COLORS.secondary, fontWeight: 700 }}>
+                    Resolve linked Problem Record #{incident.problemId} alongside this incident
+                  </Typography>
+                }
+              />
+            )}
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -1297,9 +1545,30 @@ export default function TechWorkbench() {
               Raise the escalation tier of this incident by 1 level. Current level: Level {incident.escalationLevel}.
             </Typography>
 
+            {incident.escalationPreview && (
+              <Paper sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
+                {incident.escalationPreview.kind === 'EXHAUSTED' ? (
+                  <Typography sx={{ fontSize: 12, color: COLORS.error, fontWeight: 700 }}>
+                    Top escalation tier reached (Level {incident.escalationLevel}). No higher supervisory tier available.
+                  </Typography>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.secondary, fontWeight: 700 }}>
+                      Target Tier: Level {incident.escalationPreview.toLevel} ({incident.escalationPreview.targetRole || 'Supervisory SRE'})
+                    </Typography>
+                    {incident.escalationPreview.recipients && incident.escalationPreview.recipients.length > 0 && (
+                      <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                        Will notify: {incident.escalationPreview.recipients.join(', ')}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Paper>
+            )}
+
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
-                Escalation Justification (min 10 characters) *
+                Escalation Justification (min 10, max 1000 characters) *
               </Typography>
               <TextField
                 fullWidth
@@ -1321,7 +1590,11 @@ export default function TechWorkbench() {
           <Button
             variant="contained"
             onClick={handleEscalateIncident}
-            disabled={escalateReason.trim().length < 10}
+            disabled={
+              escalateReason.trim().length < 10 ||
+              escalateReason.length > 1000 ||
+              incident.escalationPreview?.kind === 'EXHAUSTED'
+            }
             sx={{
               textTransform: 'none',
               bgcolor: COLORS.primary,

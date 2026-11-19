@@ -9,7 +9,7 @@ export async function login(email: string, password: string, totp?: string): Pro
     const isNetworkError = !apiError?.response || apiError?.code === 'ERR_NETWORK' || apiError?.message?.includes('Network Error');
     if (isNetworkError) {
       const dbErr = new Error(
-        'Cannot reach the server at http://localhost:8080. Please ensure the backend is running.'
+        'Cannot reach the server. Please ensure the backend is running.'
       );
       (dbErr as any).response = {
         data: {

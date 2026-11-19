@@ -33,6 +33,8 @@ import ProblemDetail from '../features/problems/ProblemDetail';
 import ForgotPassword from '../features/shared/ForgotPassword';
 import ResetPassword from '../features/shared/ResetPassword';
 import AccountSecurity from '../features/account/AccountSecurity';
+import ServiceStatus from '../features/employee/ServiceStatus';
+import NotFound from '../pages/NotFound';
 
 function RootRedirect() {
   const { user, workspace, workspaces, loading } = useAuth();
@@ -67,6 +69,7 @@ export default function AppRoutes() {
             <Route path="/employee/report" element={<ReportIncident />} />
             <Route path="/employee/incidents" element={<MyIncidents />} />
             <Route path="/employee/incidents/:id" element={<EmployeeIncidentDetail />} />
+            <Route path="/employee/status" element={<ServiceStatus />} />
           </Route>
 
           <Route element={<RequireWorkspace workspace="tech" />}>
@@ -105,7 +108,7 @@ export default function AppRoutes() {
           </Route>
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

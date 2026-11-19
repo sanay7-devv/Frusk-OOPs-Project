@@ -27,6 +27,38 @@ export interface SimilarIncident {
   source?: 'LLM' | 'KEYWORD' | 'EMBEDDING' | string;
 }
 
+export interface Draft {
+  title?: string;
+  description?: string;
+  serviceId?: number;
+  serviceName?: string;
+  categoryId?: number;
+  categoryName?: string;
+  impact?: number;
+  urgency?: number;
+  affectedUsers?: number;
+}
+
+export interface ChatOption {
+  label: string;
+  value: string;
+}
+
+export interface ChatRequest {
+  answer: string;
+  draft?: Draft;
+  expecting?: 'DESCRIPTION' | 'SERVICE' | 'AFFECTED_USERS' | 'CONFIRM' | string;
+}
+
+export interface ChatReply {
+  message: string;
+  options?: ChatOption[];
+  readyToFile: boolean;
+  draft: Draft;
+  expecting?: 'DESCRIPTION' | 'SERVICE' | 'AFFECTED_USERS' | 'CONFIRM' | string;
+  source?: 'LLM' | 'KEYWORD' | 'EMBEDDING' | string;
+}
+
 export const suggestCategory = async (b: { title: string; description: string; serviceId?: number }): Promise<CategorySuggestion> => {
   const res = await api.post<CategorySuggestion>('/intelligence/suggest-category', b);
   return res.data;
@@ -40,4 +72,9 @@ export const suggestIntake = async (description: string): Promise<IntakeSuggesti
 export const findSimilar = async (b: { title: string; description: string; serviceId: number }): Promise<SimilarIncident[]> => {
   const res = await api.post<SimilarIncident[]>('/intelligence/similar', b);
   return res.data || [];
+};
+
+export const chatReport = async (b: ChatRequest): Promise<ChatReply> => {
+  const res = await api.post<ChatReply>('/intelligence/chat', b);
+  return res.data;
 };

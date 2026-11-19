@@ -21,6 +21,19 @@ export interface PreferenceRequest {
   enabled: boolean;
 }
 
+export interface DeviceView {
+  id: number;
+  platform: string;
+  tokenHint: string;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
+export interface RegisterDeviceRequest {
+  platform: string;
+  token: string;
+}
+
 export const listNotifications = async (filters: NotificationFilters = {}): Promise<Page<AppNotification>> => {
   const res = await api.get<Page<AppNotification>>('/notifications', { params: filters });
   return res.data;
@@ -47,4 +60,18 @@ export const getNotificationPreferences = async (): Promise<PreferenceView[]> =>
 export const updateNotificationPreferences = async (preferences: PreferenceRequest[]): Promise<PreferenceView[]> => {
   const res = await api.put<PreferenceView[]>('/notifications/preferences', preferences);
   return res.data;
+};
+
+export const listDevices = async (): Promise<DeviceView[]> => {
+  const res = await api.get<DeviceView[]>('/notifications/devices');
+  return res.data;
+};
+
+export const registerDevice = async (body: RegisterDeviceRequest): Promise<DeviceView> => {
+  const res = await api.post<DeviceView>('/notifications/devices', body);
+  return res.data;
+};
+
+export const deleteDevice = async (id: number): Promise<void> => {
+  await api.delete(`/notifications/devices/${id}`);
 };

@@ -1,8 +1,11 @@
 import type { Workspace } from '../auth/AuthContext';
 export const NAV: Record<Workspace, { label: string; to: string }[]> = {
   employee: [
-    { label: 'Home', to: '/employee/home' }, { label: 'Report incident', to: '/employee/report' },
-    { label: 'My incidents', to: '/employee/incidents' }, { label: 'Notifications', to: '/notifications' },
+    { label: 'Home', to: '/employee/home' },
+    { label: 'Report incident', to: '/employee/report' },
+    { label: 'My incidents', to: '/employee/incidents' },
+    { label: 'Service status', to: '/employee/status' },
+    { label: 'Notifications', to: '/notifications' },
   ],
   tech: [
     { label: 'My queue', to: '/tech/queue' },

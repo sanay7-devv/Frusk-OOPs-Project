@@ -1,20 +1,59 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { CircularProgress, Box, Typography } from '@mui/material';
-import { useAuth, Workspace } from './AuthContext';
- //navigate  a react router used to redirect teh browser to another page
- //outlet  a react router component that is used to render the child components 
+import React from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { CircularProgress, Box, Typography, Button } from '@mui/material';
+import { useAuth, Workspace, HOME } from './AuthContext';
 
- /** UI-side route guard. The backend enforces authorization for real. */
+/** UI-side route guard. The backend enforces authorization for real. */
 export default function RequireWorkspace({ workspace }: { workspace?: Workspace }) {
-  const { user, loading, workspaces } = useAuth(); //a custom hook that gives acess to the global auth state(login,user,workspaces)
+  const { user, loading, workspaces } = useAuth();
+  const navigate = useNavigate();
 
-  if (loading) return <Box p={4} display="flex" justifyContent="center"><CircularProgress /></Box>;
+  if (loading) {
+    return (
+      <Box p={4} display="flex" justifyContent="center">
+        <CircularProgress />
+      </Box>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
-  const allowed = Array.isArray(workspaces) ? workspaces : [];
-  if (workspace && !allowed.includes(workspace))
-    return <Box p={4}><Typography variant="h5">No access</Typography><Typography>Your account cannot open this area.</Typography></Box>;
-  return <Outlet />;
 
-  //this component handles frontend user experience (preventing users from seeing UI they can't use).
-  // The Spring Boot backend always independently verifies the JWT token on every API call.
+  const allowed = Array.isArray(workspaces) ? workspaces : [];
+  if (workspace && !allowed.includes(workspace)) {
+    const homeTarget = (allowed[0] && HOME[allowed[0]]) ? HOME[allowed[0]] : '/';
+    return (
+      <Box
+        p={4}
+        textAlign="center"
+        sx={{
+          maxWidth: 480,
+          mx: 'auto',
+          mt: 8,
+          bgcolor: 'rgba(18, 22, 34, 0.7)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          color: '#dfe2ef',
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#f43f5e', fontFamily: 'Sora, sans-serif' }}>
+          No Access
+        </Typography>
+        <Typography sx={{ color: '#94a3b8', mb: 3, fontSize: '0.9rem' }}>
+          Your account does not have permission to open the requested workspace.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => navigate(homeTarget)}
+          sx={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+            textTransform: 'none',
+            fontWeight: 600,
+          }}
+        >
+          Return to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
+  return <Outlet />;
 }

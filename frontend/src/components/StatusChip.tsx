@@ -2,9 +2,34 @@ import { Box } from '@mui/material';
 import { statusColor } from '../theme/theme';
 import type { IncidentStatus } from '../api/types';
 
-export default function StatusChip({ status }: { status: IncidentStatus }) {
-  const color = statusColor[status] || '#94a3b8';
+const FRIENDLY_LABELS: Record<string, string> = {
+  NEW: 'Submitted',
+  CLASSIFIED: 'Triaged',
+  ASSIGNED: 'Assigned',
+  ACKNOWLEDGED: 'Acknowledged',
+  IN_PROGRESS: 'In Progress',
+  PENDING_USER_INFO: 'Waiting for Details',
+  RESOLVED: 'Resolved',
+  VERIFIED: 'Verified',
+  CLOSED: 'Closed',
+  REOPENED: 'Reopened',
+  WITHDRAWN: 'Withdrawn',
+};
+
+export default function StatusChip({
+  status,
+  closureReason,
+  friendly = false,
+}: {
+  status: IncidentStatus;
+  closureReason?: string | null;
+  friendly?: boolean;
+}) {
+  const isWithdrawn = status === 'CLOSED' && closureReason === 'WITHDRAWN';
+  const color = isWithdrawn ? '#64748b' : (statusColor[status] || '#94a3b8');
   const reopened = status === 'REOPENED';
+  const rawKey = isWithdrawn ? 'WITHDRAWN' : status;
+  const label = friendly ? (FRIENDLY_LABELS[rawKey] || status.replace(/_/g, ' ')) : (isWithdrawn ? 'WITHDRAWN' : status.replace(/_/g, ' '));
 
   return (
     <Box
@@ -42,7 +67,7 @@ export default function StatusChip({ status }: { status: IncidentStatus }) {
           lineHeight: 1.2,
         }}
       >
-        {status.replace(/_/g, ' ')}
+        {label}
       </Box>
     </Box>
   );

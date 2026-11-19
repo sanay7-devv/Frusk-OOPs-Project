@@ -56,6 +56,7 @@ import {
 } from '../../api/admin';
 import { listIncidents } from '../../api/incidents';
 import PriorityBadge from '../../components/PriorityBadge';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { useToast } from '../../components/Toast';
 
 const COLORS = {
@@ -231,14 +232,23 @@ export default function SlaPolicies() {
     }
   };
 
-  const handleDeleteSlaPolicy = async (id: number, p: string) => {
-    if (!window.confirm(`Are you sure you want to delete this SLA policy for ${p}?`)) return;
+  const [deleteSlaTarget, setDeleteSlaTarget] = useState<{ id: number; priority: string } | null>(null);
+  const [deleteEscTarget, setDeleteEscTarget] = useState<{ id: number; priority: string; level: number } | null>(null);
+
+  const handleDeleteSlaPolicy = (id: number, p: string) => {
+    setDeleteSlaTarget({ id, priority: p });
+  };
+
+  const handleConfirmDeleteSla = async () => {
+    if (!deleteSlaTarget) return;
     try {
-      await deleteAdminSlaPolicy(id);
-      toast(`Deleted policy for ${p}`, 'info');
+      await deleteAdminSlaPolicy(deleteSlaTarget.id);
+      toast(`Deleted policy for ${deleteSlaTarget.priority}`, 'info');
       refetchSla();
     } catch (e: any) {
       toast(e.message || 'Failed to delete policy', 'error');
+    } finally {
+      setDeleteSlaTarget(null);
     }
   };
 
@@ -261,14 +271,20 @@ export default function SlaPolicies() {
     }
   };
 
-  const handleDeleteEscalation = async (id: number, priority: string, level: number) => {
-    if (!window.confirm(`Delete escalation policy for ${priority} Level ${level}?`)) return;
+  const handleDeleteEscalation = (id: number, priority: string, level: number) => {
+    setDeleteEscTarget({ id, priority, level });
+  };
+
+  const handleConfirmDeleteEsc = async () => {
+    if (!deleteEscTarget) return;
     try {
-      await deleteAdminEscalationPolicy(id);
+      await deleteAdminEscalationPolicy(deleteEscTarget.id);
       toast(`Deleted escalation policy`, 'info');
       refetchEsc();
     } catch (e: any) {
       toast(e.message || 'Failed to delete escalation policy', 'error');
+    } finally {
+      setDeleteEscTarget(null);
     }
   };
 
@@ -983,6 +999,28 @@ export default function SlaPolicies() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Confirm Delete SLA Policy Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteSlaTarget)}
+        onClose={() => setDeleteSlaTarget(null)}
+        onConfirm={handleConfirmDeleteSla}
+        title="Delete SLA Policy"
+        description={`Are you sure you want to delete this SLA policy for ${deleteSlaTarget?.priority}?`}
+        confirmColor="error"
+        confirmLabel="Delete Policy"
+      />
+
+      {/* Confirm Delete Escalation Policy Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteEscTarget)}
+        onClose={() => setDeleteEscTarget(null)}
+        onConfirm={handleConfirmDeleteEsc}
+        title="Delete Escalation Policy"
+        description={`Are you sure you want to delete the escalation policy for ${deleteEscTarget?.priority} Level ${deleteEscTarget?.level}?`}
+        confirmColor="error"
+        confirmLabel="Delete Policy"
+      />
     </Box>
   );
 }

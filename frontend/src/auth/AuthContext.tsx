@@ -1,8 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../api/auth';
-import { setAuthFailureHandler, tokenStore } from '../api/client';
+import { setAuthFailureHandler, tokenStore, requestRefresh } from '../api/client';
 import type { AuthResponse, CurrentUser } from '../api/types';
 
 export type Workspace = 'employee' | 'tech' | 'lead' | 'admin';
@@ -19,18 +19,24 @@ export function workspacesFor(u: CurrentUser): Workspace[] {
   if (u.roles.includes('EMPLOYEE')) ws.push('employee');
   return ws;
 }
-export const HOME: Record<Workspace, string> = { 
-  employee: '/employee/home', 
+
+export const HOME: Record<Workspace, string> = {
+  employee: '/employee/home',
   tech: '/tech/queue',
   lead: '/lead/team-queue',
-  admin: '/admin/dashboard'
- };
+  admin: '/admin/dashboard',
+};
 
 interface Ctx {
-  user: CurrentUser | null; loading: boolean;
-  workspace: Workspace | null; workspaces: Workspace[]; setWorkspace: (w: Workspace) => void;
-  signIn: (r: AuthResponse) => Workspace | null; signOut: () => Promise<void>;
+  user: CurrentUser | null;
+  loading: boolean;
+  workspace: Workspace | null;
+  workspaces: Workspace[];
+  setWorkspace: (w: Workspace) => void;
+  signIn: (r: AuthResponse) => Workspace | null;
+  signOut: () => Promise<void>;
 }
+
 const AuthCtx = createContext<Ctx>(null!);
 export const useAuth = () => useContext(AuthCtx);
 
@@ -39,12 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [workspace, setWs] = useState<Workspace | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const restoredRef = useRef(false);
 
   const workspaces = useMemo(() => (user ? workspacesFor(user) : []), [user]);
 
-  // Remember the last workspace choice; fall back to the first allowed one.
-
-  //this will be limited to some lgin numbers and then have to login again
   const signIn = useCallback((r: AuthResponse) => {
     tokenStore.setAccess(r.accessToken);
     tokenStore.setRefresh(r.refreshToken);
@@ -60,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
     return chosen;
   }, []);
+
   const clear = useCallback(() => {
+    queryClient.clear();
     tokenStore.setAccess(null);
     tokenStore.setRefresh(null);
     localStorage.removeItem('currentUser');
@@ -68,32 +75,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setWs(null);
     setLoading(false);
-  }, []);
+  }, [queryClient]);
+
   const signOut = useCallback(async () => {
     const rt = tokenStore.getRefresh();
     if (rt) await authApi.logout(rt).catch(() => {});
     clear();
     navigate('/login');
   }, [clear, navigate]);
+
   const setWorkspace = (w: Workspace) => {
     localStorage.setItem('workspace', w);
     setWs(w);
     navigate(HOME[w]);
   };
 
-  // On page load: use the stored refresh token to restore the session.
+  // On page load: use the stored refresh token to restore the session through single-flight refresh
   useEffect(() => {
-    setAuthFailureHandler(() => { clear(); navigate('/login'); });
-    const rt = tokenStore.getRefresh();
-    if (!rt) { setLoading(false); return; }
+    setAuthFailureHandler(() => {
+      clear();
+      navigate('/login');
+    });
 
-    axios.post<AuthResponse>(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1'}/auth/refresh`, { refreshToken: rt }, { timeout: 3000 })
-      .then((r) => signIn(r.data))
-      .catch((err) => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    const rt = tokenStore.getRefresh();
+    if (!rt) {
+      setLoading(false);
+      return;
+    }
+
+    requestRefresh()
+      .then((data) => signIn(data))
+      .catch(() => {
         clear();
       })
       .finally(() => setLoading(false));
-  }, []); // eslint-disable-line
+  }, [clear, navigate, signIn]);
 
-  return <AuthCtx.Provider value={{ user, loading, workspace, workspaces, setWorkspace, signIn, signOut }}>{children}</AuthCtx.Provider>;
+  return (
+    <AuthCtx.Provider value={{ user, loading, workspace, workspaces, setWorkspace, signIn, signOut }}>
+      {children}
+    </AuthCtx.Provider>
+  );
 }

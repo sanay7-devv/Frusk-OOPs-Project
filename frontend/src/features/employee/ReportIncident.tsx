@@ -60,10 +60,20 @@ import {
   joinProblem,
   priorityWhatIf,
 } from '../../api/incidents';
-import { suggestCategory, findSimilar, CategorySuggestion, SimilarIncident } from '../../api/intelligence';
+import {
+  suggestCategory,
+  findSimilar,
+  suggestIntake,
+  chatReport,
+  CategorySuggestion,
+  SimilarIncident,
+  Draft,
+  ChatReply,
+} from '../../api/intelligence';
 import type { IncidentDetail, Priority } from '../../api/types';
 import PriorityBadge from '../../components/PriorityBadge';
 import { useToast } from '../../components/Toast';
+import { errorMessage } from '../../utils/errors';
 
 // Form validation schema adhering to handbook rules
 const reportSchema = z.object({
@@ -120,6 +130,20 @@ export default function ReportIncident() {
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [createdIncident, setCreatedIncident] = useState<IncidentDetail | null>(null);
 
+  // Chatbot intake assistant state (guide P3-11)
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatDraft, setChatDraft] = useState<Draft | undefined>(undefined);
+  const [chatExpecting, setChatExpecting] = useState<string | undefined>('DESCRIPTION');
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'bot' | 'user'; text: string; options?: Array<{ label: string; value: string }> }>>([
+    {
+      sender: 'bot',
+      text: 'Hello! I can guide you through reporting this issue step-by-step. What seems to be the problem?',
+    },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatReadyToFile, setChatReadyToFile] = useState(false);
+
   // Queries for services & categories
   const { data: services = [] } = useQuery({ queryKey: ['services'], queryFn: getServices });
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
@@ -129,6 +153,8 @@ export default function ReportIncident() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
+    setError,
     control,
     reset,
     formState: { errors, isSubmitting },
@@ -175,8 +201,9 @@ export default function ReportIncident() {
     P4: 'P4 LOW',
   };
 
-  // Debounced AI Copilot calls when typing
+  // Debounced AI Copilot calls when typing with stale guard
   useEffect(() => {
+    let active = true;
     if (!watchTitle?.trim() && !watchDescription?.trim()) {
       setAiSuggestion(null);
       setSimilarIncidents([]);
@@ -190,26 +217,51 @@ export default function ReportIncident() {
           description: watchDescription || '',
           serviceId: watchServiceId,
         });
-        if (cat) setAiSuggestion(cat);
+        if (active && cat) setAiSuggestion(cat);
 
-        if (watchServiceId) {
+        if (active && watchServiceId) {
           const sim = await findSimilar({
             title: watchTitle || '',
             description: watchDescription || '',
             serviceId: watchServiceId,
           });
-          if (sim && sim.length > 0) setSimilarIncidents(sim);
-          else setSimilarIncidents([]);
+          if (active) {
+            if (sim && sim.length > 0) setSimilarIncidents(sim);
+            else setSimilarIncidents([]);
+          }
         }
       } catch {
         // Handled silently
       } finally {
-        setAiLoading(false);
+        if (active) setAiLoading(false);
       }
     }, 600);
 
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [watchTitle, watchDescription, watchServiceId]);
+
+  const handleDescriptionBlur = async () => {
+    const desc = getValues('description');
+    if (desc && desc.trim().length >= 20 && !getValues('categoryId')) {
+      try {
+        const intake = await suggestIntake(desc);
+        if (intake.categoryId && !getValues('categoryId')) {
+          setValue('categoryId', intake.categoryId, { shouldValidate: true });
+        }
+        if (intake.impact) {
+          setValue('impact', intake.impact, { shouldValidate: true });
+        }
+        if (intake.urgency) {
+          setValue('urgency', intake.urgency, { shouldValidate: true });
+        }
+      } catch {
+        // Handled silently
+      }
+    }
+  };
 
   const applyAiRecommendations = () => {
     if (aiSuggestion?.categoryId) {
@@ -239,9 +291,8 @@ export default function ReportIncident() {
 
   const calculatedPriority = whatIfData?.whatIf?.priority || calculatePriority(watchImpact, watchUrgency);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const processFiles = (files: FileList | File[]) => {
     const allowedExts = ['png', 'jpg', 'jpeg', 'gif', 'pdf', 'txt', 'log'];
-    const files = e.target.files;
     if (!files || files.length === 0) return;
     if (attachedFiles.length + files.length > 10) {
       toast('Maximum 10 attachments allowed per incident.', 'error');
@@ -251,11 +302,11 @@ export default function ReportIncident() {
     for (const f of Array.from(files)) {
       const ext = f.name.split('.').pop()?.toLowerCase() || '';
       if (!allowedExts.includes(ext)) {
-        toast(`Unsupported file format: ${f.name}. Allowed: ${allowedExts.join(', ')}`, 'error');
+        toast(`Unsupported format: ${f.name}. Allowed: ${allowedExts.join(', ')}`, 'error');
         continue;
       }
       if (f.size > 5 * 1024 * 1024) {
-        toast(`File too large: ${f.name} (max 5 MB)`, 'error');
+        toast(`File exceeds 5 MB: ${f.name}`, 'error');
         continue;
       }
       toAdd.push({
@@ -270,6 +321,16 @@ export default function ReportIncident() {
       setAttachedFiles((prev) => [...prev, ...toAdd]);
       toast(`Attached ${toAdd.length} file(s).`, 'success');
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) processFiles(e.target.files);
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files) processFiles(e.dataTransfer.files);
   };
 
   const removeFile = (id: string) => {
@@ -316,10 +377,57 @@ export default function ReportIncident() {
           setSimilarIncidents(mappedSimilar);
         }
         setDuplicateModalOpen(true);
+      } else if (err?.response?.status === 400 && err?.response?.data?.fieldErrors?.length) {
+        for (const fe of err.response.data.fieldErrors) {
+          setError(fe.field as any, { message: fe.message });
+        }
+        toast('Please resolve the field validation errors indicated below.', 'error');
       } else {
-        toast(err?.response?.data?.message || 'Failed to submit incident. Please check the form and retry.', 'error');
+        toast(errorMessage(err), 'error');
       }
     }
+  };
+
+  const handleSendChatMessage = async (msgText: string) => {
+    if (!msgText.trim()) return;
+    setChatMessages((prev) => [...prev, { sender: 'user', text: msgText }]);
+    setChatInput('');
+    setChatLoading(true);
+    try {
+      const res = await chatReport({
+        answer: msgText,
+        draft: chatDraft,
+        expecting: chatExpecting,
+      });
+      setChatDraft(res.draft);
+      setChatExpecting(res.expecting);
+      setChatReadyToFile(res.readyToFile);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: 'bot',
+          text: res.message,
+          options: res.options,
+        },
+      ]);
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleApplyChatDraft = () => {
+    if (!chatDraft) return;
+    if (chatDraft.title) setValue('title', chatDraft.title, { shouldValidate: true });
+    if (chatDraft.description) setValue('description', chatDraft.description, { shouldValidate: true });
+    if (chatDraft.serviceId) setValue('serviceId', chatDraft.serviceId, { shouldValidate: true });
+    if (chatDraft.categoryId) setValue('categoryId', chatDraft.categoryId, { shouldValidate: true });
+    if (chatDraft.impact) setValue('impact', chatDraft.impact, { shouldValidate: true });
+    if (chatDraft.urgency) setValue('urgency', chatDraft.urgency, { shouldValidate: true });
+    if (chatDraft.affectedUsers) setValue('affectedUsers', chatDraft.affectedUsers, { shouldValidate: true });
+    setChatOpen(false);
+    toast('Draft populated into the report form.', 'success');
   };
 
   const handleDiscard = () => {
@@ -345,14 +453,14 @@ export default function ReportIncident() {
             onClick={() => navigate('/employee/home')}
           >
             <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
-            PORTAL
+            Home
           </Link>
           <Typography sx={{ color: '#94a3b8', fontSize: 13, fontWeight: 500, fontFamily: 'JetBrains Mono, monospace' }}>
-            REPORT INCIDENT
+            Report Incident
           </Typography>
         </Breadcrumbs>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
               Report an Operational Issue or Outage
@@ -361,6 +469,26 @@ export default function ReportIncident() {
               Submit downtime, authentication barriers, or service degradation to open a new incident.
             </Typography>
           </Box>
+
+          <Button
+            variant="outlined"
+            onClick={() => setChatOpen(true)}
+            startIcon={<SmartToyIcon sx={{ color: '#4cd7f6' }} />}
+            sx={{
+              borderColor: 'rgba(6, 182, 212, 0.4)',
+              color: '#4cd7f6',
+              bgcolor: 'rgba(6, 182, 212, 0.1)',
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: 13,
+              borderRadius: '8px',
+              px: 2,
+              py: 0.8,
+              '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.18)' },
+            }}
+          >
+            Guided Chat Assistant
+          </Button>
         </Box>
       </Box>
 
@@ -760,7 +888,9 @@ export default function ReportIncident() {
                     multiline
                     rows={6}
                     placeholder="Describe exact error messages, timeline, steps to reproduce, and impact on operations..."
-                    {...register('description')}
+                    {...register('description', {
+                      onBlur: handleDescriptionBlur,
+                    })}
                     error={!!errors.description}
                     helperText={errors.description?.message}
                     InputProps={{ disableUnderline: true }}
@@ -787,6 +917,11 @@ export default function ReportIncident() {
                 <Paper
                   elevation={0}
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={handleFileDrop}
                   sx={{
                     p: 3,
                     borderRadius: '12px',
@@ -803,7 +938,7 @@ export default function ReportIncident() {
                     ref={fileInputRef}
                     style={{ display: 'none' }}
                     multiple
-                    accept=".log,.har,.pcapng,.png,.jpg,.jpeg,.pdf,.txt"
+                    accept=".png,.jpg,.jpeg,.gif,.pdf,.txt,.log"
                     onChange={handleFileUpload}
                   />
                   <Box
@@ -824,10 +959,10 @@ export default function ReportIncident() {
                     <UploadFileIcon sx={{ fontSize: 26 }} />
                   </Box>
                   <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#ffffff' }}>
-                    <span style={{ color: '#4cd7f6' }}>Click to browse</span> or drag screenshots, error logs, or network HAR captures
+                    <span style={{ color: '#4cd7f6' }}>Click to browse</span> or drag files here
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5 }}>
-                    Supported formats: .log, .har, .pcapng, .png, .pdf (Diagnostics will be automatically sanitized for PII)
+                    Supported formats: PNG, JPG, GIF, PDF, TXT, LOG (Max 5 MB per file, max 10 files)
                   </Typography>
 
                   {/* Attached File Pills */}
@@ -1176,7 +1311,20 @@ export default function ReportIncident() {
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#4cd7f6' }}>
                   {sim.code}
                 </Typography>
-                <Chip label={`${Math.round(sim.similarity * 100)}% match`} size="small" sx={{ bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#fde68a' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {sim.match && (
+                    <Chip
+                      label={sim.match === 'DUPLICATE' ? 'Likely Duplicate' : 'Related'}
+                      size="small"
+                      sx={{
+                        fontSize: 10,
+                        bgcolor: sim.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+                        color: sim.match === 'DUPLICATE' ? '#f43f5e' : '#c0c1ff',
+                      }}
+                    />
+                  )}
+                  <Chip label={`${Math.round(sim.similarity * 100)}% match`} size="small" sx={{ bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#fde68a' }} />
+                </Box>
               </Box>
               <Typography sx={{ fontWeight: 600, mt: 0.5, color: '#dfe2ef' }}>{sim.title}</Typography>
               <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5 }}>
@@ -1237,7 +1385,7 @@ export default function ReportIncident() {
           {createdIncident && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Alert severity="success" sx={{ borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                Your incident was categorized, prioritized, and dispatched to on-call engineers.
+                Your incident was categorized, prioritized, and queued for technician triage.
               </Alert>
 
               <Box sx={{ bgcolor: 'rgba(18, 22, 34, 0.8)', p: 2.5, borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
@@ -1309,6 +1457,150 @@ export default function ReportIncident() {
           >
             View Incident Detail
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* MODAL 3: Conversational Chat Intake Assistant (guide P3-11) */}
+      <Dialog
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: '#121622',
+            border: '1px solid rgba(6, 182, 212, 0.4)',
+            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SmartToyIcon sx={{ color: '#4cd7f6', fontSize: 24 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontFamily: 'Sora, sans-serif', fontSize: 16 }}>
+              Guided Intake Assistant
+            </Typography>
+          </Box>
+          <IconButton size="small" onClick={() => setChatOpen(false)} sx={{ color: '#94a3b8' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', p: 2 }}>
+          {/* Messages Stream */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 360, overflowY: 'auto', pr: 0.5 }}>
+            {chatMessages.map((m, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: m.sender === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    bgcolor: m.sender === 'user' ? '#6366f1' : 'rgba(18, 22, 34, 0.9)',
+                    border: m.sender === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {m.text}
+                </Box>
+                {/* Option Chips */}
+                {m.options && m.options.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 1 }}>
+                    {m.options.map((opt) => (
+                      <Chip
+                        key={opt.value}
+                        label={opt.label}
+                        size="small"
+                        onClick={() => handleSendChatMessage(opt.label)}
+                        sx={{
+                          bgcolor: 'rgba(6, 182, 212, 0.15)',
+                          color: '#4cd7f6',
+                          border: '1px solid rgba(6, 182, 212, 0.3)',
+                          cursor: 'pointer',
+                          fontSize: 11.5,
+                          '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.28)' },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            ))}
+            {chatLoading && (
+              <Box sx={{ alignSelf: 'flex-start', p: 1.5, bgcolor: 'rgba(18, 22, 34, 0.9)', borderRadius: '12px 12px 12px 2px', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={14} sx={{ color: '#4cd7f6' }} />
+                <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Analyzing response...</Typography>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* Chat text input */}
+          <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Type your message..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendChatMessage(chatInput);
+                }
+              }}
+              sx={{
+                bgcolor: 'rgba(18, 22, 34, 0.7)',
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+              }}
+            />
+            <Button
+              variant="contained"
+              disabled={!chatInput.trim() || chatLoading}
+              onClick={() => handleSendChatMessage(chatInput)}
+              sx={{
+                bgcolor: '#06b6d4',
+                color: '#ffffff',
+                textTransform: 'none',
+                fontWeight: 700,
+                px: 2.5,
+                '&:hover': { bgcolor: '#0891b2' },
+              }}
+            >
+              Send
+            </Button>
+          </Box>
+
+          {/* Action to apply draft to form */}
+          {chatDraft && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 0.5 }}>
+              <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                {chatReadyToFile ? 'Draft is complete and ready to apply!' : 'Draft partially generated.'}
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleApplyChatDraft}
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  textTransform: 'none',
+                }}
+              >
+                Apply Draft to Form
+              </Button>
+            </Box>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

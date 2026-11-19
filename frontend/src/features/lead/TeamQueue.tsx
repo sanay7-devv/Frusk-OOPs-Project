@@ -68,29 +68,49 @@ export default function TeamQueue() {
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Fetch unassigned incidents (CLASSIFIED status only)
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+
+  // 1. Fetch unassigned incidents (CLASSIFIED status only) with server pagination
   const {
     data: queueData,
     isLoading: isQueueLoading,
+    error: queueError,
     refetch: refetchQueue,
     isFetching,
   } = useQuery({
-    queryKey: ['lead-team-queue'],
-    queryFn: () => listIncidents({ status: ['CLASSIFIED'], size: 50 }),
+    queryKey: ['lead-team-queue', page, pageSize],
+    queryFn: () => listIncidents({ status: ['CLASSIFIED'], page, size: pageSize, sort: 'priority,asc' }),
+    refetchInterval: 10000,
   });
 
-  const incidents: IncidentSummary[] = (queueData as any)?.items || (queueData as any)?.content || [];
+  const incidents: IncidentSummary[] = queueData?.items || [];
+  const totalItems = queueData?.totalItems ?? incidents.length;
+  const totalPages = queueData?.totalPages ?? 1;
 
-  // Auto-select first incident when queue loads
+  const filteredIncidents = incidents.filter((inc) => {
+    if (filterPriority !== 'ALL' && inc.priority !== filterPriority) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        inc.code.toLowerCase().includes(q) ||
+        inc.title.toLowerCase().includes(q) ||
+        (inc.service?.name || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  // Auto-select first incident when filtered queue changes
   useEffect(() => {
-    if (incidents.length > 0) {
-      if (!selectedIncidentId || !incidents.some((i) => i.id === selectedIncidentId)) {
-        setSelectedIncidentId(incidents[0].id);
+    if (filteredIncidents.length > 0) {
+      if (!selectedIncidentId || !filteredIncidents.some((i) => i.id === selectedIncidentId)) {
+        setSelectedIncidentId(filteredIncidents[0].id);
       }
     } else {
       setSelectedIncidentId(null);
     }
-  }, [incidents, selectedIncidentId]);
+  }, [filteredIncidents, selectedIncidentId]);
 
   // 2. Fetch selected incident details
   const { data: incidentDetail, isLoading: isDetailLoading } = useQuery<IncidentDetail>({
@@ -123,22 +143,16 @@ export default function TeamQueue() {
         'success'
       );
     },
-    onError: (err: any) => {
+    onError: (err: any, vars) => {
+      if (err?.response?.status === 409) {
+        queryClient.invalidateQueries({ queryKey: ['lead-team-queue'] });
+        if (vars?.incidentId) {
+          queryClient.invalidateQueries({ queryKey: ['lead-incident-detail', vars.incidentId] });
+          queryClient.invalidateQueries({ queryKey: ['lead-recommendations', vars.incidentId] });
+        }
+      }
       toast(err?.response?.data?.message || 'Failed to assign incident.', 'error');
     },
-  });
-
-  const filteredIncidents = incidents.filter((inc) => {
-    if (filterPriority !== 'ALL' && inc.priority !== filterPriority) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        inc.code.toLowerCase().includes(q) ||
-        inc.title.toLowerCase().includes(q) ||
-        (inc.service?.name || '').toLowerCase().includes(q)
-      );
-    }
-    return true;
   });
 
   return (
@@ -189,7 +203,7 @@ export default function TeamQueue() {
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                     <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: COLORS.secondary }} />
-                    {incidents.length} UNASSIGNED
+                    {totalItems} UNASSIGNED
                   </Box>
                 }
                 sx={{
@@ -232,7 +246,7 @@ export default function TeamQueue() {
             {selectedIncidentId && (
               <Button
                 variant="contained"
-                disabled={assignMutation.isPending}
+                disabled={assignMutation.isPending || (incidentDetail != null && !incidentDetail.allowedActions?.includes('ASSIGN'))}
                 onClick={() => assignMutation.mutate({ incidentId: selectedIncidentId, technicianId: null })}
                 startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
                 sx={{
@@ -398,6 +412,41 @@ export default function TeamQueue() {
                   </Paper>
                 );
               })
+            )}
+
+            {totalItems > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: COLORS.surfaceContainer,
+                  border: `1px solid ${COLORS.border}`,
+                  mt: 2,
+                }}
+              >
+                <Button
+                  size="small"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  sx={{ textTransform: 'none', color: COLORS.onSurface, fontSize: 11 }}
+                >
+                  Prev
+                </Button>
+                <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                  Page {page + 1} of {Math.max(1, totalPages)}
+                </Typography>
+                <Button
+                  size="small"
+                  disabled={page + 1 >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  sx={{ textTransform: 'none', color: COLORS.onSurface, fontSize: 11 }}
+                >
+                  Next
+                </Button>
+              </Box>
             )}
           </Box>
         </Grid>
@@ -566,7 +615,7 @@ export default function TeamQueue() {
                                 )}
                               </Box>
                               <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-                                Load: {rec.currentLoad} / {rec.maxLoad} active incidents
+                                Weighted Load: {rec.currentLoad} / {rec.maxLoad}
                               </Typography>
                             </Box>
                           </Box>
@@ -637,7 +686,7 @@ export default function TeamQueue() {
                         <Button
                           fullWidth
                           variant="contained"
-                          disabled={assignMutation.isPending}
+                          disabled={assignMutation.isPending || (incidentDetail != null && !incidentDetail.allowedActions?.includes('ASSIGN'))}
                           onClick={() => assignMutation.mutate({ incidentId: selectedIncidentId, technicianId: rec.technicianId })}
                           startIcon={<AssignIcon sx={{ fontSize: 16 }} />}
                           sx={{

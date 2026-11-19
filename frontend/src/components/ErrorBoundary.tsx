@@ -25,13 +25,19 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReset = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = '/login';
+    this.setState({ hasError: false, error: null });
   };
 
   private handleReload = () => {
     window.location.reload();
+  };
+
+  private handleSignOutAndReset = () => {
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('workspace');
+    sessionStorage.clear();
+    window.location.href = '/login';
   };
 
   public render() {
@@ -85,7 +91,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <strong>Error:</strong> {this.state.error?.message || 'Unknown runtime error'}
             </Alert>
 
-            <Box display="flex" gap={2} justifyContent="center">
+            <Box display="flex" gap={2} justifyContent="center" flexWrap="wrap">
               <Button
                 variant="outlined"
                 onClick={this.handleReload}
@@ -98,8 +104,19 @@ export class ErrorBoundary extends Component<Props, State> {
                 Reload Page
               </Button>
               <Button
-                variant="contained"
+                variant="outlined"
                 onClick={this.handleReset}
+                sx={{
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                  color: '#4cd7f6',
+                  '&:hover': { borderColor: '#4cd7f6', color: '#ffffff' },
+                }}
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="contained"
+                onClick={this.handleSignOutAndReset}
                 sx={{
                   background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
                   color: '#ffffff',
@@ -107,7 +124,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)',
                 }}
               >
-                Reset Session &amp; Return to Login
+                Return to Login
               </Button>
             </Box>
           </Paper>

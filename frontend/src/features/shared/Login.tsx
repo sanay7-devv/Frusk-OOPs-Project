@@ -281,7 +281,7 @@ export default function Login() {
             label="Email Address"
             fullWidth
             margin="normal"
-            placeholder="e.g. admin@iitsm.com"
+            placeholder="e.g. employee1@iitsm.demo"
             {...register('email', {
               onChange: () => {
                 setNeedCode(false);
@@ -405,97 +405,99 @@ export default function Login() {
           </>
         )}
 
-        {/* Database Seed Accounts Reference Toggle */}
-        <Box mt={3} textAlign="center">
-          <Link
-            component="button"
-            variant="caption"
-            onClick={() => setShowSeed(!showSeed)}
-            sx={{
-              textDecoration: 'none',
-              color: '#94a3b8',
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 11,
-              fontWeight: 600,
-              '&:hover': { color: '#4cd7f6' },
-            }}
-          >
-            {showSeed ? '▲ Hide Database Credentials' : '▼ View Default Database Credentials'}
-          </Link>
-          <Collapse in={showSeed}>
-            <Paper
-              elevation={0}
+        {/* Database Seed Accounts Reference Toggle (Demo/Development Only) */}
+        {import.meta.env.DEV && (
+          <Box mt={3} textAlign="center">
+            <Link
+              component="button"
+              variant="caption"
+              onClick={() => setShowSeed(!showSeed)}
               sx={{
-                mt: 1.5,
-                p: 1.8,
-                textAlign: 'left',
-                bgcolor: 'rgba(10, 14, 23, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '10px',
+                textDecoration: 'none',
+                color: '#94a3b8',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: 11,
+                fontWeight: 600,
+                '&:hover': { color: '#4cd7f6' },
               }}
             >
-              <Typography
+              {showSeed ? '▲ Hide Database Credentials' : '▼ View Default Database Credentials (Demo)'}
+            </Link>
+            <Collapse in={showSeed}>
+              <Paper
+                elevation={0}
                 sx={{
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  color: '#4cd7f6',
-                  mb: 1.2,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
+                  mt: 1.5,
+                  p: 1.8,
+                  textAlign: 'left',
+                  bgcolor: 'rgba(10, 14, 23, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
                 }}
               >
-                PostgreSQL Seed Accounts (Click to auto-fill):
-              </Typography>
-              <Stack spacing={0.8}>
-                {SEED_CREDENTIALS.map((c) => (
-                  <Box
-                    key={c.email}
-                    onClick={() => handleQuickFill(c.email, c.pass)}
-                    sx={{
-                      p: 0.8,
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      bgcolor: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.04)',
-                      transition: 'all 0.15s',
-                      '&:hover': {
-                        bgcolor: 'rgba(99, 102, 241, 0.12)',
-                        borderColor: 'rgba(99, 102, 241, 0.3)',
-                      },
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
-                        {c.role}:
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: 11.5,
-                          color: '#c0c1ff',
-                          fontWeight: 500,
-                        }}
-                      >
-                        {c.email}
-                      </Typography>
-                    </Stack>
-                    <Typography
+                <Typography
+                  sx={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: '#4cd7f6',
+                    mb: 1.2,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  PostgreSQL Seed Accounts (Demo Only - Click to auto-fill):
+                </Typography>
+                <Stack spacing={0.8}>
+                  {SEED_CREDENTIALS.map((c) => (
+                    <Box
+                      key={c.email}
+                      onClick={() => handleQuickFill(c.email, c.pass)}
                       sx={{
-                        fontFamily: 'Geist, sans-serif',
-                        color: '#94a3b8',
-                        fontSize: 11,
-                        mt: 0.2,
+                        p: 0.8,
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        bgcolor: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.04)',
+                        transition: 'all 0.15s',
+                        '&:hover': {
+                          bgcolor: 'rgba(99, 102, 241, 0.12)',
+                          borderColor: 'rgba(99, 102, 241, 0.3)',
+                        },
                       }}
                     >
-                      Password: <code style={{ color: '#4cd7f6' }}>{c.pass}</code> • {c.desc}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Paper>
-          </Collapse>
-        </Box>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
+                          {c.role}:
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontSize: 11.5,
+                            color: '#c0c1ff',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {c.email}
+                        </Typography>
+                      </Stack>
+                      <Typography
+                        sx={{
+                          fontFamily: 'Geist, sans-serif',
+                          color: '#94a3b8',
+                          fontSize: 11,
+                          mt: 0.2,
+                        }}
+                      >
+                        Password: <code style={{ color: '#4cd7f6' }}>{c.pass}</code> • {c.desc}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Paper>
+            </Collapse>
+          </Box>
+        )}
 
         {/* Register Link */}
         <Box mt={2.5} textAlign="center">

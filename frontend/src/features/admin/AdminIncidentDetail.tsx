@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -26,14 +26,26 @@ import {
   CheckCircle as CheckCircleIcon,
   Send as SendIcon,
   Refresh as RefreshIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
-import { getIncident } from '../../api/incidents';
+import {
+  getIncident,
+  getHistory,
+  getComments,
+  addComment,
+  listAttachments,
+  downloadPostIncidentReportPdf,
+  getRecommendations,
+} from '../../api/incidents';
 import { getAdminUsers } from '../../api/admin';
 import { api } from '../../api/client';
 import PriorityBadge from '../../components/PriorityBadge';
+import PriorityExplainer from '../../components/PriorityExplainer';
 import StatusChip from '../../components/StatusChip';
 import SlaCountdown from '../../components/SlaCountdown';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { useToast } from '../../components/Toast';
+import type { AttachmentView, RecommendationView } from '../../api/types';
 
 const COLORS = {
   surface: '#090d16',
@@ -55,6 +67,7 @@ const COLORS = {
 export default function AdminIncidentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const toast = useToast();
 
   const incidentId = Number(id);
@@ -68,7 +81,9 @@ export default function AdminIncidentDetail() {
   const [overrideReason, setOverrideReason] = useState('');
 
   const [newComment, setNewComment] = useState('');
+  const [commentVisibility, setCommentVisibility] = useState<'INTERNAL' | 'PUBLIC'>('INTERNAL');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
 
   const { data: incident, isLoading, refetch } = useQuery({
     queryKey: ['admin-incident-detail', incidentId],
@@ -83,7 +98,25 @@ export default function AdminIncidentDetail() {
 
   const { data: comments = [], refetch: refetchComments } = useQuery({
     queryKey: ['admin-incident-comments', incidentId],
-    queryFn: () => api.get<any[]>(`/incidents/${incidentId}/comments`).then((r) => r.data),
+    queryFn: () => getComments(incidentId),
+    enabled: !!incidentId && !isNaN(incidentId),
+  });
+
+  const { data: history = [], refetch: refetchHistory } = useQuery({
+    queryKey: ['admin-incident-history', incidentId],
+    queryFn: () => getHistory(incidentId),
+    enabled: !!incidentId && !isNaN(incidentId),
+  });
+
+  const { data: attachments = [] } = useQuery<AttachmentView[]>({
+    queryKey: ['admin-incident-attachments', incidentId],
+    queryFn: () => listAttachments(incidentId),
+    enabled: !!incidentId && !isNaN(incidentId),
+  });
+
+  const { data: recommendations } = useQuery<RecommendationView>({
+    queryKey: ['admin-incident-recommendations', incidentId],
+    queryFn: () => getRecommendations(incidentId),
     enabled: !!incidentId && !isNaN(incidentId),
   });
 
@@ -94,13 +127,11 @@ export default function AdminIncidentDetail() {
     if (!newComment.trim()) return;
     setIsPostingComment(true);
     try {
-      await api.post(`/incidents/${incidentId}/comments`, {
-        body: newComment.trim(),
-        visibility: 'INTERNAL',
-      });
-      toast('Comment posted to incident audit stream', 'success');
+      await addComment(incidentId, newComment.trim(), commentVisibility);
+      toast('Comment posted to incident stream', 'success');
       setNewComment('');
       refetchComments();
+      refetchHistory();
       refetch();
     } catch (e: any) {
       toast(e?.response?.data?.message || e.message || 'Failed to post comment', 'error');
@@ -128,6 +159,10 @@ export default function AdminIncidentDetail() {
       toast('Technician successfully reassigned', 'success');
       setReassignOpen(false);
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['admin-incidents-all'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-incidents-kpi'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-live'] });
     } catch (e: any) {
       toast(e?.response?.data?.message || e.message || 'Reassignment failed', 'error');
     } finally {
@@ -149,6 +184,10 @@ export default function AdminIncidentDetail() {
       toast(`Priority successfully changed to ${overridePriority}`, 'success');
       setOverrideOpen(false);
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['admin-incidents-all'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-incidents-kpi'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-live'] });
     } catch (e: any) {
       toast(e?.response?.data?.message || e.message || 'Priority override failed', 'error');
     } finally {
@@ -157,11 +196,15 @@ export default function AdminIncidentDetail() {
   };
 
   const handleClose = async () => {
-    if (!window.confirm('Are you sure you want to administratively close this verified incident?')) return;
     try {
       await api.post(`/incidents/${incidentId}/close`);
       toast('Incident closed', 'info');
+      setCloseConfirmOpen(false);
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['admin-incidents-all'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-incidents-kpi'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-live'] });
     } catch (e: any) {
       toast(e?.response?.data?.message || e.message || 'Close failed', 'error');
     }
@@ -311,6 +354,33 @@ export default function AdminIncidentDetail() {
             <Typography variant="h6" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
               Admin Command Notes &amp; Discussion
             </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1.5, alignItems: 'center' }}>
+              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Visibility:</Typography>
+              <Chip
+                label="INTERNAL (Ops Only)"
+                clickable
+                size="small"
+                onClick={() => setCommentVisibility('INTERNAL')}
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  bgcolor: commentVisibility === 'INTERNAL' ? COLORS.primary : COLORS.surfaceContainerHigh,
+                  color: commentVisibility === 'INTERNAL' ? '#ffffff' : COLORS.onSurfaceVariant,
+                }}
+              />
+              <Chip
+                label="PUBLIC (Reporter Visible)"
+                clickable
+                size="small"
+                onClick={() => setCommentVisibility('PUBLIC')}
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  bgcolor: commentVisibility === 'PUBLIC' ? COLORS.secondary : COLORS.surfaceContainerHigh,
+                  color: commentVisibility === 'PUBLIC' ? '#ffffff' : COLORS.onSurfaceVariant,
+                }}
+              />
+            </Box>
             <Stack direction="row" spacing={1.5} mb={2}>
               <TextField
                 fullWidth
@@ -426,6 +496,16 @@ export default function AdminIncidentDetail() {
               </Typography>
             </Box>
 
+            <Box sx={{ my: 2 }}>
+              <PriorityExplainer
+                priority={incident.priority}
+                impact={incident.impact}
+                urgency={incident.urgency}
+                score={incident.priorityBreakdown?.score}
+                overrideRule={incident.priorityBreakdown?.overrideRule}
+              />
+            </Box>
+
             <Divider sx={{ my: 2, borderColor: COLORS.border }} />
 
             {/* Actions */}
@@ -470,7 +550,7 @@ export default function AdminIncidentDetail() {
                   fullWidth
                   color="error"
                   startIcon={<CheckCircleIcon />}
-                  onClick={handleClose}
+                  onClick={() => setCloseConfirmOpen(true)}
                   sx={{
                     borderColor: 'rgba(244, 63, 94, 0.3)',
                     color: '#fb7185',
@@ -490,6 +570,106 @@ export default function AdminIncidentDetail() {
               )}
             </Stack>
           </Paper>
+
+          {/* Attachments Section */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 3,
+              borderRadius: 3,
+              bgcolor: COLORS.surfaceContainer,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+              Attachments ({attachments.length})
+            </Typography>
+            {attachments.length === 0 ? (
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
+                No attachments uploaded.
+              </Typography>
+            ) : (
+              <Stack spacing={1} mt={1}>
+                {attachments.map((att) => (
+                  <Box
+                    key={att.id}
+                    sx={{
+                      p: 1.25,
+                      borderRadius: 2,
+                      bgcolor: COLORS.surfaceContainerLowest,
+                      border: `1px solid ${COLORS.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurface }}>
+                      {att.filename} ({Math.round(att.sizeBytes / 1024)} KB)
+                    </Typography>
+                    <Button
+                      size="small"
+                      href={`/api/attachments/${att.id}/download`}
+                      target="_blank"
+                      sx={{ textTransform: 'none', fontSize: 11 }}
+                    >
+                      Download
+                    </Button>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Paper>
+
+          {/* Post-Incident Report PDF */}
+          {(incident.status === 'RESOLVED' || incident.status === 'CLOSED' || incident.status === 'VERIFIED' || incident.major) && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                mb: 3,
+                borderRadius: 3,
+                bgcolor: COLORS.surfaceContainer,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+                Compliance PDF Dossier
+              </Typography>
+              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mb: 1.5 }}>
+                Official post-incident report with full cryptographic audit hash.
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                startIcon={<DownloadIcon />}
+                onClick={async () => {
+                  try {
+                    const blob = await downloadPostIncidentReportPdf(incidentId);
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `incident-report-${incident.code}.pdf`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    toast('Post-incident report PDF downloaded.', 'success');
+                  } catch (e) {
+                    toast(e instanceof Error ? e.message : 'Failed to download report', 'error');
+                  }
+                }}
+                sx={{
+                  borderColor: COLORS.secondary,
+                  color: COLORS.secondary,
+                  textTransform: 'none',
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                Download PDF Report
+              </Button>
+            </Paper>
+          )}
         </Grid>
       </Grid>
 
@@ -661,6 +841,17 @@ export default function AdminIncidentDetail() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Confirm Close Dialog */}
+      <ConfirmDialog
+        open={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        onConfirm={handleClose}
+        title="Close Verified Incident"
+        description="Are you sure you want to administratively close this incident? This action completes the ITIL lifecycle."
+        confirmColor="error"
+        confirmLabel="Close Incident"
+      />
     </Box>
   );
 }

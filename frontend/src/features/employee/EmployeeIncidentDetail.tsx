@@ -19,6 +19,10 @@ import {
   Rating,
   Tabs,
   Tab,
+  Stepper,
+  Step,
+  StepLabel,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -35,7 +39,14 @@ import {
   RestartAlt as RestartAltIcon,
   Cancel as CancelIcon,
   History as HistoryIcon,
+  AttachFile as AttachFileIcon,
+  Download as DownloadIcon,
+  Edit as EditIcon,
+  PictureAsPdf as PdfIcon,
+  HelpOutline as HelpIcon,
+  WarningAmber as WarningIcon,
 } from '@mui/icons-material';
+import type { AxiosError } from 'axios';
 
 import {
   getIncident,
@@ -47,12 +58,30 @@ import {
   reopenIncident,
   withdrawIncident,
   submitFeedback,
+  updateIncident,
+  listAttachments,
+  uploadAttachment,
+  downloadAttachment,
+  getSimilarIncidents,
+  getPostIncidentReport,
+  downloadPostIncidentReportPdf,
 } from '../../api/incidents';
-import type { IncidentDetail, AuditEntry } from '../../api/types';
+import type {
+  IncidentDetail,
+  AuditEntry,
+  CommentView,
+  AttachmentView,
+  SimilarIncidentView,
+  PostIncidentReport,
+} from '../../api/types';
 import PriorityBadge from '../../components/PriorityBadge';
 import StatusChip from '../../components/StatusChip';
 import SlaCountdown from '../../components/SlaCountdown';
+import SlaBar from '../../components/SlaBar';
+import { ErrorState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
+import { errorMessage } from '../../utils/errors';
+import { reasonRule } from '../../utils/validation';
 
 const COLORS = {
   surface: '#090d16',
@@ -71,6 +100,24 @@ const COLORS = {
   success: '#10b981',
 };
 
+const ACTION_LABELS: Record<string, string> = {
+  INCIDENT_CREATED: 'Incident Reported',
+  STATUS_CHANGED: 'Status Updated',
+  PRIORITY_CHANGED: 'Priority Re-evaluated',
+  ASSIGNED: 'Technician Assigned',
+  ACKNOWLEDGED: 'Work Acknowledged',
+  WORK_STARTED: 'Remediation Started',
+  INFO_REQUESTED: 'Clarification Requested',
+  INFO_PROVIDED: 'Information Provided',
+  RESOLVED: 'Resolution Committed',
+  VERIFIED: 'Resolution Verified',
+  CLOSED: 'Incident Closed',
+  REOPENED: 'Incident Reopened',
+  WITHDRAWN: 'Incident Withdrawn',
+  COMMENT_ADDED: 'Note Added',
+  ATTACHMENT_ADDED: 'Attachment Uploaded',
+};
+
 export default function EmployeeIncidentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -79,11 +126,11 @@ export default function EmployeeIncidentDetail() {
 
   const numId = Number(id);
 
-  // Local state for modals & forms
+  // Active tabs
+  const [activeTab, setActiveTab] = useState<'comments' | 'history' | 'attachments' | 'similar'>('comments');
   const [commentText, setCommentText] = useState('');
-  const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
 
-  // Action Dialogs
+  // Modals
   const [provideInfoOpen, setProvideInfoOpen] = useState(false);
   const [provideInfoText, setProvideInfoText] = useState('');
 
@@ -99,105 +146,216 @@ export default function EmployeeIncidentDetail() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState('');
 
+  // Edit Modal (PUT /incidents/{id} with version)
+  const [editOpen, setEditOpen] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+
+  // Post Incident Report Modal
+  const [pirOpen, setPirOpen] = useState(false);
+
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   // Queries
-  const { data: incident, isLoading } = useQuery<IncidentDetail>({
-    queryKey: ['employee-incident', numId],
+  const {
+    data: incident,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<IncidentDetail, AxiosError>({
+    queryKey: ['incidents', numId],
     queryFn: () => getIncident(numId),
     enabled: !isNaN(numId) && numId > 0,
   });
 
-  const { data: comments = [] } = useQuery<any[]>({
-    queryKey: ['employee-incident-comments', numId],
+  const { data: comments = [] } = useQuery<CommentView[]>({
+    queryKey: ['incidents', numId, 'comments'],
     queryFn: () => getComments(numId),
+    enabled: !isNaN(numId) && numId > 0,
   });
 
   const { data: history = [] } = useQuery<AuditEntry[]>({
-    queryKey: ['employee-incident-history', numId],
+    queryKey: ['incidents', numId, 'history'],
     queryFn: () => getHistory(numId),
+    enabled: !isNaN(numId) && numId > 0,
+  });
+
+  const { data: attachments = [] } = useQuery<AttachmentView[]>({
+    queryKey: ['incidents', numId, 'attachments'],
+    queryFn: () => listAttachments(numId),
+    enabled: !isNaN(numId) && numId > 0,
+  });
+
+  const { data: similarIncidents = [] } = useQuery<SimilarIncidentView[]>({
+    queryKey: ['incidents', numId, 'similar'],
+    queryFn: () => getSimilarIncidents(numId),
+    enabled: !isNaN(numId) && numId > 0 && activeTab === 'similar',
+  });
+
+  const { data: pirData, isLoading: pirLoading } = useQuery<PostIncidentReport>({
+    queryKey: ['incidents', numId, 'pir'],
+    queryFn: () => getPostIncidentReport(numId),
+    enabled: !isNaN(numId) && numId > 0 && pirOpen,
   });
 
   // Mutations
   const commentMutation = useMutation({
     mutationFn: (text: string) => addComment(numId, text, 'PUBLIC'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-comments', numId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-history', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
       setCommentText('');
-      toast('Your update has been sent to the on-call engineer.', 'success');
+      toast('Your update has been sent to the assigned technician.', 'success');
     },
-    onError: () => {
-      toast('Failed to post update. Please try again.', 'error');
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
     },
   });
 
   const provideInfoMutation = useMutation({
     mutationFn: (message: string) => provideInfo(numId, message),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee-incident', numId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-comments', numId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-history', numId] });
-      toast('Information provided. The SLA clock has resumed.', 'success');
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
+      const resumed = data.slaState !== 'PAUSED';
+      toast(
+        resumed
+          ? 'Information delivered to technician. SLA clock resumed.'
+          : `Information delivered. SLA status: ${data.slaState}.`,
+        'success'
+      );
       setProvideInfoOpen(false);
       setProvideInfoText('');
     },
-    onError: (err: any) => {
-      toast(err?.response?.data?.message || 'Failed to submit response.', 'error');
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
+      refetch();
     },
   });
 
   const verifyMutation = useMutation({
     mutationFn: () => verifyIncident(numId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee-incident', numId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-history', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
       toast('Fix verified. Thank you for confirming!', 'success');
       setVerifyConfirmOpen(false);
       setFeedbackOpen(true);
     },
-    onError: (err: any) => {
-      toast(err?.response?.data?.message || 'Failed to verify incident.', 'error');
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
+      refetch();
     },
   });
 
   const feedbackMutation = useMutation({
     mutationFn: ({ rating, comment }: { rating: number; comment?: string }) => submitFeedback(numId, rating, comment),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee-incident', numId] });
-      toast('Feedback recorded. Thank you for your review!', 'success');
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
+      toast('Feedback recorded. Thank you for rating the resolution quality!', 'success');
       setFeedbackOpen(false);
+      setFeedbackRating(null);
+      setFeedbackComment('');
     },
-    onError: (err: any) => {
-      toast(err?.response?.data?.message || 'Failed to submit feedback.', 'error');
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
     },
   });
 
   const reopenMutation = useMutation({
     mutationFn: (reason: string) => reopenIncident(numId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee-incident', numId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-history', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
       toast('Incident reopened.', 'info');
       setReopenOpen(false);
       setReopenReason('');
     },
-    onError: (err: any) => {
-      toast(err?.response?.data?.message || 'Failed to reopen incident.', 'error');
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
+      refetch();
     },
   });
 
   const withdrawMutation = useMutation({
     mutationFn: (reason: string) => withdrawIncident(numId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employee-incident', numId] });
-      queryClient.invalidateQueries({ queryKey: ['employee-incident-history', numId] });
-      toast('Incident withdrawn.', 'info');
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
+      toast('Incident withdrawn and marked as closed.', 'info');
       setWithdrawOpen(false);
       setWithdrawReason('');
     },
-    onError: (err: any) => {
-      toast(err?.response?.data?.message || 'Failed to withdraw incident.', 'error');
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
+      refetch();
     },
   });
+
+  const editMutation = useMutation({
+    mutationFn: () =>
+      updateIncident(numId, {
+        description: editDescription,
+        version: incident?.version,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
+      toast('Incident description updated.', 'success');
+      setEditOpen(false);
+    },
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
+      refetch();
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => uploadAttachment(numId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'attachments'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
+      toast('Attachment uploaded successfully.', 'success');
+      setSelectedFile(null);
+    },
+    onError: (err) => {
+      toast(errorMessage(err), 'error');
+    },
+  });
+
+  const handleDownloadAttachment = async (att: AttachmentView) => {
+    try {
+      const blob = await downloadAttachment(att.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast('Failed to download attachment.', 'error');
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const blob = await downloadPostIncidentReportPdf(numId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PIR-${incident?.code || numId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast('Failed to download Post-Incident Report PDF.', 'error');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -207,35 +365,78 @@ export default function EmployeeIncidentDetail() {
     );
   }
 
-  if (!incident) {
+  // Handle errors separately (404/403 vs network)
+  if (isError) {
+    const status = error?.response?.status;
+    if (status === 404 || status === 403) {
+      return (
+        <Box sx={{ maxWidth: 800, mx: 'auto', p: 4, textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ color: COLORS.onSurface, mb: 1 }}>
+            {status === 404 ? 'Incident Record Not Found' : 'Access Restricted'}
+          </Typography>
+          <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 13, mb: 2 }}>
+            {status === 404
+              ? `No incident record was found for ID #${numId}. It may have been removed or you may not have permission to view it.`
+              : 'You do not have permission to inspect this incident record.'}
+          </Typography>
+          <Button onClick={() => navigate('/employee/incidents')} startIcon={<ArrowBackIcon />} sx={{ color: COLORS.secondary }}>
+            Return to My Incidents
+          </Button>
+        </Box>
+      );
+    }
     return (
-      <Box sx={{ maxWidth: 800, mx: 'auto', p: 4, textAlign: 'center' }}>
-        <Typography variant="h6" sx={{ color: COLORS.onSurface, mb: 2 }}>
-          Incident Record Not Found
-        </Typography>
-        <Button
-          onClick={() => navigate('/employee/incidents')}
-          startIcon={<ArrowBackIcon />}
-          sx={{ color: COLORS.secondary }}
-        >
-          Return to My Incidents
-        </Button>
+      <Box sx={{ maxWidth: 800, mx: 'auto', p: 4 }}>
+        <ErrorState onRetry={() => refetch()} message="Failed to load incident details. Please check your connection and retry." />
       </Box>
     );
   }
 
+  if (!incident) return null;
+
+  // Strict allowedActions gating per Guide Section 12 (no permission re-implementation)
   const allowed = (incident.allowedActions || []) as string[];
   const canProvideInfo = allowed.includes('PROVIDE_INFO');
   const canVerify = allowed.includes('VERIFY');
-  const canGiveFeedback = allowed.includes('GIVE_FEEDBACK') || ((incident.status === 'RESOLVED' || incident.status === 'VERIFIED') && !incident.feedback);
+  const canGiveFeedback = allowed.includes('GIVE_FEEDBACK');
   const canReopen = allowed.includes('REOPEN');
   const canWithdraw = allowed.includes('WITHDRAW');
   const canComment = allowed.includes('COMMENT');
+  const canEdit = allowed.includes('EDIT');
+
+  // Find last question asked by technician for highlight
+  const lastQuestion = comments
+    .slice()
+    .reverse()
+    .find((c) => c.visibility === 'PUBLIC');
+
+  // Parcel-style progress tracker steps
+  const steps = ['Reported', 'Assigned', 'In Progress', 'Remediated', 'Verified'];
+  const getActiveStep = () => {
+    switch (incident.status) {
+      case 'NEW':
+      case 'CLASSIFIED':
+        return 0;
+      case 'ASSIGNED':
+      case 'ACKNOWLEDGED':
+        return 1;
+      case 'IN_PROGRESS':
+      case 'PENDING_USER_INFO':
+        return 2;
+      case 'RESOLVED':
+        return 3;
+      case 'VERIFIED':
+      case 'CLOSED':
+        return 4;
+      default:
+        return 0;
+    }
+  };
 
   return (
     <Box sx={{ maxWidth: 1400, mx: 'auto', p: { xs: 2, md: 3 } }}>
       {/* Top Header Bar */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton
             onClick={() => navigate('/employee/incidents')}
@@ -250,18 +451,11 @@ export default function EmployeeIncidentDetail() {
           </IconButton>
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-              <Typography
-                sx={{
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 14,
-                  fontWeight: 800,
-                  color: COLORS.secondary,
-                }}
-              >
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 800, color: COLORS.secondary }}>
                 {incident.code}
               </Typography>
               <PriorityBadge priority={incident.priority} />
-              <StatusChip status={incident.status} />
+              <StatusChip status={incident.status} closureReason={incident.closureReason} />
               {incident.major && (
                 <Chip
                   label="MAJOR OUTAGE"
@@ -276,6 +470,36 @@ export default function EmployeeIncidentDetail() {
                   }}
                 />
               )}
+              {incident.problemId && (
+                <Chip
+                  label={`Problem Record #${incident.problemId}`}
+                  size="small"
+                  sx={{
+                    bgcolor: 'rgba(6, 182, 212, 0.15)',
+                    color: COLORS.secondary,
+                    border: '1px solid rgba(6, 182, 212, 0.35)',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
+                />
+              )}
+              {incident.duplicateOfId && (
+                <Chip
+                  label={`Duplicate of #${incident.duplicateOfId}`}
+                  size="small"
+                  onClick={() => navigate(`/employee/incidents/${incident.duplicateOfId}`)}
+                  sx={{
+                    bgcolor: 'rgba(251, 191, 36, 0.15)',
+                    color: '#fbbf24',
+                    border: '1px solid rgba(251, 191, 36, 0.35)',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                />
+              )}
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mt: 0.5 }}>
               {incident.title}
@@ -283,8 +507,28 @@ export default function EmployeeIncidentDetail() {
           </Box>
         </Box>
 
-        {/* Dynamic Action Buttons based on allowedActions */}
+        {/* Dynamic Action Buttons based strictly on allowedActions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          {canEdit && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setEditDescription(incident.description);
+                setEditOpen(true);
+              }}
+              startIcon={<EditIcon />}
+              sx={{
+                borderColor: COLORS.border,
+                color: COLORS.onSurface,
+                fontSize: 12.5,
+                fontWeight: 600,
+                textTransform: 'none',
+              }}
+            >
+              Edit Details
+            </Button>
+          )}
+
           {canProvideInfo && (
             <Button
               variant="contained"
@@ -347,6 +591,23 @@ export default function EmployeeIncidentDetail() {
             </Button>
           )}
 
+          {(incident.status === 'CLOSED' || incident.status === 'VERIFIED') && (
+            <Button
+              variant="outlined"
+              onClick={() => setPirOpen(true)}
+              startIcon={<PdfIcon sx={{ color: COLORS.secondary }} />}
+              sx={{
+                borderColor: COLORS.border,
+                color: COLORS.secondary,
+                fontSize: 12.5,
+                fontWeight: 600,
+                textTransform: 'none',
+              }}
+            >
+              Post-Incident Report
+            </Button>
+          )}
+
           {canReopen && (
             <Button
               variant="outlined"
@@ -390,9 +651,90 @@ export default function EmployeeIncidentDetail() {
         </Box>
       </Box>
 
+      {/* Parcel-Style Progress Tracker (Guide P3-12) */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          mb: 3,
+          borderRadius: 3,
+          bgcolor: COLORS.surfaceContainer,
+          border: `1px solid ${COLORS.border}`,
+        }}
+      >
+        <Stepper activeStep={getActiveStep()} alternativeLabel>
+          {steps.map((label, idx) => (
+            <Step key={label} completed={getActiveStep() > idx || (getActiveStep() === idx && (incident.status === 'VERIFIED' || incident.status === 'CLOSED'))}>
+              <StepLabel
+                StepIconProps={{
+                  sx: {
+                    '&.Mui-active': { color: COLORS.secondary },
+                    '&.Mui-completed': { color: COLORS.success },
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+                  {label}
+                </Typography>
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Paper>
+
+      {/* Action-Required Question Highlight (Shown when pending clarification) */}
+      {incident.status === 'PENDING_USER_INFO' && lastQuestion && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            mb: 3,
+            borderRadius: 3,
+            bgcolor: 'rgba(247, 81, 161, 0.08)',
+            border: '1px solid rgba(247, 81, 161, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+            <WarningIcon sx={{ color: '#f751a1', fontSize: 24, mt: 0.2 }} />
+            <Box>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#f751a1', textTransform: 'uppercase' }}>
+                Technician Inquiry (SLA Paused)
+              </Typography>
+              <Typography sx={{ fontSize: 13.5, color: '#ffffff', fontWeight: 600, mt: 0.3 }}>
+                "{lastQuestion.body}"
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
+                Asked by {lastQuestion.author?.name || 'Technician'} • {new Date(lastQuestion.createdAt).toLocaleString()}
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="contained"
+            onClick={() => setProvideInfoOpen(true)}
+            startIcon={<ReplyIcon />}
+            sx={{
+              background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 12.5,
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2.5,
+            }}
+          >
+            Answer Question
+          </Button>
+        </Paper>
+      )}
+
       {/* Main Two-Column Layout */}
       <Grid container spacing={3}>
-        {/* Left Column (8 cols): Incident Details & Discussion / History Stream */}
+        {/* Left Column (8 cols): Incident Details & Discussion Stream */}
         <Grid item xs={12} lg={8}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Incident Specification Card */}
@@ -403,7 +745,6 @@ export default function EmployeeIncidentDetail() {
                 borderRadius: 3,
                 bgcolor: COLORS.surfaceContainer,
                 border: `1px solid ${COLORS.border}`,
-                backdropFilter: 'blur(16px)',
               }}
             >
               <Typography
@@ -450,15 +791,45 @@ export default function EmployeeIncidentDetail() {
                       Estimated Affected Users
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.secondary, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
-                      {incident.affectedUsers || 1} User(s)
+                      {incident.affectedUsers ?? 0} User(s)
                     </Typography>
                   </Box>
                 </Grid>
               </Grid>
 
+              {/* Priority Explainer Breakdown */}
+              {incident.priorityBreakdown && (
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <HelpIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
+                    <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
+                      PRIORITY DETERMINATION FORMULA
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                    Impact ({incident.priorityBreakdown.impact}) × Urgency ({incident.priorityBreakdown.urgency}) × Criticality ({incident.priorityBreakdown.criticality}) × Users Multiplier ({incident.priorityBreakdown.usersMultiplier}) = Score {incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})
+                    {incident.priorityBreakdown.overrideRule && ` • Rule: ${incident.priorityBreakdown.overrideRule}`}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Closure Information (when closed/verified) */}
+              {(incident.closureReason || incident.closedAt || incident.reopenCount > 0) && (
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(255, 255, 255, 0.03)', borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
+                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', mb: 0.5 }}>
+                    Lifecycle &amp; Closure Information
+                  </Typography>
+                  <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
+                    Closure Reason: <strong>{incident.closureReason || 'N/A'}</strong>
+                    {incident.reopenCount > 0 && ` • Reopened: ${incident.reopenCount} time(s)`}
+                    {incident.closedAt && ` • Closed At: ${new Date(incident.closedAt).toLocaleString()}`}
+                  </Typography>
+                </Box>
+              )}
+
               {/* Resolution Summary (when resolved) */}
               {incident.resolution && (
-                <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(16, 185, 129, 0.08)', borderRadius: 2, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(16, 185, 129, 0.08)', borderRadius: 2, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <CheckCircleIcon sx={{ fontSize: 18, color: COLORS.success }} />
                     <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.success, fontFamily: 'JetBrains Mono, monospace' }}>
@@ -479,7 +850,7 @@ export default function EmployeeIncidentDetail() {
                 </Box>
               )}
 
-              {/* Existing Feedback Display */}
+              {/* Feedback Record */}
               {incident.feedback && (
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(251, 191, 36, 0.08)', borderRadius: 2, border: '1px solid rgba(251, 191, 36, 0.25)' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -505,7 +876,6 @@ export default function EmployeeIncidentDetail() {
                 borderRadius: 3,
                 bgcolor: COLORS.surfaceContainer,
                 border: `1px solid ${COLORS.border}`,
-                backdropFilter: 'blur(16px)',
               }}
             >
               <Box sx={{ borderBottom: `1px solid ${COLORS.border}`, mb: 2 }}>
@@ -524,24 +894,15 @@ export default function EmployeeIncidentDetail() {
                     '& .MuiTabs-indicator': { bgcolor: COLORS.secondary },
                   }}
                 >
-                  <Tab
-                    icon={<ChatIcon sx={{ fontSize: 16 }} />}
-                    iconPosition="start"
-                    label={`Communications (${comments.length})`}
-                    value="comments"
-                  />
-                  <Tab
-                    icon={<HistoryIcon sx={{ fontSize: 16 }} />}
-                    iconPosition="start"
-                    label={`Audit Trail (${history.length})`}
-                    value="history"
-                  />
+                  <Tab icon={<ChatIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Communications (${comments.length})`} value="comments" />
+                  <Tab icon={<HistoryIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Audit Trail (${history.length})`} value="history" />
+                  <Tab icon={<AttachFileIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Attachments (${attachments.length})`} value="attachments" />
+                  <Tab icon={<TimelineIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Similar Incidents" value="similar" />
                 </Tabs>
               </Box>
 
-              {activeTab === 'comments' ? (
+              {activeTab === 'comments' && (
                 <>
-                  {/* Message History */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
                     {comments.length === 0 ? (
                       <Box sx={{ p: 3, textAlign: 'center', bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
@@ -550,7 +911,7 @@ export default function EmployeeIncidentDetail() {
                         </Typography>
                       </Box>
                     ) : (
-                      comments.map((c: any) => (
+                      comments.map((c: CommentView) => (
                         <Box
                           key={c.id}
                           sx={{
@@ -589,7 +950,6 @@ export default function EmployeeIncidentDetail() {
                     )}
                   </Box>
 
-                  {/* Input for employee to send clarification / note */}
                   {canComment ? (
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                       <TextField
@@ -622,7 +982,6 @@ export default function EmployeeIncidentDetail() {
                           px: 3,
                           py: 1.2,
                           whiteSpace: 'nowrap',
-                          '&:hover': { opacity: 0.9 },
                         }}
                       >
                         Send
@@ -636,8 +995,9 @@ export default function EmployeeIncidentDetail() {
                     </Box>
                   )}
                 </>
-              ) : (
-                /* History Timeline */
+              )}
+
+              {activeTab === 'history' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {history.length === 0 ? (
                     <Box sx={{ p: 3, textAlign: 'center', bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
@@ -646,7 +1006,7 @@ export default function EmployeeIncidentDetail() {
                       </Typography>
                     </Box>
                   ) : (
-                    history.map((h) => (
+                    history.map((h: AuditEntry) => (
                       <Box
                         key={h.id}
                         sx={{
@@ -664,7 +1024,7 @@ export default function EmployeeIncidentDetail() {
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
-                                {h.action}
+                                {ACTION_LABELS[h.action] || h.action}
                               </Typography>
                               {h.actor && (
                                 <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
@@ -690,11 +1050,159 @@ export default function EmployeeIncidentDetail() {
                   )}
                 </Box>
               )}
+
+              {activeTab === 'attachments' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {/* Upload new attachment */}
+                  <Box sx={{ p: 2, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <input
+                        type="file"
+                        id="employee-file-input"
+                        style={{ display: 'none' }}
+                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      />
+                      <label htmlFor="employee-file-input">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          size="small"
+                          startIcon={<AttachFileIcon />}
+                          sx={{ borderColor: COLORS.border, color: COLORS.onSurface, textTransform: 'none' }}
+                        >
+                          Choose File (max 5 MB)
+                        </Button>
+                      </label>
+                      {selectedFile && (
+                        <Typography sx={{ fontSize: 12, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
+                          {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                        </Typography>
+                      )}
+                    </Box>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={!selectedFile || uploadMutation.isPending}
+                      onClick={() => selectedFile && uploadMutation.mutate(selectedFile)}
+                      startIcon={uploadMutation.isPending ? <CircularProgress size={14} /> : <AttachFileIcon />}
+                      sx={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                      }}
+                    >
+                      Upload File
+                    </Button>
+                  </Box>
+
+                  {/* Attachment List */}
+                  {attachments.length === 0 ? (
+                    <Box sx={{ p: 3, textAlign: 'center', bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+                        No attachments uploaded for this incident.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    attachments.map((att: AttachmentView) => (
+                      <Box
+                        key={att.id}
+                        sx={{
+                          p: 1.8,
+                          borderRadius: 2,
+                          bgcolor: COLORS.surfaceContainerLow,
+                          border: `1px solid ${COLORS.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <AttachFileIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
+                          <Box>
+                            <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
+                              {att.filename}
+                            </Typography>
+                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                              {(att.sizeBytes / 1024).toFixed(1)} KB • {att.uploadedBy?.name || 'User'} • {new Date(att.createdAt).toLocaleString()}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Button
+                          size="small"
+                          onClick={() => handleDownloadAttachment(att)}
+                          startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                          sx={{ color: COLORS.secondary, textTransform: 'none', fontSize: 12 }}
+                        >
+                          Download
+                        </Button>
+                      </Box>
+                    ))
+                  )}
+                </Box>
+              )}
+
+              {activeTab === 'similar' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {similarIncidents.length === 0 ? (
+                    <Box sx={{ p: 3, textAlign: 'center', bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+                        No similar active incidents correlated by the AI engine.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    similarIncidents.map((s: SimilarIncidentView) => (
+                      <Box
+                        key={s.incidentId}
+                        onClick={() => navigate(`/employee/incidents/${s.incidentId}`)}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: COLORS.surfaceContainerLow,
+                          border: `1px solid ${COLORS.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
+                        }}
+                      >
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                            <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
+                              {s.code}
+                            </Typography>
+                            {s.match && (
+                              <Chip
+                                label={s.match}
+                                size="small"
+                                sx={{
+                                  fontSize: 9.5,
+                                  height: 18,
+                                  bgcolor: s.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                  color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.primary,
+                                }}
+                              />
+                            )}
+                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                              Similarity: {(s.similarity * 100).toFixed(0)}% ({s.source || 'EMBEDDING'})
+                            </Typography>
+                          </Box>
+                          <Typography sx={{ fontSize: 13, fontWeight: 600, color: COLORS.onSurface }}>
+                            {s.title}
+                          </Typography>
+                        </Box>
+                        <StatusChip status={s.status} />
+                      </Box>
+                    ))
+                  )}
+                </Box>
+              )}
             </Paper>
           </Box>
         </Grid>
 
-        {/* Right Column (4 cols): Resolution SLA & Assigned Squad */}
+        {/* Right Column (4 cols): Resolution SLA & Assigned Technician */}
         <Grid item xs={12} lg={4}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* SLA Clock Bento Card */}
@@ -705,7 +1213,6 @@ export default function EmployeeIncidentDetail() {
                 borderRadius: 3,
                 bgcolor: COLORS.surfaceContainer,
                 border: `1px solid ${COLORS.border}`,
-                backdropFilter: 'blur(16px)',
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -724,19 +1231,32 @@ export default function EmployeeIncidentDetail() {
                     </Typography>
                   </Box>
                 ) : (
-                  <SlaCountdown
-                    due={incident.resolutionDue || incident.responseDue}
-                    createdAt={incident.createdAt}
-                    slaState={incident.slaState}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <SlaCountdown
+                      due={incident.resolutionDue || incident.responseDue}
+                      createdAt={incident.createdAt}
+                      slaState={incident.slaState}
+                    />
+                    <SlaBar
+                      createdAt={incident.createdAt}
+                      due={incident.resolutionDue || incident.responseDue}
+                      slaState={incident.slaState}
+                      height={6}
+                    />
+                  </Box>
                 )}
               </Box>
+              {incident.pausedAt && incident.slaState === 'PAUSED' && (
+                <Typography sx={{ fontSize: 11, color: COLORS.warning, fontFamily: 'JetBrains Mono, monospace', mb: 1 }}>
+                  Paused at: {new Date(incident.pausedAt).toLocaleTimeString()}
+                </Typography>
+              )}
               <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
-                SLA commitments are monitored continuously by the ITIL automation engine. Escalations trigger automatically if thresholds are exceeded.
+                SLA targets are governed by enterprise service policies and tracked against response and resolution windows.
               </Typography>
             </Paper>
 
-            {/* Assigned SRE Team */}
+            {/* Assigned Technician Card */}
             <Paper
               elevation={0}
               sx={{
@@ -744,11 +1264,10 @@ export default function EmployeeIncidentDetail() {
                 borderRadius: 3,
                 bgcolor: COLORS.surfaceContainer,
                 border: `1px solid ${COLORS.border}`,
-                backdropFilter: 'blur(16px)',
               }}
             >
               <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', mb: 2 }}>
-                Assigned Engineering Squad
+                Assigned Technician
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -772,7 +1291,7 @@ export default function EmployeeIncidentDetail() {
                     {incident.assignee?.name || 'Triage Dispatch Queue'}
                   </Typography>
                   <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
-                    {incident.assignee ? 'Level 2 Site Reliability Engineer' : 'Auto-dispatching to on-call squad'}
+                    {incident.assignee ? 'Assigned Engineering Lead' : 'Awaiting assignment'}
                   </Typography>
                 </Box>
               </Box>
@@ -782,7 +1301,7 @@ export default function EmployeeIncidentDetail() {
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                 <InfoOutlinedIcon sx={{ fontSize: 16, color: COLORS.secondary, mt: 0.2 }} />
                 <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
-                  Need immediate escalation? High-impact disruptions are automatically connected to the 24/7 ITIL Incident Command War Room.
+                  Questions regarding this ticket can be posted in the communications tab above.
                 </Typography>
               </Box>
             </Paper>
@@ -809,8 +1328,18 @@ export default function EmployeeIncidentDetail() {
           Provide Requested Information
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+          {lastQuestion && (
+            <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}`, mb: 2 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
+                Technician's Question:
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mt: 0.5 }}>
+                "{lastQuestion.body}"
+              </Typography>
+            </Box>
+          )}
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            The technician paused the SLA clock awaiting your input. Answering will automatically resume the SLA clock and return the ticket to active engineering work.
+            Answering will deliver your response to the technician and resume the SLA clock if user input was the pause condition.
           </Typography>
           <TextField
             fullWidth
@@ -818,7 +1347,7 @@ export default function EmployeeIncidentDetail() {
             rows={4}
             value={provideInfoText}
             onChange={(e) => setProvideInfoText(e.target.value)}
-            placeholder="Type your response, clarification, or requested details..."
+            placeholder="Type your response, clarification, or requested reproduction steps..."
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -843,7 +1372,7 @@ export default function EmployeeIncidentDetail() {
               borderRadius: 2,
             }}
           >
-            Submit &amp; Resume Clock
+            Submit Response
           </Button>
         </DialogActions>
       </Dialog>
@@ -868,7 +1397,7 @@ export default function EmployeeIncidentDetail() {
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', py: 2 }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            How satisfied are you with the timeliness and quality of this resolution?
+            Please select a rating from 1 to 5 stars to evaluate this fix:
           </Typography>
           <Rating
             value={feedbackRating}
@@ -886,7 +1415,7 @@ export default function EmployeeIncidentDetail() {
             rows={3}
             value={feedbackComment}
             onChange={(e) => setFeedbackComment(e.target.value)}
-            placeholder="Optional comments on the engineer's service..."
+            placeholder="Optional feedback on resolution quality or timeliness..."
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -937,7 +1466,7 @@ export default function EmployeeIncidentDetail() {
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            If the problem recurred or the fix was incomplete, please explain why the ticket needs to be reopened.
+            If the problem recurred or the fix was incomplete, please explain why the ticket needs to be reopened (minimum 10 characters).
           </Typography>
           <TextField
             fullWidth
@@ -945,7 +1474,7 @@ export default function EmployeeIncidentDetail() {
             rows={3}
             value={reopenReason}
             onChange={(e) => setReopenReason(e.target.value)}
-            placeholder="Reason for reopening..."
+            placeholder="Reason for reopening (min 10 characters)..."
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -959,7 +1488,7 @@ export default function EmployeeIncidentDetail() {
           </Button>
           <Button
             variant="contained"
-            disabled={reopenReason.trim().length < 10 || reopenMutation.isPending}
+            disabled={!reasonRule.safeParse(reopenReason.trim()).success || reopenMutation.isPending}
             onClick={() => reopenMutation.mutate(reopenReason.trim())}
             startIcon={reopenMutation.isPending ? <CircularProgress size={16} /> : <RestartAltIcon />}
             sx={{
@@ -971,7 +1500,7 @@ export default function EmployeeIncidentDetail() {
               '&:hover': { bgcolor: '#d97706' },
             }}
           >
-            Reopen Ticket {reopenReason.trim().length > 0 && reopenReason.trim().length < 10 ? `(${10 - reopenReason.trim().length} more chars)` : ''}
+            Reopen Ticket {reopenReason.trim().length < 10 ? `(${10 - reopenReason.trim().length} more chars)` : ''}
           </Button>
         </DialogActions>
       </Dialog>
@@ -996,7 +1525,7 @@ export default function EmployeeIncidentDetail() {
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            Are you sure you want to withdraw this incident? The report will be closed as WITHDRAWN.
+            Are you sure you want to withdraw this incident? The report will transition to WITHDRAWN status (minimum 10 characters reason required).
           </Typography>
           <TextField
             fullWidth
@@ -1018,7 +1547,7 @@ export default function EmployeeIncidentDetail() {
           </Button>
           <Button
             variant="contained"
-            disabled={withdrawReason.trim().length < 10 || withdrawMutation.isPending}
+            disabled={!reasonRule.safeParse(withdrawReason.trim()).success || withdrawMutation.isPending}
             onClick={() => withdrawMutation.mutate(withdrawReason.trim())}
             startIcon={withdrawMutation.isPending ? <CircularProgress size={16} /> : <CancelIcon />}
             sx={{
@@ -1030,7 +1559,7 @@ export default function EmployeeIncidentDetail() {
               '&:hover': { bgcolor: '#dc2626' },
             }}
           >
-            Withdraw Report {withdrawReason.trim().length > 0 && withdrawReason.trim().length < 10 ? `(${10 - withdrawReason.trim().length} more chars)` : ''}
+            Withdraw Report {withdrawReason.trim().length < 10 ? `(${10 - withdrawReason.trim().length} more chars)` : ''}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1077,6 +1606,134 @@ export default function EmployeeIncidentDetail() {
             }}
           >
             Confirm &amp; Verify
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DIALOG 6: Edit Incident (PUT /incidents/{id}) */}
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
+          Edit Incident Details
+        </DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+          <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
+            Update the incident description and diagnostic details:
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={5}
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            sx={{
+              bgcolor: COLORS.surfaceContainerLowest,
+              borderRadius: 2,
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setEditOpen(false)} sx={{ color: COLORS.onSurfaceVariant, textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!editDescription.trim() || editMutation.isPending}
+            onClick={() => editMutation.mutate()}
+            startIcon={editMutation.isPending ? <CircularProgress size={16} /> : <EditIcon />}
+            sx={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+              color: '#ffffff',
+              fontWeight: 700,
+              textTransform: 'none',
+            }}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DIALOG 7: Post-Incident Report Modal */}
+      <Dialog
+        open={pirOpen}
+        onClose={() => setPirOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${COLORS.border}`,
+            color: COLORS.onSurface,
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+            Post-Incident Report // {incident.code}
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleDownloadPdf}
+            startIcon={<PdfIcon />}
+            sx={{ borderColor: COLORS.border, color: COLORS.secondary, textTransform: 'none' }}
+          >
+            Download PDF
+          </Button>
+        </DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+          {pirLoading ? (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <CircularProgress size={24} sx={{ color: COLORS.secondary }} />
+            </Box>
+          ) : pirData ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ p: 2, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: COLORS.onSurface, mb: 0.5 }}>
+                  {pirData.title}
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                  Generated on {new Date(pirData.generatedAt).toLocaleString()} • Duration: {pirData.totalSeconds ? `${Math.round(pirData.totalSeconds / 60)} minutes` : 'N/A'}
+                </Typography>
+              </Box>
+
+              {pirData.resolution && (
+                <Box sx={{ p: 2, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.success, fontFamily: 'JetBrains Mono, monospace', mb: 1 }}>
+                    RESOLUTION SUMMARY
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 0.5 }}>
+                    <strong>Root Cause:</strong> {pirData.resolution.rootCause}
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                    <strong>Remediation:</strong> {pirData.resolution.steps || pirData.resolution.notes}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+              Report details currently being generated by the system.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setPirOpen(false)} sx={{ color: COLORS.onSurfaceVariant, textTransform: 'none' }}>
+            Close
           </Button>
         </DialogActions>
       </Dialog>

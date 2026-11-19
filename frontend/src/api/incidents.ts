@@ -13,6 +13,11 @@ import type {
   StatusBoard,
   WhatIfView,
   UpdateIncidentRequest,
+  SavedFilterRequest,
+  SavedFilterView,
+  SimilarIncidentView,
+  PostIncidentReport,
+  SlaState,
 } from './types';
 
 export type IncidentFilters = Partial<{
@@ -25,7 +30,7 @@ export type IncidentFilters = Partial<{
   serviceId: number;
   assigneeId: number;
   reporterId: number;
-  slaState: string;
+  slaState: SlaState | string;
   createdFrom: string;
   createdTo: string;
   mine: boolean;
@@ -194,5 +199,36 @@ export const priorityWhatIf = async (body: {
   affectedUsers: number;
 }): Promise<WhatIfView> => {
   const res = await api.post<WhatIfView>('/priority/what-if', body);
+  return res.data;
+};
+
+export const listSavedFilters = async (): Promise<SavedFilterView[]> => {
+  const res = await api.get<SavedFilterView[]>('/saved-filters');
+  return res.data;
+};
+
+export const createSavedFilter = async (body: SavedFilterRequest): Promise<SavedFilterView> => {
+  const res = await api.post<SavedFilterView>('/saved-filters', body);
+  return res.data;
+};
+
+export const deleteSavedFilter = async (id: number): Promise<void> => {
+  await api.delete(`/saved-filters/${id}`);
+};
+
+export const getSimilarIncidents = async (id: number): Promise<SimilarIncidentView[]> => {
+  const res = await api.get<SimilarIncidentView[]>(`/incidents/${id}/similar`);
+  return res.data;
+};
+
+export const getPostIncidentReport = async (id: number): Promise<PostIncidentReport> => {
+  const res = await api.get<PostIncidentReport>(`/incidents/${id}/post-incident-report`);
+  return res.data;
+};
+
+export const downloadPostIncidentReportPdf = async (id: number): Promise<Blob> => {
+  const res = await api.get<Blob>(`/incidents/${id}/post-incident-report/pdf`, {
+    responseType: 'blob',
+  });
   return res.data;
 };

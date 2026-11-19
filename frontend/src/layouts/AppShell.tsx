@@ -1,5 +1,5 @@
 import type { ElementType } from 'react';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -22,6 +22,8 @@ import {
   InputBase,
   Tooltip,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -60,6 +62,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth, Workspace, HOME } from '../auth/AuthContext';
 import { NAV } from './navConfig';
 import { unreadCount } from '../api/notifications';
+import ConnectionBanner from '../components/ConnectionBanner';
 import logoIcon from '../assets/logo.png';
 
 const WS_LABEL: Record<Workspace, string> = {
@@ -98,6 +101,7 @@ const NAV_ICONS: Record<string, ElementType> = {
   'Home': HomeIcon,
   'Report incident': ReportProblemIcon,
   'My incidents': ConfirmationNumberIcon,
+  'Service status': DnsIcon,
   'Notifications': NotificationsIcon,
   'My queue': AssignmentIcon,
   'Workbench': TerminalIcon,
@@ -127,11 +131,41 @@ export default function AppShell() {
   const { data: unread = 0 } = useQuery({ queryKey: ['unread'], queryFn: unreadCount });
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accountAnchorEl, setAccountAnchorEl] = useState<null | HTMLElement>(null);
   const [workspaceAnchorEl, setWorkspaceAnchorEl] = useState<null | HTMLElement>(null);
   const isWorkspaceMenuOpen = Boolean(workspaceAnchorEl);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+    const q = encodeURIComponent(searchQuery.trim());
+    if (activeWorkspace === 'employee') {
+      navigate(`/employee/incidents?q=${q}`);
+    } else if (activeWorkspace === 'tech') {
+      navigate(`/tech/queue?q=${q}`);
+    } else if (activeWorkspace === 'lead') {
+      navigate(`/lead/team-queue?q=${q}`);
+    } else {
+      navigate(`/admin/tickets?q=${q}`);
+    }
+  };
 
   const handleWorkspaceClick = (event: React.MouseEvent<HTMLElement>) => {
     setWorkspaceAnchorEl(event.currentTarget);
@@ -199,13 +233,19 @@ export default function AppShell() {
         <Toolbar sx={{ minHeight: '64px !important', px: { xs: 2, sm: 3 }, gap: 2 }}>
           {/* Logo & Platform Name */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-            <Tooltip title={sidebarOpen ? 'Collapse navigation sidebar' : 'Expand navigation sidebar'}>
+            <Tooltip title={(isMobile ? mobileOpen : sidebarOpen) ? 'Collapse navigation sidebar' : 'Expand navigation sidebar'}>
               <IconButton
-                onClick={() => setSidebarOpen((prev) => !prev)}
+                onClick={() => {
+                  if (isMobile) {
+                    setMobileOpen((prev) => !prev);
+                  } else {
+                    setSidebarOpen((prev) => !prev);
+                  }
+                }}
                 size="small"
                 aria-label="Toggle navigation sidebar"
                 sx={{
-                  color: sidebarOpen ? '#94a3b8' : '#4cd7f6',
+                  color: (isMobile ? mobileOpen : sidebarOpen) ? '#94a3b8' : '#4cd7f6',
                   bgcolor: 'rgba(18, 22, 34, 0.8)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                   width: 36,
@@ -220,7 +260,7 @@ export default function AppShell() {
                   },
                 }}
               >
-                {sidebarOpen ? <MenuOpenIcon sx={{ fontSize: 20 }} /> : <MenuIcon sx={{ fontSize: 20 }} />}
+                {(isMobile ? mobileOpen : sidebarOpen) ? <MenuOpenIcon sx={{ fontSize: 20 }} /> : <MenuIcon sx={{ fontSize: 20 }} />}
               </IconButton>
             </Tooltip>
 
@@ -313,8 +353,10 @@ export default function AppShell() {
            {/* removed the serv engine armed want the latency one to be chnaged here*/}
           </Box>
 
-          {/* Quick Telemetry / Runbook Search Bar */}
+          {/* Incident Quick Search Bar */}
           <Box
+            component="form"
+            onSubmit={handleSearchSubmit}
             sx={{
               display: { xs: 'none', md: 'flex' },
               alignItems: 'center',
@@ -334,7 +376,8 @@ export default function AppShell() {
           >
             <SearchIcon sx={{ fontSize: 18, color: '#908fa0' }} />
             <InputBase
-              placeholder="Search telemetry, nodes..."
+              inputRef={searchInputRef}
+              placeholder="Search incidents, code, title..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
@@ -345,20 +388,25 @@ export default function AppShell() {
                 '& input::placeholder': { color: '#64748b', opacity: 1 },
               }}
             />
-            <Box
-              sx={{
-                bgcolor: 'rgba(255, 255, 255, 0.06)',
-                borderRadius: '4px',
-                px: 0.8,
-                py: 0.2,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#94a3b8' }}>
-                ⌘K
-              </Typography>
-            </Box>
+            <Tooltip title="Press Enter to search, or ⌘K / Ctrl+K to focus">
+              <Box
+                onClick={() => handleSearchSubmit()}
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.06)',
+                  borderRadius: '4px',
+                  px: 0.8,
+                  py: 0.2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
+                }}
+              >
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#94a3b8' }}>
+                  ⌘K
+                </Typography>
+              </Box>
+            </Tooltip>
           </Box>
 
           <Box sx={{ flexGrow: 1 }} />
@@ -573,7 +621,7 @@ export default function AppShell() {
                   lineHeight: 1.2,
                 }}
               >
-                {user?.roles?.[0] ? user.roles[0].replace('_', ' ') : 'MEMBER'}
+                {WORKSPACE_META[activeWorkspace]?.label || WS_LABEL[activeWorkspace] || 'WORKSPACE'}
               </Typography>
             </Box>
             <Avatar
@@ -602,6 +650,7 @@ export default function AppShell() {
             <MenuItem onClick={() => { setAccountAnchorEl(null); navigate('/notifications'); }}>Notification preferences</MenuItem>
             <Divider />
             <MenuItem onClick={() => { setAccountAnchorEl(null); signOut(); }}>Sign out</MenuItem>
+            <MenuItem onClick={() => { setAccountAnchorEl(null); signOut(); }}>Sign out everywhere</MenuItem>
           </Menu>
 
           {/* Logout Button */}
@@ -633,103 +682,145 @@ export default function AppShell() {
 
       </AppBar>
 
-      {/* Modern Side Navigation Drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: sidebarOpen ? DRAWER_WIDTH : 0,
-          flexShrink: 0,
-          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-            borderRight: '1px solid rgba(255, 255, 255, 0.06)',
-            bgcolor: '#0a0e17',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            zIndex: 10,
-            overflowX: 'hidden',
-            overflowY: 'auto',
-            transform: sidebarOpen ? 'translateX(0)' : `translateX(-${DRAWER_WIDTH}px)`,
-            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          },
-        }}
-      >
-        <Box>
-          <Toolbar sx={{ minHeight: '64px !important' }} />
-          <Box sx={{ px: 2, py: 2 }}>
-            <Typography
+      {/* Drawer Content */}
+      {(() => {
+        const drawerContent = (
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box>
+              <Toolbar sx={{ minHeight: '64px !important' }} />
+              <Box sx={{ px: 2, py: 2 }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    px: 1.2,
+                    mb: 1.2,
+                  }}
+                >
+                  {activeWorkspace.toUpperCase()} CONSOLE
+                </Typography>
+                <List disablePadding>
+                  {navItems.map((item) => {
+                    const RawIcon = NAV_ICONS[item.label] || DashboardIcon;
+                    const IconComp = (RawIcon && (RawIcon as any).default) ? (RawIcon as any).default : RawIcon;
+                    const isExact = location.pathname === item.to;
+                    const isSubRoute =
+                      item.to !== '/' &&
+                      item.to !== '/employee/home' &&
+                      item.to !== '/admin/dashboard' &&
+                      location.pathname.startsWith(item.to + '/');
+                    const isActive = isExact || isSubRoute;
+
+                    return (
+                      <ListItemButton
+                        key={item.to}
+                        component={NavLink}
+                        to={item.to}
+                        onClick={() => {
+                          if (isMobile) setMobileOpen(false);
+                        }}
+                        sx={{
+                          borderRadius: '8px',
+                          mb: 0.6,
+                          py: 0.9,
+                          px: 1.4,
+                          color: isActive ? '#ffffff' : '#94a3b8',
+                          background: isActive
+                            ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(6, 182, 212, 0.12) 100%)'
+                            : 'transparent',
+                          border: isActive
+                            ? '1px solid rgba(99, 102, 241, 0.35)'
+                            : '1px solid transparent',
+                          fontWeight: isActive ? 600 : 500,
+                          transition: 'all 0.18s ease-in-out',
+                          boxShadow: isActive ? '0 0 16px rgba(99, 102, 241, 0.15)' : 'none',
+                          '&:hover': {
+                            bgcolor: isActive ? undefined : 'rgba(255, 255, 255, 0.04)',
+                            color: '#dfe2ef',
+                            borderColor: isActive ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.08)',
+                          },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 30,
+                            color: isActive ? '#4cd7f6' : '#64748b',
+                            transition: 'color 0.18s ease',
+                          }}
+                        >
+                          <IconComp sx={{ fontSize: 18 }} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.label}
+                          primaryTypographyProps={{
+                            fontSize: 13,
+                            fontWeight: isActive ? 600 : 500,
+                            fontFamily: 'Geist, sans-serif',
+                          }}
+                        />
+                      </ListItemButton>
+                    );
+                  })}
+                </List>
+              </Box>
+            </Box>
+          </Box>
+        );
+
+        return (
+          <>
+            {/* Mobile Temporary Drawer */}
+            <Drawer
+              variant="temporary"
+              open={mobileOpen}
+              onClose={() => setMobileOpen(false)}
+              ModalProps={{ keepMounted: true }}
               sx={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 10,
-                fontWeight: 700,
-                color: '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                px: 1.2,
-                mb: 1.2,
+                display: { xs: 'block', sm: 'none' },
+                '& .MuiDrawer-paper': {
+                  width: DRAWER_WIDTH,
+                  bgcolor: '#0a0e17',
+                  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+                  boxSizing: 'border-box',
+                },
               }}
             >
-              {activeWorkspace.toUpperCase()} CONSOLE
-            </Typography>
-            <List disablePadding>
-              {navItems.map((item) => {
-                const RawIcon = NAV_ICONS[item.label] || DashboardIcon;
-                const IconComp = (RawIcon && (RawIcon as any).default) ? (RawIcon as any).default : RawIcon;
-                const isActive = location.pathname === item.to;
-                return (
-                  <ListItemButton
-                    key={item.to}
-                    component={NavLink}
-                    to={item.to}
-                    sx={{
-                      borderRadius: '8px',
-                      mb: 0.6,
-                      py: 0.9,
-                      px: 1.4,
-                      color: isActive ? '#ffffff' : '#94a3b8',
-                      background: isActive
-                        ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(6, 182, 212, 0.12) 100%)'
-                        : 'transparent',
-                      border: isActive
-                        ? '1px solid rgba(99, 102, 241, 0.35)'
-                        : '1px solid transparent',
-                      fontWeight: isActive ? 600 : 500,
-                      transition: 'all 0.18s ease-in-out',
-                      boxShadow: isActive ? '0 0 16px rgba(99, 102, 241, 0.15)' : 'none',
-                      '&:hover': {
-                        bgcolor: isActive ? undefined : 'rgba(255, 255, 255, 0.04)',
-                        color: '#dfe2ef',
-                        borderColor: isActive ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.08)',
-                      },
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 30,
-                        color: isActive ? '#4cd7f6' : '#64748b',
-                        transition: 'color 0.18s ease',
-                      }}
-                    >
-                      <IconComp sx={{ fontSize: 18 }} />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.label}
-                      primaryTypographyProps={{
-                        fontSize: 13,
-                        fontWeight: isActive ? 600 : 500,
-                        fontFamily: 'Geist, sans-serif',
-                      }}
-                    />
-                  </ListItemButton>
-                );
-              })}
-            </List>
-          </Box>
-        </Box>
+              {drawerContent}
+            </Drawer>
 
-      </Drawer>
+            {/* Desktop Permanent Drawer */}
+            <Drawer
+              variant="permanent"
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                width: sidebarOpen ? DRAWER_WIDTH : 0,
+                flexShrink: 0,
+                transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                '& .MuiDrawer-paper': {
+                  width: DRAWER_WIDTH,
+                  boxSizing: 'border-box',
+                  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+                  bgcolor: '#0a0e17',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  zIndex: 10,
+                  overflowX: 'hidden',
+                  overflowY: 'auto',
+                  transform: sidebarOpen ? 'translateX(0)' : `translateX(-${DRAWER_WIDTH}px)`,
+                  transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                },
+              }}
+            >
+              {drawerContent}
+            </Drawer>
+          </>
+        );
+      })()}
 
       {/* Main Content Area */}
       <Box
@@ -746,6 +837,7 @@ export default function AppShell() {
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important' }} />
+        <ConnectionBanner />
         <Outlet />
       </Box>
     </Box>
