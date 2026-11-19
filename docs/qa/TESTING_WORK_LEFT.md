@@ -13,6 +13,20 @@
 - **Backend test count, not reconciled.** `backend/src/test` has 56 `@Test` methods in 13 files on `shared/main`. `SeedCompatibilityTest` (2) runs only when `VERIFY_DEMO_SEEDS=true`, so a normal run should give 54. [TEST_REPORT.md](TEST_REPORT.md) says 53 run. Check the Surefire XML before the report is handed over.
 - **Still open, from PR #46:** R6 (reset time and fresh clone on the recording laptop); the visual check that script text renders safely; rehearsing and recording the demo; branch protection (repository owner, R8); the two missing unit-test classes; frontend screen tests (R10).
 
+**What is left now (2026-11-19), in order.** This list replaces the older summary table below, which is kept as history (its R9 and R11 rows are out of date).
+
+| # | Item | What is left | Who |
+|---|---|---|---|
+| 1 | R6 reset time, fresh clone | Time the demo reset and a fresh-clone setup on the recording laptop; replace "unmeasured" in `deploy/README.md`; re-check the JDK runtime image from `50794aa`. | Testing |
+| 2 | R11 unit-test classes (10 of 12) | Add `IncidentStateTest` (every state and action; invalid moves throw `InvalidStateTransitionException`) and `ExceptionMappingTest` (each `ItsmException` subclass gives its code and HTTP status, Appendix B.2). | Testing |
+| 3 | R10 frontend tests (7 tests) | Screen tests for Audit Verify & Seal (#36), forgot/reset password and two-step login (#37), Problems / Major Incident (#38), Reports (#39), and the round-3 screens once merged (simulator, admin settings, service graph). | Testing, with the Frontend Developer |
+| 4 | A7 load test | Run it and record the numbers; the index review and scale-out path are already in `backend/docs/SCALING.md`. | Testing |
+| 5 | R5 demo | Fill the dry-run log in `DEMO_RUN_SHEET.md`, rehearse, record. | Testing, whole team |
+| 6 | R3 / R7 evidence | Browser check that script text renders safely (check 4); per-case evidence; re-run the 26 cases on the final commit; reconcile the 53 vs 54 test count. | Testing |
+| 7 | R8 repo settings | Create `severity:*` and `area:*` labels (0 today); verify the project board; branch protection on `main` (404 today) needs the repository owner. | Testing; owner for protection |
+
+Done: R1, R2, R4, R9.
+
 Checked with git, grep and `gh` on `main` at `2bd1c61`. Since 2026-11-15 no commit has touched `backend/src/test`, `docs/qa`, `db`, `.github` or the Postman collection. The only change under `deploy/` is `deploy/backend.Dockerfile` in `50794aa` (Sanay: CRLF fix for `mvnw`, runtime image JRE → JDK). Re-check it on a fresh build (R6).
 
 CI: six jobs per run (frontend build, frontend tests, backend tests with PostgreSQL migrations, seed integrity dev and demo, demo stack and snapshot round trip). Green on every PR merged on 2026-11-18 (#34 to #40).
