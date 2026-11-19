@@ -29,7 +29,18 @@ From commits `1f351c2` (PR #15/#16), `1ea86cc` (new design and theme) and `50794
 
 To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines. The round 2 rows (tech SLA, Dashboard) were removed here on 2026-11-19: both are merged (PR #42 and #43, section 4).
 
-Nothing claimed right now. Round 3 (#48 to #51) is merged and listed in section 4.
+**Sanay: please avoid these files until the round-4 PRs merge, or tell the supervisor which ones you need.**
+
+Round 4 claims (2026-11-19). Each helper edits only the files listed; shared files are touched only in a few added lines.
+
+| Area | Who | Files it changes | Checklist items | Status |
+|---|---|---|---|---|
+| Technician screens (fe-tech-r4) | fe-tech-r4 | `features/technician/*`, `components/SlaCountdown.tsx`, `api/technicians.ts` | F2 TechWorkbench, F1 TechQueue, F0 (technician files), F3, technician items of F6 | In progress |
+| Team lead screens (fe-lead-r4) | fe-lead-r4 | `features/lead/*`, `features/admin/AdminIncidentDetail.tsx` | F4 TeamQueue, F5 Escalations, G4 Admin incident detail, lead items of F6, G14 admin-detail actions and intelligence tools | In progress |
+| Admin management (fe-admin-mgmt-r4) | fe-admin-mgmt-r4 | `Users.tsx`, `SlaPolicies.tsx`, `Services.tsx` | G5 Users, G8 SLA policies, G6 Services, G14 technician management and user edit/MFA reset, G10 technician skills | In progress |
+| Tickets and cross-cutting (fe-tickets-r4) | fe-tickets-r4 | `Tickets.tsx`, `AllIncidents.tsx`, `Categories.tsx`, `Config.tsx`, routes, layouts, shared components, `api/types.ts`, `api/client.ts`, `realtime/*` | G3 Tickets, G1 cross-cutting, G0 routing, G10, G11, E9, shared create dialog, useRealtime 4001 | In progress |
+
+Round 3 (#48 to #51) is merged and listed in section 4.
 
 ## 4. Done by helpers
 
@@ -70,4 +81,5 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 | 2026-11-19 | Claims added for fe-service-graph (G7 and G14 graph/impact) and fe-admin-leftovers (G12, G13, G2 leftovers, G14 devices, alerts and Prometheus/Grafana). Testing PR #46 (`638e42b`) recorded in `docs/qa/TESTING_WORK_LEFT.md`: R9 done (lint in CI); R3, R5, R7, R10 and R11 partly done (10 of 12 unit-test classes). |
 | 2026-11-19 | Docs PR (round 3 claims): checked Sanay's `39db8c3` against the code. Three wrong ticks undone in `FRONTEND_WORK_LEFT.md` (device push functions unused by screens; ReportIncident still has 21 font sizes under 12 px; notifications devices), font-size count noted (346 to 384). G14 live dashboard and post-incident report ticked; service status board marked Partly done (graph and impact unused). Checklist now 448 of 636 done (70.4%). Section 3: round 2 rows removed (merged); claimed fe-simulator (G14 S1 and demo controls) and fe-admin-settings (G9, G10, G11, and their G14 items). |
 | 2026-11-19 | Completed comprehensive technical and contract work across Technician (F1, F2, F3), Team Lead (F4, F5), and Admin management (G1, G3, G4): dual SLA timers, server pagination, chronological unified timelines, escalationPreview countdowns, whole problem resolution, mark duplicate, PriorityExplainer, attachments, PDF exports, recommendations, real CSV export, and `<ConfirmDialog>` integrations. Checklist advances past target to 449 of 636 done (70.6%). |
+| 2026-11-19 | Round 4 claims added to section 3 for four helpers: fe-tech-r4, fe-lead-r4, fe-admin-mgmt-r4, fe-tickets-r4. Each lists the files it changes and its checklist items. Sanay asked to avoid those files until the round-4 PRs merge. No checklist ticks in this entry. |
 | 2026-11-19 | Round 3 merged to `main`: #48 simulator and demo controls, #49 service graph, #50 admin settings, #51 admin leftovers. The four claims moved from section 3 to section 4. `FRONTEND_WORK_LEFT.md` rechecked against `shared/main`: 33 boxes ticked, 43 lines edited (notes, ticks or one wording change); checklist now 481 of 636 done (75.6%), 155 open. |
