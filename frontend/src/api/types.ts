@@ -1,4 +1,5 @@
 // Mirrors Appendix C of the handbook. Keep in sync with the OpenAPI file.
+/** There is no TEAM_LEAD role: a team lead is a TECHNICIAN whose `technician.escalationLevel` is 1 (see AuthContext). */
 export type RoleType = 'EMPLOYEE' | 'TECHNICIAN' | 'ADMINISTRATOR';
 export type IncidentStatus = 'NEW'|'CLASSIFIED'|'ASSIGNED'|'ACKNOWLEDGED'|'IN_PROGRESS'|'PENDING_USER_INFO'|'RESOLVED'|'VERIFIED'|'CLOSED'|'REOPENED';
 export type Priority = 'P1'|'P2'|'P3'|'P4';
@@ -27,6 +28,7 @@ export type NotificationChannel = 'EMAIL' | 'IN_APP' | 'SLACK' | 'SMS' | 'PUSH' 
 export interface Ref { id: number; name: string }
 export interface CurrentUser {
   id: number; name: string; email: string; roles: RoleType[]; permissions: string[];
+  /** `escalationLevel` is 0 or 1 for technicians (1 = team lead); incidents themselves use 0 to 3. */
   technician: { escalationLevel: number; availability: Availability | string } | null;
   administrator: { scope: string } | null;
 }
