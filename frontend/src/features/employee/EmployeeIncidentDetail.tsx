@@ -82,22 +82,23 @@ import { ErrorState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
 import { errorMessage } from '../../utils/errors';
 import { reasonRule } from '../../utils/validation';
+import { tokens, slaStateColor } from '../../theme/theme';
 
 const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  secondary: '#06b6d4',
-  error: '#f43f5e',
-  warning: '#f59e0b',
-  success: '#10b981',
+  surface: tokens.background,
+  surfaceContainerLowest: tokens.surfaceContainerLowest,
+  surfaceContainerLow: tokens.surfaceContainerLow,
+  surfaceContainer: tokens.surfaceContainer,
+  surfaceContainerHigh: tokens.surfaceContainerHigh,
+  surfaceContainerHighest: tokens.surfaceContainerHighest,
+  onSurface: tokens.onSurface,
+  onSurfaceVariant: tokens.onSurfaceVariant,
+  border: tokens.outlineVariant,
+  primary: tokens.primary,
+  secondary: tokens.secondary,
+  error: slaStateColor.VIOLATED,
+  warning: slaStateColor.AT_RISK,
+  success: slaStateColor.MET,
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -466,7 +467,7 @@ export default function EmployeeIncidentDetail() {
                     border: '1px solid rgba(244, 63, 94, 0.4)',
                     fontFamily: 'JetBrains Mono, monospace',
                     fontWeight: 800,
-                    fontSize: 10,
+                    fontSize: 12,
                   }}
                 />
               )}
@@ -479,7 +480,7 @@ export default function EmployeeIncidentDetail() {
                     color: COLORS.secondary,
                     border: '1px solid rgba(6, 182, 212, 0.35)',
                     fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 700,
                   }}
                 />
@@ -494,7 +495,7 @@ export default function EmployeeIncidentDetail() {
                     color: '#fbbf24',
                     border: '1px solid rgba(251, 191, 36, 0.35)',
                     fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 700,
                     cursor: 'pointer',
                   }}
@@ -702,13 +703,13 @@ export default function EmployeeIncidentDetail() {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
             <WarningIcon sx={{ color: '#f751a1', fontSize: 24, mt: 0.2 }} />
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#f751a1', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#f751a1', textTransform: 'uppercase' }}>
                 Technician Inquiry (SLA Paused)
               </Typography>
               <Typography sx={{ fontSize: 13.5, color: '#ffffff', fontWeight: 600, mt: 0.3 }}>
                 "{lastQuestion.body}"
               </Typography>
-              <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                 Asked by {lastQuestion.author?.name || 'Technician'} • {new Date(lastQuestion.createdAt).toLocaleString()}
               </Typography>
             </Box>
@@ -752,7 +753,7 @@ export default function EmployeeIncidentDetail() {
                 sx={{
                   fontFamily: 'JetBrains Mono, monospace',
                   color: COLORS.onSurfaceVariant,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   mb: 1.5,
@@ -767,7 +768,7 @@ export default function EmployeeIncidentDetail() {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                       Impacted Service
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mt: 0.5 }}>
@@ -777,7 +778,7 @@ export default function EmployeeIncidentDetail() {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                       Category Scope
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mt: 0.5 }}>
@@ -787,7 +788,7 @@ export default function EmployeeIncidentDetail() {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                       Estimated Affected Users
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.secondary, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
@@ -802,7 +803,7 @@ export default function EmployeeIncidentDetail() {
                 <Box sx={{ mt: 2.5, p: 2, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <HelpIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
-                    <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
                       PRIORITY DETERMINATION FORMULA
                     </Typography>
                   </Box>
@@ -816,7 +817,7 @@ export default function EmployeeIncidentDetail() {
               {/* Closure Information (when closed/verified) */}
               {(incident.closureReason || incident.closedAt || incident.reopenCount > 0) && (
                 <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(255, 255, 255, 0.03)', borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', mb: 0.5 }}>
                     Lifecycle &amp; Closure Information
                   </Typography>
                   <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
@@ -843,7 +844,7 @@ export default function EmployeeIncidentDetail() {
                     <strong>Remediation Steps:</strong> {incident.resolution.steps || incident.resolution.notes}
                   </Typography>
                   {incident.resolution.resolvedBy && (
-                    <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, mt: 1, fontFamily: 'JetBrains Mono, monospace' }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 1, fontFamily: 'JetBrains Mono, monospace' }}>
                       Resolved by: {incident.resolution.resolvedBy.name} • {incident.resolution.timeSpentMinutes} mins spent
                     </Typography>
                   )}
@@ -931,14 +932,14 @@ export default function EmployeeIncidentDetail() {
                                 size="small"
                                 sx={{
                                   height: 18,
-                                  fontSize: 9.5,
+                                  fontSize: 12,
                                   fontFamily: 'JetBrains Mono, monospace',
                                   bgcolor: COLORS.surfaceContainerHighest,
                                   color: COLORS.onSurfaceVariant,
                                 }}
                               />
                             </Box>
-                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
                               {new Date(c.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
                             </Typography>
                           </Box>
@@ -1027,12 +1028,12 @@ export default function EmployeeIncidentDetail() {
                                 {ACTION_LABELS[h.action] || h.action}
                               </Typography>
                               {h.actor && (
-                                <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                                   by {h.actor.name}
                                 </Typography>
                               )}
                             </Box>
-                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
                               {new Date(h.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
                             </Typography>
                           </Box>
@@ -1040,7 +1041,7 @@ export default function EmployeeIncidentDetail() {
                             {h.description}
                           </Typography>
                           {(h.previousState || h.newState) && (
-                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.5 }}>
+                            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.5 }}>
                               {h.previousState ? `${h.previousState} ➔ ` : ''}{h.newState}
                             </Typography>
                           )}
@@ -1123,7 +1124,7 @@ export default function EmployeeIncidentDetail() {
                             <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
                               {att.filename}
                             </Typography>
-                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
                               {(att.sizeBytes / 1024).toFixed(1)} KB • {att.uploadedBy?.name || 'User'} • {new Date(att.createdAt).toLocaleString()}
                             </Typography>
                           </Box>
@@ -1177,14 +1178,14 @@ export default function EmployeeIncidentDetail() {
                                 label={s.match}
                                 size="small"
                                 sx={{
-                                  fontSize: 9.5,
+                                  fontSize: 12,
                                   height: 18,
                                   bgcolor: s.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
                                   color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.primary,
                                 }}
                               />
                             )}
-                            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+                            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
                               Similarity: {(s.similarity * 100).toFixed(0)}% ({s.source || 'EMBEDDING'})
                             </Typography>
                           </Box>
@@ -1216,7 +1217,7 @@ export default function EmployeeIncidentDetail() {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Target Resolution SLA
                 </Typography>
                 <HourglassEmptyIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
@@ -1247,11 +1248,11 @@ export default function EmployeeIncidentDetail() {
                 )}
               </Box>
               {incident.pausedAt && incident.slaState === 'PAUSED' && (
-                <Typography sx={{ fontSize: 11, color: COLORS.warning, fontFamily: 'JetBrains Mono, monospace', mb: 1 }}>
+                <Typography sx={{ fontSize: 12, color: COLORS.warning, fontFamily: 'JetBrains Mono, monospace', mb: 1 }}>
                   Paused at: {new Date(incident.pausedAt).toLocaleTimeString()}
                 </Typography>
               )}
-              <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
+              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
                 SLA targets are governed by enterprise service policies and tracked against response and resolution windows.
               </Typography>
             </Paper>
@@ -1266,7 +1267,7 @@ export default function EmployeeIncidentDetail() {
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', mb: 2 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', mb: 2 }}>
                 Assigned Technician
               </Typography>
 
@@ -1290,7 +1291,7 @@ export default function EmployeeIncidentDetail() {
                   <Typography sx={{ fontSize: 14, fontWeight: 800, color: COLORS.onSurface }}>
                     {incident.assignee?.name || 'Triage Dispatch Queue'}
                   </Typography>
-                  <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                     {incident.assignee ? 'Assigned Engineering Lead' : 'Awaiting assignment'}
                   </Typography>
                 </Box>
@@ -1300,7 +1301,7 @@ export default function EmployeeIncidentDetail() {
 
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                 <InfoOutlinedIcon sx={{ fontSize: 16, color: COLORS.secondary, mt: 0.2 }} />
-                <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
                   Questions regarding this ticket can be posted in the communications tab above.
                 </Typography>
               </Box>
@@ -1330,7 +1331,7 @@ export default function EmployeeIncidentDetail() {
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           {lastQuestion && (
             <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}`, mb: 2 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
                 Technician's Question:
               </Typography>
               <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mt: 0.5 }}>

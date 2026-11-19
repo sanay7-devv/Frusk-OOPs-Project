@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import QueueRowActions from './QueueRowActions';
+import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
@@ -124,6 +126,13 @@ export default function TechQueue() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Server pushes (STOMP via realtime/useRealtime) reload the queue and workload at once.
+  useLiveRefresh(() => {
+    queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+    queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+    queryClient.invalidateQueries({ queryKey: ['incidents'] });
+  });
+
   const [filterTab, setFilterTab] = useState<'ALL' | 'NEEDS_ACK' | 'AT_RISK' | 'IN_PROGRESS' | 'PENDING_INFO'>('ALL');
   // searchInput follows the keyboard; searchQuery is what the server is asked, after a short pause.
   const [searchInput, setSearchInput] = useState('');
@@ -168,7 +177,7 @@ export default function TechQueue() {
   } = useQuery({
     queryKey: ['tech-my-queue', page, pageSize],
     queryFn: () => getMyQueue(page, pageSize),
-    refetchInterval: 10000,
+    refetchInterval: 60000, // fallback only; pushes arrive through useLiveRefresh
   });
 
   // 2. Fetch real workload stats
@@ -179,7 +188,7 @@ export default function TechQueue() {
   } = useQuery({
     queryKey: ['tech-my-workload'],
     queryFn: () => getMyWorkload(),
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   // 3. Reassign candidates come from the incident's own ranking (eligible and excluded, with reasons).
@@ -239,7 +248,7 @@ export default function TechQueue() {
         size: pageSize,
       }),
     enabled: serverFiltered,
-    refetchInterval: 10000,
+    refetchInterval: 60000, // fallback only; pushes arrive through useLiveRefresh
   });
 
   const queue = queuePage?.items ?? [];
@@ -1342,6 +1351,7 @@ export default function TechQueue() {
                         Reassign
                       </Button>
                     )}
+                    <QueueRowActions incident={inc} problemBase={problemBase} />
                     <Button
                       size="small"
                       variant="outlined"

@@ -55,21 +55,23 @@ import SlaCountdown from '../../components/SlaCountdown';
 import SlaBar from '../../components/SlaBar';
 import { ErrorState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
+import { tokens, slaStateColor } from '../../theme/theme';
 
 const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  secondary: '#06b6d4',
-  error: '#f43f5e',
-  success: '#10b981',
+  surface: tokens.background,
+  surfaceContainerLowest: tokens.surfaceContainerLowest,
+  surfaceContainerLow: tokens.surfaceContainerLow,
+  surfaceContainer: tokens.surfaceContainer,
+  surfaceContainerHigh: tokens.surfaceContainerHigh,
+  surfaceContainerHighest: tokens.surfaceContainerHighest,
+  onSurface: tokens.onSurface,
+  onSurfaceVariant: tokens.onSurfaceVariant,
+  border: tokens.outlineVariant,
+  primary: tokens.primary,
+  secondary: tokens.secondary,
+  error: slaStateColor.VIOLATED,
+  warning: slaStateColor.AT_RISK,
+  success: slaStateColor.MET,
 };
 
 const ACTIVE_STATUSES = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
@@ -256,7 +258,7 @@ export default function MyIncidents() {
                 border: '1px solid rgba(99, 102, 241, 0.3)',
                 fontFamily: 'JetBrains Mono, monospace',
                 fontWeight: 700,
-                fontSize: 10.5,
+                fontSize: 12,
                 height: 22,
               }}
             />
@@ -334,7 +336,7 @@ export default function MyIncidents() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, color: COLORS.onSurfaceVariant }}>
             <BookmarkIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
-            <Typography sx={{ fontSize: 11.5, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>
               SAVED VIEWS:
             </Typography>
           </Box>
@@ -351,7 +353,7 @@ export default function MyIncidents() {
                 color: activeSavedViewId === sv.id ? COLORS.secondary : COLORS.onSurface,
                 border: activeSavedViewId === sv.id ? `1px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
@@ -370,7 +372,7 @@ export default function MyIncidents() {
                 setSearchQuery('');
                 setPage(0);
               }}
-              sx={{ fontSize: 11, textTransform: 'none', color: COLORS.onSurfaceVariant }}
+              sx={{ fontSize: 12, textTransform: 'none', color: COLORS.onSurfaceVariant }}
             >
               Reset to Defaults
             </Button>
@@ -434,7 +436,7 @@ export default function MyIncidents() {
                     borderRadius: 1,
                     bgcolor: isSelected ? COLORS.primary : COLORS.surfaceContainerHighest,
                     color: '#ffffff',
-                    fontSize: 10,
+                    fontSize: 12,
                     fontFamily: 'JetBrains Mono, monospace',
                     fontWeight: 700,
                   }}
@@ -591,28 +593,28 @@ export default function MyIncidents() {
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: COLORS.surfaceContainerLow }}>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Incident Code
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Incident Summary
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Service
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Priority
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Status
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Assignee
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     SLA Clock &amp; Bar
                   </TableCell>
-                  <TableCell align="right" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell align="right" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
                     Action
                   </TableCell>
                 </TableRow>
@@ -641,7 +643,7 @@ export default function MyIncidents() {
                               color: '#f43f5e',
                               border: '1px solid rgba(244, 63, 94, 0.4)',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: 9.5,
+                              fontSize: 12,
                               fontWeight: 800,
                               height: 18,
                             }}
@@ -663,13 +665,13 @@ export default function MyIncidents() {
                               color: '#f751a1',
                               border: '1px solid rgba(247, 81, 161, 0.4)',
                               height: 18,
-                              fontSize: 9.5,
+                              fontSize: 12,
                               fontWeight: 700,
                             }}
                           />
                         )}
                       </Box>
-                      <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.25 }}>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.25 }}>
                         Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                       </Typography>
                     </TableCell>
@@ -681,7 +683,7 @@ export default function MyIncidents() {
                           bgcolor: COLORS.surfaceContainerHigh,
                           color: COLORS.onSurfaceVariant,
                           border: `1px solid ${COLORS.border}`,
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: 600,
                           height: 22,
                         }}
@@ -703,7 +705,7 @@ export default function MyIncidents() {
                           </Typography>
                         </Box>
                       ) : (
-                        <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant, fontStyle: 'italic' }}>
+                        <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic' }}>
                           Unassigned
                         </Typography>
                       )}
@@ -711,7 +713,7 @@ export default function MyIncidents() {
                     {/* SLA Clock & Bar Column */}
                     <TableCell sx={{ minWidth: 160 }}>
                       {isResolvedOrClosed(inc.status) ? (
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, color: COLORS.success, fontWeight: 700 }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.success, fontWeight: 700 }}>
                           Remediated
                         </Typography>
                       ) : (
@@ -785,7 +787,7 @@ export default function MyIncidents() {
                   }}
                   sx={{
                     height: 28,
-                    fontSize: 11,
+                    fontSize: 12,
                     color: COLORS.onSurface,
                     bgcolor: COLORS.surfaceContainerLowest,
                     '& fieldset': { borderColor: COLORS.border },

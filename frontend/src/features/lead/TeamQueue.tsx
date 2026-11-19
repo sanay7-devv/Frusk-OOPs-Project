@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -62,6 +63,11 @@ export default function TeamQueue() {
   const { user } = useAuth();
   const isAdmin = user?.roles?.includes('ADMINISTRATOR') ?? false;
 
+  useLiveRefresh(() => {
+    invalidateIncidentCaches(queryClient);
+    queryClient.invalidateQueries({ queryKey: ['incidents'] });
+  });
+
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,7 +120,7 @@ export default function TeamQueue() {
         categoryId: categoryId === '' ? undefined : categoryId,
         slaState: slaFilter || undefined,
       }),
-    refetchInterval: 10000,
+    refetchInterval: 60000, // fallback only; pushes arrive through useLiveRefresh
     placeholderData: (prev) => prev,
   });
 

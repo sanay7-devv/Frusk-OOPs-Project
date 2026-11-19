@@ -19,7 +19,7 @@ import { apiErrorMessage } from '../../utils/errors';
 import PriorityBadge from '../../components/PriorityBadge';
 import { markDuplicate, overridePriority, priorityWhatIf } from '../../api/incidents';
 import { createProblem } from '../../api/problems';
-import { reassignIncident, type SimilarIncidentView } from '../../api/technicians';
+import { escalateIncident, reassignIncident, type SimilarIncidentView } from '../../api/technicians';
 import type { IncidentDetail, Priority, RecommendationView, WhatIfView } from '../../api/types';
 
 const paperSx = {
@@ -446,6 +446,68 @@ export function LinkProblemDialog({
         </Button>
         <Button variant="contained" onClick={submit} disabled={busy} sx={{ textTransform: 'none', fontWeight: 700 }}>
           {busy ? <CircularProgress size={18} color="inherit" /> : 'Open problem'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/** POST /incidents/{id}/escalate: raises the escalation level by one; the reason is mandatory (10 to 1000 characters). */
+export function EscalateDialog({ open, incident, onClose, onDone }: BaseProps) {
+  const toast = useToast();
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) setReason('');
+  }, [open]);
+
+  const valid = reason.trim().length >= REASON_MIN && reason.trim().length <= REASON_MAX;
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await escalateIncident(incident.id, reason.trim());
+      toast(`${incident.code} escalated.`, 'success');
+      onDone();
+      onClose();
+    } catch (e) {
+      toast(apiErrorMessage(e), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth PaperProps={{ sx: paperSx }}>
+      <DialogTitle sx={{ fontSize: 16, fontWeight: 700, color: tokens.onSurface }}>Escalate {incident.code}</DialogTitle>
+      <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
+            Raises the escalation tier by one. Current level: {incident.escalationLevel}.
+          </Typography>
+          {incident.escalationPreview?.kind === 'EXHAUSTED' && (
+            <Alert severity="warning">The top escalation tier is already reached.</Alert>
+          )}
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            size="small"
+            label="Justification"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            helperText={reasonHelp(reason)}
+            sx={fieldSx}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} disabled={busy} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={submit} disabled={!valid || busy} sx={{ textTransform: 'none', fontWeight: 700 }}>
+          {busy ? <CircularProgress size={18} color="inherit" /> : 'Escalate'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -552,11 +552,11 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <EditNoteIcon sx={{ color: '#4cd7f6', fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
                     01. Core Incident Parameters
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
                   * Mandatory for escalation routing
                 </Typography>
               </Box>
@@ -567,7 +567,7 @@ export default function ReportIncident() {
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef' }}>
                     Incident Title
                   </Typography>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
                     {watchTitle?.length || 0} / 200 chars
                   </Typography>
                 </Box>
@@ -611,7 +611,7 @@ export default function ReportIncident() {
                       </FormControl>
                     )}
                   />
-                  <Typography sx={{ fontSize: 11, color: '#64748b', mt: 0.5 }}>
+                  <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
                     Select the degraded customer-facing service
                   </Typography>
                 </Grid>
@@ -643,7 +643,7 @@ export default function ReportIncident() {
                       </FormControl>
                     )}
                   />
-                  <Typography sx={{ fontSize: 11, color: '#64748b', mt: 0.5 }}>
+                  <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
                     Used to determine initial responder rota
                   </Typography>
                 </Grid>
@@ -657,7 +657,7 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <EqualizerIcon sx={{ color: '#4cd7f6', fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
                     02. Severity Metrics &amp; Blast Radius
                   </Typography>
                 </Box>
@@ -666,7 +666,7 @@ export default function ReportIncident() {
                   size="small"
                   sx={{
                     fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     bgcolor: `${priorityColorMap[calculatedPriority]}18`,
                     color: priorityColorMap[calculatedPriority],
@@ -720,7 +720,7 @@ export default function ReportIncident() {
                           }}
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: isSelected ? '#4cd7f6' : '#64748b' }}>
+                            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: isSelected ? '#4cd7f6' : '#64748b' }}>
                               LVL {item.level}
                             </Typography>
                             {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: '#4cd7f6' }} />}
@@ -730,7 +730,7 @@ export default function ReportIncident() {
                           </Typography>
                           <Typography
                             sx={{
-                              fontSize: 11,
+                              fontSize: 12,
                               lineHeight: 1.3,
                               color: isSelected ? '#dfe2ef' : '#64748b',
                               display: '-webkit-box',
@@ -855,7 +855,7 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SubjectIcon sx={{ color: '#4cd7f6', fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
                     03. Detailed Telemetry &amp; Narrative
                   </Typography>
                 </Box>
@@ -975,7 +975,7 @@ export default function ReportIncident() {
                           label={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: '#dfe2ef' }}>{f.name}</Typography>
-                              <Typography sx={{ fontSize: 10, color: '#94a3b8' }}>({f.size})</Typography>
+                              <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>({f.size})</Typography>
                             </Box>
                           }
                           onDelete={(e) => {
@@ -1090,7 +1090,7 @@ export default function ReportIncident() {
                     </Typography>
                     <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#06b6d4', boxShadow: '0 0 6px #06b6d4' }} />
                   </Box>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4cd7f6' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#4cd7f6' }}>
                     Real-time Suggestions
                   </Typography>
                 </Box>
@@ -1114,7 +1114,7 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                   <PsychologyIcon sx={{ color: '#c0c1ff', fontSize: 18 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: '#c0c1ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Suggested Classification
                   </Typography>
                 </Box>
@@ -1122,7 +1122,7 @@ export default function ReportIncident() {
                   <Chip
                     label={aiLoading ? 'Analyzing...' : `${Math.round((aiSuggestion.confidence || 0) * 100)}% confidence`}
                     size="small"
-                    sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5, fontWeight: 700, bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                    sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)' }}
                   />
                 )}
               </Box>
@@ -1146,7 +1146,7 @@ export default function ReportIncident() {
                         sx={{
                           fontFamily: 'JetBrains Mono, monospace',
                           fontWeight: 700,
-                          fontSize: 10,
+                          fontSize: 12,
                           height: 20,
                           bgcolor: 'rgba(99, 102, 241, 0.2)',
                           color: '#c0c1ff',
@@ -1157,8 +1157,8 @@ export default function ReportIncident() {
                     {/* Confidence Bar */}
                     <Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>Model Alignment</Typography>
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>Model Alignment</Typography>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
                           {(aiSuggestion.confidence || 0).toFixed(2)} / 1.00
                         </Typography>
                       </Box>
@@ -1247,7 +1247,7 @@ export default function ReportIncident() {
                       <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6' }}>
                         {item.code}
                       </Typography>
-                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#fb923c' }}>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#fb923c' }}>
                         {Math.round(item.similarity * 100)}% match
                       </Typography>
                     </Box>
@@ -1317,7 +1317,7 @@ export default function ReportIncident() {
                       label={sim.match === 'DUPLICATE' ? 'Likely Duplicate' : 'Related'}
                       size="small"
                       sx={{
-                        fontSize: 10,
+                        fontSize: 12,
                         bgcolor: sim.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
                         color: sim.match === 'DUPLICATE' ? '#f43f5e' : '#c0c1ff',
                       }}
@@ -1419,7 +1419,7 @@ export default function ReportIncident() {
 
               {createdIncident.priorityBreakdown && (
                 <Box sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: '#c0c1ff', mb: 0.5 }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff', mb: 0.5 }}>
                     Why this priority?
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
@@ -1524,7 +1524,7 @@ export default function ReportIncident() {
                           color: '#4cd7f6',
                           border: '1px solid rgba(6, 182, 212, 0.3)',
                           cursor: 'pointer',
-                          fontSize: 11.5,
+                          fontSize: 12,
                           '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.28)' },
                         }}
                       />

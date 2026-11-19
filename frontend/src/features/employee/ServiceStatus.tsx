@@ -277,7 +277,7 @@ export default function ServiceStatus() {
                         label={svc.status}
                         color={getStatusColor(svc.status)}
                         size="small"
-                        sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        sx={{ fontWeight: 700, fontSize: '0.75rem' }}
                       />
                     </Box>
 
