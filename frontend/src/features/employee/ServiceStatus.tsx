@@ -327,7 +327,7 @@ export default function ServiceStatus() {
                     {svc.open && (
                       <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
                         Active Incidents: <strong style={{ color: '#dfe2ef' }}>{svc.open.total}</strong>
-                        {svc.open.p1 > 0 && <span style={{ color: '#ef4444' }}> ({svc.open.p1} P1)</span>}
+                        {svc.open.P1 > 0 && <span style={{ color: '#ef4444' }}> ({svc.open.P1} P1)</span>}
                       </Typography>
                     )}
                   </Box>

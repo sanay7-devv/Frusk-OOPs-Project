@@ -1,1561 +1,235 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  MenuItem,
-  Stack,
-  Button,
-  Chip,
-  IconButton,
-  InputAdornment,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  Tabs,
-  Tab,
-  Avatar,
-  Tooltip,
-  Grid,
-  Card,
-  CardContent,
+  Box, Button, Chip, IconButton, InputAdornment, Menu, MenuItem, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  Visibility as VisibilityIcon,
-  Refresh as RefreshIcon,
-  Today as TodayIcon,
-  History as HistoryIcon,
-  ListAlt as ListAltIcon,
-  Person as PersonIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  AssignmentInd as AssignmentIndIcon,
-  CrisisAlert as CrisisAlertIcon,
-  ConfirmationNumber as ConfirmationNumberIcon,
-  FilterAltOff as FilterAltOffIcon,
+  Add as AddIcon, BookmarkBorder as BookmarkIcon, FileDownload as DownloadIcon, FilterAltOff as FilterAltOffIcon,
+  PersonAddAlt as AssignIcon, Refresh as RefreshIcon, Search as SearchIcon,
 } from '@mui/icons-material';
-import { listIncidents, createIncident, CreateIncidentPayload } from '../../api/incidents';
-import { getServices } from '../../api/services';
+import { listIncidents } from '../../api/incidents';
+import { downloadReport } from '../../api/reports';
+import { getCategories, getServices } from '../../api/services';
+import { listTechnicians } from '../../api/technicians';
 import { getAdminUsers } from '../../api/admin';
-import { api } from '../../api/client';
+import type { IncidentSummary } from '../../api/types';
+import { IncidentCreateDialog } from '../../components/IncidentCreateDialog';
 import PriorityBadge from '../../components/PriorityBadge';
+import SlaBar from '../../components/SlaBar';
+import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import StatusChip from '../../components/StatusChip';
-import SlaCountdown from '../../components/SlaCountdown';
 import { useToast } from '../../components/Toast';
+import { tokens } from '../../theme/theme';
+import { apiErrorMessage } from '../../utils/errors';
+import AssignDialog from './tickets/AssignDialog';
+import IncidentDrawer from './tickets/IncidentDrawer';
+import SavedViewsDialog from './tickets/SavedViewsDialog';
+import { ALL_STATUSES, SLA_STATES, fromSnapshot, snapshot, tabOf, toApiFilters } from './tickets/filters';
+import type { TabKey } from './tickets/filters';
 
-// Design System Tokens (Luminary Kinetic Dark)
-const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  primaryContainer: '#4f46e5',
-  secondary: '#06b6d4',
-  error: '#f43f5e',
-  errorContainer: 'rgba(244, 63, 94, 0.15)',
-  success: '#10b981',
-};
+const PAGE_SIZE = 25;
+const TAB_LABEL: Record<TabKey, string> = { today: 'Today', previous: 'Earlier', all: 'All' };
+const headSx = { fontSize: 12, fontWeight: 600, color: tokens.onSurfaceVariant, whiteSpace: 'nowrap' } as const;
+const cellSx = { fontSize: 13, whiteSpace: 'nowrap', py: 1 } as const;
+
+const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function Tickets() {
-  const navigate = useNavigate();
   const toast = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [viewsOpen, setViewsOpen] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<IncidentSummary | null>(null);
+  const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  // Tab State: 0 = Today's Tickets, 1 = Previous Days' Tickets, 2 = All Tickets
-  const initialTabParam = searchParams.get('tab');
-  const getTabFromParam = (param: string | null): number => {
-    if (param === 'today') return 0;
-    if (param === 'previous') return 1;
-    if (param === 'all') return 2;
-    return 0; // Default to Today's Tickets
+  const tab = tabOf(params);
+  const page = Number(params.get('page')) || 0;
+  const openId = Number(params.get('open')) || null;
+  const get = (k: string) => params.get(k) ?? '';
+
+  /** Sets one URL filter; every change except paging goes back to page 0 and closes the drawer's page offset. */
+  const setParam = (key: string, value: string) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set(key, value); else next.delete(key);
+      if (key !== 'page' && key !== 'open') next.delete('page');
+      return next;
+    }, { replace: key === 'q' || key === 'code' });
   };
 
-  const [activeTab, setActiveTab] = useState<number>(getTabFromParam(initialTabParam));
-
+  // The search boxes keep a local copy so typing does not hit the API on every key.
+  const [qText, setQText] = useState(get('q'));
+  const [codeText, setCodeText] = useState(get('code'));
+  useEffect(() => { setQText(get('q')); setCodeText(get('code')); }, [params.get('q'), params.get('code')]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam) {
-      setActiveTab(getTabFromParam(tabParam));
-    }
-  }, [searchParams]);
+    const t = setTimeout(() => {
+      if (qText !== get('q')) setParam('q', qText);
+      if (codeText !== get('code')) setParam('code', codeText);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [qText, codeText]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filters State
-  const [q, setQ] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get('priority') || 'ALL');
-  const [statusFilter, setStatusFilter] = useState<string>(
-    searchParams.get('status') === 'ACTIVE' ? 'ACTIVE' : searchParams.get('status') || 'ALL'
-  );
-  const [levelFilter, setLevelFilter] = useState<string>('ALL');
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(50);
+  const services = useQuery({ queryKey: ['catalog-services'], queryFn: getServices });
+  const categories = useQuery({ queryKey: ['catalog-categories'], queryFn: getCategories });
+  const technicians = useQuery({ queryKey: ['technicians-list'], queryFn: () => listTechnicians() });
+  const users = useQuery({ queryKey: ['admin-users-list'], queryFn: getAdminUsers });
 
-  // Dialog states
-  const [declareOpen, setDeclareOpen] = useState(false);
-  const [reassignOpen, setReassignOpen] = useState(false);
-  const [targetIncident, setTargetIncident] = useState<any | null>(null);
-  const [selectedTechId, setSelectedTechId] = useState<number>(0);
-  const [reassignReason, setReassignReason] = useState('');
-
-  // Declare Incident Form State
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [newServiceId, setNewServiceId] = useState<number>(1);
-  const [newImpact, setNewImpact] = useState<number>(3);
-  const [newUrgency, setNewUrgency] = useState<number>(3);
-  const [newAssigneeId, setNewAssigneeId] = useState<number | ''>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Queries
-  const { data: services = [] } = useQuery({
-    queryKey: ['admin-services-catalog'],
-    queryFn: getServices,
-  });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['admin-users-list'],
-    queryFn: getAdminUsers,
-  });
-
-  const technicians = useMemo(
-    () => users.filter((u) => u.roles.includes('TECHNICIAN') || u.roles.includes('ADMINISTRATOR')),
-    [users]
-  );
-
-  const {
-    data: incidentPage,
-    isLoading,
-    refetch,
-    isFetching,
-  } = useQuery({
-    queryKey: ['admin-incidents-list', q, priorityFilter, statusFilter, levelFilter, page, pageSize],
-    queryFn: () =>
-      listIncidents({
-        q: q.trim() || undefined,
-        priority: priorityFilter !== 'ALL' ? [priorityFilter] : undefined,
-        status: statusFilter === 'ACTIVE' ? undefined : statusFilter !== 'ALL' ? [statusFilter] : undefined,
-        minEscalationLevel: levelFilter !== 'ALL' ? Number(levelFilter) : undefined,
-        page,
-        size: pageSize,
-        sort: 'createdAt,desc',
-      }),
+  const filters = useMemo(() => ({ ...toApiFilters(params), size: PAGE_SIZE }), [params]);
+  const list = useQuery({
+    queryKey: ['admin-incidents-list', filters],
+    queryFn: () => listIncidents(filters),
     refetchInterval: 15000,
+    placeholderData: (prev) => prev,
   });
+  const rows = list.data?.items ?? [];
+  const totalItems = list.data?.totalItems ?? 0;
+  const totalPages = list.data?.totalPages ?? 0;
 
-  const allIncidents: any[] = (incidentPage as any)?.items || (incidentPage as any)?.content || [];
-  const totalItems = incidentPage?.totalItems ?? allIncidents.length;
-  const totalPages = incidentPage?.totalPages ?? 1;
+  const current = useMemo(() => snapshot(params), [params]);
+  const hasFilters = Object.keys(current).some((k) => k !== 'tab');
 
-  // Helper to check if a date belongs to today (local calendar date)
-  const isCreatedToday = (dateStr?: string) => {
-    if (!dateStr) return false;
-    const itemDate = new Date(dateStr);
-    const today = new Date();
-    return (
-      itemDate.getDate() === today.getDate() &&
-      itemDate.getMonth() === today.getMonth() &&
-      itemDate.getFullYear() === today.getFullYear()
-    );
-  };
+  const changeTab = (_: unknown, v: TabKey) => setParam('tab', v === 'all' ? '' : v);
+  const clearFilters = () => setParams(params.get('tab') ? new URLSearchParams({ tab: params.get('tab')! }) : new URLSearchParams());
+  const applyView = (filter: Record<string, unknown>) => setParams(fromSnapshot(filter));
 
-  // Group into Today's vs Previous Days'
-  const todayTickets = useMemo(() => allIncidents.filter((i) => isCreatedToday(i.createdAt)), [allIncidents]);
-  const previousTickets = useMemo(() => allIncidents.filter((i) => !isCreatedToday(i.createdAt)), [allIncidents]);
-
-  // Current list based on active tab & active open filter
-  const displayedIncidents = useMemo(() => {
-    let baseList = activeTab === 0 ? todayTickets : activeTab === 1 ? previousTickets : allIncidents;
-
-    if (statusFilter === 'ACTIVE') {
-      baseList = baseList.filter((i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED');
-    }
-
-    return baseList;
-  }, [activeTab, todayTickets, previousTickets, allIncidents, statusFilter]);
-
-  // Summary Metrics
-  const metrics = useMemo(() => {
-    const todayCount = todayTickets.length;
-    const prevCount = previousTickets.length;
-    const unassignedCount = allIncidents.filter((i) => !i.assignee).length;
-    const activeCount = allIncidents.filter((i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED').length;
-    const p1Count = allIncidents.filter(
-      (i) => i.priority === 'P1' && i.status !== 'RESOLVED' && i.status !== 'CLOSED'
-    ).length;
-    return { todayCount, prevCount, unassignedCount, activeCount, p1Count };
-  }, [todayTickets, previousTickets, allIncidents]);
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-    const paramVal = newValue === 0 ? 'today' : newValue === 1 ? 'previous' : 'all';
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('tab', paramVal);
-    setSearchParams(newParams);
-  };
-
-  const handleResetFilters = () => {
-    setQ('');
-    setPriorityFilter('ALL');
-    setStatusFilter('ALL');
-    setLevelFilter('ALL');
-    const newParams = new URLSearchParams();
-    newParams.set('tab', activeTab === 0 ? 'today' : activeTab === 1 ? 'previous' : 'all');
-    setSearchParams(newParams);
-  };
-
-  // Handle Quick Reassign
-  const handleOpenAssign = (inc: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTargetIncident(inc);
-    setSelectedTechId(inc.assignee?.id || 0);
-    setReassignReason('');
-    setReassignOpen(true);
-  };
-
-  const handleSaveReassign = async () => {
-    if (!selectedTechId || !targetIncident) {
-      toast('Please choose a technician', 'warning');
-      return;
-    }
-    const tech = technicians.find((t) => t.id === selectedTechId);
-    setIsSubmitting(true);
+  async function runExport(format: 'csv' | 'pdf') {
+    setExportAnchor(null);
+    setExporting(true);
     try {
-      await api.post(`/incidents/${targetIncident.id}/reassign`, {
-        technicianId: selectedTechId,
-        reason: reassignReason || 'Reassigned from Tickets Hub',
-      });
-      toast(`Ticket ${targetIncident.code} assigned to ${tech?.name || 'technician'}`, 'success');
-      setReassignOpen(false);
-      refetch();
-    } catch (err: any) {
-      toast(err?.response?.data?.message || 'Failed to reassign incident.', 'error');
+      const today = isoDay(new Date());
+      const yesterday = isoDay(new Date(Date.now() - 86_400_000));
+      const range = tab === 'today' ? { from: today, to: today }
+        : tab === 'previous' ? { to: yesterday }
+          : { from: get('from') || undefined, to: get('to') || undefined };
+      await downloadReport('incidents', format, range);
+    } catch (e) {
+      toast(apiErrorMessage(e), 'error');
     } finally {
-      setIsSubmitting(false);
+      setExporting(false);
     }
-  };
+  }
 
-  // Handle Create Incident / Declare Ticket
-  const handleCreate = async () => {
-    const trimmedTitle = newTitle.trim();
-    const trimmedDesc = newDesc.trim();
-    if (trimmedTitle.length < 5) {
-      toast('Ticket summary/title must be at least 5 characters.', 'warning');
-      return;
-    }
-    if (trimmedDesc.length < 20) {
-      toast('Ticket description must be at least 20 characters for diagnostic context.', 'warning');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const payload: CreateIncidentPayload = {
-        title: trimmedTitle,
-        description: trimmedDesc,
-        serviceId: newServiceId,
-        impact: newImpact,
-        urgency: newUrgency,
-        affectedUsers: 1,
-      };
-      const created = await createIncident(payload);
+  const select = (key: string, label: string, options: { value: string; label: string }[], width = 150) => (
+    <TextField select size="small" label={label} value={get(key)} onChange={(e) => setParam(key, e.target.value)} sx={{ minWidth: width }}>
+      <MenuItem value="">Any</MenuItem>
+      {options.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+    </TextField>
+  );
 
-      // If an assignee was chosen during declaration, assign it in backend & optimistic state
-      if (newAssigneeId) {
-        const tech = technicians.find((t) => t.id === Number(newAssigneeId));
-        try {
-          await api.post(`/incidents/${created.id}/assign`, { technicianId: Number(newAssigneeId) });
-        } catch {
-          await api.post(`/incidents/${created.id}/reassign`, {
-            technicianId: Number(newAssigneeId),
-            reason: 'Directly assigned during ticket declaration',
-          }).catch(() => {});
-        }
-        if (tech) {
-          created.assignee = { id: tech.id, name: tech.name };
-        }
-      }
-
-      toast(
-        `Ticket ${created.code} successfully created${
-          newAssigneeId ? ` and assigned to ${technicians.find((t) => t.id === Number(newAssigneeId))?.name || 'technician'}` : ' and queued'
-        }`,
-        'success'
-      );
-      setDeclareOpen(false);
-      setNewTitle('');
-      setNewDesc('');
-      setNewAssigneeId('');
-      refetch();
-      // Ensure we switch to today's tab to view the created ticket
-      setActiveTab(0);
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set('tab', 'today');
-      setSearchParams(newParams);
-    } catch (e: any) {
-      toast(e.message || 'Failed to create ticket', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Helper to format date cleanly
-  const formatTicketDate = (dateStr?: string, isTodayTicket: boolean = false) => {
-    if (!dateStr) return 'N/A';
-    const d = new Date(dateStr);
-    if (isTodayTicket) {
-      const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-      const diffMins = Math.floor((Date.now() - d.getTime()) / 60000);
-      const relStr = diffMins < 60 ? `${diffMins}m ago` : `${Math.floor(diffMins / 60)}h ago`;
-      return `Today, ${timeStr} (${relStr})`;
-    }
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
-
-  // Render Escalation Level Badge
-  const renderEscalationBadge = (level?: number) => {
-    switch (level) {
-      case 1:
-        return (
-          <Chip
-            size="small"
-            label="L1 • Lead Escalation"
-            sx={{
-              bgcolor: 'rgba(245, 158, 11, 0.15)',
-              color: '#f59e0b',
-              fontWeight: 700,
-              fontSize: '0.72rem',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              fontFamily: 'JetBrains Mono, monospace',
-            }}
-          />
-        );
-      case 2:
-        return (
-          <Chip
-            size="small"
-            label="L2 • SRE / Admin"
-            sx={{
-              bgcolor: 'rgba(244, 63, 94, 0.15)',
-              color: COLORS.error,
-              fontWeight: 700,
-              fontSize: '0.72rem',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
-              fontFamily: 'JetBrains Mono, monospace',
-            }}
-          />
-        );
-      case 3:
-        return (
-          <Chip
-            size="small"
-            label="L3 • War Room"
-            sx={{
-              bgcolor: COLORS.error,
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '0.72rem',
-              fontFamily: 'JetBrains Mono, monospace',
-            }}
-          />
-        );
-      case 0:
-      default:
-        return (
-          <Chip
-            size="small"
-            label="L0 • Frontline Tech"
-            sx={{
-              bgcolor: 'rgba(6, 182, 212, 0.15)',
-              color: COLORS.secondary,
-              fontWeight: 700,
-              fontSize: '0.72rem',
-              border: '1px solid rgba(6, 182, 212, 0.3)',
-              fontFamily: 'JetBrains Mono, monospace',
-            }}
-          />
-        );
-    }
-  };
+  const loadFailed = list.isError && !list.data;
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1440, mx: 'auto' }}>
-      {/* 1. Header Banner */}
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        mb={3}
-        spacing={2}
-      >
+    <Box>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2} sx={{ mb: 2 }}>
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <ConfirmationNumberIcon sx={{ fontSize: 32, color: COLORS.secondary }} />
-            <Typography variant="h4" fontWeight="800" sx={{ color: COLORS.onSurface, letterSpacing: '-0.02em', fontFamily: 'Sora, sans-serif' }}>
-              Tickets Hub
-            </Typography>
-            <Chip
-              label="Live Backend Connected"
-              size="small"
-              sx={{ bgcolor: 'rgba(6, 182, 212, 0.15)', color: COLORS.secondary, border: '1px solid rgba(6, 182, 212, 0.3)', fontWeight: 700, height: 22, fontFamily: 'JetBrains Mono, monospace' }}
-            />
-          </Box>
-          <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mt: 0.5 }}>
-            Master operational repository of today&apos;s tickets, historical tickets, assigned handlers, and escalation levels
+          <Typography variant="h4" sx={{ fontSize: 24, fontWeight: 700 }}>Incidents</Typography>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
+            {list.data ? `${totalItems} incident${totalItems === 1 ? '' : 's'} match the filters` : 'Search, filter and assign incidents'}
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="outlined"
-            startIcon={isFetching ? <CircularProgress size={16} /> : <RefreshIcon />}
-            onClick={() => {
-              refetch();
-              toast('Refreshed tickets from backend', 'info');
-            }}
-            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: COLORS.border, color: COLORS.onSurface, bgcolor: COLORS.surfaceContainer, '&:hover': { bgcolor: COLORS.surfaceContainerHigh } }}
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setDeclareOpen(true)}
-            sx={{
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
-              color: '#ffffff',
-              textTransform: 'none',
-              fontWeight: 700,
-              boxShadow: '0 4px 14px rgba(244, 63, 94, 0.35)',
-              '&:hover': { opacity: 0.9 },
-            }}
-          >
-            Declare Ticket / Incident
-          </Button>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Tooltip title="Refresh"><IconButton aria-label="Refresh" onClick={() => list.refetch()} disabled={list.isFetching}><RefreshIcon /></IconButton></Tooltip>
+          <Button variant="outlined" startIcon={<BookmarkIcon />} onClick={() => setViewsOpen(true)} sx={{ textTransform: 'none' }}>Saved views</Button>
+          <Button variant="outlined" startIcon={<DownloadIcon />} disabled={exporting} onClick={(e) => setExportAnchor(e.currentTarget)} sx={{ textTransform: 'none' }}>Export</Button>
+          <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>
+            <MenuItem onClick={() => runExport('csv')}>CSV</MenuItem>
+            <MenuItem onClick={() => runExport('pdf')}>PDF</MenuItem>
+            <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, px: 2, py: 0.5, maxWidth: 240 }}>
+              The export covers the date range only, not the other filters.
+            </Typography>
+          </Menu>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ textTransform: 'none' }}>Declare incident</Button>
         </Stack>
       </Stack>
 
-      {/* 2. Top Metric Cards Strip */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card
-            elevation={0}
-            onClick={() => handleTabChange({} as any, 0)}
-            sx={{
-              borderRadius: 2.5,
-              border: activeTab === 0 ? `2px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
-              bgcolor: COLORS.surfaceContainer,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.secondary },
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                  Today&apos;s Tickets
-                </Typography>
-                <TodayIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 1, fontFamily: 'Sora, sans-serif' }}>
-                {metrics.todayCount}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                Reported since midnight
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      <Tabs value={tab} onChange={changeTab} sx={{ mb: 2 }}>
+        {(Object.keys(TAB_LABEL) as TabKey[]).map((k) => <Tab key={k} value={k} label={TAB_LABEL[k]} sx={{ textTransform: 'none', fontSize: 13 }} />)}
+      </Tabs>
 
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card
-            elevation={0}
-            onClick={() => handleTabChange({} as any, 1)}
-            sx={{
-              borderRadius: 2.5,
-              border: activeTab === 1 ? `2px solid ${COLORS.primary}` : `1px solid ${COLORS.border}`,
-              bgcolor: COLORS.surfaceContainer,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.primary },
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                  Previous Days
-                </Typography>
-                <HistoryIcon sx={{ fontSize: 18, color: COLORS.onSurfaceVariant }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 1, fontFamily: 'Sora, sans-serif' }}>
-                {metrics.prevCount}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                Historical records
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card
-            elevation={0}
-            onClick={() => {
-              setStatusFilter('ACTIVE');
-              setActiveTab(2);
-            }}
-            sx={{
-              borderRadius: 2.5,
-              border: statusFilter === 'ACTIVE' ? `2px solid ${COLORS.primary}` : `1px solid ${COLORS.border}`,
-              bgcolor: COLORS.surfaceContainer,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.primary },
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                  Active Workload
-                </Typography>
-                <AssignmentIndIcon sx={{ fontSize: 18, color: COLORS.primary }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.primary, mt: 1, fontFamily: 'Sora, sans-serif' }}>
-                {metrics.activeCount}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                In Progress &amp; Assigned
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card
-            elevation={0}
-            onClick={() => {
-              setPriorityFilter('P1');
-              setActiveTab(2);
-            }}
-            sx={{
-              borderRadius: 2.5,
-              border: priorityFilter === 'P1' ? `2px solid ${COLORS.error}` : '1px solid rgba(244, 63, 94, 0.3)',
-              bgcolor: COLORS.surfaceContainer,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': { transform: 'translateY(-2px)', borderColor: COLORS.error },
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 800, color: COLORS.error, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                  Critical P1 Outages
-                </Typography>
-                <CrisisAlertIcon sx={{ fontSize: 18, color: COLORS.error }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.error, mt: 1, fontFamily: 'Sora, sans-serif' }}>
-                {metrics.p1Count < 10 ? `0${metrics.p1Count}` : metrics.p1Count}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.error, fontWeight: 600 }}>
-                High SLA Attention
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card
-            elevation={0}
-            sx={{
-              borderRadius: 2.5,
-              border: `1px solid ${COLORS.border}`,
-              bgcolor: COLORS.surfaceContainer,
-            }}
-          >
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                  Unassigned Triage
-                </Typography>
-                <WarningIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: metrics.unassignedCount > 0 ? '#f59e0b' : COLORS.onSurface, mt: 1, fontFamily: 'Sora, sans-serif' }}>
-                {metrics.unassignedCount}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                Awaiting Handler Assignment
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* 3. Tab Switcher: Today's vs Previous Days' vs All */}
-      <Paper
-        elevation={0}
-        sx={{
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: 3,
-          mb: 3,
-          overflow: 'hidden',
-          bgcolor: COLORS.surfaceContainer,
-        }}
-      >
-        <Box sx={{ borderBottom: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainerLow, px: 2 }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 700,
-                fontSize: 14,
-                py: 2,
-                minHeight: 54,
-                color: COLORS.onSurfaceVariant,
-                '&.Mui-selected': {
-                  color: COLORS.primary,
-                },
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: COLORS.primary,
-              },
-            }}
-          >
-            <Tab
-              icon={<TodayIcon />}
-              iconPosition="start"
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span>Today&apos;s Tickets</span>
-                  <Chip
-                    label={metrics.todayCount}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontWeight: 700,
-                      bgcolor: activeTab === 0 ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
-                      color: activeTab === 0 ? COLORS.primary : COLORS.onSurfaceVariant,
-                      border: `1px solid ${activeTab === 0 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
-                      fontFamily: 'JetBrains Mono, monospace',
-                    }}
-                  />
-                </Box>
-              }
-            />
-            <Tab
-              icon={<HistoryIcon />}
-              iconPosition="start"
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span>Previous Days&apos; Tickets</span>
-                  <Chip
-                    label={metrics.prevCount}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontWeight: 700,
-                      bgcolor: activeTab === 1 ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
-                      color: activeTab === 1 ? COLORS.primary : COLORS.onSurfaceVariant,
-                      border: `1px solid ${activeTab === 1 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
-                      fontFamily: 'JetBrains Mono, monospace',
-                    }}
-                  />
-                </Box>
-              }
-            />
-            <Tab
-              icon={<ListAltIcon />}
-              iconPosition="start"
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span>All Tickets</span>
-                  <Chip
-                    label={allIncidents.length}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontWeight: 700,
-                      bgcolor: activeTab === 2 ? 'rgba(99, 102, 241, 0.2)' : COLORS.surfaceContainerHighest,
-                      color: activeTab === 2 ? COLORS.primary : COLORS.onSurfaceVariant,
-                      border: `1px solid ${activeTab === 2 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
-                      fontFamily: 'JetBrains Mono, monospace',
-                    }}
-                  />
-                </Box>
-              }
-            />
-          </Tabs>
-        </Box>
-
-        {/* 4. Toolbar / Filter Controls */}
-        <Box sx={{ p: 2, bgcolor: COLORS.surfaceContainer }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems="center">
-            <TextField
-              placeholder="Search by code, title, or description..."
-              size="small"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              sx={{
-                flex: 1,
-                width: '100%',
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: COLORS.border },
-                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.15)' },
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" sx={{ color: COLORS.onSurfaceVariant }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              select
-              size="small"
-              label="Priority Level"
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              sx={{
-                minWidth: 165,
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: 'rgba(18, 22, 34, 0.75)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  color: COLORS.onSurface,
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-                  '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.45)' },
-                  '&.Mui-focused fieldset': { borderColor: '#6366f1' },
-                },
-                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
-              }}
-            >
-              <MenuItem value="ALL">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#94a3b8' }} />
-                  <span>All Priorities</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="P1">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f43f5e', boxShadow: '0 0 8px #f43f5e' }} />
-                  <span style={{ color: '#f43f5e', fontWeight: 700 }}>P1 • Critical Outage</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="P2">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fb923c' }} />
-                  <span style={{ color: '#fb923c', fontWeight: 600 }}>P2 • High Priority</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="P3">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#38bdf8' }} />
-                  <span style={{ color: '#38bdf8' }}>P3 • Medium Impact</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="P4">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4ade80' }} />
-                  <span style={{ color: '#4ade80' }}>P4 • Low Minor</span>
-                </Box>
-              </MenuItem>
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Ticket Status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{
-                minWidth: 175,
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: 'rgba(18, 22, 34, 0.75)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  color: COLORS.onSurface,
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-                  '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.45)' },
-                  '&.Mui-focused fieldset': { borderColor: '#6366f1' },
-                },
-                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
-              }}
-            >
-              <MenuItem value="ALL">All Statuses</MenuItem>
-              <MenuItem value="ACTIVE">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b', boxShadow: '0 0 6px #f59e0b' }} />
-                  <span style={{ color: '#fbbf24', fontWeight: 600 }}>Active (Unresolved)</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="NEW">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#06b6d4' }} />
-                  <span>New</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="ASSIGNED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#6366f1' }} />
-                  <span>Assigned</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="ACKNOWLEDGED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#818cf8' }} />
-                  <span>Acknowledged</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="IN_PROGRESS">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#a855f7' }} />
-                  <span style={{ color: '#c084fc' }}>In Progress</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="PENDING_USER_INFO">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fb923c' }} />
-                  <span>Pending User Info</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="CLASSIFIED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#38bdf8' }} />
-                  <span>Classified</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="RESOLVED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
-                  <span style={{ color: '#34d399' }}>Resolved</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="VERIFIED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#059669' }} />
-                  <span>Verified</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="REOPENED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f43f5e' }} />
-                  <span>Reopened</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="CLOSED">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#64748b' }} />
-                  <span style={{ color: '#94a3b8' }}>Closed</span>
-                </Box>
-              </MenuItem>
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Escalation Level"
-              value={levelFilter}
-              onChange={(e) => setLevelFilter(e.target.value)}
-              sx={{
-                minWidth: 190,
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: 'rgba(18, 22, 34, 0.75)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  color: COLORS.onSurface,
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-                  '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.45)' },
-                  '&.Mui-focused fieldset': { borderColor: '#6366f1' },
-                },
-                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
-              }}
-            >
-              <MenuItem value="ALL">All Escalation Levels</MenuItem>
-              <MenuItem value="0">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip label="L0" size="small" sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', fontWeight: 700 }} />
-                  <span>Frontline Tech</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="1">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip label="L1" size="small" sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 700 }} />
-                  <span>Lead Escalated</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="2">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip label="L2" size="small" sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', fontWeight: 700 }} />
-                  <span>SRE / Admin</span>
-                </Box>
-              </MenuItem>
-              <MenuItem value="3">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip label="L3" size="small" sx={{ height: 18, fontSize: 10, bgcolor: '#f43f5e', color: '#fff', fontWeight: 800 }} />
-                  <span style={{ fontWeight: 700, color: '#f43f5e' }}>War Room</span>
-                </Box>
-              </MenuItem>
-            </TextField>
-
-            {(q || priorityFilter !== 'ALL' || statusFilter !== 'ALL' || levelFilter !== 'ALL') && (
-              <Button
-                variant="outlined"
-                color="inherit"
-                size="small"
-                onClick={handleResetFilters}
-                startIcon={<FilterAltOffIcon />}
-                sx={{
-                  textTransform: 'none',
-                  minWidth: 130,
-                  borderColor: COLORS.border,
-                  color: COLORS.onSurfaceVariant,
-                  '&:hover': {
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    bgcolor: 'rgba(255, 255, 255, 0.04)',
-                  },
-                }}
-              >
-                Reset
-              </Button>
-            )}
-          </Stack>
-        </Box>
+      <Paper sx={{ p: 2, mb: 2, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="center">
+          <TextField size="small" label="Search" placeholder="Title, description or code" value={qText} onChange={(e) => setQText(e.target.value)} sx={{ minWidth: 240 }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
+          <TextField size="small" label="Code" placeholder="INC-2026-00001" value={codeText} onChange={(e) => setCodeText(e.target.value)} sx={{ minWidth: 160 }} />
+          {select('status', 'Status', [{ value: 'ACTIVE', label: 'Active (not resolved)' }, ...ALL_STATUSES.map((s) => ({ value: s, label: s.replace(/_/g, ' ') }))], 190)}
+          {select('priority', 'Priority', ['P1', 'P2', 'P3', 'P4'].map((p) => ({ value: p, label: p })), 110)}
+          {select('slaState', 'SLA', SLA_STATES.map((s) => ({ value: s, label: s.replace(/_/g, ' ') })), 130)}
+          {select('level', 'Escalation', [0, 1, 2, 3].map((l) => ({ value: String(l), label: `Level ${l} or higher` })), 170)}
+          {select('serviceId', 'Service', (services.data ?? []).map((s) => ({ value: String(s.id), label: s.name })), 180)}
+          {select('categoryId', 'Category', (categories.data ?? []).map((c) => ({ value: String(c.id), label: c.name })), 180)}
+          {select('assigneeId', 'Assignee', (technicians.data ?? []).map((t) => ({ value: String(t.id), label: t.name })), 170)}
+          {select('reporterId', 'Reporter', (users.data ?? []).map((u) => ({ value: String(u.id), label: u.name })), 170)}
+          <TextField size="small" type="date" label="Created from" value={get('from')} disabled={tab !== 'all'} onChange={(e) => setParam('from', e.target.value)} InputLabelProps={{ shrink: true }} />
+          <TextField size="small" type="date" label="Created to" value={get('to')} disabled={tab !== 'all'} onChange={(e) => setParam('to', e.target.value)} InputLabelProps={{ shrink: true }} />
+          {hasFilters && <Button startIcon={<FilterAltOffIcon />} onClick={clearFilters} sx={{ textTransform: 'none' }}>Clear filters</Button>}
+        </Stack>
+        {(services.isError || categories.isError || technicians.isError || users.isError) && (
+          <Typography sx={{ fontSize: 12, color: tokens.tertiary, mt: 1 }}>
+            Some filter lists did not load: {apiErrorMessage((services.error ?? categories.error ?? technicians.error ?? users.error))}
+          </Typography>
+        )}
       </Paper>
 
-      {/* 5. Main Tickets Table */}
-      <TableContainer
-        component={Paper}
-        elevation={0}
-        sx={{
-          borderRadius: 3,
-          border: `1px solid ${COLORS.border}`,
-          bgcolor: COLORS.surfaceContainer,
-          overflow: 'hidden',
-        }}
-      >
-        {isLoading ? (
-          <Box p={8} display="flex" flexDirection="column" alignItems="center" gap={2}>
-            <CircularProgress size={36} sx={{ color: COLORS.primary }} />
-            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant }}>
-              Loading tickets from backend...
-            </Typography>
-          </Box>
-        ) : displayedIncidents.length === 0 ? (
-          <Box p={8} textAlign="center">
-            <Typography variant="h6" fontWeight="700" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
-              {activeTab === 0
-                ? "No tickets reported today matching your filters"
-                : activeTab === 1
-                ? "No previous days' tickets matching your filters"
-                : "No tickets found"}
-            </Typography>
-            <Typography variant="body2" sx={{ color: COLORS.onSurfaceVariant, mb: 2 }}>
-              {q || priorityFilter !== 'ALL' || statusFilter !== 'ALL' || levelFilter !== 'ALL'
-                ? 'Try broadening your search query or reset the filters.'
-                : 'Declare a new ticket or check another tab.'}
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleResetFilters}
-              sx={{
-                borderColor: COLORS.border,
-                color: COLORS.onSurface,
-                '&:hover': { borderColor: COLORS.primary },
-              }}
-            >
-              Clear All Filters
-            </Button>
-          </Box>
-        ) : (
-          <Table>
-            <TableHead sx={{ bgcolor: COLORS.surfaceContainerLow }}>
-              <TableRow sx={{ '& th': { borderBottom: `1px solid ${COLORS.border}` } }}>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TICKET CODE</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TITLE &amp; SERVICE</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TICKET LEVEL</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>HANDLING ASSIGNEE</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>STATUS</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>SLA TARGET</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>REPORTED AT</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em', textAlign: 'right' }}>
-                  ACTIONS
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {displayedIncidents.map((inc) => {
-                const isToday = isCreatedToday(inc.createdAt);
-                return (
-                  <TableRow
-                    key={inc.id}
-                    hover
-                    sx={{
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s',
-                      '& td': { borderBottom: `1px solid ${COLORS.border}` },
-                      '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.05) !important' },
-                    }}
-                    onClick={() => navigate(`/admin/tickets/${inc.id}`)}
-                  >
-                    {/* 1. Ticket Code */}
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontFamily: 'JetBrains Mono, monospace',
-                            fontWeight: 700,
-                            color: COLORS.primary,
-                            fontSize: '0.85rem',
-                          }}
-                        >
-                          {inc.code}
-                        </Typography>
-                        {inc.major && (
-                          <Chip
-                            label="MAJOR"
-                            size="small"
-                            sx={{
-                              height: 18,
-                              fontSize: 10,
-                              fontWeight: 800,
-                              bgcolor: 'rgba(244, 63, 94, 0.2)',
-                              color: '#fb7185',
-                              border: '1px solid rgba(244, 63, 94, 0.3)',
-                              fontFamily: 'JetBrains Mono, monospace',
-                            }}
-                          />
-                        )}
-                      </Stack>
-                    </TableCell>
+      {list.isLoading && <LoadingState />}
+      {loadFailed && <ErrorState onRetry={() => list.refetch()} message={apiErrorMessage(list.error)} />}
+      {list.data && rows.length === 0 && (
+        <EmptyState message={hasFilters || tab !== 'all' ? 'No incidents match these filters.' : 'No incidents yet.'}
+          action={hasFilters ? <Button onClick={clearFilters} sx={{ textTransform: 'none' }}>Clear filters</Button> : undefined} />
+      )}
+      {list.isError && list.data && <ErrorState onRetry={() => list.refetch()} message={apiErrorMessage(list.error)} />}
 
-                    {/* 2. Title & Service */}
-                    <TableCell sx={{ maxWidth: 320 }}>
-                      <Typography variant="body2" fontWeight="700" sx={{ color: COLORS.onSurface }} noWrap>
-                        {inc.title}
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center" mt={0.4}>
-                        <Chip
-                          label={inc.service?.name || 'General Service'}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: '0.72rem',
-                            fontWeight: 600,
-                            bgcolor: COLORS.surfaceContainerHighest,
-                            color: COLORS.onSurfaceVariant,
-                            border: `1px solid ${COLORS.border}`,
-                          }}
-                        />
-                        {inc.category?.name && (
-                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }} noWrap>
-                            • {inc.category.name}
-                          </Typography>
-                        )}
-                      </Stack>
+      {rows.length > 0 && (
+        <Paper sx={{ bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px', overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {['Code', 'Title', 'Service', 'Priority', 'Status', 'SLA', 'Assignee', 'Created', ''].map((h) => <TableCell key={h || 'actions'} sx={headSx}>{h}</TableCell>)}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((i) => (
+                  <TableRow key={i.id} hover sx={{ cursor: 'pointer' }} onClick={() => setParam('open', String(i.id))}>
+                    <TableCell sx={cellSx}>
+                      {i.code}
+                      {i.major && <Chip size="small" label="MAJOR" color="error" sx={{ ml: 1, height: 20, fontSize: 12 }} />}
                     </TableCell>
-
-                    {/* 3. Ticket Level (Priority & Escalation Level) */}
-                    <TableCell>
-                      <Stack spacing={0.6} alignItems="flex-start">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <PriorityBadge priority={inc.priority} />
-                        </Box>
-                        {renderEscalationBadge(inc.escalationLevel)}
-                      </Stack>
-                    </TableCell>
-
-                    {/* 4. Handling Assignee & Reporter ("Who is handling what") */}
-                    <TableCell sx={{ minWidth: 190 }}>
-                      {inc.assignee?.name ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                          <Avatar
-                            sx={{
-                              width: 30,
-                              height: 30,
-                              fontSize: 12,
-                              fontWeight: 700,
-                              bgcolor: 'rgba(99, 102, 241, 0.2)',
-                              color: COLORS.primary,
-                              border: '1px solid rgba(99, 102, 241, 0.4)',
-                            }}
-                          >
-                            {inc.assignee.name.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" fontWeight="700" sx={{ color: COLORS.onSurface }}>
-                              {inc.assignee.name}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                              Reported by {inc.reporter?.name || 'Staff'}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box>
-                          <Chip
-                            icon={<WarningIcon sx={{ fontSize: 14, color: '#f59e0b !important' }} />}
-                            label="Unassigned"
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              bgcolor: 'rgba(245, 158, 11, 0.15)',
-                              color: '#fbbf24',
-                              border: '1px solid rgba(245, 158, 11, 0.3)',
-                            }}
-                          />
-                          <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }} display="block" mt={0.3}>
-                            Reported by {inc.reporter?.name || 'Staff'}
-                          </Typography>
-                        </Box>
-                      )}
-                    </TableCell>
-
-                    {/* 5. Status */}
-                    <TableCell>
-                      <StatusChip status={inc.status} />
-                    </TableCell>
-
-                    {/* 6. SLA Countdown */}
-                    <TableCell>
-                      <SlaCountdown
-                        due={inc.resolutionDue || inc.responseDue}
-                        createdAt={inc.createdAt}
-                        slaState={inc.slaState}
-                      />
-                    </TableCell>
-
-                    {/* 7. Reported Date */}
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Typography variant="body2" fontSize="0.82rem" sx={{ color: COLORS.onSurface, fontWeight: isToday ? 700 : 500, fontFamily: 'JetBrains Mono, monospace' }}>
-                        {formatTicketDate(inc.createdAt, isToday)}
-                      </Typography>
-                      {isToday && (
-                        <Chip
-                          label="TODAY"
-                          size="small"
-                          sx={{
-                            height: 16,
-                            fontSize: 9,
-                            fontWeight: 800,
-                            bgcolor: 'rgba(99, 102, 241, 0.2)',
-                            color: COLORS.primary,
-                            border: '1px solid rgba(99, 102, 241, 0.3)',
-                            mt: 0.3,
-                            fontFamily: 'JetBrains Mono, monospace',
-                          }}
-                        />
-                      )}
-                    </TableCell>
-
-                    {/* 8. Actions */}
-                    <TableCell sx={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <Tooltip title="Assign / Reassign Technician">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleOpenAssign(inc, e)}
-                          sx={{ color: COLORS.primary, mr: 0.5 }}
-                        >
-                          <AssignmentIndIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="View Ticket Details">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/admin/tickets/${inc.id}`);
-                          }}
-                          sx={{ color: COLORS.secondary }}
-                        >
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
+                    <TableCell sx={{ ...cellSx, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.title}</TableCell>
+                    <TableCell sx={cellSx}>{i.service.name}</TableCell>
+                    <TableCell sx={cellSx}><PriorityBadge priority={i.priority} /></TableCell>
+                    <TableCell sx={cellSx}><StatusChip status={i.status} /></TableCell>
+                    <TableCell sx={{ ...cellSx, minWidth: 110 }}><SlaBar createdAt={i.createdAt} due={i.resolutionDue} slaState={i.slaState} /></TableCell>
+                    <TableCell sx={cellSx}>{i.assignee?.name ?? <Box component="span" sx={{ color: tokens.onSurfaceVariant }}>Unassigned</Box>}</TableCell>
+                    <TableCell sx={cellSx}>{new Date(i.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</TableCell>
+                    <TableCell sx={cellSx} align="right">
+                      <Tooltip title={i.assignee ? 'Reassign' : 'Assign'}>
+                        <IconButton size="small" aria-label={i.assignee ? `Reassign ${i.code}` : `Assign ${i.code}`}
+                          onClick={(e) => { e.stopPropagation(); setAssignTarget(i); }}><AssignIcon fontSize="small" /></IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </TableContainer>
-
-      {/* Server Pagination Bar */}
-      {totalItems > 0 && (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            p: 2,
-            bgcolor: COLORS.surfaceContainer,
-            border: `1px solid ${COLORS.border}`,
-            borderTop: 'none',
-            borderRadius: '0 0 12px 12px',
-          }}
-        >
-          <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-            Showing {allIncidents.length > 0 ? page * pageSize + 1 : 0}–{Math.min((page + 1) * pageSize, totalItems)} of {totalItems} total incidents
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              sx={{
-                borderColor: COLORS.border,
-                color: COLORS.onSurface,
-                textTransform: 'none',
-                fontSize: 12,
-                fontWeight: 600,
-                '&:disabled': { opacity: 0.4 },
-              }}
-            >
-              Previous Page
-            </Button>
-            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.primary, fontFamily: 'JetBrains Mono, monospace' }}>
-              Page {page + 1} of {Math.max(1, totalPages)}
-            </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={page + 1 >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              sx={{
-                borderColor: COLORS.border,
-                color: COLORS.onSurface,
-                textTransform: 'none',
-                fontSize: 12,
-                fontWeight: 600,
-                '&:disabled': { opacity: 0.4 },
-              }}
-            >
-              Next Page
-            </Button>
-          </Box>
-        </Box>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 1.5 }}>
+            <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Page {page + 1} of {Math.max(totalPages, 1)}</Typography>
+            <Stack direction="row" spacing={1}>
+              <Button size="small" disabled={page <= 0} onClick={() => setParam('page', page - 1 > 0 ? String(page - 1) : '')} sx={{ textTransform: 'none' }}>Previous</Button>
+              <Button size="small" disabled={page + 1 >= totalPages} onClick={() => setParam('page', String(page + 1))} sx={{ textTransform: 'none' }}>Next</Button>
+            </Stack>
+          </Stack>
+        </Paper>
       )}
 
-      {/* 6. Quick Assign / Reassign Dialog */}
-      <Dialog
-        open={reassignOpen}
-        onClose={() => setReassignOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: COLORS.surfaceContainer,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 3,
-            color: COLORS.onSurface,
-          },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
-          Assign Handler: {targetIncident?.code}
-        </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
-          <Stack spacing={2.5} mt={1}>
-            <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-              <Typography variant="subtitle2" fontWeight="700" sx={{ color: COLORS.onSurface }}>
-                {targetIncident?.title}
-              </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                Service: {targetIncident?.service?.name} | Priority: {targetIncident?.priority}
-              </Typography>
-            </Box>
-
-            <FormControl fullWidth size="small">
-              <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Select Technician / Handler</InputLabel>
-              <Select
-                value={selectedTechId}
-                label="Select Technician / Handler"
-                onChange={(e) => setSelectedTechId(Number(e.target.value))}
-                sx={{
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  '& fieldset': { borderColor: COLORS.border },
-                }}
-              >
-                {technicians.map((t) => (
-                  <MenuItem key={t.id} value={t.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon sx={{ fontSize: 18, color: COLORS.onSurfaceVariant }} />
-                      <Box>
-                        <Typography variant="body2" fontWeight="600">
-                          {t.name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                          {t.roles.includes('ADMINISTRATOR') ? 'System Admin' : 'Technician'} • {t.department || 'IT Operations'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Assignment Notes / Justification"
-              size="small"
-              fullWidth
-              value={reassignReason}
-              onChange={(e) => setReassignReason(e.target.value)}
-              placeholder="e.g. Assigned to specialist for immediate triage"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  '& fieldset': { borderColor: COLORS.border },
-                },
-                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
-              }}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
-          <Button onClick={() => setReassignOpen(false)} disabled={isSubmitting} sx={{ color: COLORS.onSurfaceVariant }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveReassign}
-            disabled={isSubmitting}
-            sx={{
-              bgcolor: COLORS.primary,
-              color: '#ffffff',
-              fontWeight: 700,
-              '&:hover': { bgcolor: '#4f46e5' },
-            }}
-          >
-            {isSubmitting ? 'Assigning...' : 'Save Assignment'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 7. Declare Ticket / Incident Dialog */}
-      <Dialog
-        open={declareOpen}
-        onClose={() => setDeclareOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: COLORS.surfaceContainer,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 3,
-            color: COLORS.onSurface,
-          },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>Declare New Ticket / Incident</DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
-          <Stack spacing={2.5} mt={1}>
-            <TextField
-              label="Ticket Summary / Title"
-              fullWidth
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="e.g. Core Database Aurora Replica Lag Spikes"
-              required
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  '& fieldset': { borderColor: COLORS.border },
-                },
-                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
-              }}
-            />
-            <TextField
-              label="Detailed Technical Description"
-              fullWidth
-              multiline
-              rows={3}
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              placeholder="Describe symptoms, edge clusters affected, and impact..."
-              required
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  '& fieldset': { borderColor: COLORS.border },
-                },
-                '& .MuiInputLabel-root': { color: COLORS.onSurfaceVariant },
-              }}
-            />
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Impacted Service</InputLabel>
-              <Select
-                value={newServiceId}
-                label="Impacted Service"
-                onChange={(e) => setNewServiceId(Number(e.target.value))}
-                sx={{
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  '& fieldset': { borderColor: COLORS.border },
-                }}
-              >
-                {services.map((svc) => (
-                  <MenuItem key={svc.id} value={svc.id}>
-                    {svc.name} (Criticality: {svc.criticality}/5)
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Stack direction="row" spacing={2}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Impact (1-5)</InputLabel>
-                <Select
-                  value={newImpact}
-                  label="Impact (1-5)"
-                  onChange={(e) => setNewImpact(Number(e.target.value))}
-                  sx={{
-                    bgcolor: COLORS.surfaceContainerLowest,
-                    color: COLORS.onSurface,
-                    '& fieldset': { borderColor: COLORS.border },
-                  }}
-                >
-                  <MenuItem value={1}>1 - Minor / Single User</MenuItem>
-                  <MenuItem value={2}>2 - Moderate / Department</MenuItem>
-                  <MenuItem value={3}>3 - Significant / Site</MenuItem>
-                  <MenuItem value={4}>4 - Severe / Multiple Sites</MenuItem>
-                  <MenuItem value={5}>5 - Catastrophic / Enterprise</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Urgency (1-5)</InputLabel>
-                <Select
-                  value={newUrgency}
-                  label="Urgency (1-5)"
-                  onChange={(e) => setNewUrgency(Number(e.target.value))}
-                  sx={{
-                    bgcolor: COLORS.surfaceContainerLowest,
-                    color: COLORS.onSurface,
-                    '& fieldset': { borderColor: COLORS.border },
-                  }}
-                >
-                  <MenuItem value={1}>1 - Low Workaround</MenuItem>
-                  <MenuItem value={2}>2 - Standard Urgency</MenuItem>
-                  <MenuItem value={3}>3 - Elevated</MenuItem>
-                  <MenuItem value={4}>4 - High Urgency</MenuItem>
-                  <MenuItem value={5}>5 - Immediate Action Required</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-
-            {/* Assignee / Handler Selection */}
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: COLORS.onSurfaceVariant }}>Assign Handler / Technician (Optional)</InputLabel>
-              <Select
-                value={newAssigneeId}
-                label="Assign Handler / Technician (Optional)"
-                onChange={(e) => setNewAssigneeId(e.target.value === '' ? '' : Number(e.target.value))}
-                sx={{
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  color: COLORS.onSurface,
-                  '& fieldset': { borderColor: COLORS.border },
-                }}
-              >
-                <MenuItem value="">
-                  <Typography variant="body2" sx={{ fontStyle: 'italic', color: COLORS.onSurfaceVariant }}>
-                    ⚡ Auto-Assign via Workload Algorithm
-                  </Typography>
-                </MenuItem>
-                {technicians.map((tech) => (
-                  <MenuItem key={tech.id} value={tech.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 22, height: 22, fontSize: 11, bgcolor: 'rgba(99, 102, 241, 0.2)', color: COLORS.primary }}>
-                          {tech.name.charAt(0)}
-                        </Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {tech.name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
-                          ({tech.department || (tech.roles.includes('ADMINISTRATOR') ? 'Admin' : 'Technician')})
-                        </Typography>
-                      </Box>
-                      <Chip
-                        size="small"
-                        label={tech.roles.includes('ADMINISTRATOR') ? 'Admin' : 'Technician'}
-                        sx={{
-                          height: 18,
-                          fontSize: 10,
-                          bgcolor: COLORS.surfaceContainerHighest,
-                          color: COLORS.onSurfaceVariant,
-                          border: `1px solid ${COLORS.border}`,
-                          fontWeight: 600,
-                        }}
-                      />
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, borderColor: COLORS.border }}>
-          <Button onClick={() => setDeclareOpen(false)} disabled={isSubmitting} sx={{ color: COLORS.onSurfaceVariant }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleCreate}
-            disabled={isSubmitting}
-            sx={{
-              bgcolor: COLORS.primary,
-              color: '#ffffff',
-              fontWeight: 700,
-              '&:hover': { bgcolor: '#4f46e5' },
-            }}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Ticket'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <IncidentCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} defaultServiceId={Number(get('serviceId')) || undefined}
+        onCreated={(c) => setParam('open', String(c.id))} />
+      <AssignDialog incident={assignTarget} onClose={() => setAssignTarget(null)} />
+      <SavedViewsDialog open={viewsOpen} onClose={() => setViewsOpen(false)} current={current} onApply={applyView} />
+      <IncidentDrawer id={openId} onClose={() => setParam('open', '')} />
     </Box>
   );
 }
-

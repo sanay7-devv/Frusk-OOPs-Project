@@ -1,5 +1,5 @@
 import type { Workspace } from '../auth/AuthContext';
-export interface NavItem { label: string; to: string; permission?: string }
+export interface NavItem { label: string; to: string; permission?: string; group?: string }
 export const NAV: Record<Workspace, NavItem[]> = {
   employee: [
     { label: 'Home', to: '/employee/home' },
@@ -19,14 +19,20 @@ export const NAV: Record<Workspace, NavItem[]> = {
     { label: 'Notifications', to: '/notifications' },
   ],
   admin: [
-    { label: 'Dashboard', to: '/admin/dashboard' }, { label: 'Tickets', to: '/admin/tickets' },
-    { label: 'Problems', to: '/admin/problems' },
-    { label: 'Users', to: '/admin/users' }, { label: 'Services', to: '/admin/services' },
-    { label: 'Dependency graph', to: '/admin/services/graph' }, { label: 'SLA policies', to: '/admin/sla' },
-    { label: 'Categories', to: '/admin/categories' }, { label: 'Config', to: '/admin/config' },
-    { label: 'Escalation', to: '/admin/escalation' }, { label: 'Audit log', to: '/admin/audit' },
-    { label: 'Reports', to: '/admin/reports' },
-    { label: 'Simulator', to: '/admin/simulator', permission: 'CONFIG_MANAGE' },
-    { label: 'Demo controls', to: '/admin/demo', permission: 'CONFIG_MANAGE' },
+    { label: 'Dashboard', to: '/admin/dashboard', group: 'Operations' },
+    { label: 'Incidents', to: '/admin/incidents', group: 'Operations' },
+    { label: 'Problems', to: '/admin/problems', group: 'Operations' },
+    { label: 'Simulator', to: '/admin/simulator', permission: 'CONFIG_MANAGE', group: 'Operations' },
+    { label: 'Users', to: '/admin/users', group: 'Catalog' },
+    { label: 'Services', to: '/admin/services', group: 'Catalog' },
+    { label: 'Dependency graph', to: '/admin/services/graph', group: 'Catalog' },
+    { label: 'Categories', to: '/admin/categories', group: 'Catalog' },
+    { label: 'SLA policies', to: '/admin/sla', group: 'Policy' },
+    { label: 'Escalation', to: '/admin/escalation', group: 'Policy' },
+    { label: 'Config', to: '/admin/config', group: 'Policy' },
+    { label: 'Reports', to: '/admin/reports', group: 'Insight' },
+    { label: 'Audit log', to: '/admin/audit', group: 'Insight' },
+    { label: 'Demo controls', to: '/admin/demo', permission: 'CONFIG_MANAGE', group: 'Tools' },
+    { label: 'Account security', to: '/account/security', group: 'Tools' },
   ],
 };

@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Stack, TextField, Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { tokens } from '../../../theme/theme';
-import { createIncident, assignIncident } from '../../../api/incidents';
-import { getCategories, getServices } from '../../../api/services';
-import { listTechnicians } from '../../../api/technicians';
-import { useToast } from '../../../components/Toast';
-import { apiErrorMessage, isDuplicate } from '../../../utils/errors';
-import type { ApiError } from '../../../api/types';
+import { tokens } from '../theme/theme';
+import { createIncident, assignIncident } from '../api/incidents';
+import { getCategories, getServices } from '../api/services';
+import { listTechnicians } from '../api/technicians';
+import { useToast } from './Toast';
+import { apiErrorMessage, isDuplicate } from '../utils/errors';
+import type { ApiError, IncidentDetail } from '../api/types';
 import type { AxiosError } from 'axios';
 
 const LEVELS = [
@@ -18,12 +18,22 @@ const LEVELS = [
 ];
 type Similar = NonNullable<ApiError['similar']>;
 
-export function DeclareDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export interface IncidentCreateDialogProps {
+  open: boolean;
+  onClose: () => void;
+  /** Called with the created incident (after the optional assignment). */
+  onCreated?: (created: IncidentDetail) => void;
+  /** Pre-selects the service when the dialog opens from a filtered list. */
+  defaultServiceId?: number;
+}
+
+/** The one incident-create dialog (dashboard and incidents list). */
+export function IncidentCreateDialog({ open, onClose, onCreated, defaultServiceId }: IncidentCreateDialogProps) {
   const toast = useToast();
   const qc = useQueryClient();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [serviceId, setServiceId] = useState<number | ''>('');
+  const [serviceId, setServiceId] = useState<number | ''>(defaultServiceId ?? '');
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [impact, setImpact] = useState<number | ''>('');
   const [urgency, setUrgency] = useState<number | ''>('');
@@ -31,6 +41,10 @@ export function DeclareDialog({ open, onClose }: { open: boolean; onClose: () =>
   const [technicianId, setTechnicianId] = useState<number | ''>('');
   const [similar, setSimilar] = useState<Similar | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open && defaultServiceId) setServiceId(defaultServiceId);
+  }, [open, defaultServiceId]);
 
   const services = useQuery({ queryKey: ['catalog-services'], queryFn: getServices, enabled: open });
   const categories = useQuery({ queryKey: ['catalog-categories'], queryFn: getCategories, enabled: open });
@@ -56,8 +70,11 @@ export function DeclareDialog({ open, onClose }: { open: boolean; onClose: () =>
     onSuccess: ({ created, assignError }) => {
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['admin-incidents-all'] });
+      qc.invalidateQueries({ queryKey: ['admin-incidents-list'] });
+      qc.invalidateQueries({ queryKey: ['incidents'] });
       toast(`Incident ${created.code} created. Priority ${created.priority ?? 'pending'}.`, 'success');
       if (assignError) toast(`The incident was created but not assigned: ${assignError}`, 'warning');
+      onCreated?.(created);
       reset();
       onClose();
     },
@@ -93,7 +110,7 @@ export function DeclareDialog({ open, onClose }: { open: boolean; onClose: () =>
               <Typography sx={{ fontSize: 13, mb: 0.5 }}>Similar open incidents exist. Check them first.</Typography>
               {similar.map((s) => (
                 <Typography key={s.id} sx={{ fontSize: 12 }}>
-                  <RouterLink to={`/admin/tickets/${s.id}`} target="_blank" style={{ color: 'inherit' }}>{s.code}</RouterLink>
+                  <RouterLink to={`/admin/incidents/${s.id}`} target="_blank" style={{ color: 'inherit' }}>{s.code}</RouterLink>
                   {' '}{s.title} ({Math.round(s.similarity * 100)}% similar)
                 </Typography>
               ))}

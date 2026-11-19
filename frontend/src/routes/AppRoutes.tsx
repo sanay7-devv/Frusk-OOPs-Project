@@ -1,5 +1,5 @@
 //we are importing all project folders 
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import RequireWorkspace from '../auth/RequireRole';
 import { useAuth, HOME } from '../auth/AuthContext';
@@ -37,6 +37,13 @@ import ResetPassword from '../features/shared/ResetPassword';
 import AccountSecurity from '../features/account/AccountSecurity';
 import ServiceStatus from '../features/employee/ServiceStatus';
 import NotFound from '../pages/NotFound';
+
+/** Old /admin/tickets URLs keep working: same query string, same id, new path. */
+function LegacyTicketsRedirect() {
+  const { id } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/admin/incidents${id ? `/${id}` : ''}${search}`} replace />;
+}
 
 function RootRedirect() {
   const { user, workspace, workspaces, loading } = useAuth();
@@ -89,10 +96,10 @@ export default function AppRoutes() {
           {/* these are all file paths which routed leads to that file */}
           <Route element={<RequireWorkspace workspace="admin" />}>
             <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/tickets" element={<Tickets />} />
-            <Route path="/admin/tickets/:id" element={<AdminIncidentDetail />} />
-            <Route path="/admin/incidents" element={<Navigate to="/admin/tickets" replace />} />
+            <Route path="/admin/incidents" element={<Tickets />} />
             <Route path="/admin/incidents/:id" element={<AdminIncidentDetail />} />
+            <Route path="/admin/tickets" element={<LegacyTicketsRedirect />} />
+            <Route path="/admin/tickets/:id" element={<LegacyTicketsRedirect />} />
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/employees" element={<Navigate to="/admin/users" replace />} />
             <Route path="/admin/services" element={<Services />} />
