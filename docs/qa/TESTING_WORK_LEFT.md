@@ -2,6 +2,17 @@
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
+**Update on 2026-11-19** (checked on `shared/main` at `638e42b`, the merge of PR #46):
+
+- **R3 security checks: Partly done.** The table now has request, result, date and evidence for each check ([TEST_REPORT.md](TEST_REPORT.md), dated 2026-11-15, commit `3bc8ab6`). Left: the browser check of script text (check 4).
+- **R5 dry-run checklist: Partly done.** [DEMO_RUN_SHEET.md](DEMO_RUN_SHEET.md) now has recording-day checks (mail catcher, timers, AI key or `KEYWORD` fallback), all five segments, and an evidence table. Left: the dry-run log has no rows yet, so nothing has been rehearsed.
+- **R7 test report: Partly done.** The security table is corrected (see R3). Left: per-case evidence (the index points at the Surefire XML of `HandbookIntegrationTest`, not one output per case) and a re-run of the 26 cases on the final commit.
+- **R9 CI gaps: Done.** `frontend/package.json` has `"lint": "tsc --noEmit"`, and CI runs `npm run lint` in the frontend job. This is a type check, not ESLint.
+- **R10 frontend tests: Partly done.** Seven tests in two files: `auth-flow.test.tsx` (4, including the empty and malformed credential check) and `incident-ui.test.tsx` (3, status labels and SLA states). Not covered: the SLA colours (the test checks text only), the filter bar, and the screens from #36 to #39 (audit seal, account security, problems, reports).
+- **R11 handbook unit-test classes: Partly done, 10 of 12.** Now present: `PriorityEngineTest`, `EligibilityFilterTest`, `WorkloadTrackerTest`, `SlaTrackerTest`, `AssignmentStrategyTests`, `EscalationChainTest`, `SimilarityTest`, `KeywordCategorizerTest`, `SlaRiskScorerTest`, `PermissionTest`. Missing: `IncidentStateTest` and `ExceptionMappingTest`. I did not check the new classes against the "what to cover" column.
+- **Backend test count, not reconciled.** `backend/src/test` has 56 `@Test` methods in 13 files on `shared/main`. `SeedCompatibilityTest` (2) runs only when `VERIFY_DEMO_SEEDS=true`, so a normal run should give 54. [TEST_REPORT.md](TEST_REPORT.md) says 53 run. Check the Surefire XML before the report is handed over.
+- **Still open, from PR #46:** R6 (reset time and fresh clone on the recording laptop); the visual check that script text renders safely; rehearsing and recording the demo; branch protection (repository owner, R8); the two missing unit-test classes; frontend screen tests (R10).
+
 Checked with git, grep and `gh` on `main` at `2bd1c61`. Since 2026-11-15 no commit has touched `backend/src/test`, `docs/qa`, `db`, `.github` or the Postman collection. The only change under `deploy/` is `deploy/backend.Dockerfile` in `50794aa` (Sanay: CRLF fix for `mvnw`, runtime image JRE → JDK). Re-check it on a fresh build (R6).
 
 CI: six jobs per run (frontend build, frontend tests, backend tests with PostgreSQL migrations, seed integrity dev and demo, demo stack and snapshot round trip). Green on every PR merged on 2026-11-18 (#34 to #40).
