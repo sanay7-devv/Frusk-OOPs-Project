@@ -29,7 +29,15 @@ From commits `1f351c2` (PR #15/#16), `1ea86cc` (new design and theme) and `50794
 
 To claim an area, add a row here (area, who, branch, files it changes, checklist items, status) before you start, and keep shared files (`routes/AppRoutes.tsx`, `layouts/navConfig.ts`, `layouts/AppShell.tsx`, `api/types.ts`, `utils/errors.ts`, `theme/theme.ts`) to a few added lines. The round 2 rows (tech SLA, Dashboard) were removed here on 2026-11-19: both are merged (PR #42 and #43, section 4).
 
-Nothing claimed right now. Round 4 (#54 to #57) and round 3 (#48 to #51) are merged and listed in section 4.
+**Round 5 claims (2026-11-19).** Each helper edits only its folder. Sanay: please avoid these folders until the round-5 PRs merge, or tell the supervisor which files you need.
+
+| Area | Who | Folders it changes | Checklist items | Status |
+|---|---|---|---|---|
+| Admin screens (fe-admin-r5) | fe-admin-r5 | `frontend/src/features/admin/**` | Admin screens: G1 and G2 to G13 leftovers, G14 admin items that remain open | In progress |
+| Staff screens (fe-staff-r5) | fe-staff-r5 | `features/technician`, `features/lead`, `features/employee`, shared features (`features/shared`, `features/problems`, `features/account`) | F0 to F6 and E1 to E7 leftovers | In progress |
+| Shared code (fe-shared-r5) | fe-shared-r5 | `frontend/src/api/**`, `components/**`, `layouts/**`, `theme/**`, `routes/**`, `realtime/**`, `utils/**` | E8 to E13 leftovers, E9 typed client, shared theme and components | In progress |
+
+Round 4 (#54 to #57) and round 3 (#48 to #51) are merged and listed in section 4.
 
 ## 4. Done by helpers
 
@@ -76,5 +84,6 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 | 2026-11-19 | Completed comprehensive technical and contract work across Technician (F1, F2, F3), Team Lead (F4, F5), and Admin management (G1, G3, G4): dual SLA timers, server pagination, chronological unified timelines, escalationPreview countdowns, whole problem resolution, mark duplicate, PriorityExplainer, attachments, PDF exports, recommendations, real CSV export, and `<ConfirmDialog>` integrations. Checklist advances past target to 449 of 636 done (70.6%). |
 | 2026-11-19 | Round 4 claims added to section 3 for four helpers: fe-tech-r4, fe-lead-r4, fe-admin-mgmt-r4, fe-tickets-r4. Each lists the files it changes and its checklist items. Sanay asked to avoid those files until the round-4 PRs merge. No checklist ticks in this entry. |
 | 2026-11-19 | Round 4 merged to `main`: #54 team queue, escalations and admin incident detail (fe-lead-r4), #55 technician workbench, queue and workload (fe-tech-r4), #56 incidents list, shared create dialog and nav (fe-tickets-r4), #57 admin Users, SLA policies and Services (fe-admin-mgmt-r4). The four claims moved from section 3 to section 4. The round-4 ticks were checked against the code on `shared/main` `9c46cea`: 54 boxes ticked and 25 partly done in `FRONTEND_WORK_LEFT.md`; checklist now about 571 of 636 done after the four final reports. Sanay's note about avoiding these files is removed. |
+| 2026-11-19 | Round 5 claims added to section 3 for three helpers: fe-admin-r5 (`features/admin/**`), fe-staff-r5 (technician, lead, employee and shared features), fe-shared-r5 (api, components, layouts, theme, routes, realtime, utils). Docs PR (`docs/round5`): checked the code and closed the G8 business-hours calendar line (`features/admin/config/BusinessCalendarCard.tsx`). Marked partly done: G14 account security (`features/account/AccountSecurity.tsx`, no QR code), G14 problems (`features/problems/`, root cause on the graph missing) and G14 demo controls (`features/admin/DemoControls.tsx`, no Director's bar). |
 | 2026-11-19 | Round 4 final reports from the four helpers folded into `FRONTEND_WORK_LEFT.md`: 90 boxes ticked and about 42 partly done (line-level notes), checklist about 571 of 636. Helpers flagged stale `[x]` lines in F0 to F3; a re-check note is in that section. Items the helpers listed as not done stay open (for example E9 typed client, G1 fonts and COLORS, Edit on the technician workbench). |
 | 2026-11-19 | Round 3 merged to `main`: #48 simulator and demo controls, #49 service graph, #50 admin settings, #51 admin leftovers. The four claims moved from section 3 to section 4. `FRONTEND_WORK_LEFT.md` rechecked against `shared/main`: 33 boxes ticked, 43 lines edited (notes, ticks or one wording change); checklist now 481 of 636 done (75.6%), 155 open. |
