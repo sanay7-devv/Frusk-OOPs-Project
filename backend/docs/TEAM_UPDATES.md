@@ -49,6 +49,16 @@ Last updated: 2026-11-16 (contract fixes for the frontend: workload and audit-ve
 
 ## 2. Frontend developer
 
+- **Round 5 notes (2026-11-19, merged as #60 to #62, checked against `shared/main` `f1361c6`):**
+  - New theme tokens on `tokens` (`frontend/src/theme/theme.ts`): `paper`, `danger`, `warning`, `success`, `info`, `textDisabled`, `border`, `borderSubtle`, `hover`, `fontBody`, `fontHeading`, `fontMono`, `minFontSize` (12), and the `priority`, `status` and `sla` objects (the same objects as `priorityColor`, `statusColor` and `slaStateColor`). No existing token was renamed or removed. Use these instead of hex literals in new code.
+  - The theme forces 12 px on caption, overline, table head, chip, tooltip and helper text. Do not add `fontSize` 9 to 11 in new code; the `git grep` count is 0 and should stay there.
+  - `features/admin/palette.ts`: the admin screens read their colours from the theme through this file. Use it in new admin code instead of a local `COLORS` constant.
+  - `features/shared/useLiveRefresh.ts`: the hook behind real-time refresh. It reacts to the `useRealtime` invalidation; the queue screens (TechQueue, TechWorkbench, TeamQueue) poll every 60 s as a fallback. Use it for any new live list.
+  - `components/ActionButtons.tsx` has new optional props (`incident`, `exclude`, `labels`, `pending`, `disabled`); `allowed` is optional now. No screen imports it yet.
+  - `api/admin.ts` `AdminUser` mirrors the contract. The non-contract fields are optional and commented.
+  - Login: the seed-account panel is shown only in `npm run dev` or in a build with `VITE_SHOW_DEMO_ACCOUNTS=true` (the recorded demo). The placeholder email is `employee1@iitsm.demo`.
+  - Escalation settings are one editor at `/admin/escalation` (`EscalationSettings.tsx`). The SLA policies screen no longer has an escalation tab.
+  - Queue rows (`features/technician/QueueRowActions.tsx`) have a More menu with Escalate, Mark duplicate and Link problem for team-view users.
 - **Round 4 notes (2026-11-19, merged as #54 to #57, checked against `shared/main` `9c46cea`):**
   - `Tickets.tsx` is now 235 lines. Its parts are in `features/admin/tickets/` (filters, drawer, saved views, assign dialog), and the create dialog is the shared `components/IncidentCreateDialog.tsx` (used by Tickets and the Dashboard).
   - Users, Services and SlaPolicies are split into `features/admin/users|services|sla`. They call the new `api/adminDirectory.ts`, not `api/admin.ts`.
