@@ -1,6 +1,6 @@
 # Task 3 test report
 
-Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af9eb870809`, [successful CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624315622). The [Task 3 follow-up run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) on 2026-11-15 passed all six jobs, including the expanded Postman and security checks. The [original PR integration run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624733027) also passed before PR #12 was merged.
+Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af9eb870809`, [successful CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624315622). The [Task 3 follow-up run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) on 2026-11-15 passed all six jobs, including the expanded Postman and security checks, at commit `3bc8ab6`. The [latest main run before this report update](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44458560238) at commit `39db8c3` passed all six jobs on 2026-11-19; it reran the T01–T26 suite after the later merges. The [original PR integration run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624733027) also passed before PR #12 was merged.
 
 ## Result
 
@@ -15,7 +15,7 @@ Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af
 | Security dry run (follow-up) | 30 checks passed |
 | Open blocker bugs at this snapshot | 0 recorded |
 
-The exact expected and observed result for each handbook case is in [test_cases.csv](test_cases.csv). That table now records the run date and commit. CI run links contain the job results; the Postman, smoke and security JSON reports are uploaded as demo-stack evidence. The six follow-up jobs also uploaded backend test reports. A bug about stale frontend login selectors, issue #11, was fixed by PR #16 and has since been closed.
+The exact expected and observed result for each handbook case is in [test_cases.csv](test_cases.csv). That table now records the run date and commit. CI run links contain the job results; the Postman, smoke and security JSON reports are uploaded as demo-stack evidence. The backend test job and both seed jobs uploaded Surefire reports; the demo job uploaded API, Postman and security evidence. A bug about stale frontend login selectors, issue #11, was fixed by PR #16 and has since been closed.
 
 ## Coverage and limits
 
@@ -25,19 +25,23 @@ The handbook's T16 example gives duplicate/related similarity thresholds of 0.80
 
 ## Security checks for the report
 
-| Check | Recorded result | Evidence |
-|---|---|---|
-| Employee calls admin users/config endpoints | 403 `UNAUTHORIZED_OPERATION`; two `ACCESS_DENIED` audit rows | T17 in the CI run above |
-| Other technician acts on an assigned incident | 403 `UNAUTHORIZED_OPERATION`; state and audit unchanged | T18 |
-| Expired access token and reused refresh token | 401 `TOKEN_EXPIRED`; reused refresh rejected as `TOKEN_INVALID` | T19 |
-| Five wrong passwords | Account locks; correct password returns 423 `ACCOUNT_LOCKED` until test time advances 15 minutes | T20 |
-| Read another user's incident by changing its ID | 404 `INCIDENT_NOT_FOUND`; acting on it returns 403 | Follow-up CI run, security JSON |
-| Script text in incident title, description and comment | Stored and returned unchanged as JSON data; browser rendering still needs a visual check | Follow-up CI run, security JSON |
-| Oversized title, description, comment, password and upload | Title, description, comment and password rejected with 400 field errors; 6 MB upload rejected by T10 | Follow-up CI run, security JSON; T10 |
-| More than ten login attempts per minute | 429 `RATE_LIMITED` with `Retry-After` | Follow-up CI run, security JSON |
+The automated requests below ran against the disposable demo stack on 2026-11-15 at commit `3bc8ab6`. The [CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) contains `demo-stack-evidence/iitsm-security-checks.json`; T10 and T16 also have `iitsm-handbook-contracts.json`. These are API results. Browser rendering of script text is a separate recording-day check.
+
+| Check | Request and input | Observed result | Date and evidence |
+|---|---|---|---|
+| Cross-user incident access | Employee2 `GET /incidents/{employee1IncidentId}`; employee2 `POST /incidents/{id}/acknowledge` | 404 `INCIDENT_NOT_FOUND`; 403 `UNAUTHORIZED_OPERATION` | 2026-11-15, security JSON; T18 |
+| Admin authorization and audit | Employee1 `GET /admin/users`; admin `GET /audit?actorId={employee1Id}&action=ACCESS_DENIED` | 403 and a recorded `ACCESS_DENIED` row | 2026-11-15, security JSON; T17 |
+| Invalid and expired tokens | `GET /auth/me` with garbage token; advance demo clock 16 minutes, then use old employee token | 401 `TOKEN_INVALID`; 401 `TOKEN_EXPIRED` | 2026-11-15, security JSON; T19 |
+| Script text as data | `POST /incidents` with `<script>alert(1)</script>` in title and description; `POST /incidents/{id}/comments` with the same text | Accepted and returned unchanged as JSON data. Browser display is **not yet verified**. | 2026-11-15, security JSON; see recording sheet |
+| Input limits and upload | Title 201 chars, description 5001, comment 4001, password over 72 UTF-8 bytes; 6 MB upload and executable | 400 `VALIDATION_FAILED` with matching field errors; invalid uploads rejected | 2026-11-15, security JSON; T10 contract JSON |
+| Lockout and rate limiting | Five wrong passwords, then correct password; repeated login for one address/email | 423 `ACCOUNT_LOCKED`; 429 `RATE_LIMITED` with `Retry-After` | 2026-11-15, security JSON; T20 |
+
+## Case evidence index
+
+The 26 rows in [test_cases.csv](test_cases.csv) give the scenario, expected and actual result, date and commit. For T01–T04, T08–T09, T11–T15 and T17–T26, inspect the `HandbookIntegrationTest` Surefire XML in the backend test artifact of the [current main run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44458560238). T05–T07 are covered by `PriorityEngineTest` and `EligibilityFilterTest` in that artifact. T10 and T16 are real-HTTP checks in `iitsm-handbook-contracts.json` in the demo-stack artifact. The report uses CI logs and downloadable test outputs as evidence; individual screenshots for each case have not been captured.
 
 ## Lessons and next checks
 
 A green Linux/UTC CI run alone did not prove the suite works on another laptop: the app startup test assumed a local PostgreSQL service, and Spring tests could inherit the host time zone. The Task 3 follow-up branch moves startup tests to disposable Testcontainers PostgreSQL and fixes their time zone to UTC. The added CI report artifact preserves failed backend test output for review.
 
-The expanded Postman folders and security dry run passed against the disposable CI stack. Before the final recording, follow [DEMO_RUN_SHEET.md](DEMO_RUN_SHEET.md), visually confirm script text is never executed in the browser, exercise the sealed-audit tamper helper, measure reset time on the recording laptop, and capture a fresh-clone demonstration. The helper has passed shell syntax review but its manual seal/tamper/restore sequence is not yet recorded. Repository-owner branch protection and required CI checks still need the owner to enable them.
+The expanded Postman folders and security dry run passed against the disposable CI stack. Before the final recording, follow [DEMO_RUN_SHEET.md](DEMO_RUN_SHEET.md), visually confirm script text is never executed in the browser, exercise the sealed-audit tamper helper, measure reset time on the recording laptop, and capture a fresh-clone demonstration. CI verifies the helper's intact → altered → restored sequence; a manual recording-day rehearsal is still needed. Repository-owner branch protection and required CI checks still need the owner to enable them.
