@@ -10,6 +10,7 @@ import { ErrorState, LoadingState } from '../../../components/StateViews';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
 import { cardSx, fieldSx, monoLabelSx } from '../adminForm';
+import { tone } from '../palette';
 
 export const formatMinutes = (m: number) => {
   if (m < 60) return `${m} min`;
@@ -47,7 +48,7 @@ export function ComplianceStrip() {
                 <Stack direction="row" spacing={1} mt={1.5} flexWrap="wrap" useFlexGap>
                   {rows.map((r) => (
                     <Chip key={r.label} label={`${r.label}: ${r.compliancePercent.toFixed(1)}% (${r.violated} breached)`}
-                      sx={{ fontSize: 12, bgcolor: tokens.surfaceContainerHigh, color: r.violated > 0 ? '#fbbf24' : tokens.onSurface }} />
+                      sx={{ fontSize: 12, bgcolor: tokens.surfaceContainerHigh, color: r.violated > 0 ? tone.warning : tokens.onSurface }} />
                   ))}
                 </Stack>
               </>
@@ -95,7 +96,7 @@ export function CalendarSummary() {
         <Box>
           <Typography sx={monoLabelSx}>Business-hours calendar (for BUSINESS_HOURS policies)</Typography>
           {config.isLoading && <Typography sx={{ fontSize: 14, color: tokens.onSurfaceVariant, mt: 0.5 }}>Loading…</Typography>}
-          {config.isError && <Typography sx={{ fontSize: 14, color: '#fb7185', mt: 0.5 }}>{apiErrorMessage(config.error)}</Typography>}
+          {config.isError && <Typography sx={{ fontSize: 14, color: tone.danger, mt: 0.5 }}>{apiErrorMessage(config.error)}</Typography>}
           {config.data && (
             <Typography sx={{ fontSize: 14, mt: 0.5 }}>
               {v('sla.business.open')} to {v('sla.business.close')}, {days.map((d) => DAY_LABEL[d] ?? d).join(', ') || 'no working days'} ({v('sla.business.zone')}); {holidays.length} holiday{holidays.length === 1 ? '' : 's'}
@@ -131,7 +132,7 @@ export function EffectivePolicy({ policies, services }: { policies: SlaPolicyRec
         <TextField select size="small" label="Priority" value={priority} onChange={(e) => setPriority(e.target.value)} sx={{ ...fieldSx, minWidth: 100 }}>
           {['P1', 'P2', 'P3', 'P4'].map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
         </TextField>
-        <Typography sx={{ fontSize: 14, color: hit ? tokens.onSurface : '#fb7185' }}>
+        <Typography sx={{ fontSize: 14, color: hit ? tokens.onSurface : tone.danger }}>
           {hit
             ? `${hit.via === 'service' ? 'Service policy' : 'Global default'}: respond in ${formatMinutes(hit.policy.responseMinutes)}, resolve in ${formatMinutes(hit.policy.resolutionMinutes)}, ${hit.policy.calendarType === 'ALWAYS' ? 'clock always runs' : 'business hours only'}`
             : 'No policy: incidents of this service and priority are rejected with SLA_NOT_CONFIGURED. Add a global default.'}

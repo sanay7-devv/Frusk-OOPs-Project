@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Box, Button, Chip, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tooltip, Typography,
+  Box, Button, Chip, IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon, Policy as PolicyIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { deleteSlaPolicyRecord, listServiceRecords, listSlaPolicyRecords, type SlaPolicyRecord } from '../../api/adminDirectory';
@@ -12,16 +13,15 @@ import { useToast } from '../../components/Toast';
 import { tokens } from '../../theme/theme';
 import { apiErrorMessage } from '../../utils/errors';
 import { cardSx, monoLabelSx } from './adminForm';
-import EscalationLadder from './sla/EscalationLadder';
 import { CalendarSummary, ComplianceStrip, EffectivePolicy, formatMinutes } from './sla/SlaInsights';
 import SlaPolicyDialog from './sla/SlaPolicyDialog';
+import { alpha, tone } from './palette';
 
 const POLICIES_KEY = ['admin-sla-policies-list'];
 
 export default function SlaPolicies() {
   const toast = useToast();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'SLA' | 'ESCALATION'>('SLA');
   const [dialog, setDialog] = useState<{ policy: SlaPolicyRecord | null } | null>(null);
   const [del, setDel] = useState<SlaPolicyRecord | null>(null);
 
@@ -46,26 +46,19 @@ export default function SlaPolicies() {
           <PolicyIcon sx={{ color: tokens.primary, fontSize: 32 }} />
           <Box>
             <Typography variant="h5" fontWeight={800} sx={{ fontFamily: 'Sora, sans-serif' }}>SLA policies</Typography>
-            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Response and resolution targets per priority, and who an unacknowledged incident escalates to.</Typography>
+            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Response and resolution targets per priority. Escalation levels are edited on the <Box component={RouterLink} to="/admin/escalation" sx={{ color: tokens.primaryLight }}>Escalation</Box> screen.</Typography>
           </Box>
         </Stack>
         <Stack direction="row" spacing={1.5}>
           <Button variant="outlined" startIcon={<RefreshIcon />} sx={{ textTransform: 'none' }}
-            onClick={() => { qc.invalidateQueries({ queryKey: POLICIES_KEY }); qc.invalidateQueries({ queryKey: ['admin-sla-compliance'] }); qc.invalidateQueries({ queryKey: ['admin-escalation-policies-list'] }); }}>
+            onClick={() => { qc.invalidateQueries({ queryKey: POLICIES_KEY }); qc.invalidateQueries({ queryKey: ['admin-sla-compliance'] });  }}>
             Refresh
           </Button>
-          {tab === 'SLA' && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({ policy: null })} sx={{ textTransform: 'none', fontWeight: 700 }}>New policy</Button>}
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({ policy: null })} sx={{ textTransform: 'none', fontWeight: 700 }}>New policy</Button>
         </Stack>
       </Stack>
 
-      <Tabs value={tab} onChange={(_e, v) => setTab(v)} sx={{ mb: 3, borderBottom: `1px solid ${tokens.outlineVariant}` }}>
-        <Tab value="SLA" label="SLA targets" sx={{ textTransform: 'none', fontSize: 14 }} />
-        <Tab value="ESCALATION" label="Escalation ladder" sx={{ textTransform: 'none', fontSize: 14 }} />
-      </Tabs>
-
-      {tab === 'ESCALATION' && <EscalationLadder />}
-
-      {tab === 'SLA' && (
+      {(
         <>
           <ComplianceStrip />
           <CalendarSummary />
@@ -74,8 +67,8 @@ export default function SlaPolicies() {
           {policies.isLoading && <LoadingState />}
           {policies.isError && <ErrorState onRetry={() => policies.refetch()} message={apiErrorMessage(policies.error)} />}
           {policies.data && missing.length > 0 && (
-            <Paper elevation={0} sx={{ ...cardSx, mb: 2, borderColor: 'rgba(251,191,36,0.4)' }}>
-              <Typography sx={{ fontSize: 14, color: '#fbbf24' }}>
+            <Paper elevation={0} sx={{ ...cardSx, mb: 2, borderColor: alpha(tone.warning, 0.4) }}>
+              <Typography sx={{ fontSize: 14, color: tone.warning }}>
                 No global default for {missing.join(', ')}. Services without their own policy for these priorities cannot take incidents.
               </Typography>
             </Paper>

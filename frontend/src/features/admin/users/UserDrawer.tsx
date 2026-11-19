@@ -22,7 +22,7 @@ export interface DrawerActions {
 
 const PAGE = 8;
 
-function TicketList({ title, userId, kind }: { title: string; userId: number; kind: 'assigneeId' | 'reporterId' }) {
+function IncidentList({ title, userId, kind }: { title: string; userId: number; kind: 'assigneeId' | 'reporterId' }) {
   const navigate = useNavigate();
   const q = useQuery({
     queryKey: ['admin-user-incidents', kind, userId],
@@ -105,6 +105,7 @@ export default function UserDrawer({ userId, onClose, actions }: { userId: numbe
             <Row label="Department" value={u.department ?? 'Not set'} />
             <Row label="Location" value={u.location ?? 'Not set'} />
             {u.administrator && <Row label="Administrator scope" value={u.administrator.scope === 'IT_MANAGER' ? 'IT manager' : 'System administrator'} />}
+            {u.administrator && <Row label="Receives escalations" value={u.administrator.scope === 'IT_MANAGER' ? 'Level 3 (IT manager)' : 'Level 2 (system administrator)'} />}
           </Box>
 
           {t && (
@@ -138,8 +139,8 @@ export default function UserDrawer({ userId, onClose, actions }: { userId: numbe
           </Stack>
 
           <Divider sx={{ borderColor: tokens.outlineVariant }} />
-          <TicketList title="Reported" userId={u.id} kind="reporterId" />
-          {u.roles.includes('TECHNICIAN') && <TicketList title="Assigned" userId={u.id} kind="assigneeId" />}
+          <IncidentList title="Reported" userId={u.id} kind="reporterId" />
+          {u.roles.includes('TECHNICIAN') && <IncidentList title="Assigned" userId={u.id} kind="assigneeId" />}
         </Stack>
       )}
     </Drawer>

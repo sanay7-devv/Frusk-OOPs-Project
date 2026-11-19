@@ -15,9 +15,10 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import { useToast } from '../../components/Toast';
 import { tokens } from '../../theme/theme';
 import { apiErrorMessage, fieldErrors } from '../../utils/errors';
+import { alpha } from './palette';
 
 const POLICIES_KEY = ['admin-escalation-policies'];
-const SIBLING_KEYS = [['admin-escalation-policies-list']]; // the list on the SLA policies screen
+const SIBLING_KEYS: string[][] = [];
 const CONFIG_KEY = ['admin-config-settings'];
 
 // Who an incident is escalated to at each level (docs/SYSTEM_GUIDE.md section 7.5 and the escalation module).
@@ -240,7 +241,7 @@ export default function EscalationSettings() {
                     <TableRow key={p.id} hover sx={{ '& td': { borderBottom: `1px solid ${tokens.outlineVariant}` } }}>
                       <TableCell><PriorityBadge priority={p.priority} /></TableCell>
                       <TableCell><Typography sx={{ fontFamily: 'JetBrains Mono, monospace', color: tokens.onSurface }}>{p.level}</Typography></TableCell>
-                      <TableCell><Chip label={TARGETS[p.level] ?? `Level ${p.level}`} size="small" sx={{ fontSize: 12, fontWeight: 700, color: tokens.primaryLight, bgcolor: 'rgba(99, 102, 241, 0.2)' }} /></TableCell>
+                      <TableCell><Chip label={TARGETS[p.level] ?? `Level ${p.level}`} size="small" sx={{ fontSize: 12, fontWeight: 700, color: tokens.primaryLight, bgcolor: alpha(tokens.primary, 0.2) }} /></TableCell>
                       <TableCell><Typography sx={{ fontSize: 14, color: tokens.onSurface }}>{waitText(p)}</Typography></TableCell>
                       <TableCell align="right">
                         <Tooltip title="Change timeout">

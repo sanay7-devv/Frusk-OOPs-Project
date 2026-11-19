@@ -4,6 +4,8 @@ import { tokens } from '../../../theme/theme';
 import type { GraphNode, ServiceHealthRow, ServiceImpact } from '../../../api/services';
 import { apiErrorMessage } from '../../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
+import { alpha } from '../palette';
+import OpenProblems from './OpenProblems';
 import { HEALTH_COLOR, HEALTH_LABEL } from './health';
 
 interface Props {
@@ -38,7 +40,7 @@ export default function Inspector({ node, health, impact, onEditDependencies, on
           <Chip
             size="small"
             label={HEALTH_LABEL[health.status]}
-            sx={{ bgcolor: `${HEALTH_COLOR[health.status]}26`, color: HEALTH_COLOR[health.status], fontWeight: 700, fontSize: 12 }}
+            sx={{ bgcolor: alpha(HEALTH_COLOR[health.status], 0.15), color: HEALTH_COLOR[health.status], fontWeight: 700, fontSize: 12 }}
           />
         )}
         <Chip size="small" label={`Criticality ${node.criticality}`} sx={{ fontSize: 12 }} />
@@ -106,10 +108,12 @@ export default function Inspector({ node, health, impact, onEditDependencies, on
         </>
       )}
 
+      <OpenProblems serviceId={node.id} />
+
       <Divider sx={{ my: 2, borderColor: tokens.outlineVariant }} />
       <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
         <Button size="small" variant="outlined" onClick={() => navigate(`/admin/tickets?serviceId=${node.id}`)}>
-          View tickets
+          View incidents
         </Button>
         <Button size="small" variant="outlined" onClick={() => onEditDependencies(node)}>
           Edit dependencies

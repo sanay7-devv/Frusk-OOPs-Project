@@ -53,7 +53,9 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import { useToast } from '../../components/Toast';
 import { apiErrorMessage } from '../../utils/errors';
 import type { AttachmentView, CommentView } from '../../api/types';
-import { COLORS, MAX_REASON, MIN_REASON, MONO, dialogPaperSx, fieldSx, fmtDateTime, invalidateIncidentCaches } from '../lead/shared/ui';
+import { tokens } from '../../theme/theme';
+import { alpha, tint, tone } from './palette';
+import { MAX_REASON, MIN_REASON, MONO, dialogPaperSx, fieldSx, fmtDateTime, invalidateIncidentCaches } from '../lead/shared/ui';
 import IntelligencePanel, { SlaRiskCard } from '../lead/shared/IntelligencePanel';
 import { CandidatePicker } from '../lead/shared/TeamComponents';
 import {
@@ -70,10 +72,10 @@ const MAX_ATTACH_COUNT = 10;
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Box mb={1.5}>
-      <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block' }}>
+      <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, display: 'block' }}>
         {label}
       </Typography>
-      <Typography variant="body2" component="div" sx={{ color: COLORS.onSurface, fontWeight: 600 }}>
+      <Typography variant="body2" component="div" sx={{ color: tokens.onSurface, fontWeight: 600 }}>
         {children}
       </Typography>
     </Box>
@@ -81,10 +83,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const actionButtonSx = {
-  borderColor: COLORS.border,
-  color: COLORS.onSurface,
+  borderColor: tokens.outlineVariant,
+  color: tokens.onSurface,
   textTransform: 'none',
-  '&:hover': { borderColor: COLORS.primary, bgcolor: 'rgba(99, 102, 241, 0.08)' },
+  '&:hover': { borderColor: tokens.primary, bgcolor: alpha(tokens.primary, 0.08) },
 } as const;
 
 export default function AdminIncidentDetail() {
@@ -231,8 +233,8 @@ export default function AdminIncidentDetail() {
     return (
       <Box p={4} textAlign="center">
         <EmptyState message="That is not a valid incident id." />
-        <Button onClick={() => navigate('/admin/tickets')} sx={{ mt: 2, color: COLORS.primary }}>
-          Back to Tickets
+        <Button onClick={() => navigate('/admin/tickets')} sx={{ mt: 2, color: tokens.primary }}>
+          Back to incidents
         </Button>
       </Box>
     );
@@ -250,8 +252,8 @@ export default function AdminIncidentDetail() {
     return (
       <Box p={4}>
         {error ? <ErrorState onRetry={() => refetch()} message={apiErrorMessage(error)} /> : <EmptyState message="Incident not found" />}
-        <Button onClick={() => navigate('/admin/tickets')} sx={{ mt: 2, color: COLORS.primary }}>
-          Back to Tickets
+        <Button onClick={() => navigate('/admin/tickets')} sx={{ mt: 2, color: tokens.primary }}>
+          Back to incidents
         </Button>
       </Box>
     );
@@ -282,11 +284,11 @@ export default function AdminIncidentDetail() {
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/admin/tickets')}
-          sx={{ color: COLORS.onSurfaceVariant, '&:hover': { color: COLORS.onSurface, bgcolor: 'rgba(255, 255, 255, 0.05)' } }}
+          sx={{ color: tokens.onSurfaceVariant, '&:hover': { color: tokens.onSurface, bgcolor: alpha(tokens.onSurface, 0.05) } }}
         >
-          All Tickets
+          All incidents
         </Button>
-        <Typography variant="h5" fontWeight="bold" sx={{ fontFamily: MONO, color: COLORS.primary }}>
+        <Typography variant="h5" fontWeight="bold" sx={{ fontFamily: MONO, color: tokens.primary }}>
           {incident.code}
         </Typography>
         <PriorityBadge priority={incident.priority} />
@@ -295,21 +297,21 @@ export default function AdminIncidentDetail() {
           <Chip
             label="MAJOR INCIDENT"
             size="small"
-            sx={{ bgcolor: 'rgba(244, 63, 94, 0.2)', color: '#fb7185', border: '1px solid rgba(244, 63, 94, 0.4)', fontWeight: 800, fontSize: 12, fontFamily: MONO }}
+            sx={{ bgcolor: alpha(tone.danger, 0.2), color: tone.danger, border: `1px solid ${alpha(tone.danger, 0.4)}`, fontWeight: 800, fontSize: 12, fontFamily: MONO }}
           />
         )}
         {incident.problemId && (
           <Chip
             label={`Problem #${incident.problemId}`}
             size="small"
-            sx={{ bgcolor: 'rgba(99, 102, 241, 0.15)', color: COLORS.primary, border: '1px solid rgba(99, 102, 241, 0.35)', fontWeight: 700, fontSize: 12, fontFamily: MONO }}
+            sx={{ bgcolor: alpha(tokens.primary, 0.15), color: tokens.primary, border: `1px solid ${alpha(tokens.primary, 0.35)}`, fontWeight: 700, fontSize: 12, fontFamily: MONO }}
           />
         )}
         {incident.duplicateOfId && (
           <Chip
             label={`Duplicate of #${incident.duplicateOfId}`}
             size="small"
-            sx={{ bgcolor: COLORS.surfaceContainerLowest, color: COLORS.onSurfaceVariant, border: `1px solid ${COLORS.border}`, fontSize: 12 }}
+            sx={{ bgcolor: tokens.surfaceContainerLowest, color: tokens.onSurfaceVariant, border: `1px solid ${tokens.outlineVariant}`, fontSize: 12 }}
           />
         )}
       </Stack>
@@ -317,16 +319,16 @@ export default function AdminIncidentDetail() {
       <Grid container spacing={3}>
         {/* Left Column: Details */}
         <Grid item xs={12} md={8}>
-          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}` }}>
-            <Typography variant="h5" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
               {incident.title}
             </Typography>
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', color: COLORS.onSurfaceVariant, mt: 2, lineHeight: 1.7 }}>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', color: tokens.onSurfaceVariant, mt: 2, lineHeight: 1.7 }}>
               {incident.description}
             </Typography>
 
             {incident.resolution && (
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#34d399', borderRadius: 2, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+              <Box sx={{ mt: 3, p: 2, ...tint(tone.success, 0.1), borderRadius: 2 }}>
                 <Typography variant="subtitle2" fontWeight="bold" sx={{ fontFamily: MONO }}>
                   Root Cause &amp; Resolution:
                 </Typography>
@@ -344,12 +346,12 @@ export default function AdminIncidentDetail() {
           </Box>
 
           {/* Discussion */}
-          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}` }}>
-            <Typography variant="h6" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
+          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
               Admin Command Notes &amp; Discussion
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 1.5, alignItems: 'center' }}>
-              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Visibility:</Typography>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Visibility:</Typography>
               <Chip
                 label="INTERNAL (Ops Only)"
                 clickable
@@ -358,8 +360,8 @@ export default function AdminIncidentDetail() {
                 sx={{
                   fontSize: 12,
                   fontWeight: 700,
-                  bgcolor: commentVisibility === 'INTERNAL' ? COLORS.primary : COLORS.surfaceContainerHigh,
-                  color: commentVisibility === 'INTERNAL' ? '#ffffff' : COLORS.onSurfaceVariant,
+                  bgcolor: commentVisibility === 'INTERNAL' ? tokens.primary : tokens.surfaceContainerHigh,
+                  color: commentVisibility === 'INTERNAL' ? tone.onAccent : tokens.onSurfaceVariant,
                 }}
               />
               <Chip
@@ -370,8 +372,8 @@ export default function AdminIncidentDetail() {
                 sx={{
                   fontSize: 12,
                   fontWeight: 700,
-                  bgcolor: commentVisibility === 'PUBLIC' ? COLORS.secondary : COLORS.surfaceContainerHigh,
-                  color: commentVisibility === 'PUBLIC' ? '#ffffff' : COLORS.onSurfaceVariant,
+                  bgcolor: commentVisibility === 'PUBLIC' ? tokens.secondary : tokens.surfaceContainerHigh,
+                  color: commentVisibility === 'PUBLIC' ? tone.onAccent : tokens.onSurfaceVariant,
                 }}
               />
             </Box>
@@ -391,7 +393,7 @@ export default function AdminIncidentDetail() {
                 startIcon={commentMutation.isPending ? <CircularProgress size={16} /> : <SendIcon />}
                 disabled={commentMutation.isPending || !newComment.trim() || newComment.length > 4000}
                 onClick={() => commentMutation.mutate()}
-                sx={{ bgcolor: COLORS.primary, color: '#ffffff', fontWeight: 700, '&:hover': { bgcolor: '#4f46e5' } }}
+                sx={{ bgcolor: tokens.primary, color: tone.onAccent, fontWeight: 700, '&:hover': { bgcolor: tokens.primaryDark } }}
               >
                 Send
               </Button>
@@ -400,14 +402,14 @@ export default function AdminIncidentDetail() {
             {comments.length > 0 && (
               <Box sx={{ mt: 2, mb: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {comments.map((c) => (
-                  <Box key={c.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+                  <Box key={c.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.secondary }}>
                         {c.author.name} <Chip size="small" label={c.visibility} sx={{ height: 18, fontSize: 12, ml: 0.5 }} />
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>{fmtDateTime(c.createdAt)}</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: MONO }}>{fmtDateTime(c.createdAt)}</Typography>
                     </Box>
-                    <Typography sx={{ fontSize: 13, color: COLORS.onSurface, whiteSpace: 'pre-wrap' }}>{c.body}</Typography>
+                    <Typography sx={{ fontSize: 13, color: tokens.onSurface, whiteSpace: 'pre-wrap' }}>{c.body}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -415,8 +417,8 @@ export default function AdminIncidentDetail() {
           </Paper>
 
           {/* Audit history */}
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}` }}>
-            <Typography variant="h6" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
               Audit history
             </Typography>
             {historyError ? (
@@ -426,11 +428,11 @@ export default function AdminIncidentDetail() {
             ) : (
               <Stack spacing={1}>
                 {history.map((h) => (
-                  <Box key={h.id} sx={{ p: 1.25, borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>
+                  <Box key={h.id} sx={{ p: 1.25, borderRadius: 2, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: MONO }}>
                       {fmtDateTime(h.timestamp)} | {h.actor?.name ?? 'System'} | {h.action}
                     </Typography>
-                    <Typography sx={{ fontSize: 13, color: COLORS.onSurface }}>{h.description}</Typography>
+                    <Typography sx={{ fontSize: 13, color: tokens.onSurface }}>{h.description}</Typography>
                   </Box>
                 ))}
               </Stack>
@@ -440,8 +442,8 @@ export default function AdminIncidentDetail() {
 
         {/* Right Column: Metadata & Controls */}
         <Grid item xs={12} md={4}>
-          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}` }}>
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
               SLA Timers &amp; Target
             </Typography>
             <Field label="Response due">
@@ -449,7 +451,7 @@ export default function AdminIncidentDetail() {
               {incident.acknowledgedAt ? ' (acknowledged)' : ' (not acknowledged yet)'}
             </Field>
             <Box my={2}>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }} display="block">
+              <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant }} display="block">
                 Resolution due
               </Typography>
               <SlaCountdown due={incident.resolutionDue} createdAt={incident.createdAt} slaState={incident.slaState} />
@@ -460,16 +462,16 @@ export default function AdminIncidentDetail() {
               </Alert>
             )}
             {preview && (
-              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, mb: 1.5 }}>
-                <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mb: 0.5 }}>
+              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, mb: 1.5 }}>
+                <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, display: 'block', mb: 0.5 }}>
                   Next escalation
                 </Typography>
                 {preview.kind === 'EXHAUSTED' ? (
-                  <Typography sx={{ fontSize: 12.5, color: COLORS.warning }}>Escalation exhausted: the top tier has been notified.</Typography>
+                  <Typography sx={{ fontSize: 12.5, color: tone.warning }}>Escalation exhausted: the top tier has been notified.</Typography>
                 ) : (
                   <>
                     <SlaCountdown due={preview.dueAt} remainingSeconds={preview.secondsRemaining} slaState={incident.slaState} />
-                    <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, mt: 0.5 }}>
+                    <Typography sx={{ fontSize: 12.5, color: tokens.onSurface, mt: 0.5 }}>
                       to level {preview.toLevel} ({preview.targetRole}): {preview.recipients.map((r) => r.name).join(', ')}
                     </Typography>
                   </>
@@ -478,9 +480,9 @@ export default function AdminIncidentDetail() {
             )}
             <SlaRiskCard incidentId={incident.id} />
 
-            <Divider sx={{ my: 2, borderColor: COLORS.border }} />
+            <Divider sx={{ my: 2, borderColor: tokens.outlineVariant }} />
 
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
               Lifecycle
             </Typography>
             <Field label="Escalation level">{incident.escalationLevel}</Field>
@@ -499,9 +501,9 @@ export default function AdminIncidentDetail() {
               </Field>
             )}
 
-            <Divider sx={{ my: 2, borderColor: COLORS.border }} />
+            <Divider sx={{ my: 2, borderColor: tokens.outlineVariant }} />
 
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
               Assignment &amp; Stakeholders
             </Typography>
             <Field label="Assigned Technician">{incident.assignee?.name ?? 'Unassigned (waiting in queue)'}</Field>
@@ -519,11 +521,11 @@ export default function AdminIncidentDetail() {
               />
             </Box>
 
-            <Divider sx={{ my: 2, borderColor: COLORS.border }} />
+            <Divider sx={{ my: 2, borderColor: tokens.outlineVariant }} />
 
             {/* Actions, all from the server's allowedActions */}
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: COLORS.onSurface }} mb={1.5}>
-              Executive Actions
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: tokens.onSurface }} mb={1.5}>
+              Actions
             </Typography>
             <Stack spacing={1}>
               {(canAssign || canReassign) && (
@@ -553,7 +555,7 @@ export default function AdminIncidentDetail() {
                   color="warning"
                   startIcon={<PriorityHighIcon />}
                   onClick={() => setOverrideOpen(true)}
-                  sx={{ borderColor: 'rgba(245, 158, 11, 0.3)', color: '#fbbf24', textTransform: 'none', '&:hover': { borderColor: '#f59e0b', bgcolor: 'rgba(245, 158, 11, 0.08)' } }}
+                  sx={{ borderColor: alpha(tone.warning, 0.3), color: tone.warning, textTransform: 'none', '&:hover': { borderColor: tone.warning, bgcolor: alpha(tone.warning, 0.08) } }}
                 >
                   Override Priority
                 </Button>
@@ -565,13 +567,13 @@ export default function AdminIncidentDetail() {
                   color="error"
                   startIcon={<CheckCircleIcon />}
                   onClick={() => setCloseConfirmOpen(true)}
-                  sx={{ borderColor: 'rgba(244, 63, 94, 0.3)', color: '#fb7185', textTransform: 'none', '&:hover': { borderColor: '#f43f5e', bgcolor: 'rgba(244, 63, 94, 0.08)' } }}
+                  sx={{ borderColor: alpha(tone.danger, 0.3), color: tone.danger, textTransform: 'none', '&:hover': { borderColor: tone.danger, bgcolor: alpha(tone.danger, 0.08) } }}
                 >
                   Close Incident
                 </Button>
               )}
               {!anyAction && (
-                <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, fontStyle: 'italic' }}>
+                <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, fontStyle: 'italic' }}>
                   No actions available in current status ({incident.status})
                 </Typography>
               )}
@@ -579,9 +581,9 @@ export default function AdminIncidentDetail() {
           </Paper>
 
           {/* Attachments */}
-          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}` }}>
+          <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
                 Attachments ({attachments.length}/{MAX_ATTACH_COUNT})
               </Typography>
               <Button
@@ -601,13 +603,13 @@ export default function AdminIncidentDetail() {
                 onChange={(e) => onFilePicked(e.target.files?.[0])}
               />
             </Stack>
-            <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mb: 1 }}>
+            <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, display: 'block', mb: 1 }}>
               png, jpg, gif, pdf, txt or log, up to 5 MB each.
             </Typography>
             {attachError ? (
               <ErrorState onRetry={() => refetchAttach()} message={apiErrorMessage(attachErr)} />
             ) : attachments.length === 0 ? (
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant }}>
+              <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant }}>
                 No attachments uploaded.
               </Typography>
             ) : (
@@ -618,8 +620,8 @@ export default function AdminIncidentDetail() {
                     sx={{
                       p: 1.25,
                       borderRadius: 2,
-                      bgcolor: COLORS.surfaceContainerLowest,
-                      border: `1px solid ${COLORS.border}`,
+                      bgcolor: tokens.surfaceContainerLowest,
+                      border: `1px solid ${tokens.outlineVariant}`,
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -627,10 +629,10 @@ export default function AdminIncidentDetail() {
                     }}
                   >
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography noWrap sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
+                      <Typography noWrap sx={{ fontSize: 12.5, color: tokens.onSurface }}>
                         {att.filename}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                         {Math.max(1, Math.round(att.sizeBytes / 1024))} KB | {att.uploadedBy.name}
                       </Typography>
                     </Box>
@@ -650,11 +652,11 @@ export default function AdminIncidentDetail() {
 
           {/* Post-Incident Report PDF */}
           {(incident.status === 'RESOLVED' || incident.status === 'CLOSED' || incident.status === 'VERIFIED' || incident.major) && (
-            <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}` }}>
-              <Typography variant="subtitle1" fontWeight="bold" sx={{ color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
+            <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
                 Compliance PDF Dossier
               </Typography>
-              <Typography variant="caption" sx={{ color: COLORS.onSurfaceVariant, display: 'block', mb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, display: 'block', mb: 1.5 }}>
                 Official post-incident report with full audit timeline.
               </Typography>
               <Button
@@ -664,7 +666,7 @@ export default function AdminIncidentDetail() {
                 disabled={pdfMutation.isPending}
                 startIcon={pdfMutation.isPending ? <CircularProgress size={14} /> : <DownloadIcon />}
                 onClick={() => pdfMutation.mutate()}
-                sx={{ borderColor: COLORS.secondary, color: COLORS.secondary, textTransform: 'none', fontSize: 12.5, fontWeight: 700 }}
+                sx={{ borderColor: tokens.secondary, color: tokens.secondary, textTransform: 'none', fontSize: 12.5, fontWeight: 700 }}
               >
                 Download PDF Report
               </Button>
@@ -678,8 +680,8 @@ export default function AdminIncidentDetail() {
         <DialogTitle sx={{ fontWeight: 'bold', fontFamily: 'Sora, sans-serif' }}>
           {assignMode === 'assign' ? 'Assign Incident' : 'Reassign Incident'}
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
-          <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
             Candidates are ranked by the assignment engine. Anyone away, off duty or excluded by the rules cannot be selected.
           </Typography>
           <CandidatePicker incidentId={incident.id} assigneeId={incident.assignee?.id} selectedId={selectedTechId} onSelect={setSelectedTechId} />
@@ -700,7 +702,7 @@ export default function AdminIncidentDetail() {
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeAssign} disabled={assignMutation.isPending} sx={{ color: COLORS.onSurfaceVariant }}>
+          <Button onClick={closeAssign} disabled={assignMutation.isPending} sx={{ color: tokens.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
@@ -708,7 +710,7 @@ export default function AdminIncidentDetail() {
             onClick={() => selectedTechId && assignMutation.mutate({ mode: assignMode, technicianId: selectedTechId, reason: reassignReason.trim() })}
             disabled={assignMutation.isPending || !assignValid}
             startIcon={assignMutation.isPending ? <CircularProgress size={16} /> : undefined}
-            sx={{ bgcolor: COLORS.primary, color: '#ffffff', fontWeight: 700, '&:hover': { bgcolor: '#4f46e5' } }}
+            sx={{ bgcolor: tokens.primary, color: tone.onAccent, fontWeight: 700, '&:hover': { bgcolor: tokens.primaryDark } }}
           >
             {assignMode === 'assign' ? 'Assign now' : 'Reassign now'}
           </Button>

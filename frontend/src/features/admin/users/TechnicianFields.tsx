@@ -6,6 +6,7 @@ import { errFor, fieldSx } from '../adminForm';
 import {
   AVAILABILITIES, EXPERIENCE_LABELS, MAX_LOAD_MAX, MAX_LOAD_MIN, PROFICIENCY_LABELS, type TechForm,
 } from './techForm';
+import { tone } from '../palette';
 
 interface Props {
   value: TechForm;
@@ -45,7 +46,7 @@ export default function TechnicianFields({ value, onChange, errors, skills, skil
             control={<Switch checked={value.lead} onChange={(e) => set({ lead: e.target.checked })} />}
             label={<Typography sx={{ fontSize: 14, color: tokens.onSurface }}>Team lead (escalation level 1)</Typography>}
           />
-          <Typography sx={{ fontSize: 12, color: errFor(errors, 'escalationLevel') ? '#f43f5e' : tokens.onSurfaceVariant, ml: 4 }}>
+          <Typography sx={{ fontSize: 12, color: errFor(errors, 'escalationLevel') ? tone.danger : tokens.onSurfaceVariant, ml: 4 }}>
             {errFor(errors, 'escalationLevel') ?? 'Leads receive level-1 escalations. The API accepts 0 or 1 only.'}
           </Typography>
         </Box>
@@ -88,7 +89,7 @@ export default function TechnicianFields({ value, onChange, errors, skills, skil
             </Stack>
           ))}
         </Stack>
-        {errFor(errors, 'skills') && <Typography sx={{ fontSize: 12, color: '#f43f5e', mt: 0.5 }}>{errFor(errors, 'skills')}</Typography>}
+        {errFor(errors, 'skills') && <Typography sx={{ fontSize: 12, color: tone.danger, mt: 0.5 }}>{errFor(errors, 'skills')}</Typography>}
       </Box>
     </Stack>
   );

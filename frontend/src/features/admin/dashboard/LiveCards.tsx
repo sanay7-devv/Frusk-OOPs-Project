@@ -6,6 +6,7 @@ import { getLiveDashboard, type DashboardEvent, type DashboardEventType } from '
 import type { IncidentSummary } from '../../../api/types';
 import { ChartCard } from '../reports/common';
 import { EmptyState } from '../../../components/StateViews';
+import { tone } from '../palette';
 
 const EVENT_TEXT: Record<DashboardEventType, string> = {
   INCIDENT_CREATED: 'Reported', INCIDENT_ASSIGNED: 'Assigned', INCIDENT_ACKNOWLEDGED: 'Acknowledged',
@@ -15,8 +16,8 @@ const EVENT_TEXT: Record<DashboardEventType, string> = {
   DUPLICATE_SUSPECTED: 'Possible duplicate', TRIAGE_NEEDED: 'Needs triage',
 };
 const EVENT_COLOR: Partial<Record<DashboardEventType, string>> = {
-  SLA_VIOLATED: '#f43f5e', INCIDENT_ESCALATED: '#f43f5e', SLA_WARNING: '#fb923c', TRIAGE_NEEDED: '#fb923c',
-  INCIDENT_RESOLVED: '#4ade80', INCIDENT_VERIFIED: '#4ade80', INCIDENT_CLOSED: '#4ade80',
+  SLA_VIOLATED: tone.danger, INCIDENT_ESCALATED: tone.danger, SLA_WARNING: tone.caution, TRIAGE_NEEDED: tone.caution,
+  INCIDENT_RESOLVED: tone.success, INCIDENT_VERIFIED: tone.success, INCIDENT_CLOSED: tone.success,
 };
 
 const SLA_TEXT: Record<string, string> = { VIOLATED: 'SLA violated', AT_RISK: 'SLA at risk', WARNING: 'SLA warning' };
@@ -36,7 +37,7 @@ function AttentionList({ items }: { items: IncidentSummary[] }) {
               <Chip size="small" label={i.priority} sx={{ height: 22, fontSize: 12, fontWeight: 700, color: priorityColor[i.priority], bgcolor: 'transparent', border: `1px solid ${priorityColor[i.priority]}` }} />
             )}
             <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{i.code}</Typography>
-            <Typography sx={{ fontSize: 12, color: i.slaState === 'VIOLATED' ? '#f43f5e' : '#fb923c' }}>{SLA_TEXT[i.slaState] ?? i.slaState}</Typography>
+            <Typography sx={{ fontSize: 12, color: i.slaState === 'VIOLATED' ? tone.danger : tone.caution }}>{SLA_TEXT[i.slaState] ?? i.slaState}</Typography>
           </Stack>
           <Typography sx={{ fontSize: 14, color: tokens.onSurface, mt: 0.5 }} noWrap>{i.title}</Typography>
           <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>

@@ -9,6 +9,7 @@ import {
   downloadReport, getCategoryDistribution, getOverview, getPriorityDistribution, getServiceReport, getSlaCompliance,
   getTrends, getWorkloadReport, type ExportType, type SlaGroupBy,
 } from '../../api/reports';
+import { getCategories } from '../../api/services';
 import { apiErrorMessage } from '../../utils/errors';
 import { ErrorState, LoadingState } from '../../components/StateViews';
 import { ChartCard, type DateRange } from './reports/common';
@@ -69,6 +70,7 @@ export default function Reports() {
   const categories = useQuery({ queryKey: ['reports', 'categories', range], queryFn: () => getCategoryDistribution(r), enabled });
   const services = useQuery({ queryKey: ['reports', 'services', range], queryFn: () => getServiceReport(r), enabled });
   const workload = useQuery({ queryKey: ['reports', 'workload'], queryFn: getWorkloadReport });
+  const categoryList = useQuery({ queryKey: ['categories-flat'], queryFn: getCategories });
 
   const pickPreset = (days: number) => { setPreset(days); setFrom(daysAgo(days)); setTo(toIsoDate(new Date())); };
   const created = range ? { createdFrom: range.from, createdTo: range.to } : {};
@@ -81,6 +83,22 @@ export default function Reports() {
       title: `${row.name}: open incidents`,
       filters: { assigneeId: row.technicianId, status: ['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'] },
     });
+
+  /** Bars carry only a name; the id comes from the matching report rows, and a name with no match opens nothing. */
+  const openCategory = (label: string) => {
+    const c = categoryList.data?.find((x) => x.name === label);
+    if (c) setDrawer({ title: `${c.name}: incidents in this period`, filters: { categoryId: c.id, ...created } });
+  };
+  const openSlaBar = (label: string) => {
+    if (groupBy === 'priority') return openPriority(label);
+    if (groupBy === 'service') {
+      const row = services.data?.find((x) => x.name === label);
+      if (row) openService(row);
+      return;
+    }
+    const tech = workload.data?.find((x) => x.name === label);
+    if (tech) setDrawer({ title: `${tech.name}: incidents in this period`, filters: { assigneeId: tech.technicianId, ...created } });
+  };
 
   const doExport = async (format: 'csv' | 'pdf') => {
     setExporting(format);
@@ -159,7 +177,7 @@ export default function Reports() {
                 <ToggleButton value="technician">Technician</ToggleButton>
               </ToggleButtonGroup>
             }>
-            {(d) => <SlaChart data={d} onBarClick={groupBy === 'priority' ? openPriority : undefined} />}
+            {(d) => <SlaChart data={d} onBarClick={openSlaBar} />}
           </ChartCard>
         </Grid>
         <Grid item xs={12} md={5}>
@@ -169,7 +187,7 @@ export default function Reports() {
         </Grid>
         <Grid item xs={12} md={6}>
           <ChartCard title="Top 8 categories" query={categories} isEmpty={(d) => d.length === 0} emptyMessage="No incidents in this period">
-            {(d) => <CategoryBars data={d} />}
+            {(d) => <CategoryBars data={d} onBarClick={openCategory} />}
           </ChartCard>
         </Grid>
         <Grid item xs={12} md={6}>
