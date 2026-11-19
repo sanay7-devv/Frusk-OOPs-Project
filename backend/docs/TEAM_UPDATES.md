@@ -49,6 +49,12 @@ Last updated: 2026-11-16 (contract fixes for the frontend: workload and audit-ve
 
 ## 2. Frontend developer
 
+- **Round 4 notes (2026-11-19, merged as #54 to #57, checked against `shared/main` `9c46cea`):**
+  - `Tickets.tsx` is now 235 lines. Its parts are in `features/admin/tickets/` (filters, drawer, saved views, assign dialog), and the create dialog is the shared `components/IncidentCreateDialog.tsx` (used by Tickets and the Dashboard).
+  - Users, Services and SlaPolicies are split into `features/admin/users|services|sla`. They call the new `api/adminDirectory.ts`, not `api/admin.ts`.
+  - `ServiceStatus.tsx` now reads `open.P1` (uppercase, as the backend sends). The lowercase `p1` type note from round 3 is closed.
+  - Small wording nit: `features/technician/WorkloadInsights.tsx:137` reads "(last {done.length || 100})", so it shows "last 100" when the list is empty. Show the real count or "last 100 at most".
+  - Round 3 note on `SlaPolicies.tsx` invented action text and the 30-minute fallback: closed by #57 (the screen was rebuilt; the escalation ladder is `features/admin/sla/EscalationLadder.tsx`).
 - **Round 3 notes (2026-11-19, merged as #48 to #51, checked against `shared/main`):**
   - Set `VITE_GRAFANA_URL` in the frontend env file (`.env.example` does not list it yet) if Grafana is not on `http://localhost:3001`. The Operations card on the admin Dashboard links there; no token is sent.
   - `Tickets.tsx` should read the `serviceId` query parameter. The service graph's "View tickets" link now goes to `/admin/tickets?serviceId=`, and Tickets ignores it.

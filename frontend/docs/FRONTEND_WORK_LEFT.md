@@ -3,6 +3,7 @@
 > For Sanay (frontend). Every line is a small, separate task. `[x]` = done and checked in the code, `[ ]` = still to do.
 > Checked against **your latest work**: branch `sanay-branch` on the team repo, commit `1ea86cc` "new design and theme" (2026-11-15 23:31). Line numbers (`file:line`) refer to that commit, paths are under `frontend/src/`.
 > **Re-checked on 2026-11-18 against `main` `50794aa` ("30% done")**: every box was compared with the code. Ticks now match the code (many mock-removal and contract fixes were done but not ticked), lines marked **Partly done** say what is left, and *Not needed any more* lines are closed. `tsc` 0 errors, `vite build` passes, `npm test` 3/3. Line numbers in the items are still the old ones. Round 3 (Sections E1-E7, F1-F5, G1, G3, G4) ticked: 449 of 636 done (70.6%). **Recounted 2026-11-19 after round 3 (#48 to #51): 481 of 636 done (75.6%), 155 open.** Earlier that day: three wrong ticks undone, two G14 items ticked. Who is working on what right now: `frontend/docs/FRONTEND_PROGRESS.md` (check it before you start an item, so nobody does the same work twice).
+> **Re-checked on 2026-11-19 after round 4 (#54 to #57 on `main`)**: the F and G lines of the four round-4 helpers were checked against the code on `shared/main` `9c46cea`. 54 boxes ticked and 25 lines marked **Partly done (2026-11-19)**. Checklist now about 535 of 636 done (counted as before: 481 plus the 54 ticks); the other lines are open, not re-verified line by line where marked as not checked.
 > Contract: `backend/docs/openapi/iitsm-api.json` (129 operations). Older review with the reasons behind each rule: `frontend/FRONTEND_GUIDE.md`.
 
 ## A. Where your work stands
@@ -414,10 +415,10 @@ useRealtime
 
 #### Filters
 - [x] Tabs (5) + text search + service select + priority select all work client-side (`:268-289`, `:682-713`, `:716-735`, `:758-802`).
-- [ ] All filtering is client-side over the capped 100 items; search over title/code only for loaded rows. Use `GET /incidents?assignedToMe=true&q=&status=&priority=&serviceId=&slaState=&page=&size=` server-side.
+- [x] All filtering is client-side over the capped 100 items; search over title/code only for loaded rows. Use `GET /incidents?assignedToMe=true&q=&status=&priority=&serviceId=&slaState=&page=&size=` server-side.
 - [x] Priority select labels "P1 - Critical / P2 - High / P3 - Medium / P4 - Low" (`:798-801`) vs chip text `${priority} ${HIGH|MEDIUM}` (`:874`): P4 is labelled "MEDIUM" and a null priority renders "P3 MEDIUM" (`:874` `inc.priority || 'P3'`) - wrong. Use `PriorityBadge`.
-- [ ] No sort control, no "only mine / team" toggle, no saved view. Saved views are a handbook Tier 3 feature (not built here).
-- [ ] Ctrl/Cmd+K (`:173-183`) fine. Page also shows a "⌘K Filter" chip (non-interactive).
+- [ ] No sort control, no "only mine / team" toggle, no saved view. Saved views are a handbook Tier 3 feature (not built here). **Partly done (2026-11-19):** sort, saved views and service/priority/SLA filters now server-side; no only-mine/team toggle (queue is always the signed-in technician's).
+- [x] Ctrl/Cmd+K (`:173-183`) fine. Page also shows a "⌘K Filter" chip (non-interactive).
 
 #### Per-row actions (gating)
 - [x] Per-row actions strictly gated: Request Info only shown when `status === 'IN_PROGRESS'`; Reassign only shown when `status` in `ASSIGNED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `REOPENED`.
@@ -427,7 +428,7 @@ useRealtime
 - [x] Append Note -> `POST /incidents/{id}/comments {body, visibility:'INTERNAL'}` with cache invalidation for `['incident-comments', id]`.
 - [x] Request Info -> `POST /incidents/{id}/request-info {message}` with client min 10 (`:231-243`, `:1277`). Contract `RequestInfoRequest.message` min 10: matches. [ ] No max-length (contract unknown) / no character counter.
 - [x] Reassign dialog requires target technician and min 10 char reason with validation feedback.
-- [ ] Reassign dialog uses `GET /technicians` (team-lead/admin permission per contract: "team lead, admin") - a plain technician (L0) gets **403** and the dropdown is silently empty (`techList = []`). Gate the Reassign button on `REASSIGN` permission/`allowedActions`, or show only for leads. Also the dropdown lists technicians who are AWAY/at max load without any disabling; use `GET /incidents/{id}/recommendations` (candidates + excluded reasons) for the picker.
+- [ ] Reassign dialog uses `GET /technicians` (team-lead/admin permission per contract: "team lead, admin") - a plain technician (L0) gets **403** and the dropdown is silently empty (`techList = []`). Gate the Reassign button on `REASSIGN` permission/`allowedActions`, or show only for leads. Also the dropdown lists technicians who are AWAY/at max load without any disabling; use `GET /incidents/{id}/recommendations` (candidates + excluded reasons) for the picker. **Partly done (2026-11-19):** reassign picker now uses the incident's own recommendations (eligible and excluded). The Reassign button is not gated on allowedActions yet.
 - [x] Reassign `onChange` safely checks empty string before number conversion.
 - [x] **War Room dialog (`:1287-1349`) is fake**: hardcoded URL `https://meet.iitsm.internal/war-room-<code>`; "Connect to Bridge" only toasts "Bridged into War Room". There is no backend endpoint for it. Replace with the real Major Incident Mode view (`GET /problems?status=OPEN`, `GET /problems/{id}`, `/problems/{id}/root-cause`) or remove the button. Currently the button is shown for every P1 (`:1105`), not for `major===true`.
 - [ ] Missing from the queue row: **Escalate** (needs `allowedActions` -> only in Workbench), **Mark duplicate**, **Link problem**, **Override priority**, **Resolve** quick action - acceptable if Workbench is the place, but the row shows "Escalation Level N" chip only.
@@ -454,7 +455,7 @@ useRealtime
 #### Header / SLA
 - [x] Shows code, title, status, service, category, escalation level, reporter, assignee, affected users, calculated score + band (`:426-527`).
 - [x] Priority chip logic wrong for P3/P4/null: `${incident.priority || 'P3'} ${isHigh ? 'HIGH' : 'MEDIUM'}` (`:436`) - P4 shows "P4 MEDIUM", null shows "P3 MEDIUM". Use `PriorityBadge`.
-- [ ] No Major badge (`incident.major` not shown), no `problemId` link, no `duplicateOfId` display, no closure reason, no `pausedAt`, no `acknowledgedAt/resolvedAt`, no `reopenCount` in header (reopen count is in the side box `:1109`). **Partly done (2026-11-18):** major, problemId, duplicateOfId shown; closureReason, pausedAt, acknowledgedAt/resolvedAt missing.
+- [x] No Major badge (`incident.major` not shown), no `problemId` link, no `duplicateOfId` display, no closure reason, no `pausedAt`, no `acknowledgedAt/resolvedAt`, no `reopenCount` in header (reopen count is in the side box `:1109`). **Partly done (2026-11-18):** major, problemId, duplicateOfId shown; closureReason, pausedAt, acknowledgedAt/resolvedAt missing.
 - [x] **SLA clock is client-computed and not live**: `formatTimeRemaining(targetDue)` (`:100-116`) computed once per render (no ticking interval; only re-renders on refetch) and `targetDue = status==='ASSIGNED' ? responseDue : resolutionDue` (`:342`). Percent bar assumes a 240 min window; thresholds 15/60 min hardcoded; label "BREACHED" when `diff<=0` regardless of `slaState` (a RESOLVED/MET incident past its due time shows BREACHED in red; a `PAUSED` handled separately). Replace with `SlaCountdown` (ticking, server state) and show **both** response and resolution clocks (P1-3 in the guide). Show `slaState` chip (WARNING/AT_RISK/VIOLATED/PAUSED/MET).
 - [ ] `isPaused` also true when status `PENDING_USER_INFO` (`:341`); fine, but remaining time while paused is not shown.
 - [x] Progress bar `bgcolor: 'rgba(0,0,0,0.08)'` (`:585`) is invisible on the dark theme (leftover from light theme).
@@ -462,11 +463,11 @@ useRealtime
 
 #### Action ribbon
 - [x] Gated by `allowedActions.includes(...)`: ACKNOWLEDGE, START_WORK, REQUEST_INFO, ESCALATE, RESOLVE. Cleanly typed without `as any` casts.
-- [ ] **Missing allowedActions buttons**: `REASSIGN` (staff can reassign from the workbench per `AcknowledgedState/InProgressState`), `ASSIGN`, `MARK_DUPLICATE`, `OVERRIDE_PRIORITY`, `EDIT`, `CLOSE`/`VERIFY`/`REOPEN` (for leads/admins), `COMMENT` (the composer is always visible, not gated by `COMMENT`). The shared `ActionButtons` component already labels them but is not used. Add:
-  - [ ] Reassign dialog -> `POST /incidents/{id}/reassign {technicianId (req), reason (req, min 10)}`.
-  - [ ] Mark duplicate -> `POST /incidents/{id}/mark-duplicate {duplicateOfId}` (candidates from the Similar tab, `match==='DUPLICATE'`); contract + TEAM_UPDATES say team lead/admin see `MARK_DUPLICATE`.
-  - [ ] Override priority -> `POST /incidents/{id}/override-priority {priority, reason min 10}`; plus a **what-if** panel -> `POST /priority/what-if {incidentId, impact, urgency, affectedUsers}` -> `WhatIfView` (guide P1-5). Neither exists anywhere in the 5 screens (`grep what-if|override-priority` in features/ = 0 hits; no API function in `api/*.ts` either).
-  - [ ] Link problem / join Major Incident group: `POST /problems {title?, incidentIds}`, `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve` ("Resolve whole problem" for staff). No `api/problems.ts` exists. P1-2 of the guide is **not started** in these screens. **Partly done (2026-11-18):** `api/problems.ts` and the problem screens (`/lead/problems`, `/admin/problems`) exist, with root cause and "Resolve whole problem"; the workbench "Problem #id" chip opens the record for leads/admins. No create/link-problem action inside the workbench itself.
+- [ ] **Missing allowedActions buttons**: `REASSIGN` (staff can reassign from the workbench per `AcknowledgedState/InProgressState`), `ASSIGN`, `MARK_DUPLICATE`, `OVERRIDE_PRIORITY`, `EDIT`, `CLOSE`/`VERIFY`/`REOPEN` (for leads/admins), `COMMENT` (the composer is always visible, not gated by `COMMENT`). The shared `ActionButtons` component already labels them but is not used. Add: **Partly done (2026-11-19):** Reassign, Mark duplicate, Override priority, Link problem and COMMENT gating are in. Edit (line 470) is still not offered.
+  - [x] Reassign dialog -> `POST /incidents/{id}/reassign {technicianId (req), reason (req, min 10)}`.
+  - [x] Mark duplicate -> `POST /incidents/{id}/mark-duplicate {duplicateOfId}` (candidates from the Similar tab, `match==='DUPLICATE'`); contract + TEAM_UPDATES say team lead/admin see `MARK_DUPLICATE`.
+  - [x] Override priority -> `POST /incidents/{id}/override-priority {priority, reason min 10}`; plus a **what-if** panel -> `POST /priority/what-if {incidentId, impact, urgency, affectedUsers}` -> `WhatIfView` (guide P1-5). Neither exists anywhere in the 5 screens (`grep what-if|override-priority` in features/ = 0 hits; no API function in `api/*.ts` either).
+  - [x] Link problem / join Major Incident group: `POST /problems {title?, incidentIds}`, `GET /problems/{id}`, `GET /problems/{id}/root-cause`, `POST /problems/{id}/resolve` ("Resolve whole problem" for staff). No `api/problems.ts` exists. P1-2 of the guide is **not started** in these screens. **Partly done (2026-11-18):** `api/problems.ts` and the problem screens (`/lead/problems`, `/admin/problems`) exist, with root cause and "Resolve whole problem"; the workbench "Problem #id" chip opens the record for leads/admins. No create/link-problem action inside the workbench itself.
   - [ ] "Edit" (`PUT /incidents/{id}` with `version`, 409 `OPTIMISTIC_LOCK_CONFLICT` -> reload + retry) is not offered; acceptable for technicians but the guide's `version` rule is untested on staff screens.
 - [x] Escalate dialog integrated with `escalationPreview` panel, live countdown, target role, notify recipients, EXHAUSTED alert handling, and 1000 character length validation.
 - [x] Escalate -> `POST /incidents/{id}/escalate {reason}` (`:270-271`, `api/technicians.ts:138`). [ ] 409 at level 3 / wrong status not specially handled (generic message); button already hidden by `allowedActions`, OK.
@@ -484,7 +485,7 @@ useRealtime
 - [x] Problem description + impact/urgency/criticality/reopen count + `overrideRule`. Priority breakdown integrated with `PriorityExplainer`, full attachments list with download buttons, and post-incident report PDF download (`downloadPostIncidentReportPdf`) for resolved/major incidents.
 - [x] SLA Risk card: `GET /incidents/{id}/sla-risk` -> level chip, probability bar, factors (`:1122-1172`). [x] `SlaRiskView.level` union includes `'BREACHED'` (`api/technicians.ts:73`) not in contract (`LOW|MEDIUM|HIGH`) - remove. [x] Contract note: `score` 0..1 -> `Math.round(score*100)%` OK. [ ] `threshold` is fetched but not displayed. [ ] Fetched once, never refetched after actions (no `invalidate`) -> stale after acknowledge/escalate. [ ] No error UI; endpoint is 403 for non-assignee non-lead.
 - [x] Integrated "Why this Technician" card driven by `recommendations` showing allocation score, load ratio, and match factors.
-- [ ] Missing: reporter contact/department, affected service graph/impact (`GET /services/{id}/impact`), attachments.
+- [ ] Missing: reporter contact/department, affected service graph/impact (`GET /services/{id}/impact`), attachments. **Partly done (2026-11-19):** attachments and service impact are in; reporter contact and department are not.
 - [ ] Missing: real-time updates (STOMP topic exists in backend; `realtime/` folder not used here) - queue and workbench only poll/manual refresh.
 
 ### F3. TechWorkload (`features/technician/TechWorkload.tsx`, route `/tech/workload`)
@@ -500,7 +501,7 @@ useRealtime
 - [x] **Availability toggle bug**: same stale `user.technician.availability` as TechQueue (`:139-147`).
 - [x] Removed fake profile switcher; kept clean read-only technician identity badge.
 - [x] Real CSV export implemented in `handleExport` (downloading upcoming deadlines and workload metrics as CSV file).
-- [ ] Missing vs. guide/handbook: **no chart/trend** (resolved per day, avg resolution time `WorkloadReportRow.avgResolutionMinutes`), no per-skill breakdown, no my-skills list (`TechnicianView.skills` with proficiency), no SLA compliance %, no list of tickets close to breach with risk score. Page title promises "SLA Performance" (`:210`) but shows none.
+- [ ] Missing vs. guide/handbook: **no chart/trend** (resolved per day, avg resolution time `WorkloadReportRow.avgResolutionMinutes`), no per-skill breakdown, no my-skills list (`TechnicianView.skills` with proficiency), no SLA compliance %, no list of tickets close to breach with risk score. Page title promises "SLA Performance" (`:210`) but shows none. **Partly done (2026-11-19):** skills card and SLA compliance chart added (WorkloadInsights); no list of tickets close to breach with a risk score.
 - [x] Cleaned up misleading copy claims across workload cards.
 - [x] Unused imports and icons cleaned up from `TechWorkload.tsx`.
 
@@ -510,17 +511,17 @@ useRealtime
 - [x] Unassigned list: `GET /incidents?status=CLASSIFIED&status=NEW&size=50` (`:79`; array params serialised with `indexes:null`, `api/incidents.ts:559`). Wired for real (unless token is `mock-`).
 - [x] Triage status handles `CLASSIFIED` / unassigned queue properly, and Assign / Auto-Assign buttons are strictly gated on `incidentDetail.allowedActions.includes('ASSIGN')`.
 - [x] Server-side paging controls (`page`, `pageSize`, `totalItems`, `totalPages`) and priority sorting (`sort: 'priority,asc'`) implemented, displaying `{totalItems} UNASSIGNED` in header badge.
-- [ ] Cast `(queueData as any)?.items || (queueData as any)?.content` (`:82`): the type is `Page<IncidentSummary>` with `items`; remove `any`/`content` fallback.
+- [x] Cast `(queueData as any)?.items || (queueData as any)?.content` (`:82`): the type is `Page<IncidentSummary>` with `items`; remove `any`/`content` fallback.
 - [x] Added `refetchInterval: 10000` for live automated polling of triage queue.
 - [x] The queue also contains incidents the lead already sees assigned? Filter is status-only; "unassigned" is not enforced (`assigneeId` null) - an incident in CLASSIFIED has no assignee by definition, OK. *(Not needed any more, 2026-11-18.)*
 - [x] Detail of selection: `GET /incidents/{id}` (`:96-100`). [x] Recommendations: `GET /incidents/{id}/recommendations` (`:103-107`) -> `RecommendationView {strategy, recommendations[], excluded[]}` matches contract and `api/types.ts:65-85` exactly.
 - [x] Auto-selection effect selects from `filteredIncidents` safely avoiding stale/hidden selections.
-- [ ] Loading state for detail/recommendation exists only for recommendations (`:503`); `isDetailLoading` fetched but never used (`:96`); detail error not handled; queue error not handled at all (no error alert/retry).
+- [x] Loading state for detail/recommendation exists only for recommendations (`:503`); `isDetailLoading` fetched but never used (`:96`); detail error not handled; queue error not handled at all (no error alert/retry).
 
 #### Filters / list
 - [x] Priority chips ALL/P1-P4 and text search (code/title/service), client-side (`:129-140`, `:269-314`). [ ] Only over the 50 loaded rows. [ ] No service/category/SLA filter, no sort.
 - [x] Row shows `PriorityBadge`, `StatusChip`, `SlaCountdown`, service chip, created time (`:366-395`). [ ] Row `SlaCountdown` uses `responseDue || resolutionDue` with a single clock; for unassigned tickets the *response* clock is the relevant one - fine - but label which clock it is.
-- [ ] No Major Incident badge/grouping (`inc.major`), no duplicate hint, no "suggested category" for triage items (they are in triage because the category is unknown: show `category: null` - the detail shows 'Triage', `:457`).
+- [ ] No Major Incident badge/grouping (`inc.major`), no duplicate hint, no "suggested category" for triage items (they are in triage because the category is unknown: show `category: null` - the detail shows 'Triage', `:457`). **Partly done (2026-11-19):** Major badge and problem link are in; duplicate hint and suggested category are not.
 - [ ] Time shown is `toLocaleTimeString` only (no date) (`:393`).
 
 #### Assignment (P0-3)
@@ -528,19 +529,19 @@ useRealtime
 - [x] Assign to a recommended technician -> `POST /incidents/{id}/assign {technicianId}` (`:635-655`). Shows score, reasons chips, per-factor bars, "TOP MATCH", excluded technicians with reasons (`:517-694`) - the explainable-assignment screen is real and good.
 - [x] `rec.score` is 0-100 (checked in `AssignmentService`), so `{rec.score}%` is right; `factors` are 0..1 (section C).
 - [ ] `Load: {rec.currentLoad} / {rec.maxLoad} active incidents` (`:567`): `load` is weighted load, not incident count (see workload). Label "weighted load".
-- [ ] Buttons not gated by `incidentDetail.allowedActions.includes('ASSIGN')` (`:230,635`); a non-lead/odd state gets 403/409 only after clicking. Gate them, and show "Assign" disabled with the reason.
+- [x] Buttons not gated by `incidentDetail.allowedActions.includes('ASSIGN')` (`:230,635`); a non-lead/odd state gets 403/409 only after clicking. Gate them, and show "Assign" disabled with the reason.
 - [ ] No confirmation or "reason" for assigning a non-top candidate (override of the engine); audit would benefit from a note. Optional.
 - [x] Mutation `onSuccess` invalidates `['lead-team-queue']`, `['lead-escalations']`, `['my-queue']` (`:114-116`): `'lead-escalations'` and `'my-queue'` are **not query keys that exist** (Escalations uses `'lead-escalated-incidents'`; technician queue uses `'tech-my-queue'`) -> stale lists elsewhere. Also does not invalidate `['lead-incident-detail', id]`/`['lead-recommendations', id]`. After a success the old selection is auto-advanced only because the list refetches; if the same ticket stays in the list (e.g. refetch lag) it stays selected.
-- [ ] Error handling: `toast(err?.response?.data?.message ...)` OK, but **409 (state changed / technician now at capacity) does not refetch recommendations**; and `err.response.data.code` ignored. On 409 invalidate detail + recommendations + queue.
+- [x] Error handling: `toast(err?.response?.data?.message ...)` OK, but **409 (state changed / technician now at capacity) does not refetch recommendations**; and `err.response.data.code` ignored. On 409 invalidate detail + recommendations + queue.
 - [ ] `assignMutation.isPending` disables all buttons (good), but there is no per-button spinner.
 - [ ] After a successful assignment, no link to see the assigned technician's updated load.
 
 #### Missing actions (guide P0-3 / P1)
-- [ ] **Override priority** (`POST /incidents/{id}/override-priority`) and **priority what-if** (`POST /priority/what-if`) - not present (guide P1-5).
-- [ ] **Mark duplicate** (`POST /incidents/{id}/mark-duplicate {duplicateOfId}`), using `GET /incidents/{id}/similar` candidates - not present.
+- [x] **Override priority** (`POST /incidents/{id}/override-priority`) and **priority what-if** (`POST /priority/what-if`) - not present (guide P1-5).
+- [x] **Mark duplicate** (`POST /incidents/{id}/mark-duplicate {duplicateOfId}`), using `GET /incidents/{id}/similar` candidates - not present.
 - [x] **Major Incident / problem** grouping (`GET /problems?status=OPEN`, `POST /problems`, `/problems/{id}/root-cause`, `/problems/recurring`, `POST /problems/{id}/resolve`) - not present (P1-2). A "Problems" tab on the lead workspace is missing and `layouts/navConfig.ts:13-14` has only Team queue + Escalations.
-- [ ] Team-wide workload view for leads (technicians list with load/skills/availability: `GET /technicians?skillId&availability`) - not present; useful beside the recommendations.
-- [ ] Strategy selector/explanation: `strategy` chip printed raw (`STRATEGY: ROUND_ROBIN` etc.); no link to the admin config; no "why not me" for a hand-picked non-top technician.
+- [x] Team-wide workload view for leads (technicians list with load/skills/availability: `GET /technicians?skillId&availability`) - not present; useful beside the recommendations.
+- [ ] Strategy selector/explanation: `strategy` chip printed raw (`STRATEGY: ROUND_ROBIN` etc.); no link to the admin config; no "why not me" for a hand-picked non-top technician. **Partly done (2026-11-19):** strategy explained with a link to Config; no 'why not me' for a hand-picked candidate.
 - [x] "Full Ticket View" button goes to `/admin/tickets/{id}` (`:427`): a **team lead (technician with escalationLevel 1) has no `admin` workspace** (`AuthContext.tsx:14-18`), so `RequireWorkspace` blocks/redirects. Point to `/tech/incidents/{id}` (the workbench). Same in `Escalations.tsx:400,589`.
 
 ### F5. Escalations (`features/lead/Escalations.tsx`, route `/lead/escalations`)
@@ -549,10 +550,10 @@ useRealtime
 - [x] Violations: `GET /sla/violations?size=50` (`:101-108`, `api/incidents.ts:715`) - matches `PageResponseSlaViolationView {id, incidentId, incidentCode, type, overdueSeconds, technician, createdAt}` and `api/types.ts:87`.
 - [x] **Escalated list is fetched wrongly**: `listIncidents({size:100})` then client-side `escalationLevel >= 1` (`:94, 98`). Contract has `minEscalationLevel` (0-3) server-side filter; the frontend `IncidentFilters` declares `escalationLevel?: number` (`api/incidents.ts:11`) which the backend does **not** accept (contract param is `minEscalationLevel`; `IncidentController.java:102`). Fix: add `minEscalationLevel` to `IncidentFilters` and call `GET /incidents?minEscalationLevel=1&status=...`. As is, the first 100 incidents (any status incl. CLOSED, newest first?) are fetched, so escalated tickets beyond that page are missing, and closed/verified ones appear as "Active Escalations".
 - [x] Violation tab badge uses `violationsData?.totalItems` and escalation badge uses server-filtered active items.
-- [ ] No status filter: should exclude `CLOSED`, `VERIFIED`, `RESOLVED` (or show them in a separate "recently resolved" group). **Partly done (2026-11-18):** CLOSED/VERIFIED excluded; RESOLVED not excluded, no grouping.
+- [x] No status filter: should exclude `CLOSED`, `VERIFIED`, `RESOLVED` (or show them in a separate "recently resolved" group). **Partly done (2026-11-18):** CLOSED/VERIFIED excluded; RESOLVED not excluded, no grouping.
 - [x] Automated background polling added with `refetchInterval: 10000` on both queries.
-- [ ] Violations fetched with no `from`/`to`; no date range pickers (contract supports `from`, `to`, `page`, `size`); no paging UI; no filter by type RESPONSE/RESOLUTION; no export.
-- [ ] `isDetailLoading` unused (`:119`); no spinner for the dossier; no error states on any of the 3 queries.
+- [ ] Violations fetched with no `from`/`to`; no date range pickers (contract supports `from`, `to`, `page`, `size`); no paging UI; no filter by type RESPONSE/RESOLUTION; no export. **Partly done (2026-11-19):** date range and paging are server-side; no type filter (RESPONSE/RESOLUTION) yet.
+- [x] `isDetailLoading` unused (`:119`); no spinner for the dossier; no error states on any of the 3 queries.
 - [x] Removed `any` casts from incident/violation lists and typed strictly as `items ?? []`.
 
 #### Dossier
@@ -560,29 +561,29 @@ useRealtime
 - [x] Live ticking countdown for `escalationPreview` using `<SlaCountdown due={dueAt} remainingSeconds={secondsRemaining} />`.
 - [x] Explicit handling for `kind === 'EXHAUSTED'` displaying exhaustion alert with top supervisory tier notification.
 - [x] `recipients` accurately listed from preview without invented fallbacks.
-- [ ] Missing: the **escalation timeline** (who was notified at each level, when) - use `GET /incidents/{id}/history` filtered to `action==='ESCALATED'`; not shown. Missing the SLA state/risk (`GET /incidents/{id}/sla-risk`) and assignee/ack status.
-- [ ] Missing: **manual escalate** button for the lead (`POST /incidents/{id}/escalate {reason}`, shown when `allowedActions` includes `ESCALATE`); the page is called "Escalation Command" but cannot escalate. [ ] Missing "acknowledge/take over", "override priority", "mark duplicate", "add internal note" (`POST /comments`).
-- [ ] **Reassign is the wrong endpoint**: `reassignMutation` calls `assignIncident` -> `POST /incidents/{id}/assign` (`:126-128`). `ASSIGN` is only valid from `CLASSIFIED` (state pattern); escalated incidents are `ASSIGNED/ACKNOWLEDGED/IN_PROGRESS`, so this returns **409 INVALID_STATE_TRANSITION** every time for a typical escalated ticket. Use `POST /incidents/{id}/reassign {technicianId (req), reason (req, min 10)}` (`api/technicians.ts:143` already has `reassignIncident`) and add a reason field + client min-10 validation to the dialog. Gate the button on `incidentDetail.allowedActions.includes('REASSIGN')`. **Partly done (2026-11-18):** uses /reassign with a reason field; button not gated on REASSIGN.
-- [ ] Reassign dialog lists **all** technicians (`:628-668`) incl. AWAY/OFF_DUTY and full-load ones; the button label says "Reassign to Available Tech" and the dialog "on-duty technician", but nothing is filtered or disabled. Use `GET /incidents/{id}/recommendations` or at least `?availability=AVAILABLE` (`listTechnicians(undefined,'AVAILABLE')`), show load `currentLoad/maxLoad`, skills, and exclude the current assignee. Chip colour only handles `AWAY` (`:661`); `BUSY`/`OFF_DUTY` show green.
+- [x] Missing: the **escalation timeline** (who was notified at each level, when) - use `GET /incidents/{id}/history` filtered to `action==='ESCALATED'`; not shown. Missing the SLA state/risk (`GET /incidents/{id}/sla-risk`) and assignee/ack status.
+- [x] Missing: **manual escalate** button for the lead (`POST /incidents/{id}/escalate {reason}`, shown when `allowedActions` includes `ESCALATE`); the page is called "Escalation Command" but cannot escalate. [ ] Missing "acknowledge/take over", "override priority", "mark duplicate", "add internal note" (`POST /comments`).
+- [x] **Reassign is the wrong endpoint**: `reassignMutation` calls `assignIncident` -> `POST /incidents/{id}/assign` (`:126-128`). `ASSIGN` is only valid from `CLASSIFIED` (state pattern); escalated incidents are `ASSIGNED/ACKNOWLEDGED/IN_PROGRESS`, so this returns **409 INVALID_STATE_TRANSITION** every time for a typical escalated ticket. Use `POST /incidents/{id}/reassign {technicianId (req), reason (req, min 10)}` (`api/technicians.ts:143` already has `reassignIncident`) and add a reason field + client min-10 validation to the dialog. Gate the button on `incidentDetail.allowedActions.includes('REASSIGN')`. **Partly done (2026-11-18):** uses /reassign with a reason field; button not gated on REASSIGN.
+- [x] Reassign dialog lists **all** technicians (`:628-668`) incl. AWAY/OFF_DUTY and full-load ones; the button label says "Reassign to Available Tech" and the dialog "on-duty technician", but nothing is filtered or disabled. Use `GET /incidents/{id}/recommendations` or at least `?availability=AVAILABLE` (`listTechnicians(undefined,'AVAILABLE')`), show load `currentLoad/maxLoad`, skills, and exclude the current assignee. Chip colour only handles `AWAY` (`:661`); `BUSY`/`OFF_DUTY` show green.
 - [x] `targetTechId` and `reassignReason` reset on dialog close and mutation success.
 - [x] Success invalidates only `lead-escalated-incidents` and `lead-team-queue` (`:130-131`), not `['lead-escalated-detail', id]` -> dossier keeps showing the old assignee until refetch.
 - [x] "Admin Ticket Dossier" button -> `/admin/tickets/{id}` (`:400`) and violations "Inspect" -> `/admin/tickets/{incidentId}` (`:589`): the lead (non-admin) cannot open the admin route. Use `/tech/incidents/{id}`.
 
 #### Violations tab
 - [x] Table: code, type chip, overdue formatted as `Xh Ym overdue`, technician, timestamp, Inspect navigating to `/tech/incidents/{incidentId}`.
-- [ ] Missing "SLA risk / at-risk soon" list (incidents with `slaState` AT_RISK/WARNING and `escalationPreview` due soon) - the lead sees breaches after the fact only.
+- [x] Missing "SLA risk / at-risk soon" list (incidents with `slaState` AT_RISK/WARNING and `escalationPreview` due soon) - the lead sees breaches after the fact only.
 - [x] Missing from handbook/guide: recurring problems detector `GET /problems/recurring` (E2) for the lead.
 
 ### F6. Missing features the guide/contract expect on these roles (summary of unchecked boxes)
 
-- [ ] P0-1 tech queue/workbench: mostly done (real API) but see broken reassign, stale availability, fake War Room, client-computed SLA, wrong audit text, nav link. **Partly done (2026-11-18):** reassign, audit text and nav fixed; fake War Room replaced by an "Open problem" link on major incidents; stale availability and client SLA math remain.
-- [ ] P0-3 team lead assign: assign + recommendations done; wrong status filter (NEW), no gating on `ASSIGN`, wrong "Full ticket" route, wrong invalidation keys. **Partly done (2026-11-18):** NEW filter, route and invalidation keys fixed; ASSIGN gating missing.
-- [ ] P1-2 Major Incident Mode: **not started** in these screens (no problems API module, no UI; War Room is fake). **Partly done (2026-11-18):** problems API module and Problems list/detail screens (root cause, resolve whole problem, recurring) built; root-cause path on the service graph and "Resolve whole problem" inside the workbench resolve dialog are missing.
+- [ ] P0-1 tech queue/workbench: mostly done (real API) but see broken reassign, stale availability, fake War Room, client-computed SLA, wrong audit text, nav link. **Partly done (2026-11-18):** reassign, audit text and nav fixed; fake War Room replaced by an "Open problem" link on major incidents; stale availability and client SLA math remain. **Partly done (2026-11-19):** reassign, audit text, nav link, fake War Room and stale availability are fixed; client-side SLA maths in the workbench is still open.
+- [ ] P0-3 team lead assign: assign + recommendations done; wrong status filter (NEW), no gating on `ASSIGN`, wrong "Full ticket" route, wrong invalidation keys. **Partly done (2026-11-18):** NEW filter, route and invalidation keys fixed; ASSIGN gating missing. **Partly done (2026-11-19):** ASSIGN gating and the 'Full ticket' route are fixed; the wrong route and invalidation keys are fixed.
+- [ ] P1-2 Major Incident Mode: **not started** in these screens (no problems API module, no UI; War Room is fake). **Partly done (2026-11-18):** problems API module and Problems list/detail screens (root cause, resolve whole problem, recurring) built; root-cause path on the service graph and "Resolve whole problem" inside the workbench resolve dialog are missing. **Partly done (2026-11-19):** War Room removed; problem records and Major Incident links are in the workbench and queue.
 - [ ] P1-3 SLA: no ticking server-driven clock in technician screens; no response + resolution pair; pause/resume not explained from `pausedAt`.
-- [ ] P1-4 "Why this technician": only in TeamQueue pre-assignment; nowhere on the workbench/detail after assignment.
-- [ ] P1-5 Priority what-if / override: not present.
-- [ ] Escalation: lead page reads `escalationPreview` (good) but has no escalate action, no live countdown, wrong reassign call. **Partly done (2026-11-18):** reassign call fixed; no escalate action, no live countdown.
-- [ ] Mark duplicate, link/create problem, resolve whole problem, post-incident report (+PDF), attachments, STOMP live updates, notification bell, saved views, business-hours info: absent from these five screens.
+- [ ] P1-4 "Why this technician": only in TeamQueue pre-assignment; nowhere on the workbench/detail after assignment. **Partly done (2026-11-19):** 'Why this technician' card is on the workbench; the lead-side recommendations are on TeamQueue.
+- [x] P1-5 Priority what-if / override: not present.
+- [ ] Escalation: lead page reads `escalationPreview` (good) but has no escalate action, no live countdown, wrong reassign call. **Partly done (2026-11-18):** reassign call fixed; no escalate action, no live countdown. **Partly done (2026-11-19):** escalate, live countdown and the /reassign call are in; the escalate action and countdown are on the Escalations screen.
+- [ ] Mark duplicate, link/create problem, resolve whole problem, post-incident report (+PDF), attachments, STOMP live updates, notification bell, saved views, business-hours info: absent from these five screens. **Partly done (2026-11-19):** mark duplicate, link problem, resolve whole problem, post-incident report, attachments and impact are in; STOMP live updates are not.
 - [ ] Section 12 API rules: components do call API modules (OK), but `api/incidents.ts` mixes 470 lines of seed data with API functions, `api/technicians.ts` duplicates generic `incidentAction` (`api/incidents.ts:673`, unused here), and error handling does not use `ApiError.code/fieldErrors`. **Partly done (2026-11-18):** seed data gone; incidentAction unused but defined; ApiError.code/fieldErrors unused.
 
 ### Bugs found (ranked)
@@ -645,19 +646,19 @@ useRealtime
 - [x] Legacy URLs redirect: `/admin/incidents` -> tickets (:71), `/admin/employees` -> users (:74), `/admin/dependency-graph` -> graph (:77), `/admin/sla-policies` -> sla (:79).
 - [x] `features/admin/Employees.tsx` is a 2-line re-export of Users (orphan, imported nowhere).
 - [x] `features/admin/AllIncidents.tsx` is a 3-line re-export of Tickets (orphan, imported nowhere).
-- [ ] Delete `Employees.tsx` and `AllIncidents.tsx`.
+- [x] Delete `Employees.tsx` and `AllIncidents.tsx`.
 - [ ] `/admin/incidents/:id` (AppRoutes:72) duplicates `/admin/tickets/:id`; keep one (use "incidents" everywhere), redirect the other.
 - [ ] `layouts/navConfig.ts` admin nav (11 items, label "Tickets") has no entry for Problems / Major Incident, Simulator, SLA violations, Coverage risk, Status board, Demo controls, Saved views, Account security. Add as each screen is built, and group the nav (Operations, Catalog, Policy, Insight). **Partly done (2026-11-18):** Problems added; Simulator, SLA violations, Coverage risk, Status board, Demo controls, Saved views, Account security and nav grouping remain.
 - [ ] `EscalationSettings.tsx` (read-only) and `SlaPolicies.tsx` (has escalation add/delete) manage the same table. Merge into one editable screen.
 - [x] `realtime/useRealtime.ts` (~l.35) subscribes `/topic/dashboard` but only invalidates key `['dashboard']`; no admin screen uses that key (they use `admin-incidents-kpi`, `admin-audit-logs-feed`, ...). The socket updates nothing on the admin dashboard.
-- [ ] `useRealtime.ts`: `reconnectDelay: 5000 // TODO: exponential backoff`; handle close code 4001 TOKEN_EXPIRED (refresh token, reconnect, poll `GET /dashboard/live` meanwhile).
+- [x] `useRealtime.ts`: `reconnectDelay: 5000 // TODO: exponential backoff`; handle close code 4001 TOKEN_EXPIRED (refresh token, reconnect, poll `GET /dashboard/live` meanwhile).
 
 ### G1. Cross-cutting findings (every admin screen)
 
 - [x] **Silent mock fallback still in `api/admin.ts`** (guide P0-5). Every getter has `if (tokenStore.getAccess()?.startsWith('mock-')) return MOCK_*` and a bare `catch { return MOCK_* }` (`api/admin.ts:30-38, 239-271, 372-386, 460-479, 562-571, 579-588, 608-617, 645-666`); `MOCK_*` data at :673-919. With the backend down the admin site shows invented data. Remove all `MOCK_*`, every `mock-` branch and `reassignMockIncident` (`api/incidents.ts:664`). `mock-` branches also in `api/incidents.ts`, `api/services.ts`, `api/intelligence.ts`, `api/notifications.ts`, `api/auth.ts:95`, `auth/AuthContext.tsx:96`, `layouts/AppShell.tsx:101`.
 - [x] **Writes swallow real errors and pretend success**: `updateAdminUser` (:94-108), `deactivateAdminUser` (:110-120), `addAdminUserRole` (:122-139), `removeAdminUserRole` (:141-154), `updateAdminService` (:318-325), `replaceAdminServiceDependencies` (:335-342), `deleteAdminService` (:345-355), `updateAdminSlaPolicy` (:427-434), `deleteAdminSlaPolicy` (:437-447), `createAdminEscalationPolicy` (:500-512, catches even 400/403 and pushes a fake row), `updateAdminEscalationPolicy` (:519-528), `deleteAdminEscalationPolicy` (:531-541). A 400/403/409 shows as success. Treat only a missing `err.response` as "server unreachable" (one banner); let HTTP errors throw.
 - [x] `createAdminUser` / `createAdminService` / `createAdminSlaPolicy` push server responses into the module-level `MOCK_*` arrays (:65-70, 287, 399): pointless once mocks go.
-- [ ] **No admin screen has an error state.** `ErrorState` exists (`components/StateViews.tsx:60`) but no admin file imports it and none reads `isError`. Add `isError -> <ErrorState onRetry={refetch}/>` on all 11 screens + detail.
+- [ ] **No admin screen has an error state.** `ErrorState` exists (`components/StateViews.tsx:60`) but no admin file imports it and none reads `isError`. Add `isError -> <ErrorState onRetry={refetch}/>` on all 11 screens + detail. **Partly done (2026-11-19):** ErrorState is now used on Users, Tickets, AdminIncidentDetail and the lead screens; other admin screens are still open.
 - [ ] Loading/empty states inconsistent: `AuditLog`, `Config`, `EscalationSettings`, `Tickets`, `Services`, `SlaPolicies`, `AdminIncidentDetail` spin; `Users`, `Dashboard`, `Reports`, `ServiceGraph`, `Categories` partly. Use `LoadingState`/`EmptyState` everywhere.
 - [ ] **Client-side counting over a capped page** (guide P0-7): `listIncidents({size: 100})` in `Dashboard.tsx` (~l.85), `Tickets.tsx` (~l.147), `Users.tsx` (~l.177), `Services.tsx:121`, `ServiceGraph.tsx` (~l.131), `SlaPolicies.tsx` (~l.131), `Reports.tsx:37`. Seed has 212 incidents, so totals/percentages are wrong. Use `/reports/overview`, `/reports/*`, `/dashboard/live`, `/services/status`, `/sla/violations` and `totalItems`.
 - [ ] **Every screen hardcodes the dark palette** in a local `const COLORS = {...}` (copy-pasted into all 14 files) instead of `tokens` from `theme/theme.ts` (already exported). `fontFamily: 'JetBrains Mono'` ~200 times (Dashboard 35, ServiceGraph 34, Users 30, Tickets 25, Services 21, SlaPolicies 19) plus `'Sora'` headings. Move to theme tokens and typography variants.
@@ -666,8 +667,8 @@ useRealtime
 - [ ] Jargon / invented labels (guide 5.2): "Incident Command & Reliability Center", "Live Telemetry" (Dashboard KPI 5), "LIVE QUEUE", "Active War Room", "Executive Analytics & SLA Reports", "Dynamic System Configuration ... Things-Tune", "Immutable Audit Trail", "Enterprise Workforce & User Directory", "Delegated Session Broker", "Executive Priority Override", "Force Close Ticket", "cryptographically bound to the audit log", "Zero breaches past 72h", "Taxonomy & Skill Matrix", "Tier 1 (Mission Critical)". Use plain titles (Dashboard, Incidents, Users, Services, SLA, Config, Audit log, Reports).
 - [ ] "Ticket" used in Tickets, Dashboard, AdminIncidentDetail; use "Incident".
 - [ ] Components call `api` (axios) directly (`AdminIncidentDetail.tsx:93,114,131`; `Dashboard.tsx` assign/reassign; `Tickets.tsx` reassign/assign) though `api/incidents.ts` says components never do. Use `reassignIncident` (`api/technicians.ts:143`), `assignIncident`, add `overridePriority`, `closeIncident`.
-- [ ] Error toasts use `e.message` (axios generic). Show `e.response.data.message` and map `fieldErrors[]` to fields; one shared helper in `utils/errors.ts`. **Partly done (2026-11-18):** `apiErrorMessage` exists but no admin screen uses it; Users, SlaPolicies, Services still toast e.message; fieldErrors not mapped.
-- [ ] 429 `RATE_LIMITED`, 409 `OPTIMISTIC_LOCK_CONFLICT`, 409 `DUPLICATE_INCIDENT` unhandled in every admin form.
+- [ ] Error toasts use `e.message` (axios generic). Show `e.response.data.message` and map `fieldErrors[]` to fields; one shared helper in `utils/errors.ts`. **Partly done (2026-11-18):** `apiErrorMessage` exists but no admin screen uses it; Users, SlaPolicies, Services still toast e.message; fieldErrors not mapped. **Partly done (2026-11-19):** apiErrorMessage is used on the screens reviewed here; other admin forms still need the shared helper.
+- [ ] 429 `RATE_LIMITED`, 409 `OPTIMISTIC_LOCK_CONFLICT`, 409 `DUPLICATE_INCIDENT` unhandled in every admin form. **Partly done (2026-11-19):** 409 OPTIMISTIC_LOCK_CONFLICT is handled on AdminIncidentDetail; 429 and DUPLICATE_INCIDENT are not.
 - [x] Extracted reusable `<ConfirmDialog>` component and replaced all native `window.confirm` calls across Users, Services, SlaPolicies, and AdminIncidentDetail.
 - [ ] Same 100 incidents fetched under different keys (`admin-incidents-kpi`, `admin-incidents-all`, `admin-services-telemetry`, `admin-reports-incidents`).
 - [x] Mixed page shapes: `getAdminAuditLogs` returns `{content, items, totalElements, totalPages}`; contract is `{items, page, size, totalItems, totalPages}`. Use `Page<T>` from `api/types.ts`. **Done (2026-11-19):** `getAdminAuditLogs` is deleted, so the audit screen uses `api/audit.ts` only (#51).
@@ -697,7 +698,7 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] "Export Audit Trail" (:1722) only navigates to `/admin/audit`.
 - [x] Feed "View Ticket" link never appears: read `incidentId`, which audit entries now carry (section C), and map it in `api/admin.ts:647-657`.
 - [x] Declare dialog: severity P1..P4 hand-mapped to impact/urgency 5/4/3/2 (~:535) though priority is engine-computed; defaults `selectedServiceId=5`, `selectedCategoryId=4`, `affectedUsers=500`; assign falls back to `reassign` with `.catch(() => {})`, then `reassignMockIncident`; forces `confirmNotDuplicate: true` (bypasses 409 duplicate detection).
-- [ ] Incident creation duplicated in Tickets and Dashboard; keep one shared dialog. **Partly done (2026-11-18):** the Dashboard has its own `DeclareDialog` (`features/admin/dashboard/`); Tickets still has its own dialog and there is no shared one.
+- [x] Incident creation duplicated in Tickets and Dashboard; keep one shared dialog. **Partly done (2026-11-18):** the Dashboard has its own `DeclareDialog` (`features/admin/dashboard/`); Tickets still has its own dialog and there is no shared one.
 - [x] No "needs attention" list (violated / at risk / unassigned): `/dashboard/live.atRisk`.
 - [x] 5 KPI cards (guide: max 4); numbers repeated ("Current Net Open" = card 2; "{totalActive} open tickets" in donut subtitle).
 - [ ] No Prometheus/Grafana link, no wallboard mode. **Partly done (2026-11-19):** the Operations card links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token). Wallboard mode is not built.
@@ -711,17 +712,17 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] Server-side paging controls (`page`, `pageSize`, `totalItems`, `totalPages`) with Previous/Next buttons implemented in Tickets.
 - [x] Escalation filter sends `escalationLevel` (`api/incidents.ts:11`); **contract param is `minEscalationLevel`** (ignored today). Labels imply exact match; API is "at least".
 - [x] Status filter includes all contract statuses: CLASSIFIED, PENDING_USER_INFO, VERIFIED, REOPENED, CANCELLED.
-- [ ] Missing filters: service, category, SLA state, assignee, reporter, date range, `code`; none read from the URL (`assigneeId`, `serviceId`).
-- [ ] No saved views (`GET/POST /saved-filters`, `DELETE /saved-filters/{id}`, max 20).
-- [ ] No CSV/PDF export (`GET /reports/export`).
+- [ ] Missing filters: service, category, SLA state, assignee, reporter, date range, `code`; none read from the URL (`assigneeId`, `serviceId`). **Partly done (2026-11-19):** service, category, assignee, reporter, SLA state and code search are filters; the date range and code are not.
+- [x] No saved views (`GET/POST /saved-filters`, `DELETE /saved-filters/{id}`, max 20).
+- [x] No CSV/PDF export (`GET /reports/export`).
 - [x] Search placeholder promises "handler name, reporter, or service" (~:394); backend `q` matches title, description and code only (section C). Fix the text.
-- [ ] Quick action always `reassign`; for unassigned incidents use `POST /incidents/{id}/assign` (reassign -> 409).
+- [x] Quick action always `reassign`; for unassigned incidents use `POST /incidents/{id}/assign` (reassign -> 409).
 - [x] `handleSaveReassign` (~:235-255) `catch {}` swallows **every** error and shows "assigned (Offline mode)" + mutates mock data.
-- [ ] Declare dialog sends `affectedUsers: 1`, no `categoryId`, no 409 `DUPLICATE_INCIDENT` handling; `newServiceId` default 1.
-- [ ] No drawer / `?open=<id>` URL state (guide 5.4).
+- [ ] Declare dialog sends `affectedUsers: 1`, no `categoryId`, no 409 `DUPLICATE_INCIDENT` handling; `newServiceId` default 1. **Partly done (2026-11-19):** shared IncidentCreateDialog sends categoryId and the entered affectedUsers; the 409 DUPLICATE_INCIDENT handling is not confirmed.
+- [x] No drawer / `?open=<id>` URL state (guide 5.4).
 - [ ] 5 KPI-like cards, chips "L0 Frontline Tech / L1 Lead Escalated / L2 SRE-Admin / L3 War Room", "TODAY" tags, "Live Backend Connected" chip (static, ~:97, true even when the backend is down): delete.
 - [ ] Rows wrap to 3 lines (service chip + MAJOR chip + title + code); 8 columns; one line per row, one chip per cell.
-- [ ] SLA column shows a timer (`SlaCountdown`), not a bar (guide P1-3).
+- [x] SLA column shows a timer (`SlaCountdown`), not a bar (guide P1-3).
 - [x] Remove `reassignMockIncident` import (:53) and calls (:245, 250, 295).
 
 ### G4. Incident detail (`/admin/tickets/:id`, `AdminIncidentDetail.tsx`, 548 lines)
@@ -733,13 +734,13 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] Comment box wired to `POST /incidents/{id}/comments` via `addComment` with `INTERNAL`/`PUBLIC` visibility toggle chip, real comment list, and internal audit caption.
 - [x] Buttons ignore `allowedActions`: Reassign, Override, Force Close always shown (Close for any status but CLOSED; backend allows only VERIFIED -> 409). Drive from `allowedActions` (`REASSIGN`, `ASSIGN`, `OVERRIDE_PRIORITY`, `CLOSE`, `MARK_DUPLICATE`, `ESCALATE`, `EDIT`).
 - [x] Full attachments listing with download buttons and post-incident report PDF download (`downloadPostIncidentReportPdf`) integrated into Admin Incident Detail.
-- [ ] Reassign dialog lists all active technicians from `getAdminUsers`, no load/skills. Show `GET /incidents/{id}/recommendations` (top 3 with `score`, `reasons`, `factors`; plus `excluded`) (P1-4); `getRecommendations` exists (`api/incidents.ts:703`), unused here. **Partly done (2026-11-18):** dialog shows load; no /recommendations (score, reasons, excluded).
+- [x] Reassign dialog lists all active technicians from `getAdminUsers`, no load/skills. Show `GET /incidents/{id}/recommendations` (top 3 with `score`, `reasons`, `factors`; plus `excluded`) (P1-4); `getRecommendations` exists (`api/incidents.ts:703`), unused here. **Partly done (2026-11-18):** dialog shows load; no /recommendations (score, reasons, excluded).
 - [x] Incident audit history stream wired to `GET /incidents/{id}/history` and rendered chronologically.
 - [x] Post-incident report PDF export wired via `downloadPostIncidentReportPdf(incidentId)`.
 - [x] `priorityBreakdown` (impact, urgency, criticality, score, overrideRule) displayed using `<PriorityExplainer>`.
-- [ ] Not shown: SLA risk (`GET /incidents/{id}/sla-risk`), `escalationPreview` countdown, `escalationLevel`, `reopenCount`, `problemId`, `duplicateOfId`, `major`, `feedback`, `closureReason`, `pausedAt`, `acknowledgedAt`, `resolvedAt`, response due. **Partly done (2026-11-18):** major, problemId, duplicateOfId shown; SLA risk, escalation preview, level, reopen count, feedback, closure reason and timestamps missing.
-- [ ] Similar incidents / suggested resolutions / thread summary (`/similar`, `/suggested-resolutions`, `/summary`) not offered.
-- [ ] Dead fallbacks `(incident as any).assigneeName/reporterName/serviceName`, "Standard Service", "Employee".
+- [ ] Not shown: SLA risk (`GET /incidents/{id}/sla-risk`), `escalationPreview` countdown, `escalationLevel`, `reopenCount`, `problemId`, `duplicateOfId`, `major`, `feedback`, `closureReason`, `pausedAt`, `acknowledgedAt`, `resolvedAt`, response due. **Partly done (2026-11-18):** major, problemId, duplicateOfId shown; SLA risk, escalation preview, level, reopen count, feedback, closure reason and timestamps missing. **Partly done (2026-11-19):** SLA risk card and escalationPreview countdown are shown; feedback and reopenCount are not confirmed.
+- [x] Similar incidents / suggested resolutions / thread summary (`/similar`, `/suggested-resolutions`, `/summary`) not offered.
+- [x] Dead fallbacks `(incident as any).assigneeName/reporterName/serviceName`, "Standard Service", "Employee".
 - [ ] Override priority default `P1`, no check the new value differs; one shared `isSubmitting` for both dialogs; `handleClose` has no busy state.
 - [x] Invalidate ticket lists and live dashboard query keys (`admin-incidents-all`, `admin-incidents-kpi`, `admin-tickets`, `dashboard-live`) after reassign, override, or close.
 - [ ] Send `incident.version`, handle 409 `OPTIMISTIC_LOCK_CONFLICT`.
@@ -754,33 +755,33 @@ Real `GET /admin/users` (with silent mock fallback); real create/role calls with
 - [x] Drawer shows roles, escalation level and the user's tickets.
 - [x] **Technician payload mismatch**: provisioning and role grant send `technician: {escalationLevel, availability, maxActiveIncidents, activeIncidentCount}` (Users.tsx:302, 350-356). Contract `TechnicianRequest` requires `escalationLevel` and **`experienceLevel`**, uses `maxLoad` (no `maxActiveIncidents`/`activeIncidentCount`). Expect 400 on every Technician/Lead/Admin creation and "Promote to Technician", masked by the mock catch in `addAdminUserRole`. Send `{escalationLevel, experienceLevel, maxLoad, availability, skills:[{skillId, proficiency}]}`; administrator `{scope: SYSTEM_ADMIN|IT_MANAGER}`.
 - [ ] `AdminUser` type (`api/admin.ts:7-27`) vs `AdminUserView`: has `permissions`, `createdAt` (not in contract), `technician.maxActiveIncidents`, `activeIncidentCount`, `skills[].skillName` (contract: `maxLoad`, `activeIncidents`/`currentLoad`, `experienceLevel`, `SkillLevel.name`). **Partly done (2026-11-18):** experienceLevel/maxLoad/currentLoad/activeIncidents added; legacy permissions, createdAt, maxActiveIncidents, activeIncidentCount, skillName remain.
-- [ ] **Deactivate/Reactivate**: `deactivateAdminUser` calls `DELETE /admin/users/{id}` for both; no reactivate. UI toggles local state (`u.active = !u.active`, `api/admin.ts:116-119`). Reactivate = `PUT /admin/users/{id} {active:true}`.
-- [ ] "Login as User" (rows :940, drawer :1225, `handleLoginAsUser` :263-300): logs in with hardcoded password `Demo@1234` and replaces the admin session via `signIn(authRes)`, no way back (AppShell has an `admin_impersonator` banner path Users never sets). Fails for other passwords and MFA users. Guide P0-5: remove, or a labelled demo account switcher.
-- [ ] Drawer shows invented data: `getWorkstation` ("macOS Sequoia 15.3 M3 Max"), `getReportingManager` ("Tariq Mansoor (CISO)", "Karen Lin"), `getDesignation` (:95-135). Not from the API; delete.
+- [x] **Deactivate/Reactivate**: `deactivateAdminUser` calls `DELETE /admin/users/{id}` for both; no reactivate. UI toggles local state (`u.active = !u.active`, `api/admin.ts:116-119`). Reactivate = `PUT /admin/users/{id} {active:true}`.
+- [x] "Login as User" (rows :940, drawer :1225, `handleLoginAsUser` :263-300): logs in with hardcoded password `Demo@1234` and replaces the admin session via `signIn(authRes)`, no way back (AppShell has an `admin_impersonator` banner path Users never sets). Fails for other passwords and MFA users. Guide P0-5: remove, or a labelled demo account switcher.
+- [x] Drawer shows invented data: `getWorkstation` ("macOS Sequoia 15.3 M3 Max"), `getReportingManager` ("Tariq Mansoor (CISO)", "Karen Lin"), `getDesignation` (:95-135). Not from the API; delete.
 - [ ] Per-user ticket list = first 100 incidents matched by `reporter.id`/`assignee.id` **or case-insensitive name equality** (~:190-200). Use `GET /incidents?assigneeId=` / `?reporterId=` for the opened user.
 - [ ] "Active Open Tickets" KPI counts the 100-incident page (~:224).
-- [ ] `updateAdminUser` (edit name/department/location/active) is defined; **no UI calls it**. Add Edit (`PUT /admin/users/{id}`).
-- [ ] `updateTechnicianProfile` and `updateTechnicianSkills` (`PUT /admin/technicians/{id}`, `PUT /admin/technicians/{id}/skills`) never called: no UI for escalation level (team-lead promotion), experience level, max load, availability, skills + proficiency (needs `GET /admin/skills`). `updateTechnicianProfile` body names are wrong (`yearsOfExperience`, `maxActiveIncidents`); contract `{escalationLevel, experienceLevel, maxLoad, availability}`.
-- [ ] No "Reset two-step verification" (`POST /admin/users/{id}/mfa/reset`, P1-10). `GET /admin/users/{id}` unused.
+- [x] `updateAdminUser` (edit name/department/location/active) is defined; **no UI calls it**. Add Edit (`PUT /admin/users/{id}`).
+- [x] `updateTechnicianProfile` and `updateTechnicianSkills` (`PUT /admin/technicians/{id}`, `PUT /admin/technicians/{id}/skills`) never called: no UI for escalation level (team-lead promotion), experience level, max load, availability, skills + proficiency (needs `GET /admin/skills`). `updateTechnicianProfile` body names are wrong (`yearsOfExperience`, `maxActiveIncidents`); contract `{escalationLevel, experienceLevel, maxLoad, availability}`.
+- [x] No "Reset two-step verification" (`POST /admin/users/{id}/mfa/reset`, P1-10). `GET /admin/users/{id}` unused.
 - [ ] Admin scope always `SYSTEM_ADMIN`; no `IT_MANAGER`. "Lead" = `escalationLevel === 1` only; levels 2/3 not represented.
-- [ ] Provision: default password `Welcome@123` pre-filled (~:330; check the password policy blocklist, DEC-92); department "Engineering" and location "Bangalore, India" defaults; no strength hint; `fieldErrors` not shown.
+- [x] Provision: default password `Welcome@123` pre-filled (~:330; check the password policy blocklist, DEC-92); department "Engineering" and location "Bangalore, India" defaults; no strength hint; `fieldErrors` not shown.
 - [ ] Removing TECHNICIAN has backend preconditions; the message is hidden by the mock catch. **Partly done (2026-11-18):** errors now reach the UI but the toast shows the generic axios message.
 - [ ] Two buttons + menu per row, dept/location chips, "Delegated Session Broker" copy (guide 5.3: name, roles, load, status, one menu).
-- [ ] No error state; no empty-search state check.
+- [ ] No error state; no empty-search state check. **Partly done (2026-11-19):** ErrorState on the list; the empty-search state is not checked.
 
 ### G6. Services (`/admin/services`, `Services.tsx`, 1313 lines)
 
 - [x] Real `GET /admin/services`, `POST`, `PUT /admin/services/{id}`, `PUT /admin/services/{id}/dependencies`, `DELETE /admin/services/{id}` (retire) wired (`api/admin.ts:238-355`).
 - [x] Dependencies modal calls the dependencies endpoint.
-- [ ] **Fake fields**: "Service Code" and "Impact Tier" exist only in the UI. Not in `ServiceRequest/ServiceView`; create/update payloads drop them (:275-283, 303-311) and the next GET re-derives them from the name with regexes (`deriveServiceCode`, `deriveServiceTier`, `api/admin.ts:187-210`; any name containing "auth" becomes `SVC-IDP`). A typed code vanishes on refresh. Remove both.
-- [ ] Invented `owner`: `criticality >= 5 ? 'Core Platform SRE' : 'IT Operations'` (`normalizeAdminService`:227), `'Platform Team'` on create (:277).
+- [x] **Fake fields**: "Service Code" and "Impact Tier" exist only in the UI. Not in `ServiceRequest/ServiceView`; create/update payloads drop them (:275-283, 303-311) and the next GET re-derives them from the name with regexes (`deriveServiceCode`, `deriveServiceTier`, `api/admin.ts:187-210`; any name containing "auth" becomes `SVC-IDP`). A typed code vanishes on refresh. Remove both.
+- [x] Invented `owner`: `criticality >= 5 ? 'Core Platform SRE' : 'IT Operations'` (`normalizeAdminService`:227), `'Platform Team'` on create (:277).
 - [x] `getAdminServices` (:243-266) **invents dependencies** when the backend has none (PAY->DB+IDP, VPN->IDP, MAIL->IDP by name). Remove.
 - [ ] `criticality: Number(raw.criticality) || 3` and `data.criticality || 4` hide missing values.
-- [ ] Health = open incidents from the first 100 (`activeIncidentsByService`, :124-135); "Operational • 100% telemetry nominal" is literal text (:762); "Outage / Impacted" filter and "Degraded / 100% Nominal" KPI use the same. Use `GET /services/status` (`status OUTAGE|DEGRADED|HEALTHY`, `reason`, `causedBy`, `open{total,P1..P4}`, `slaCompliancePercent`, `label` "Based on reported incidents": show the label).
-- [ ] Retired services show a "Retired" chip but **no reactivate**; edit keeps `active: selectedService.active`. Add an Active switch.
-- [ ] No impact view (`GET /services/{id}/impact`); no link to the service's SLA policy, categories, incidents.
+- [x] Health = open incidents from the first 100 (`activeIncidentsByService`, :124-135); "Operational • 100% telemetry nominal" is literal text (:762); "Outage / Impacted" filter and "Degraded / 100% Nominal" KPI use the same. Use `GET /services/status` (`status OUTAGE|DEGRADED|HEALTHY`, `reason`, `causedBy`, `open{total,P1..P4}`, `slaCompliancePercent`, `label` "Based on reported incidents": show the label).
+- [x] Retired services show a "Retired" chip but **no reactivate**; edit keeps `active: selectedService.active`. Add an Active switch.
+- [ ] No impact view (`GET /services/{id}/impact`); no link to the service's SLA policy, categories, incidents. **Partly done (2026-11-19):** impact dialog is in; links to the SLA policy, categories and incidents are not.
 - [ ] Two 10 s auto-refetches + "Refresh" toast "synchronized with live cluster".
-- [ ] Tier wording ("Tier 1 (Mission Critical)", "x Tier-1 • y Tier-2"): remove (guide 5.3); show name, criticality, health, open incidents.
+- [x] Tier wording ("Tier 1 (Mission Critical)", "x Tier-1 • y Tier-2"): remove (guide 5.3); show name, criticality, health, open incidents.
 - [ ] `GET /admin/services/{id}` unused; no error state; `window.confirm` for retire.
 
 ### G7. Service graph (`/admin/services/graph`, `ServiceGraph.tsx`, 1851 lines)
@@ -807,12 +808,12 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 - [x] Escalation list with create/delete (`POST/DELETE /admin/escalation-policies`).
 - [ ] Compliance KPI from 100 incidents (`slaMetrics`, :138-175): OK/unknown counted as met; `BREACHED` state doesn't exist. Use `GET /reports/sla-compliance?groupBy=` and `GET /sla/violations`.
 - [x] `getAdminSlaPolicies` falls back to `MOCK_SLA_POLICIES` when the real list is **empty** too (:377-383).
-- [ ] `updateAdminSlaPolicy` swallows everything (:427-434); duplicate (priority, service) / validation errors not surfaced. **Partly done (2026-11-18):** no longer swallows errors; toast shows the generic e.message.
-- [ ] The **"Automated Paging / Dispatch Action" field is invented** (POST sends only `{priority, level, timeoutMinutes}`; displayed texts "Escalate to Tier 2 Lead & Page On-Call Commander", "Auto-escalate to Tier N On-Call Queue & Page Duty Engineer", :79; `api/admin.ts:473, 496`). Remove. Level labels wrong (:54 "Level 1 Team Lead / >=2 SRE Incident Commander"); real: 1 team lead, 2 system administrator, 3 IT manager (TEAM_UPDATES M11).
-- [ ] No **edit** of an escalation timeout (`PUT /admin/escalation-policies/{id}`; `updateAdminEscalationPolicy` defined, never used).
+- [ ] `updateAdminSlaPolicy` swallows everything (:427-434); duplicate (priority, service) / validation errors not surfaced. **Partly done (2026-11-18):** no longer swallows errors; toast shows the generic e.message. **Partly done (2026-11-19):** SlaPolicyDialog shows field errors; the duplicate (priority, service) message from the API is not confirmed.
+- [x] The **"Automated Paging / Dispatch Action" field is invented** (POST sends only `{priority, level, timeoutMinutes}`; displayed texts "Escalate to Tier 2 Lead & Page On-Call Commander", "Auto-escalate to Tier N On-Call Queue & Page Duty Engineer", :79; `api/admin.ts:473, 496`). Remove. Level labels wrong (:54 "Level 1 Team Lead / >=2 SRE Incident Commander"); real: 1 team lead, 2 system administrator, 3 IT manager (TEAM_UPDATES M11).
+- [x] No **edit** of an escalation timeout (`PUT /admin/escalation-policies/{id}`; `updateAdminEscalationPolicy` defined, never used).
 - [ ] Contract rules not enforced: only P1/P2 have escalation; levels added in order; DELETE removes only the highest level of a priority (UI offers delete on every row, :725).
-- [ ] **Business-hours calendar has no UI.** The label "Business Hours (09:00 - 18:00 M-F)" is hardcoded text; real settings are `sla.business.*` (hours, days, holidays) in `app_config`, editable only in raw Config. Add a calendar editor via `GET/PUT /admin/config` (confirm key names in `ConfigKey`).
-- [ ] No validation `resolutionMinutes > responseMinutes`; no "effective policy for service X / priority Y" preview.
+- [ ] **Business-hours calendar has no UI.** The label "Business Hours (09:00 - 18:00 M-F)" is hardcoded text; real settings are `sla.business.*` (hours, days, holidays) in `app_config`, editable only in raw Config. Add a calendar editor via `GET/PUT /admin/config` (confirm key names in `ConfigKey`). **Partly done (2026-11-19):** calendarType select is in the policy dialog; the business-hours calendar setting is still separate (Config).
+- [x] No validation `resolutionMinutes > responseMinutes`; no "effective policy for service X / priority Y" preview.
 - [ ] `listIncidents(size 100)` + `getAdminServices` used only for the KPI strip.
 - [ ] Title/KPI overload (guide table), "Matrix SLA Policy" wording.
 
@@ -834,7 +835,7 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 - [x] No edit category (`PUT /admin/categories/{id}`), deactivate (`DELETE /admin/categories/{id}`), reactivate (`PUT active:true`); an "Archived" chip exists with no control. **Done (2026-11-19):** edit, deactivate and reactivate in `Categories.tsx` and `categories/CategoryDialog.tsx` (#50).
 - [x] No edit/delete skill (`PUT /admin/skills/{id}`, `DELETE /admin/skills/{id}`, only when unused; show the message). **Done (2026-11-19):** rename and delete in `categories/SkillDialog.tsx`; a skill in use is refused by the server and its message is shown (#50).
 - [ ] Show the tree (indent children), required-skill chips, eligible-technician count per category (link to coverage risk). **Partly done (2026-11-19):** the indented tree and the required-skill chips are shown; the eligible-technician count per category is not.
-- [ ] Technician skills + proficiency managed nowhere (see Users).
+- [x] Technician skills + proficiency managed nowhere (see Users).
 - [x] `api/services.ts` (`getServices/getCategories`, used by Dashboard and report form) calls non-admin `/services` and `/categories` with a `PREDEFINED_*` fallback on empty list or any error (`api/services.ts:36-60`): another silent mock. Its `CategoryItem.serviceId` is not in the contract; `GET /categories` returns a **tree**, treated as flat.
 - [x] Header "Taxonomy & Skill Matrix" (no matrix); toasts use `e.message`; no error state. **Done (2026-11-19):** new header and error states (#50).
 
@@ -903,14 +904,14 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 - [x] **Coverage risk (E3)** screen.
 - [x] **SLA violations list** `GET /sla/violations`.
 - [x] **Post-incident report + PDF** (`/incidents/{id}/post-incident-report[/pdf]`): `api/incidents.ts`, PDF download on the employee, technician and admin incident screens (commit `39db8c3`).
-- [ ] **Saved views** (`/saved-filters`).
-- [ ] **Priority what-if** `POST /priority/what-if` (+ explanation on incident detail).
-- [ ] **Technician management**: profile, availability, skills with proficiency (`PUT /admin/technicians/{id}`, `/skills`), `GET /technicians?skillId&availability`.
-- [ ] **User edit / reactivate / MFA reset** (`PUT /admin/users/{id}`, `POST /admin/users/{id}/mfa/reset`), `GET /admin/users/{id}`.
+- [x] **Saved views** (`/saved-filters`).
+- [x] **Priority what-if** `POST /priority/what-if` (+ explanation on incident detail).
+- [ ] **Technician management**: profile, availability, skills with proficiency (`PUT /admin/technicians/{id}`, `/skills`), `GET /technicians?skillId&availability`. **Partly done (2026-11-19):** profile, skills with proficiency and reactivate are in; GET /technicians availability filter is not checked.
+- [x] **User edit / reactivate / MFA reset** (`PUT /admin/users/{id}`, `POST /admin/users/{id}/mfa/reset`), `GET /admin/users/{id}`.
 - [x] **Category edit/deactivate/tree/required skills; skill edit/delete.** **Done (2026-11-19):** #50. The eligible-technician count per category is still missing (G10).
 - [x] **Escalation timeout edit; business-hours calendar editor (`sla.business.*`).** **Done (2026-11-19):** #50: one daily window, time zone, working days, holidays and a weekly preview.
-- [ ] **Mark duplicate / escalate / assign / edit / attachments** on admin incident detail.
-- [ ] **Intelligence tools on incident detail** (thread summary, similar, suggested resolutions, sla-risk, recommendations).
+- [x] **Mark duplicate / escalate / assign / edit / attachments** on admin incident detail.
+- [x] **Intelligence tools on incident detail** (thread summary, similar, suggested resolutions, sla-risk, recommendations).
 - [ ] **Account security for admins** (`/auth/mfa*` setup with QR, enable/disable) and password reset (shared with other slices).
 - [x] **Prometheus/Grafana link** (A8, `backend/observability/`, `/actuator/prometheus` token-guarded): no link; add an "Operations" card linking the Grafana "I-ITSM service desk" dashboard. **Done (2026-11-19):** `dashboard/OperationsCard.tsx` links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token) (#51).
 - [x] **Notification preferences / devices** (shared slice) and the "escalation exhausted" admin alerts must appear in Notifications. **Done (2026-11-19):** preferences, push devices (`PushDevicesDialog.tsx`) and an 'Escalation exhausted' badge (#51).
