@@ -192,6 +192,35 @@ export default function AppShell() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#090d16', color: '#dfe2ef', position: 'relative' }}>
+      {/* Skip link: first focusable element, jumps past the header and navigation */}
+      <Box
+        component="a"
+        href="#main-content"
+        onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+          e.preventDefault();
+          const el = document.getElementById('main-content');
+          el?.focus();
+          el?.scrollIntoView();
+        }}
+        sx={{
+          position: 'fixed',
+          top: 8,
+          left: 8,
+          zIndex: (t) => t.zIndex.tooltip + 1,
+          px: 2,
+          py: 1,
+          borderRadius: 1,
+          bgcolor: 'primary.main',
+          color: '#ffffff',
+          fontWeight: 600,
+          fontSize: 14,
+          textDecoration: 'none',
+          transform: 'translateY(-200%)',
+          '&:focus': { transform: 'translateY(0)' },
+        }}
+      >
+        Skip to main content
+      </Box>
       {/* Background Kinetic Ambient Glows */}
       <Box
         sx={{
@@ -383,6 +412,7 @@ export default function AppShell() {
             <InputBase
               inputRef={searchInputRef}
               placeholder="Search incidents, code, title..."
+              inputProps={{ 'aria-label': 'Search incidents' }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
@@ -395,6 +425,9 @@ export default function AppShell() {
             />
             <Tooltip title="Press Enter to search, or ⌘K / Ctrl+K to focus">
               <Box
+                component="button"
+                type="button"
+                aria-label="Search incidents"
                 onClick={() => handleSearchSubmit()}
                 sx={{
                   bgcolor: 'rgba(255, 255, 255, 0.06)',
@@ -404,6 +437,8 @@ export default function AppShell() {
                   display: 'flex',
                   alignItems: 'center',
                   cursor: 'pointer',
+                  border: 0,
+                  color: 'inherit',
                   '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
                 }}
               >
@@ -708,7 +743,7 @@ export default function AppShell() {
                 >
                   {activeWorkspace.toUpperCase()} CONSOLE
                 </Typography>
-                <List disablePadding>
+                <List disablePadding component="nav" aria-label={`${activeWorkspace} navigation`}>
                   {navItems.map((item, idx) => {
                     const RawIcon = NAV_ICONS[item.label] || DashboardIcon;
                     const IconComp = (RawIcon && (RawIcon as any).default) ? (RawIcon as any).default : RawIcon;
@@ -837,7 +872,10 @@ export default function AppShell() {
       {/* Main Content Area */}
       <Box
         component="main"
+        id="main-content"
+        tabIndex={-1}
         sx={{
+          outline: 'none',
           flexGrow: 1,
           p: { xs: 2, md: 3 },
           width: { sm: sidebarOpen ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%' },

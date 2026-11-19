@@ -1,5 +1,6 @@
 import { Button, Stack } from '@mui/material';
 import type { IncidentAction } from '../api/types';
+import { tokens } from '../theme/theme';
 
 const LABEL: Partial<Record<IncidentAction, string>> = {
   ACKNOWLEDGE: 'Acknowledge',
@@ -21,18 +22,36 @@ const LABEL: Partial<Record<IncidentAction, string>> = {
   EDIT: 'Edit incident',
 };
 
+export interface ActionButtonsProps {
+  /** The incident's `allowedActions` from the API. Either this or `incident` must be given. */
+  allowed?: IncidentAction[];
+  /** Pass an incident (summary or detail with `allowedActions`) instead of `allowed`. */
+  incident?: { allowedActions?: IncidentAction[] } | null;
+  onAction: (a: IncidentAction) => void;
+  /** Actions the screen renders itself (for example COMMENT has a composer). Never use this to add actions. */
+  exclude?: IncidentAction[];
+  /** Label overrides for one screen, per action. */
+  labels?: Partial<Record<IncidentAction, string>>;
+  /** Action currently being sent: shown disabled with a busy label. */
+  pending?: IncidentAction | null;
+  disabled?: boolean;
+}
+
 /** Buttons come ONLY from allowedActions. Never re-implement the lifecycle rules here. */
 export default function ActionButtons({
   allowed,
+  incident,
   onAction,
-}: {
-  allowed: IncidentAction[];
-  onAction: (a: IncidentAction) => void;
-}) {
+  exclude,
+  labels,
+  pending,
+  disabled,
+}: ActionButtonsProps) {
+  const actions = (allowed ?? incident?.allowedActions ?? []).filter((a) => !exclude?.includes(a));
   return (
-    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-      {allowed
-        .filter((a) => LABEL[a])
+    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap role="group" aria-label="Incident actions">
+      {actions
+        .filter((a) => labels?.[a] ?? LABEL[a])
         .map((a) => {
           const isPrimary = a === 'ACKNOWLEDGE' || a === 'START_WORK' || a === 'RESOLVE' || a === 'VERIFY';
           const isDanger = a === 'ESCALATE' || a === 'REOPEN';
@@ -42,6 +61,7 @@ export default function ActionButtons({
               key={a}
               size="small"
               variant={isPrimary ? 'contained' : 'outlined'}
+              disabled={disabled || pending === a}
               onClick={() => onAction(a)}
               sx={{
                 borderRadius: '8px',
@@ -63,7 +83,7 @@ export default function ActionButtons({
                   ? {
                       bgcolor: 'rgba(244, 63, 94, 0.12)',
                       borderColor: 'rgba(244, 63, 94, 0.4)',
-                      color: '#ffb0cd',
+                      color: tokens.tertiaryLight,
                       '&:hover': {
                         bgcolor: 'rgba(244, 63, 94, 0.22)',
                         borderColor: '#f43f5e',
@@ -74,16 +94,16 @@ export default function ActionButtons({
                   : {
                       bgcolor: 'rgba(255, 255, 255, 0.04)',
                       borderColor: 'rgba(255, 255, 255, 0.12)',
-                      color: '#dfe2ef',
+                      color: tokens.onSurface,
                       '&:hover': {
                         bgcolor: 'rgba(99, 102, 241, 0.12)',
                         borderColor: '#6366f1',
-                        color: '#c0c1ff',
+                        color: tokens.primaryLight,
                       },
                     }),
               }}
             >
-              {LABEL[a]}
+              {labels?.[a] ?? LABEL[a]}
             </Button>
           );
         })}

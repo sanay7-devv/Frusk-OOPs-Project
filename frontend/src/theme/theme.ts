@@ -1,5 +1,52 @@
 import { createTheme, alpha } from '@mui/material';
 
+// Design-system colours from Luminary Kinetic
+export const priorityColor = {
+  P1: '#f43f5e', // Vibrant Rose / Sev-1 Critical
+  P2: '#fb923c', // Electric Orange / High
+  P3: '#38bdf8', // Electric Cyan / Medium
+  P4: '#4ade80', // Emerald Green / Low
+} as const;
+
+export const priorityLabel = {
+  P1: 'P1 Critical',
+  P2: 'P2 High',
+  P3: 'P3 Medium',
+  P4: 'P4 Low',
+} as const;
+
+export const statusColor: Record<string, string> = {
+  NEW: '#94a3b8',
+  CLASSIFIED: '#a78bfa',
+  ASSIGNED: '#818cf8',
+  ACKNOWLEDGED: '#38bdf8',
+  IN_PROGRESS: '#06b6d4',
+  PENDING_USER_INFO: '#f472b6',
+  RESOLVED: '#4ade80',
+  VERIFIED: '#2dd4bf',
+  CLOSED: '#64748b',
+  REOPENED: '#f43f5e',
+};
+
+/** Colour per server-reported SLA state. The client never derives the state itself. */
+export const slaStateColor = {
+  OK: '#38bdf8',
+  WARNING: '#facc15',
+  AT_RISK: '#fb923c',
+  VIOLATED: '#f43f5e',
+  PAUSED: '#94a3b8',
+  MET: '#4ade80',
+} as const;
+
+export const slaStateLabel = {
+  OK: 'On track',
+  WARNING: 'Warning',
+  AT_RISK: 'At risk',
+  VIOLATED: 'Violated',
+  PAUSED: 'Paused',
+  MET: 'Met',
+} as const;
+
 // Luminary Kinetic Design Tokens
 export const tokens = {
   background: '#090d16',
@@ -26,6 +73,24 @@ export const tokens = {
   glowPrimary: '0 0 24px -4px rgba(99, 102, 241, 0.3)',
   glowSecondary: '0 0 24px -4px rgba(6, 182, 212, 0.3)',
   glowTertiary: '0 0 24px -4px rgba(247, 81, 161, 0.3)',
+  // Added in round 5 so screens stop copying hex literals.
+  paper: '#141824',
+  danger: '#f43f5e',
+  warning: '#fb923c',
+  success: '#10b981',
+  info: '#38bdf8',
+  textDisabled: '#64748b',
+  border: 'rgba(255, 255, 255, 0.12)',
+  borderSubtle: 'rgba(255, 255, 255, 0.06)',
+  hover: 'rgba(255, 255, 255, 0.04)',
+  fontBody: 'Geist, sans-serif',
+  fontHeading: 'Sora, sans-serif',
+  fontMono: 'JetBrains Mono, monospace',
+  /** Smallest font size (px) the theme allows; use for fontSize in sx. */
+  minFontSize: 12,
+  priority: priorityColor,
+  status: statusColor,
+  sla: slaStateColor,
 } as const;
 
 export const theme = createTheme({
@@ -144,11 +209,13 @@ export const theme = createTheme({
       letterSpacing: '0.01em',
     },
     caption: {
+      fontSize: '0.75rem',
       fontFamily: 'JetBrains Mono, monospace',
       letterSpacing: '0.04em',
       color: '#94a3b8',
     },
     overline: {
+      fontSize: '0.75rem',
       fontFamily: 'JetBrains Mono, monospace',
       letterSpacing: '0.08em',
       fontWeight: 600,
@@ -362,12 +429,15 @@ export const theme = createTheme({
           backgroundColor: '#0e121d',
           color: '#94a3b8',
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: '11px',
+          fontSize: '12px',
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
         },
       },
+    },
+    MuiFormHelperText: {
+      styleOverrides: { root: { fontSize: '12px' } },
     },
     MuiTableRow: {
       styleOverrides: {
@@ -396,9 +466,14 @@ export const theme = createTheme({
           borderRadius: 6,
           fontWeight: 600,
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: '11px',
+          fontSize: '12px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
         },
+      },
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: { fontSize: '12px' },
       },
     },
     MuiDrawer: {
@@ -512,50 +587,3 @@ export const theme = createTheme({
     },
   },
 });
-
-// Design-system colours from Luminary Kinetic
-export const priorityColor = {
-  P1: '#f43f5e', // Vibrant Rose / Sev-1 Critical
-  P2: '#fb923c', // Electric Orange / High
-  P3: '#38bdf8', // Electric Cyan / Medium
-  P4: '#4ade80', // Emerald Green / Low
-} as const;
-
-export const priorityLabel = {
-  P1: 'P1 Critical',
-  P2: 'P2 High',
-  P3: 'P3 Medium',
-  P4: 'P4 Low',
-} as const;
-
-export const statusColor: Record<string, string> = {
-  NEW: '#94a3b8',
-  CLASSIFIED: '#a78bfa',
-  ASSIGNED: '#818cf8',
-  ACKNOWLEDGED: '#38bdf8',
-  IN_PROGRESS: '#06b6d4',
-  PENDING_USER_INFO: '#f472b6',
-  RESOLVED: '#4ade80',
-  VERIFIED: '#2dd4bf',
-  CLOSED: '#64748b',
-  REOPENED: '#f43f5e',
-};
-
-/** Colour per server-reported SLA state. The client never derives the state itself. */
-export const slaStateColor = {
-  OK: '#38bdf8',
-  WARNING: '#facc15',
-  AT_RISK: '#fb923c',
-  VIOLATED: '#f43f5e',
-  PAUSED: '#94a3b8',
-  MET: '#4ade80',
-} as const;
-
-export const slaStateLabel = {
-  OK: 'On track',
-  WARNING: 'Warning',
-  AT_RISK: 'At risk',
-  VIOLATED: 'Violated',
-  PAUSED: 'Paused',
-  MET: 'Met',
-} as const;
