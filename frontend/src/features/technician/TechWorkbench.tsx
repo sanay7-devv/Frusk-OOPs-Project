@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import type { AxiosError } from 'axios';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
@@ -28,35 +29,33 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
-  CrisisAlert as CrisisAlertIcon,
-  Schedule as ScheduleIcon,
   PauseCircle as PauseCircleIcon,
   PlayArrow as PlayArrowIcon,
-  Terminal as TerminalIcon,
   AutoFixHigh as AutoFixHighIcon,
   Timeline as TimelineIcon,
-  Dns as DnsIcon,
   CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
   Send as SendIcon,
-  VideoCameraFront as VideoCameraFrontIcon,
-  People as PeopleIcon,
-  Bolt as BoltIcon,
   Close as CloseIcon,
   Refresh as RefreshIcon,
+  UploadFile as UploadFileIcon,
+  SwapHoriz as SwapHorizIcon,
   ContentCopy as ContentCopyIcon,
+  Flag as FlagIcon,
+  Link as LinkIcon,
   TrendingUp as TrendingUpIcon,
   ArrowForward as ArrowForwardIcon,
-  HourglassEmpty as HourglassEmptyIcon,
-  Security as SecurityIcon,
   Hub as HubIcon,
   DoneAll as DoneAllIcon,
   Psychology as PsychologyIcon,
 } from '@mui/icons-material';
 
+import { tokens, slaStateColor } from '../../theme/theme';
 import { useToast } from '../../components/Toast';
 import { apiErrorMessage } from '../../utils/errors';
 import PriorityBadge from '../../components/PriorityBadge';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import { ErrorState } from '../../components/StateViews';
+import { ReassignDialog, MarkDuplicateDialog, OverridePriorityDialog, LinkProblemDialog } from './WorkbenchDialogs';
 import SlaCountdown from '../../components/SlaCountdown';
 import PriorityExplainer from '../../components/PriorityExplainer';
 import { useAuth } from '../../auth/AuthContext';
@@ -69,10 +68,13 @@ import {
   listAttachments,
   downloadPostIncidentReportPdf,
   getRecommendations,
-  markDuplicate as apiMarkDuplicate,
-  overridePriority as apiOverridePriority,
+  uploadAttachment,
+  downloadAttachment,
+  verifyIncident,
+  closeIncident,
 } from '../../api/incidents';
 import { resolveProblem } from '../../api/problems';
+import { getServiceImpact } from '../../api/services';
 import type { CommentView, AuditEntry, AttachmentView, RecommendationView } from '../../api/types';
 import {
   acknowledgeIncident,
@@ -90,28 +92,23 @@ import {
   type ThreadSummaryView,
 } from '../../api/technicians';
 
-// Design System Tokens (Luminary Kinetic Dark)
+// Colours come from the shared theme tokens; status colours from the shared SLA/priority maps.
 const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  outlineVariant: 'rgba(255, 255, 255, 0.08)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  primaryContainer: '#4f46e5',
-  secondary: '#06b6d4',
-  secondaryContainer: 'rgba(6, 182, 212, 0.2)',
-  error: '#f43f5e',
-  errorContainer: 'rgba(244, 63, 94, 0.15)',
-  onErrorContainer: '#ffdad6',
-  success: '#10b981',
-  successContainer: 'rgba(16, 185, 129, 0.15)',
-  tertiary: '#f751a1',
+  surface: tokens.background,
+  surfaceContainerLowest: tokens.surfaceContainerLowest,
+  surfaceContainerLow: tokens.surfaceContainerLow,
+  surfaceContainer: tokens.surfaceContainer,
+  surfaceContainerHigh: tokens.surfaceContainerHigh,
+  surfaceContainerHighest: tokens.surfaceContainerHighest,
+  onSurface: tokens.onSurface,
+  onSurfaceVariant: tokens.onSurfaceVariant,
+  border: tokens.outlineVariant,
+  primary: tokens.primary,
+  primaryContainer: tokens.primaryDark,
+  secondary: tokens.secondary,
+  error: slaStateColor.VIOLATED,
+  success: slaStateColor.MET,
+  tertiary: tokens.tertiary,
 };
 
 export default function TechWorkbench() {
@@ -146,6 +143,16 @@ export default function TechWorkbench() {
   const [summaryData, setSummaryData] = useState<ThreadSummaryView | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
+  const [isReassignOpen, setIsReassignOpen] = useState(false);
+  const [dupTargetId, setDupTargetId] = useState<number | null>(null);
+  const [isDupOpen, setIsDupOpen] = useState(false);
+  const [isPriorityOpen, setIsPriorityOpen] = useState(false);
+  const [isProblemOpen, setIsProblemOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'CLOSE' | 'VERIFY' | 'PUBLIC_NOTE' | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
   // 1. Fetch incident details
   const {
     data: incident,
@@ -159,42 +166,42 @@ export default function TechWorkbench() {
   });
 
   // 2. Fetch history
-  const { data: history = [], refetch: refetchHistory } = useQuery({
+  const { data: history = [], refetch: refetchHistory, isError: historyError, error: historyErr } = useQuery({
     queryKey: ['incident-history', incidentId],
     queryFn: () => getHistory(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 3. Fetch comments
-  const { data: comments = [], refetch: refetchComments } = useQuery({
+  const { data: comments = [], refetch: refetchComments, isError: commentsError, error: commentsErr } = useQuery({
     queryKey: ['incident-comments', incidentId],
     queryFn: () => getComments(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 4. Fetch Suggested Resolutions
-  const { data: suggestedResolutions = [], refetch: refetchSuggestions } = useQuery({
+  const { data: suggestedResolutions = [], refetch: refetchSuggestions, isError: suggestedError, error: suggestedErr } = useQuery({
     queryKey: ['incident-suggested', incidentId],
     queryFn: () => getSuggestedResolutions(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 5. Fetch Similar Incidents
-  const { data: similarIncidents = [], refetch: refetchSimilar } = useQuery({
+  const { data: similarIncidents = [], refetch: refetchSimilar, isError: similarError, error: similarErr } = useQuery({
     queryKey: ['incident-similar', incidentId],
     queryFn: () => getSimilarIncidents(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 6. Fetch SLA Risk
-  const { data: slaRisk, refetch: refetchSlaRisk } = useQuery({
+  const { data: slaRisk, refetch: refetchSlaRisk, isError: slaRiskError, error: slaRiskErr } = useQuery({
     queryKey: ['incident-sla-risk', incidentId],
     queryFn: () => getSlaRisk(incidentId),
     enabled: !isNaN(incidentId),
   });
 
   // 7. Fetch Attachments
-  const { data: attachments = [], refetch: refetchAttachments } = useQuery<AttachmentView[]>({
+  const { data: attachments = [], refetch: refetchAttachments, isError: attachmentsError, error: attachmentsErr } = useQuery<AttachmentView[]>({
     queryKey: ['incident-attachments', incidentId],
     queryFn: () => listAttachments(incidentId),
     enabled: !isNaN(incidentId),
@@ -206,6 +213,26 @@ export default function TechWorkbench() {
     queryFn: () => getRecommendations(incidentId),
     enabled: !isNaN(incidentId),
   });
+
+  // 9. Services that depend on this incident's service (GET /services/{id}/impact)
+  const serviceId = incident?.service?.id;
+  const { data: impact, isError: impactError, error: impactErr, refetch: refetchImpact } = useQuery({
+    queryKey: ['incident-service-impact', serviceId],
+    queryFn: () => getServiceImpact(serviceId as number),
+    enabled: serviceId != null,
+  });
+
+  // Live updates: the app-wide STOMP client (realtime/useRealtime) invalidates ['unread'] on every push
+  // to /user/queue/notifications. Reload this incident's data when that happens.
+  const reloadRef = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    if (isNaN(incidentId)) return undefined;
+    return queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === 'updated' && event.action.type === 'invalidate' && event.query.queryKey[0] === 'unread') {
+        reloadRef.current();
+      }
+    });
+  }, [queryClient, incidentId]);
 
   const [resolveWholeProblem, setResolveWholeProblem] = useState(false);
   const allowedActions = incident?.allowedActions || [];
@@ -220,7 +247,13 @@ export default function TechWorkbench() {
     refetchAttachments();
     queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
     queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+    queryClient.invalidateQueries({ queryKey: ['incident-recommendations', incidentId] });
+    if (serviceId != null) refetchImpact();
   };
+  reloadRef.current = handleRefreshAll;
+
+  const isStaffLead = !!user?.permissions?.includes('TEAM_VIEW');
+  const canSummarize = isStaffLead || (incident?.assignee != null && incident.assignee.id === user?.id);
 
   // Actions
   const handleAcknowledge = async () => {
@@ -325,7 +358,7 @@ export default function TechWorkbench() {
   };
 
   const handleAddNote = async () => {
-    if (!newNoteText.trim()) return;
+    if (!newNoteText.trim() || newNoteText.length > 4000) return;
     try {
       await addComment(incidentId, newNoteText.trim(), noteVisibility);
       toast('Investigation note appended to timeline.', 'success');
@@ -347,6 +380,64 @@ export default function TechWorkbench() {
       toast(apiErrorMessage(err), 'error');
     } finally {
       setIsSummarizing(false);
+    }
+  };
+
+  const handleConfirmed = async () => {
+    if (!confirmAction) return;
+    setConfirmBusy(true);
+    try {
+      if (confirmAction === 'PUBLIC_NOTE') {
+        await handleAddNote();
+      } else if (confirmAction === 'CLOSE') {
+        await closeIncident(incidentId);
+        toast(`${incident?.code ?? 'Incident'} closed.`, 'success');
+        handleRefreshAll();
+      } else {
+        await verifyIncident(incidentId);
+        toast(`${incident?.code ?? 'Incident'} verified.`, 'success');
+        handleRefreshAll();
+      }
+    } catch (err) {
+      toast(apiErrorMessage(err), 'error');
+    } finally {
+      setConfirmBusy(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+  const handleUpload = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast('That file is larger than 5 MB. Choose a smaller one.', 'warning');
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadAttachment(incidentId, file);
+      toast(`${file.name} attached.`, 'success');
+      refetchAttachments();
+      refetchHistory();
+    } catch (err) {
+      toast(apiErrorMessage(err), 'error');
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  };
+
+  const handleDownload = async (att: AttachmentView) => {
+    try {
+      const blob = await downloadAttachment(att.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -401,10 +492,17 @@ export default function TechWorkbench() {
   }
 
   if (error || !incident) {
+    const status = (error as AxiosError | null)?.response?.status;
+    const loadMessage =
+      status === 403
+        ? 'You do not have access to this incident. Only the assignee, team leads and administrators can open it here.'
+        : status === 404 || (!error && !incident)
+          ? 'This incident does not exist, or it is not visible to you.'
+          : apiErrorMessage(error);
     return (
       <Box sx={{ p: 4, bgcolor: COLORS.surface, minHeight: '100vh' }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to load incident: {error ? (error as Error).message : 'Incident not found'}
+        <Alert severity={status === 403 ? 'warning' : 'error'} sx={{ mb: 3 }}>
+          {loadMessage}
         </Alert>
         <Button variant="outlined" onClick={() => navigate('/tech/queue')} sx={{ color: COLORS.primary }}>
           Back to Queue
@@ -465,7 +563,7 @@ export default function TechWorkbench() {
               }}
             >
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: COLORS.primary, animation: 'pulse 1.5s infinite' }} />
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurface }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
                 {user?.name || 'Technician'} // Assigned SRE
               </Typography>
               <IconButton size="small" onClick={handleRefreshAll} sx={{ color: COLORS.onSurfaceVariant, p: 0.2 }}>
@@ -508,7 +606,7 @@ export default function TechWorkbench() {
                     color: COLORS.onSurface,
                     fontFamily: 'monospace',
                     fontWeight: 700,
-                    fontSize: 11,
+                    fontSize: 12,
                     height: 24,
                   }}
                 />
@@ -520,7 +618,7 @@ export default function TechWorkbench() {
                     bgcolor: COLORS.surfaceContainerLow,
                     color: COLORS.primary,
                     fontWeight: 600,
-                    fontSize: 11,
+                    fontSize: 12,
                     height: 24,
                   }}
                 />
@@ -532,7 +630,7 @@ export default function TechWorkbench() {
                     sx={{
                       bgcolor: COLORS.surfaceContainerLow,
                       color: COLORS.onSurfaceVariant,
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 24,
                     }}
                   />
@@ -546,7 +644,7 @@ export default function TechWorkbench() {
                       bgcolor: 'rgba(244, 63, 94, 0.15)',
                       color: COLORS.error,
                       fontWeight: 700,
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 24,
                     }}
                   />
@@ -561,7 +659,7 @@ export default function TechWorkbench() {
                       color: '#fb7185',
                       border: '1px solid rgba(244, 63, 94, 0.4)',
                       fontWeight: 800,
-                      fontSize: 10,
+                      fontSize: 12,
                       fontFamily: 'monospace',
                       height: 24,
                     }}
@@ -579,10 +677,26 @@ export default function TechWorkbench() {
                       color: COLORS.primary,
                       border: `1px solid rgba(99, 102, 241, 0.35)`,
                       fontWeight: 700,
-                      fontSize: 11,
+                      fontSize: 12,
                       fontFamily: 'monospace',
                       height: 24,
                     }}
+                  />
+                )}
+
+                {incident.closureReason && (
+                  <Chip
+                    size="small"
+                    label={`Closed: ${incident.closureReason.replace(/_/g, ' ')}`}
+                    sx={{ bgcolor: COLORS.surfaceContainerLow, color: COLORS.onSurfaceVariant, fontSize: 12, height: 24 }}
+                  />
+                )}
+
+                {incident.reopenCount > 0 && (
+                  <Chip
+                    size="small"
+                    label={`Reopened ${incident.reopenCount}x`}
+                    sx={{ bgcolor: 'rgba(244, 63, 94, 0.15)', color: COLORS.error, fontSize: 12, height: 24 }}
                   />
                 )}
 
@@ -593,7 +707,7 @@ export default function TechWorkbench() {
                     sx={{
                       bgcolor: COLORS.surfaceContainerLow,
                       color: COLORS.onSurfaceVariant,
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 24,
                     }}
                   />
@@ -620,6 +734,26 @@ export default function TechWorkbench() {
                 <span>Assignee: <strong>{incident.assignee?.name || 'Unassigned'}</strong></span>
                 <span>•</span>
                 <span>Impact: <strong>{incident.affectedUsers} users affected</strong></span>
+                <span>•</span>
+                <span>Opened: <strong>{new Date(incident.createdAt).toLocaleString()}</strong></span>
+                {incident.acknowledgedAt && (
+                  <>
+                    <span>•</span>
+                    <span>Acknowledged: <strong>{new Date(incident.acknowledgedAt).toLocaleString()}</strong></span>
+                  </>
+                )}
+                {incident.resolvedAt && (
+                  <>
+                    <span>•</span>
+                    <span>Resolved: <strong>{new Date(incident.resolvedAt).toLocaleString()}</strong></span>
+                  </>
+                )}
+                {incident.closedAt && (
+                  <>
+                    <span>•</span>
+                    <span>Closed: <strong>{new Date(incident.closedAt).toLocaleString()}</strong></span>
+                  </>
+                )}
                 {incident.priorityBreakdown && (
                   <>
                     <span>•</span>
@@ -667,7 +801,9 @@ export default function TechWorkbench() {
               ))}
               {incident.slaState === 'PAUSED' && (
                 <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                  Paused while waiting for the reporter
+                  {incident.pausedAt
+                    ? `Paused since ${new Date(incident.pausedAt).toLocaleString()} while the reporter provides information. It resumes, with the time left kept, when they reply.`
+                    : 'Paused while waiting for the reporter. It resumes when they reply.'}
                 </Typography>
               )}
             </Box>
@@ -761,6 +897,73 @@ export default function TechWorkbench() {
               </Button>
             )}
 
+            {allowedActions.includes('REASSIGN') && (
+              <Button
+                variant="outlined"
+                onClick={() => setIsReassignOpen(true)}
+                startIcon={<SwapHorizIcon />}
+                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+              >
+                Reassign
+              </Button>
+            )}
+
+            {allowedActions.includes('OVERRIDE_PRIORITY') && (
+              <Button
+                variant="outlined"
+                onClick={() => setIsPriorityOpen(true)}
+                startIcon={<FlagIcon />}
+                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+              >
+                Priority / What-if
+              </Button>
+            )}
+
+            {allowedActions.includes('MARK_DUPLICATE') && (
+              <Button
+                variant="outlined"
+                onClick={() => { setDupTargetId(null); setIsDupOpen(true); }}
+                startIcon={<ContentCopyIcon />}
+                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+              >
+                Mark duplicate
+              </Button>
+            )}
+
+            {isStaffLead && !incident.problemId && (
+              <Button
+                variant="outlined"
+                onClick={() => setIsProblemOpen(true)}
+                startIcon={<LinkIcon />}
+                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+              >
+                Open problem
+              </Button>
+            )}
+
+            {allowedActions.includes('VERIFY') && (
+              <Button
+                variant="outlined"
+                onClick={() => setConfirmAction('VERIFY')}
+                startIcon={<CheckCircleIcon />}
+                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+              >
+                Verify fix
+              </Button>
+            )}
+
+            {allowedActions.includes('CLOSE') && (
+              <Button
+                variant="outlined"
+                onClick={() => setConfirmAction('CLOSE')}
+                startIcon={<DoneAllIcon />}
+                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+              >
+                Close incident
+              </Button>
+            )}
+
+            {canSummarize && (
             <Button
               variant="outlined"
               onClick={handleGenerateSummary}
@@ -779,6 +982,7 @@ export default function TechWorkbench() {
             >
               {isSummarizing ? 'Analyzing...' : 'Generate AI Handover'}
             </Button>
+            )}
 
             {allowedActions.includes('RESOLVE') && (
               <Box sx={{ ml: 'auto' }}>
@@ -803,6 +1007,33 @@ export default function TechWorkbench() {
           </Box>
         </Paper>
       </Box>
+
+      {/* AI handover summary, shown above both columns */}
+      {summaryData && (
+        <Paper sx={{ p: 2, mb: 2.5, bgcolor: COLORS.surfaceContainer, border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <PsychologyIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.secondary }}>
+              AI Incident Summary &amp; Handover ({summaryData.source})
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 1.5, lineHeight: 1.5 }}>
+            {summaryData.summary}
+          </Typography>
+          {summaryData.handoverNotes && summaryData.handoverNotes.length > 0 && (
+            <Box sx={{ pl: 2 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, mb: 0.5 }}>
+                Handover Checkpoints:
+              </Typography>
+              {summaryData.handoverNotes.map((note, idx) => (
+                <Typography key={idx} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 0.3 }}>
+                  • {note}
+                </Typography>
+              ))}
+            </Box>
+          )}
+        </Paper>
+      )}
 
       {/* Main Workspace Split Grid */}
       <Grid container spacing={2.5}>
@@ -842,32 +1073,6 @@ export default function TechWorkbench() {
             {/* TAB 0: Suggested Resolutions & AI Intelligence */}
             {activeTab === 0 && (
               <Box sx={{ p: 2.5 }}>
-                {summaryData && (
-                  <Paper sx={{ p: 2, mb: 3, bgcolor: COLORS.surfaceContainer, border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <PsychologyIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
-                      <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.secondary }}>
-                        AI Incident Summary &amp; Handover ({summaryData.source})
-                      </Typography>
-                    </Box>
-                    <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 1.5, lineHeight: 1.5 }}>
-                      {summaryData.summary}
-                    </Typography>
-                    {summaryData.handoverNotes && summaryData.handoverNotes.length > 0 && (
-                      <Box sx={{ pl: 2 }}>
-                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, mb: 0.5 }}>
-                          Handover Checkpoints:
-                        </Typography>
-                        {summaryData.handoverNotes.map((note, idx) => (
-                          <Typography key={idx} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 0.3 }}>
-                            • {note}
-                          </Typography>
-                        ))}
-                      </Box>
-                    )}
-                  </Paper>
-                )}
-
                 <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1 }}>
                   Proven Fixes from Historical Incidents
                 </Typography>
@@ -875,7 +1080,9 @@ export default function TechWorkbench() {
                   These resolution strategies were successfully verified on resolved incidents sharing the same service and failure symptoms.
                 </Typography>
 
-                {suggestedResolutions.length === 0 ? (
+                {suggestedError ? (
+                  <ErrorState message={`Suggested resolutions did not load: ${apiErrorMessage(suggestedErr)}`} onRetry={() => refetchSuggestions()} />
+                ) : suggestedResolutions.length === 0 ? (
                   <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
                     <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
                       No direct historical duplicates found. Proceed with standard troubleshooting or view AI Summary.
@@ -900,8 +1107,8 @@ export default function TechWorkbench() {
                               label={`${Math.round(res.similarity * 100)}% Match`}
                               size="small"
                               sx={{
-                                height: 20,
-                                fontSize: 10.5,
+                                height: 22,
+                                fontSize: 12.5,
                                 fontWeight: 800,
                                 bgcolor: 'rgba(16, 185, 129, 0.15)',
                                 color: COLORS.success,
@@ -912,8 +1119,8 @@ export default function TechWorkbench() {
                                 label="Reusable Fix"
                                 size="small"
                                 sx={{
-                                  height: 20,
-                                  fontSize: 10,
+                                  height: 22,
+                                  fontSize: 12,
                                   fontWeight: 700,
                                   bgcolor: 'rgba(99, 102, 241, 0.15)',
                                   color: COLORS.primary,
@@ -936,7 +1143,7 @@ export default function TechWorkbench() {
                                 borderColor: COLORS.primary,
                                 color: COLORS.primary,
                                 textTransform: 'none',
-                                fontSize: 11.5,
+                                fontSize: 12.5,
                                 fontWeight: 700,
                               }}
                             >
@@ -945,13 +1152,13 @@ export default function TechWorkbench() {
                           )}
                         </Box>
                         <Box sx={{ bgcolor: COLORS.surfaceContainerLowest, p: 1.5, borderRadius: 1.5, mb: 1 }}>
-                          <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
                             Root Cause:
                           </Typography>
                           <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, mb: 1 }}>
                             {res.rootCause}
                           </Typography>
-                          <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
                             Resolution Steps:
                           </Typography>
                           <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
@@ -969,6 +1176,7 @@ export default function TechWorkbench() {
             {activeTab === 1 && (
               <Box sx={{ p: 2.5 }}>
                 {/* Note Composer */}
+                {allowedActions.includes('COMMENT') ? (
                 <Paper sx={{ p: 2, mb: 3, bgcolor: COLORS.surfaceContainer, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mb: 1 }}>
                     Append Investigation Note
@@ -980,6 +1188,8 @@ export default function TechWorkbench() {
                     placeholder="Log observation, root cause findings, diagnostic steps, or internal technical update..."
                     value={newNoteText}
                     onChange={(e) => setNewNoteText(e.target.value)}
+                    inputProps={{ maxLength: 4000 }}
+                    helperText={`${newNoteText.length}/4000`}
                     sx={{
                       bgcolor: COLORS.surfaceContainerLowest,
                       borderRadius: 1.5,
@@ -996,7 +1206,7 @@ export default function TechWorkbench() {
                         onClick={() => setNoteVisibility('INTERNAL')}
                         size="small"
                         sx={{
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: 700,
                           bgcolor: noteVisibility === 'INTERNAL' ? COLORS.primary : COLORS.surfaceContainerHigh,
                           color: noteVisibility === 'INTERNAL' ? '#ffffff' : COLORS.onSurfaceVariant,
@@ -1008,7 +1218,7 @@ export default function TechWorkbench() {
                         onClick={() => setNoteVisibility('PUBLIC')}
                         size="small"
                         sx={{
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: 700,
                           bgcolor: noteVisibility === 'PUBLIC' ? COLORS.secondary : COLORS.surfaceContainerHigh,
                           color: noteVisibility === 'PUBLIC' ? '#ffffff' : COLORS.onSurfaceVariant,
@@ -1018,7 +1228,7 @@ export default function TechWorkbench() {
                     <Button
                       variant="contained"
                       size="small"
-                      onClick={handleAddNote}
+                      onClick={() => (noteVisibility === 'PUBLIC' ? setConfirmAction('PUBLIC_NOTE') : handleAddNote())}
                       disabled={!newNoteText.trim()}
                       startIcon={<SendIcon sx={{ fontSize: 14 }} />}
                       sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary }}
@@ -1027,6 +1237,20 @@ export default function TechWorkbench() {
                     </Button>
                   </Box>
                 </Paper>
+                ) : (
+                  <Alert severity="info" sx={{ mb: 3 }}>Notes are not available on this incident in its current state.</Alert>
+                )}
+
+                {historyError && (
+                  <Box sx={{ mb: 2 }}>
+                    <ErrorState message={`Audit history did not load: ${apiErrorMessage(historyErr)}`} onRetry={() => refetchHistory()} />
+                  </Box>
+                )}
+                {commentsError && (
+                  <Box sx={{ mb: 2 }}>
+                    <ErrorState message={`Comments did not load: ${apiErrorMessage(commentsErr)}`} onRetry={() => refetchComments()} />
+                  </Box>
+                )}
 
                 {/* Unified Timeline entries */}
                 <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1.5 }}>
@@ -1060,8 +1284,8 @@ export default function TechWorkbench() {
                               label={item.badge}
                               size="small"
                               sx={{
-                                height: 18,
-                                fontSize: 10,
+                                height: 22,
+                                fontSize: 12,
                                 fontWeight: 800,
                                 bgcolor:
                                   item.type === 'comment'
@@ -1081,7 +1305,7 @@ export default function TechWorkbench() {
                               {item.actor}
                             </Typography>
                           </Box>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: 12, color: COLORS.onSurfaceVariant }}>
                             {formatTimelineDate(item.timestamp)}
                           </Typography>
                         </Box>
@@ -1111,7 +1335,9 @@ export default function TechWorkbench() {
                   Candidates for correlation, knowledge extraction, or duplicate linking across services.
                 </Typography>
 
-                {similarIncidents.length === 0 ? (
+                {similarError ? (
+                  <ErrorState message={`Similar incidents did not load: ${apiErrorMessage(similarErr)}`} onRetry={() => refetchSimilar()} />
+                ) : similarIncidents.length === 0 ? (
                   <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
                     <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
                       No similar incidents detected.
@@ -1139,8 +1365,8 @@ export default function TechWorkbench() {
                               label={`${Math.round(s.similarity * 100)}% Match`}
                               size="small"
                               sx={{
-                                height: 20,
-                                fontSize: 10,
+                                height: 22,
+                                fontSize: 12,
                                 fontWeight: 800,
                                 bgcolor: 'rgba(99, 102, 241, 0.15)',
                                 color: COLORS.primary,
@@ -1151,8 +1377,8 @@ export default function TechWorkbench() {
                                 label={s.match}
                                 size="small"
                                 sx={{
-                                  height: 20,
-                                  fontSize: 10,
+                                  height: 22,
+                                  fontSize: 12,
                                   fontWeight: 800,
                                   bgcolor: s.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(6, 182, 212, 0.15)',
                                   color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.secondary,
@@ -1162,7 +1388,7 @@ export default function TechWorkbench() {
                             <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
                               {s.code}
                             </Typography>
-                            <Chip label={s.status} size="small" sx={{ height: 18, fontSize: 10 }} />
+                            <Chip label={s.status} size="small" sx={{ height: 22, fontSize: 12 }} />
                           </Box>
                           <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
                             {s.title}
@@ -1173,20 +1399,15 @@ export default function TechWorkbench() {
                             <Button
                               size="small"
                               variant="outlined"
-                              onClick={async () => {
-                                try {
-                                  await apiMarkDuplicate(incidentId, s.incidentId);
-                                  toast(`Marked ${incident.code} as duplicate of ${s.code}`, 'success');
-                                  handleRefreshAll();
-                                } catch (e) {
-                                  toast(apiErrorMessage(e), 'error');
-                                }
+                              onClick={() => {
+                                setDupTargetId(s.incidentId);
+                                setIsDupOpen(true);
                               }}
                               sx={{
                                 textTransform: 'none',
                                 color: COLORS.error,
                                 borderColor: 'rgba(244, 63, 94, 0.4)',
-                                fontSize: 11.5,
+                                fontSize: 12.5,
                                 fontWeight: 700,
                               }}
                             >
@@ -1242,7 +1463,7 @@ export default function TechWorkbench() {
                 </Box>
                 {incident.priorityBreakdown?.overrideRule && (
                   <Box sx={{ bgcolor: 'rgba(99, 102, 241, 0.1)', p: 1, borderRadius: 1.5, mt: 0.5 }}>
-                    <Typography sx={{ fontSize: 11, color: COLORS.primary, fontWeight: 700 }}>
+                    <Typography sx={{ fontSize: 12, color: COLORS.primary, fontWeight: 700 }}>
                       Override Rule: {incident.priorityBreakdown.overrideRule}
                     </Typography>
                   </Box>
@@ -1251,6 +1472,9 @@ export default function TechWorkbench() {
             </Paper>
 
             {/* SLA Risk Scorecard */}
+            {slaRiskError && (
+              <ErrorState message={`SLA risk did not load: ${apiErrorMessage(slaRiskErr)}`} onRetry={() => refetchSlaRisk()} />
+            )}
             {slaRisk && (
               <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -1261,9 +1485,9 @@ export default function TechWorkbench() {
                     label={slaRisk.level}
                     size="small"
                     sx={{
-                      height: 20,
+                      height: 22,
                       fontWeight: 800,
-                      fontSize: 10.5,
+                      fontSize: 12.5,
                       bgcolor: slaRisk.atRisk ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)',
                       color: slaRisk.atRisk ? COLORS.error : COLORS.success,
                     }}
@@ -1271,7 +1495,9 @@ export default function TechWorkbench() {
                 </Box>
                 <Box sx={{ mb: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Probability of SLA Breach:</Typography>
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                      Probability of SLA breach (alert at {Math.round(slaRisk.threshold * 100)}%):
+                    </Typography>
                     <Typography sx={{ fontSize: 12, fontWeight: 800, color: slaRisk.atRisk ? COLORS.error : COLORS.onSurface }}>
                       {Math.round(slaRisk.score * 100)}%
                     </Typography>
@@ -1292,7 +1518,7 @@ export default function TechWorkbench() {
                 {slaRisk.factors && slaRisk.factors.length > 0 && (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                     {slaRisk.factors.map((f, i) => (
-                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
                         <span>{f.name}:</span>
                         <span style={{ fontWeight: 700, color: COLORS.onSurface }}>{f.detail || `${Math.round(f.contribution * 100)}%`}</span>
                       </Box>
@@ -1313,24 +1539,73 @@ export default function TechWorkbench() {
 
             {/* Attachments Section */}
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
-                Attachments ({attachments.length})
-              </Typography>
-              {attachments.length === 0 ? (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase' }}>
+                  Attachments ({attachments.length})
+                </Typography>
+                {allowedActions.includes('COMMENT') && (
+                  <>
+                    <input
+                      ref={fileInput}
+                      type="file"
+                      hidden
+                      onChange={(e) => handleUpload(e.target.files?.[0])}
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      disabled={uploading}
+                      startIcon={uploading ? <CircularProgress size={14} color="inherit" /> : <UploadFileIcon />}
+                      onClick={() => fileInput.current?.click()}
+                      sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700 }}
+                    >
+                      Attach file
+                    </Button>
+                  </>
+                )}
+              </Box>
+              {attachmentsError ? (
+                <ErrorState message={`Attachments did not load: ${apiErrorMessage(attachmentsErr)}`} onRetry={() => refetchAttachments()} />
+              ) : attachments.length === 0 ? (
                 <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                  No evidence files or logs attached.
+                  No evidence files or logs attached. Files up to 5 MB.
                 </Typography>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {attachments.map((att) => (
-                    <Box key={att.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurface }}>
-                        {att.filename} ({Math.round(att.sizeBytes / 1024)} KB)
+                    <Box key={att.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, p: 1, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurface, wordBreak: 'break-all' }}>
+                        {att.filename} ({Math.max(1, Math.round(att.sizeBytes / 1024))} KB) · {att.uploadedBy?.name}
                       </Typography>
-                      <Button size="small" href={`/api/attachments/${att.id}/download`} target="_blank" sx={{ textTransform: 'none', fontSize: 11 }}>
+                      <Button size="small" onClick={() => handleDownload(att)} sx={{ textTransform: 'none', fontSize: 12 }}>
                         Download
                       </Button>
                     </Box>
+                  ))}
+                </Box>
+              )}
+            </Paper>
+
+            {/* Affected services (dependency graph) */}
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
+                Services that depend on {incident.service?.name}
+              </Typography>
+              {impactError ? (
+                <ErrorState message={`Service impact did not load: ${apiErrorMessage(impactErr)}`} onRetry={() => refetchImpact()} />
+              ) : !impact ? (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Loading…</Typography>
+              ) : impact.affected.length === 0 ? (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>No other service depends on this one.</Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                  {impact.affected.map((a) => (
+                    <Chip
+                      key={a.id}
+                      size="small"
+                      label={`${a.name}${a.distance > 1 ? ` (${a.distance} hops)` : ''}`}
+                      sx={{ fontSize: 12, bgcolor: COLORS.surfaceContainerLow, color: COLORS.onSurface }}
+                    />
                   ))}
                 </Box>
               )}
@@ -1369,31 +1644,102 @@ export default function TechWorkbench() {
               </Paper>
             )}
 
-            {/* Why This Technician / Allocation Recommendation */}
-            {recommendations && recommendations.recommendations && recommendations.recommendations.length > 0 && (
-              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
-                  Why This Technician ({recommendations.strategy || 'BEST_MATCH'})
-                </Typography>
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>
-                  Allocation scoring and rationale for current assignee:
-                </Typography>
-                {recommendations.recommendations.slice(0, 1).map((r) => (
-                  <Box key={r.technicianId} sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>{r.name}</Typography>
-                      <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.primary }}>{r.score}% Match</Typography>
+            {/* Why This Technician: the current assignee's row in the allocation ranking */}
+            {recommendations && incident.assignee && (() => {
+              const rank = recommendations.recommendations.findIndex((r) => r.technicianId === incident.assignee?.id);
+              const mine = rank >= 0 ? recommendations.recommendations[rank] : null;
+              return (
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
+                    Why {incident.assignee.name} ({recommendations.strategy})
+                  </Typography>
+                  {mine ? (
+                    <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+                          Rank {rank + 1} of {recommendations.recommendations.length}
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.primary }}>score {mine.score}</Typography>
+                      </Box>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 0.5 }}>
+                        Load {mine.currentLoad}/{mine.maxLoad}
+                      </Typography>
+                      {Object.entries(mine.factors ?? {}).map(([k, v]) => (
+                        <Box key={k} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                          <span>{k}</span>
+                          <span>{typeof v === 'number' ? v.toFixed(2) : String(v)}</span>
+                        </Box>
+                      ))}
+                      {mine.reasons?.map((reason, idx) => (
+                        <Typography key={idx} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>• {reason}</Typography>
+                      ))}
                     </Box>
-                    {r.reasons && r.reasons.map((reason, idx) => (
-                      <Typography key={idx} sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>• {reason}</Typography>
-                    ))}
-                  </Box>
-                ))}
-              </Paper>
-            )}
+                  ) : (
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                      {incident.assignee.name} is not in the current ranking (for example at full load or away now), so no score is shown.
+                      {recommendations.excluded.find((x) => x.technicianId === incident.assignee?.id)?.reason
+                        ? ` Reason: ${recommendations.excluded.find((x) => x.technicianId === incident.assignee?.id)?.reason}`
+                        : ''}
+                    </Typography>
+                  )}
+                </Paper>
+              );
+            })()}
           </Box>
         </Grid>
       </Grid>
+
+      <ReassignDialog
+        open={isReassignOpen}
+        incident={incident}
+        recommendations={recommendations}
+        onClose={() => setIsReassignOpen(false)}
+        onDone={handleRefreshAll}
+      />
+      <MarkDuplicateDialog
+        open={isDupOpen}
+        incident={incident}
+        similar={similarIncidents}
+        initialTargetId={dupTargetId}
+        onClose={() => setIsDupOpen(false)}
+        onDone={handleRefreshAll}
+      />
+      <OverridePriorityDialog
+        open={isPriorityOpen}
+        incident={incident}
+        onClose={() => setIsPriorityOpen(false)}
+        onDone={handleRefreshAll}
+      />
+      <LinkProblemDialog
+        open={isProblemOpen}
+        incident={incident}
+        onClose={() => setIsProblemOpen(false)}
+        onDone={(problemId) => {
+          handleRefreshAll();
+          if (problemBase) navigate(`${problemBase}/${problemId}`);
+        }}
+      />
+      <ConfirmDialog
+        open={confirmAction !== null}
+        title={
+          confirmAction === 'PUBLIC_NOTE'
+            ? 'Post a public note?'
+            : confirmAction === 'CLOSE'
+              ? `Close ${incident.code}?`
+              : `Verify the fix for ${incident.code}?`
+        }
+        description={
+          confirmAction === 'PUBLIC_NOTE'
+            ? `This note is visible to the reporter (${incident.reporter?.name ?? 'the reporter'}) and cannot be made private later.`
+            : confirmAction === 'CLOSE'
+              ? 'The incident moves to CLOSED. The reporter can still reopen it inside the reopen window.'
+              : 'Confirms that the resolution worked. The incident then moves on towards CLOSED.'
+        }
+        confirmLabel={confirmAction === 'PUBLIC_NOTE' ? 'Post publicly' : confirmAction === 'CLOSE' ? 'Close incident' : 'Verify'}
+        isLoading={confirmBusy}
+        onConfirm={handleConfirmed}
+        onClose={() => setConfirmAction(null)}
+      />
 
       {/* RESOLVE DIALOG */}
       <Dialog
@@ -1425,6 +1771,8 @@ export default function TechWorkbench() {
                 size="small"
                 value={resolveRootCause}
                 onChange={(e) => setResolveRootCause(e.target.value)}
+                inputProps={{ maxLength: 2000 }}
+                helperText={`${resolveRootCause.length}/2000`}
                 placeholder="Identify underlying cause (deadlock, packet loss, config misconfiguration, etc.)"
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
@@ -1441,6 +1789,8 @@ export default function TechWorkbench() {
                 size="small"
                 value={resolveNotes}
                 onChange={(e) => setResolveNotes(e.target.value)}
+                inputProps={{ maxLength: 4000 }}
+                helperText={`${resolveNotes.length}/4000`}
                 placeholder="Describe corrective actions taken to resolve the failure..."
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
@@ -1455,6 +1805,8 @@ export default function TechWorkbench() {
                 size="small"
                 value={resolveSteps}
                 onChange={(e) => setResolveSteps(e.target.value)}
+                inputProps={{ maxLength: 4000 }}
+                helperText={`${resolveSteps.length}/4000`}
                 placeholder="Architectural safeguards, monitoring rule additions, etc."
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
@@ -1557,7 +1909,7 @@ export default function TechWorkbench() {
                       Target Tier: Level {incident.escalationPreview.toLevel} ({incident.escalationPreview.targetRole || 'Supervisory SRE'})
                     </Typography>
                     {incident.escalationPreview.recipients && incident.escalationPreview.recipients.length > 0 && (
-                      <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                         Will notify: {incident.escalationPreview.recipients.join(', ')}
                       </Typography>
                     )}
@@ -1640,6 +1992,8 @@ export default function TechWorkbench() {
               placeholder="Specify the logs, reproduction steps, or details required from the reporter (minimum 10 characters)..."
               value={requestInfoText}
               onChange={(e) => setRequestInfoText(e.target.value)}
+              inputProps={{ maxLength: 2000 }}
+              helperText={`${requestInfoText.length}/2000 (at least 10)`}
               sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
             />
           </Box>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -34,6 +34,8 @@ import {
   Close as CloseIcon,
   Refresh as RefreshIcon,
   PlayArrow as PlayArrowIcon,
+  BookmarkBorder as BookmarkIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 
 import { useToast } from '../../components/Toast';
@@ -46,47 +48,70 @@ import {
   startIncident,
   requestInfo,
   reassignIncident as apiReassignIncident,
-  listTechnicians,
   type TechnicianView,
 } from '../../api/technicians';
-import { addComment, getIncident } from '../../api/incidents';
+import { me as fetchMe } from '../../api/auth';
+import { getServices } from '../../api/services';
+import {
+  addComment,
+  getIncident,
+  getRecommendations,
+  listIncidents,
+  listSavedFilters,
+  createSavedFilter,
+  deleteSavedFilter,
+} from '../../api/incidents';
 import { useProblemBasePath } from '../problems/problemAccess';
 import { apiErrorMessage } from '../../utils/errors';
 import { LoadingState, EmptyState, ErrorState } from '../../components/StateViews';
 import PriorityBadge from '../../components/PriorityBadge';
 import SlaCountdown from '../../components/SlaCountdown';
-import type { IncidentSummary, SlaState } from '../../api/types';
+import { tokens, slaStateColor } from '../../theme/theme';
+import type { IncidentSummary, SavedFilterView } from '../../api/types';
 
-// Design System Tokens (Luminary Kinetic Dark)
+// Colours come from the shared theme tokens; status colours from the shared SLA map.
 const COLORS = {
-  surface: '#090d16',
-  surfaceContainerLowest: '#0a0e17',
-  surfaceContainerLow: '#121622',
-  surfaceContainer: '#141824',
-  surfaceContainerHigh: '#1c2234',
-  surfaceContainerHighest: '#262d42',
-  onSurface: '#f8fafc',
-  onSurfaceVariant: '#94a3b8',
-  outlineVariant: 'rgba(255, 255, 255, 0.08)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  primary: '#6366f1',
-  primaryContainer: '#4f46e5',
-  secondary: '#06b6d4',
-  secondaryContainer: 'rgba(6, 182, 212, 0.2)',
-  error: '#f43f5e',
-  errorContainer: 'rgba(244, 63, 94, 0.15)',
-  onErrorContainer: '#ffdad6',
-  success: '#10b981',
-  successContainer: 'rgba(16, 185, 129, 0.15)',
-  tertiary: '#f751a1',
+  surface: tokens.background,
+  surfaceContainerLowest: tokens.surfaceContainerLowest,
+  surfaceContainerLow: tokens.surfaceContainerLow,
+  surfaceContainer: tokens.surfaceContainer,
+  surfaceContainerHigh: tokens.surfaceContainerHigh,
+  surfaceContainerHighest: tokens.surfaceContainerHighest,
+  onSurface: tokens.onSurface,
+  onSurfaceVariant: tokens.onSurfaceVariant,
+  border: tokens.outlineVariant,
+  primary: tokens.primary,
+  secondary: tokens.secondary,
+  error: slaStateColor.VIOLATED,
+  tertiary: tokens.tertiary,
 };
+
+/** Statuses a technician still has to work on. Used when the queue is filtered on the server. */
+const ACTIVE_STATUSES = ['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
+const TAB_STATUSES: Record<string, string[]> = {
+  ALL: ACTIVE_STATUSES,
+  NEEDS_ACK: ['ASSIGNED'],
+  AT_RISK: ACTIVE_STATUSES,
+  IN_PROGRESS: ['IN_PROGRESS', 'ACKNOWLEDGED'],
+  PENDING_INFO: ['PENDING_USER_INFO'],
+};
+/** Server-side sort options (GET /incidents sort=field,asc|desc). DEFAULT keeps the queue's own most-urgent-first order. */
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'DEFAULT', label: 'Most urgent SLA first' },
+  { value: 'priority,asc', label: 'Priority (P1 first)' },
+  { value: 'resolutionDue,asc', label: 'Resolution due (soonest)' },
+  { value: 'createdAt,desc', label: 'Newest first' },
+  { value: 'createdAt,asc', label: 'Oldest first' },
+];
+const SLA_FILTERS = ['WARNING', 'AT_RISK', 'VIOLATED', 'PAUSED', 'OK'];
 
 /** One definition for the Pending Info tab and its KPI card. */
 const isPendingInfo = (i: IncidentSummary) => i.status === 'PENDING_USER_INFO';
 
 function timeAgo(dateString: string): string {
   const diffMs = Date.now() - new Date(dateString).getTime();
-  const diffMins = Math.max(1, Math.round(diffMs / 60000));
+  if (diffMs < 60000) return 'just now';
+  const diffMins = Math.round(diffMs / 60000);
   if (diffMins < 60) return `${diffMins}m ago`;
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ago`;
@@ -100,9 +125,16 @@ export default function TechQueue() {
   const queryClient = useQueryClient();
 
   const [filterTab, setFilterTab] = useState<'ALL' | 'NEEDS_ACK' | 'AT_RISK' | 'IN_PROGRESS' | 'PENDING_INFO'>('ALL');
+  // searchInput follows the keyboard; searchQuery is what the server is asked, after a short pause.
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [serviceFilter, setServiceFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [slaFilter, setSlaFilter] = useState('ALL');
+  const [sortOrder, setSortOrder] = useState('DEFAULT');
+  const [saveViewOpen, setSaveViewOpen] = useState(false);
+  const [viewName, setViewName] = useState('');
+  const [activeViewId, setActiveViewId] = useState<number | null>(null);
 
   // Interactive Modals
   const [noteModalIncident, setNoteModalIncident] = useState<IncidentSummary | null>(null);
@@ -150,19 +182,74 @@ export default function TechQueue() {
     refetchInterval: 15000,
   });
 
-  // 3. Fetch technicians for reassignment modal
-  const { data: techList = [] } = useQuery({
-    queryKey: ['technicians-list'],
-    queryFn: () => listTechnicians(),
+  // 3. Reassign candidates come from the incident's own ranking (eligible and excluded, with reasons).
+  //    GET /technicians is team-lead only, so a plain technician would get 403 there.
+  const {
+    data: reassignRecs,
+    isLoading: reassignRecsLoading,
+    error: reassignRecsError,
+  } = useQuery({
+    queryKey: ['incident-recommendations', reassignIncident?.id],
+    queryFn: () => getRecommendations((reassignIncident as IncidentSummary).id),
+    enabled: reassignIncident != null,
+  });
+
+  // 4. Services for the filter (all services, not only those that happen to be on this page)
+  const { data: serviceList = [], error: servicesError } = useQuery({
+    queryKey: ['services-all'],
+    queryFn: getServices,
+    staleTime: 5 * 60_000,
+  });
+
+  // 5. Own profile: current availability
+  const { data: meProfile } = useQuery({ queryKey: ['auth-me'], queryFn: fetchMe, staleTime: 30_000 });
+
+  // 6. Saved views (GET/POST/DELETE /saved-filters)
+  const { data: savedViews = [] } = useQuery<SavedFilterView[]>({ queryKey: ['saved-filters'], queryFn: listSavedFilters });
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab]);
+
+  const serverFiltered =
+    searchQuery !== '' || serviceFilter !== 'ALL' || priorityFilter !== 'ALL' || slaFilter !== 'ALL' || sortOrder !== 'DEFAULT';
+
+  // 7. Filtered / sorted list from the server: GET /incidents?assignedToMe=true&...
+  const {
+    data: filteredPage,
+    isLoading: isFilteredLoading,
+    error: filteredError,
+    refetch: refetchFiltered,
+  } = useQuery({
+    queryKey: ['tech-my-queue', 'filtered', searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab, page, pageSize],
+    queryFn: () =>
+      listIncidents({
+        assignedToMe: true,
+        status: TAB_STATUSES[filterTab],
+        q: searchQuery || undefined,
+        serviceId: serviceFilter === 'ALL' ? undefined : Number(serviceFilter),
+        priority: priorityFilter === 'ALL' ? undefined : [priorityFilter],
+        slaState: slaFilter === 'ALL' ? undefined : slaFilter,
+        sort: sortOrder === 'DEFAULT' ? undefined : sortOrder,
+        page,
+        size: pageSize,
+      }),
+    enabled: serverFiltered,
+    refetchInterval: 10000,
   });
 
   const queue = queuePage?.items ?? [];
-  const totalItems = queuePage?.totalItems ?? queue.length;
-  const totalPages = queuePage?.totalPages ?? 1;
+  const activePage = serverFiltered ? filteredPage : queuePage;
+  const rows = serverFiltered ? (filteredPage?.items ?? []) : queue;
+  const totalItems = activePage?.totalItems ?? rows.length;
+  const totalPages = activePage?.totalPages ?? 1;
   // Newest known value wins: the response of our own PUT, then the technician list, then the sign-in profile.
   const [availabilityOverride, setAvailabilityOverride] = useState<TechnicianView['availability'] | null>(null);
-  const me = techList.find((t) => t.email === user?.email);
-  const currentAvailability = availabilityOverride ?? me?.availability ?? user?.technician?.availability ?? null;
+  const currentAvailability = availabilityOverride ?? meProfile?.technician?.availability ?? user?.technician?.availability ?? null;
   const isAvailable = currentAvailability === 'AVAILABLE';
   const availabilityLabel =
     currentAvailability === 'AVAILABLE' ? 'Available'
@@ -192,7 +279,7 @@ export default function TechQueue() {
       setAvailabilityOverride(updated.availability);
       toast(`Availability set to ${updated.availability.replace('_', ' ').toLowerCase()}.`, 'info');
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
-      queryClient.invalidateQueries({ queryKey: ['technicians-list'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-me'] });
     } catch (err) {
       toast(apiErrorMessage(err), 'error');
     }
@@ -277,29 +364,67 @@ export default function TechQueue() {
     }
   };
 
-  // Unique services in current queue for filter dropdown
-  const uniqueServices = Array.from(new Set(queue.map((i) => i.service?.name).filter(Boolean)));
+  const createViewMutation = useMutation({
+    mutationFn: (name: string) =>
+      createSavedFilter({
+        name,
+        filter: {
+          q: searchQuery || undefined,
+          serviceId: serviceFilter === 'ALL' ? undefined : Number(serviceFilter),
+          priority: priorityFilter === 'ALL' ? undefined : [priorityFilter],
+          slaState: slaFilter === 'ALL' ? undefined : slaFilter,
+          sort: sortOrder === 'DEFAULT' ? undefined : sortOrder,
+        },
+      }),
+    onSuccess: (view) => {
+      queryClient.invalidateQueries({ queryKey: ['saved-filters'] });
+      toast(`Saved view "${view.name}" created.`, 'success');
+      setActiveViewId(view.id);
+      setSaveViewOpen(false);
+      setViewName('');
+    },
+    onError: (err) => toast(apiErrorMessage(err), 'error'),
+  });
 
-  // Filter calculations
-  const filteredQueue = queue.filter((inc) => {
+  const deleteViewMutation = useMutation({
+    mutationFn: (id: number) => deleteSavedFilter(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-filters'] });
+      toast('Saved view deleted.', 'success');
+      setActiveViewId(null);
+    },
+    onError: (err) => toast(apiErrorMessage(err), 'error'),
+  });
+
+  const applySavedView = (view: SavedFilterView) => {
+    const f = view.filter ?? {};
+    setActiveViewId(view.id);
+    setSearchInput(typeof f.q === 'string' ? f.q : '');
+    setSearchQuery(typeof f.q === 'string' ? f.q : '');
+    setServiceFilter(f.serviceId ? String(f.serviceId) : 'ALL');
+    setPriorityFilter(Array.isArray(f.priority) && f.priority[0] ? String(f.priority[0]) : 'ALL');
+    setSlaFilter(typeof f.slaState === 'string' ? f.slaState : 'ALL');
+    setSortOrder(typeof f.sort === 'string' ? f.sort : 'DEFAULT');
+    toast(`Applied saved view "${view.name}".`, 'info');
+  };
+
+  const clearFilters = () => {
+    setActiveViewId(null);
+    setSearchInput('');
+    setSearchQuery('');
+    setServiceFilter('ALL');
+    setPriorityFilter('ALL');
+    setSlaFilter('ALL');
+    setSortOrder('DEFAULT');
+  };
+
+  // The server already applied search, service, priority, SLA state and sort; only the tab is left to narrow here.
+  const filteredQueue = rows.filter((inc) => {
     const isAtRisk = inc.slaState === 'WARNING' || inc.slaState === 'AT_RISK' || inc.slaState === 'VIOLATED';
-
     if (filterTab === 'NEEDS_ACK' && inc.status !== 'ASSIGNED') return false;
     if (filterTab === 'AT_RISK' && !isAtRisk) return false;
     if (filterTab === 'IN_PROGRESS' && inc.status !== 'IN_PROGRESS' && inc.status !== 'ACKNOWLEDGED') return false;
     if (filterTab === 'PENDING_INFO' && !isPendingInfo(inc)) return false;
-    if (serviceFilter !== 'ALL' && inc.service?.name !== serviceFilter) return false;
-    if (priorityFilter !== 'ALL' && inc.priority !== priorityFilter) return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        inc.code.toLowerCase().includes(q) ||
-        inc.title.toLowerCase().includes(q) ||
-        (inc.service?.name || '').toLowerCase().includes(q) ||
-        (inc.reporter?.name || '').toLowerCase().includes(q)
-      );
-    }
     return true;
   });
 
@@ -342,7 +467,7 @@ export default function TechQueue() {
                 bgcolor: queueError ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
                 color: queueError ? COLORS.error : COLORS.primary,
                 border: `1px solid ${queueError ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
-                fontSize: 11.5,
+                fontSize: 12.5,
                 fontWeight: 700,
                 fontFamily: 'JetBrains Mono, monospace',
               }}
@@ -362,9 +487,11 @@ export default function TechQueue() {
             <Chip
               label="⌘K Filter"
               size="small"
+              clickable
+              onClick={() => document.getElementById('tech-queue-search')?.focus()}
               sx={{
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11,
+                fontSize: 12,
                 height: 22,
                 bgcolor: COLORS.surfaceContainerHigh,
                 color: COLORS.onSurfaceVariant,
@@ -409,7 +536,7 @@ export default function TechQueue() {
             <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.2 }}>
               Status: {availabilityLabel}
             </Typography>
-            <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
               {isAvailable ? 'Accepting auto-assignment' : 'Not receiving auto-assignment'}
             </Typography>
           </Box>
@@ -421,7 +548,7 @@ export default function TechQueue() {
               bgcolor: COLORS.surfaceContainerHigh,
               color: COLORS.onSurface,
               border: `1px solid ${COLORS.border}`,
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 1.5,
@@ -481,8 +608,8 @@ export default function TechQueue() {
                       label={user?.technician?.escalationLevel === 1 ? 'Team Lead (L1)' : 'Technician (L0)'}
                       size="small"
                       sx={{
-                        height: 20,
-                        fontSize: 10,
+                        height: 22,
+                        fontSize: 12,
                         fontWeight: 700,
                         fontFamily: 'JetBrains Mono, monospace',
                         bgcolor: 'rgba(99, 102, 241, 0.15)',
@@ -497,7 +624,7 @@ export default function TechQueue() {
                   </Box>
                 </Box>
               </Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: 600 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.onSurfaceVariant, fontWeight: 600 }}>
                 Quota: {maxQuota} Max
               </Typography>
             </Box>
@@ -518,7 +645,7 @@ export default function TechQueue() {
                   },
                 }}
               />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>
                 <span>Active tickets: {queue.length}</span>
                 <span>Resolved this week: {workload?.resolvedThisWeek ?? 0}</span>
                 <span style={{ color: capacityPercent >= 80 ? COLORS.error : '#64748b' }}>
@@ -548,7 +675,7 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Needs Ack
                   </Typography>
                   <BoltIcon sx={{ fontSize: 18, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }} />
@@ -557,11 +684,11 @@ export default function TechQueue() {
                   <Typography variant="h4" sx={{ fontWeight: 800, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {needsAckCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }}>
                     {needsAckCount > 0 ? 'Acknowledge' : 'Clear'}
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.onSurfaceVariant }}>
                   Assigned to you
                 </Typography>
               </Paper>
@@ -583,7 +710,7 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     At-Risk SLA
                   </Typography>
                   <ErrorOutlineIcon sx={{ fontSize: 18, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }} />
@@ -592,11 +719,11 @@ export default function TechQueue() {
                   <Typography variant="h4" sx={{ fontWeight: 800, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {atRiskCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                     Tickets
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, fontWeight: 700 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, fontWeight: 700 }}>
                   {atRiskCount > 0 ? 'Action required' : 'All targets healthy'}
                 </Typography>
               </Paper>
@@ -618,7 +745,7 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     In Progress
                   </Typography>
                   <SyncIcon sx={{ fontSize: 18, color: COLORS.primary }} />
@@ -627,11 +754,11 @@ export default function TechQueue() {
                   <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {inProgressCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                     Active
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.onSurfaceVariant }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.onSurfaceVariant }}>
                   Under investigation
                 </Typography>
               </Paper>
@@ -653,7 +780,7 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Pending Info
                   </Typography>
                   <PauseCircleIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
@@ -662,11 +789,11 @@ export default function TechQueue() {
                   <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {pendingInfoCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                     Paused
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: COLORS.secondary, fontWeight: 600 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.secondary, fontWeight: 600 }}>
                   SLA clock frozen
                 </Typography>
               </Paper>
@@ -727,9 +854,9 @@ export default function TechQueue() {
           <TextField
             id="tech-queue-search"
             size="small"
-            placeholder="Search code, title, service, reporter... (⌘K)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search code, title, description (⌘K)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -763,13 +890,14 @@ export default function TechQueue() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Service:
               </Typography>
               <Select
                 size="small"
                 value={serviceFilter}
                 onChange={(e) => setServiceFilter(e.target.value)}
+                error={!!servicesError}
                 sx={{
                   bgcolor: COLORS.surfaceContainerLow,
                   fontSize: 12,
@@ -781,14 +909,14 @@ export default function TechQueue() {
                 }}
               >
                 <MenuItem value="ALL">All Services</MenuItem>
-                {uniqueServices.map((svc) => (
-                  <MenuItem key={svc} value={svc}>{svc}</MenuItem>
+                {serviceList.map((svc) => (
+                  <MenuItem key={svc.id} value={String(svc.id)}>{svc.name}</MenuItem>
                 ))}
               </Select>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Priority:
               </Typography>
               <Select
@@ -812,18 +940,95 @@ export default function TechQueue() {
                 <MenuItem value="P4">P4 - Low</MenuItem>
               </Select>
             </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                SLA:
+              </Typography>
+              <Select
+                size="small"
+                value={slaFilter}
+                onChange={(e) => setSlaFilter(e.target.value)}
+                sx={{ bgcolor: COLORS.surfaceContainerLow, fontSize: 12, fontWeight: 600, height: 30, borderRadius: 1.5, color: COLORS.onSurface, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
+              >
+                <MenuItem value="ALL">Any state</MenuItem>
+                {SLA_FILTERS.map((st) => (
+                  <MenuItem key={st} value={st}>{st.replace('_', ' ')}</MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                Sort:
+              </Typography>
+              <Select
+                size="small"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                sx={{ bgcolor: COLORS.surfaceContainerLow, fontSize: 12, fontWeight: 600, height: 30, borderRadius: 1.5, color: COLORS.onSurface, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
+              </Select>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            {serverFiltered && (
+              <Button size="small" onClick={clearFilters} sx={{ textTransform: 'none', fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                Clear filters
+              </Button>
+            )}
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<BookmarkIcon sx={{ fontSize: 16 }} />}
+              disabled={!serverFiltered}
+              onClick={() => setSaveViewOpen(true)}
+              sx={{ textTransform: 'none', fontSize: 12, fontWeight: 700 }}
+            >
+              Save view
+            </Button>
           </Box>
         </Paper>
+
+        {savedViews.length > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+              SAVED VIEWS:
+            </Typography>
+            {savedViews.map((sv) => (
+              <Chip
+                key={sv.id}
+                label={sv.name}
+                size="small"
+                onClick={() => applySavedView(sv)}
+                onDelete={() => deleteViewMutation.mutate(sv.id)}
+                deleteIcon={<DeleteIcon sx={{ fontSize: '16px !important' }} />}
+                sx={{
+                  fontSize: 12,
+                  bgcolor: activeViewId === sv.id ? 'rgba(6, 182, 212, 0.2)' : COLORS.surfaceContainerLow,
+                  color: activeViewId === sv.id ? COLORS.secondary : COLORS.onSurface,
+                  border: `1px solid ${activeViewId === sv.id ? COLORS.secondary : COLORS.border}`,
+                }}
+              />
+            ))}
+          </Box>
+        )}
       </Box>
 
       {/* 4. HIGH-DENSITY INCIDENT QUEUE STREAM */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {isQueueLoading ? (
+        {serverFiltered && filteredError ? (
+          <ErrorState message={apiErrorMessage(filteredError)} onRetry={() => refetchFiltered()} />
+        ) : (serverFiltered ? isFilteredLoading : isQueueLoading) ? (
           <LoadingState />
         ) : filteredQueue.length === 0 ? (
           <EmptyState
             message={
-              queue.length === 0
+              !serverFiltered && queue.length === 0
                 ? 'Your queue is completely clear. No tickets assigned to you right now.'
                 : 'No incidents match your current filter criteria.'
             }
@@ -875,10 +1080,10 @@ export default function TechQueue() {
                             bgcolor: '#ef4444',
                             color: '#ffffff',
                             fontWeight: 800,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontFamily: 'JetBrains Mono, monospace',
                             letterSpacing: '0.05em',
-                            height: 20,
+                            height: 22,
                           }}
                         />
                       )}
@@ -908,7 +1113,7 @@ export default function TechQueue() {
                         </>
                       )}
                       <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>•</Typography>
-                      <Typography sx={{ fontSize: 11.5, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
+                      <Typography sx={{ fontSize: 12.5, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
                         {timeAgo(inc.createdAt)}
                       </Typography>
                       {inc.escalationLevel > 0 && (
@@ -916,8 +1121,8 @@ export default function TechQueue() {
                           label={`Escalation Level ${inc.escalationLevel}`}
                           size="small"
                           sx={{
-                            height: 20,
-                            fontSize: 10,
+                            height: 22,
+                            fontSize: 12,
                             fontWeight: 700,
                             bgcolor: 'rgba(244, 63, 94, 0.15)',
                             color: COLORS.error,
@@ -951,8 +1156,8 @@ export default function TechQueue() {
                         label={inc.status.replace(/_/g, ' ')}
                         size="small"
                         sx={{
-                          height: 20,
-                          fontSize: 10,
+                          height: 22,
+                          fontSize: 12,
                           fontWeight: 700,
                           bgcolor: inc.status === 'ASSIGNED' ? 'rgba(244, 63, 94, 0.15)' : inc.status === 'IN_PROGRESS' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(6, 182, 212, 0.15)',
                           color: inc.status === 'ASSIGNED' ? COLORS.error : inc.status === 'IN_PROGRESS' ? COLORS.primary : COLORS.secondary,
@@ -975,7 +1180,7 @@ export default function TechQueue() {
                           minWidth: 190,
                         }}
                       >
-                        <Typography sx={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                        <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
                           Response SLA
                         </Typography>
                         <SlaCountdown due={inc.responseDue} createdAt={inc.createdAt} slaState={inc.status === 'ASSIGNED' ? inc.slaState : 'MET'} />
@@ -992,7 +1197,7 @@ export default function TechQueue() {
                           minWidth: 190,
                         }}
                       >
-                        <Typography sx={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                        <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
                           Resolution SLA
                         </Typography>
                         <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
@@ -1053,7 +1258,7 @@ export default function TechQueue() {
                           px: 2,
                           py: 0.6,
                           borderRadius: 1.5,
-                          '&:hover': { bgcolor: COLORS.primaryContainer },
+                          '&:hover': { bgcolor: tokens.primaryDark },
                         }}
                       >
                         {actionInProgressId === inc.id ? 'Starting...' : 'Start Investigation'}
@@ -1179,7 +1384,7 @@ export default function TechQueue() {
             }}
           >
             <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-              Showing {queue.length > 0 ? page * pageSize + 1 : 0}–{Math.min((page + 1) * pageSize, totalItems)} of {totalItems} incidents
+              Showing {rows.length > 0 ? page * pageSize + 1 : 0}–{Math.min((page + 1) * pageSize, totalItems)} of {totalItems} incidents
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Button
@@ -1234,7 +1439,7 @@ export default function TechQueue() {
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: COLORS.secondary }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: COLORS.secondary }}>
                   SRE INTERNAL WORKBENCH // {noteModalIncident.code}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
@@ -1292,7 +1497,7 @@ export default function TechQueue() {
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: COLORS.secondary }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: COLORS.secondary }}>
                   CLARIFICATION REQUEST // {requestInfoIncident.code}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
@@ -1318,6 +1523,8 @@ export default function TechQueue() {
                 rows={4}
                 value={requestInfoText}
                 onChange={(e) => setRequestInfoText(e.target.value)}
+                inputProps={{ maxLength: 2000 }}
+                helperText={`${requestInfoText.length}/2000 (at least 10)`}
                 placeholder="Specify the log file, screenshot, or reproduction steps required (minimum 10 characters)..."
                 sx={{
                   bgcolor: COLORS.surfaceContainerLowest,
@@ -1374,18 +1581,42 @@ export default function TechQueue() {
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 2, color: COLORS.onSurface, mb: 2, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
               >
                 <MenuItem value="" disabled>-- Select a technician --</MenuItem>
-                {techList.map((t) => (
-                  <MenuItem key={t.id} value={t.id}>
-                    {t.name} ({t.availability}, load: {t.currentLoad}/{t.maxLoad})
-                  </MenuItem>
-                ))}
+                {(reassignRecs?.recommendations ?? [])
+                  .filter((r) => r.technicianId !== undefined)
+                  .map((r) => (
+                    <MenuItem key={r.technicianId} value={r.technicianId}>
+                      {r.name} (score {r.score}, load {r.currentLoad}/{r.maxLoad})
+                    </MenuItem>
+                  ))}
               </Select>
+              {reassignRecsLoading && (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>Loading eligible technicians…</Typography>
+              )}
+              {reassignRecsError && (
+                <Typography sx={{ fontSize: 12, color: COLORS.error, mb: 1.5 }}>
+                  Could not load eligible technicians: {apiErrorMessage(reassignRecsError)}
+                </Typography>
+              )}
+              {reassignRecs && reassignRecs.recommendations.length === 0 && (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>No technician is eligible right now.</Typography>
+              )}
+              {reassignRecs && reassignRecs.excluded.length > 0 && (
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>Not eligible</Typography>
+                  {reassignRecs.excluded.map((x) => (
+                    <Typography key={x.technicianId} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                      {x.name}: {x.reason}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
               <TextField
                 fullWidth
                 size="small"
                 label="Reason for reassignment (min 10 characters)"
                 value={reassignReason}
                 onChange={(e) => setReassignReason(e.target.value)}
+                inputProps={{ maxLength: 1000 }}
                 placeholder="Skill specialization, workload rebalancing, etc."
                 error={reassignReason.length > 0 && reassignReason.trim().length < 10}
                 helperText={
@@ -1411,6 +1642,43 @@ export default function TechQueue() {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* DIALOG 5: SAVE VIEW */}
+      <Dialog
+        open={saveViewOpen}
+        onClose={() => setSaveViewOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+      >
+        <DialogTitle sx={{ fontSize: 16, fontWeight: 800, color: COLORS.onSurface }}>Save this view</DialogTitle>
+        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            label="View name"
+            value={viewName}
+            onChange={(e) => setViewName(e.target.value)}
+            inputProps={{ maxLength: 60 }}
+            helperText={`${viewName.length}/60. Saves search, service, priority, SLA state and sort.`}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setSaveViewOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!viewName.trim() || createViewMutation.isPending}
+            onClick={() => createViewMutation.mutate(viewName.trim())}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            Save
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );
