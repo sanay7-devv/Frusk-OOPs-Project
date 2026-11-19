@@ -38,6 +38,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   Security as SecurityIcon,
   Home as HomeIcon,
+  PhoneAndroid as PhoneAndroidIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -54,6 +55,8 @@ import {
 } from '../../api/notifications';
 import { provideInfo, verifyIncident, submitFeedback } from '../../api/incidents';
 import type { AppNotification } from '../../api/types';
+import { apiErrorMessage } from '../../utils/errors';
+import PushDevicesDialog from './PushDevicesDialog';
 
 function formatTimeAgo(isoString: string): string {
   try {
@@ -71,6 +74,11 @@ function formatTimeAgo(isoString: string): string {
   } catch {
     return isoString;
   }
+}
+
+// The backend sends the one final alert after level 3 as INCIDENT_ESCALATED with this title (notification-templates.properties, audience admin).
+function isExhausted(n: AppNotification): boolean {
+  return n.eventType === 'INCIDENT_ESCALATED' && n.title.startsWith('Escalation exhausted');
 }
 
 function isToday(isoString: string): boolean {
@@ -100,6 +108,7 @@ export default function Notifications() {
   const [ratingVal, setRatingVal] = useState<number | null>(5);
   const [ratingComment, setRatingComment] = useState('');
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [devicesOpen, setDevicesOpen] = useState(false);
   const [localPrefs, setLocalPrefs] = useState<PreferenceView[]>([]);
 
   // Real backend queries
@@ -131,6 +140,7 @@ export default function Notifications() {
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
       queryClient.invalidateQueries({ queryKey: ['unread'] });
     },
+    onError: (err) => toast(apiErrorMessage(err), 'error'),
   });
 
   const markAllReadMutation = useMutation({
@@ -141,6 +151,7 @@ export default function Notifications() {
       queryClient.invalidateQueries({ queryKey: ['unread'] });
       toast('All notifications marked as read.', 'success');
     },
+    onError: (err) => toast(apiErrorMessage(err), 'error'),
   });
 
   const savePrefsMutation = useMutation({
@@ -154,7 +165,7 @@ export default function Notifications() {
       setPrefsOpen(false);
     },
     onError: (err: any) => {
-      toast(err?.response?.data?.message || 'Failed to save preferences.', 'error');
+      toast(apiErrorMessage(err), 'error');
     },
   });
 
@@ -174,7 +185,7 @@ export default function Notifications() {
       setReplyItem(null);
       setReplyText('');
     } catch (err: any) {
-      toast(err?.response?.data?.message || 'Failed to send reply.', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -192,7 +203,7 @@ export default function Notifications() {
       setVerifyItem(null);
       setRatingComment('');
     } catch (err: any) {
-      toast(err?.response?.data?.message || 'Failed to verify incident.', 'error');
+      toast(apiErrorMessage(err), 'error');
     }
   };
 
@@ -286,7 +297,7 @@ export default function Notifications() {
                   color: '#ffb0cd',
                   border: '1px solid rgba(247, 81, 161, 0.35)',
                   fontWeight: 800,
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 22,
                   borderRadius: '6px',
                   fontFamily: 'JetBrains Mono, monospace',
@@ -301,7 +312,7 @@ export default function Notifications() {
                   color: '#6ee7b7',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   fontWeight: 700,
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 22,
                   borderRadius: '6px',
                   fontFamily: 'JetBrains Mono, monospace',
@@ -336,6 +347,22 @@ export default function Notifications() {
           >
             Mark All as Read
           </Button>
+          <IconButton
+            size="small"
+            onClick={() => setDevicesOpen(true)}
+            title="Push devices"
+            aria-label="Push devices"
+            sx={{
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              p: 0.8,
+              bgcolor: 'rgba(18, 22, 34, 0.7)',
+              color: '#94a3b8',
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)', color: '#dfe2ef' },
+            }}
+          >
+            <PhoneAndroidIcon sx={{ fontSize: 18 }} />
+          </IconButton>
           <IconButton
             size="small"
             onClick={() => setPrefsOpen(true)}
@@ -496,12 +523,12 @@ export default function Notifications() {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, px: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Today
                   </Typography>
                   <Box sx={{ width: 32, height: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
                   {todayNotifications.length} items
                 </Typography>
               </Box>
@@ -525,12 +552,12 @@ export default function Notifications() {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, px: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Earlier
                   </Typography>
                   <Box sx={{ width: 32, height: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#64748b' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
                   {earlierNotifications.length} items
                 </Typography>
               </Box>
@@ -581,7 +608,7 @@ export default function Notifications() {
             >
               <ChevronLeftIcon sx={{ fontSize: 18 }} />
             </IconButton>
-            <Box sx={{ px: 1.2, py: 0.2, bgcolor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '4px', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: '#c0c1ff' }}>
+            <Box sx={{ px: 1.2, py: 0.2, bgcolor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '4px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: '#c0c1ff' }}>
               {page + 1}
             </Box>
             <IconButton
@@ -616,7 +643,7 @@ export default function Notifications() {
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#4cd7f6' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6' }}>
                   REPLY TO INCIDENT #{replyItem.incidentId}
                 </Typography>
                 <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
@@ -629,7 +656,7 @@ export default function Notifications() {
             </DialogTitle>
             <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
               <Paper sx={{ p: 1.8, bgcolor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '10px', mb: 2 }}>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, fontWeight: 700, color: '#c0c1ff' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff' }}>
                   Technician Request:
                 </Typography>
                 <Typography sx={{ fontSize: 13, color: '#dfe2ef', mt: 0.3 }}>
@@ -747,6 +774,8 @@ export default function Notifications() {
       </Dialog>
 
       {/* DIALOG 3: NOTIFICATION PREFERENCES */}
+      <PushDevicesDialog open={devicesOpen} onClose={() => setDevicesOpen(false)} />
+
       <Dialog
         open={prefsOpen}
         onClose={() => setPrefsOpen(false)}
@@ -792,7 +821,7 @@ export default function Notifications() {
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#dfe2ef' }}>
                     {pref.eventType.replace(/_/g, ' ')}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: '#64748b' }}>
+                  <Typography sx={{ fontSize: 12, color: '#64748b' }}>
                     Channel: {pref.channel} {pref.locked ? '(Locked by Policy)' : ''}
                   </Typography>
                 </Box>
@@ -878,7 +907,7 @@ function NotificationCard({
     iconComp = <SaveAsIcon sx={{ fontSize: 20 }} />;
     iconBg = 'rgba(244, 63, 94, 0.15)';
     iconColor = '#f43f5e';
-    badgeLabel = notif.eventType.replace(/_/g, ' ');
+    badgeLabel = isExhausted(notif) ? 'Escalation exhausted' : notif.eventType.replace(/_/g, ' ');
     badgeColor = '#f43f5e';
     badgeBg = 'rgba(244, 63, 94, 0.15)';
   } else if (notif.eventType === 'INCIDENT_ASSIGNED') {
@@ -963,7 +992,7 @@ function NotificationCard({
                 size="small"
                 sx={{
                   height: 20,
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: 700,
                   borderRadius: '4px',
                   fontFamily: 'JetBrains Mono, monospace',
@@ -982,11 +1011,11 @@ function NotificationCard({
           {/* Metadata & Actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography sx={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <ScheduleIcon sx={{ fontSize: 13 }} />
                 {formatTimeAgo(notif.createdAt)}
               </Typography>
-              <Typography sx={{ fontSize: 11, color: '#64748b' }}>
+              <Typography sx={{ fontSize: 12, color: '#64748b' }}>
                 Channel: {notif.channel}
               </Typography>
             </Box>
@@ -1001,7 +1030,7 @@ function NotificationCard({
                   sx={{
                     background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
                     color: '#ffffff',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: 700,
                     textTransform: 'none',
                     borderRadius: '6px',
@@ -1021,7 +1050,7 @@ function NotificationCard({
                   sx={{
                     bgcolor: '#10b981',
                     color: '#ffffff',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: 700,
                     textTransform: 'none',
                     borderRadius: '6px',
@@ -1041,7 +1070,7 @@ function NotificationCard({
                   sx={{
                     borderColor: 'rgba(255, 255, 255, 0.12)',
                     color: '#4cd7f6',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: 700,
                     textTransform: 'none',
                     borderRadius: '6px',
@@ -1058,7 +1087,7 @@ function NotificationCard({
                   onClick={onMarkRead}
                   sx={{
                     color: '#94a3b8',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     textTransform: 'none',
                     '&:hover': { color: '#ffffff' },
                   }}

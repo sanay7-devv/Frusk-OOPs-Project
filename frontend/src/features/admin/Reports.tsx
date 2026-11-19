@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import {
   Alert, Box, Button, Grid, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material';
@@ -17,6 +16,7 @@ import {
   CategoryBars, PriorityDonut, ServiceBars, SlaChart, TrendChart, WorkloadChart, formatMinutes,
 } from './reports/Charts';
 import { CoverageRiskCard, SlaViolationsCard } from './reports/Tables';
+import IncidentsDrawer, { type DrawerTarget } from './reports/IncidentsDrawer';
 
 const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return toIsoDate(d); };
@@ -43,7 +43,7 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 export default function Reports() {
-  const navigate = useNavigate();
+  const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
   const [preset, setPreset] = useState<number | 'custom'>(30);
   const [from, setFrom] = useState(daysAgo(30));
   const [to, setTo] = useState(toIsoDate(new Date()));
@@ -71,7 +71,16 @@ export default function Reports() {
   const workload = useQuery({ queryKey: ['reports', 'workload'], queryFn: getWorkloadReport });
 
   const pickPreset = (days: number) => { setPreset(days); setFrom(daysAgo(days)); setTo(toIsoDate(new Date())); };
-  const toTickets = (priority: string) => navigate(`/admin/tickets?priority=${encodeURIComponent(priority)}`);
+  const created = range ? { createdFrom: range.from, createdTo: range.to } : {};
+  const openPriority = (priority: string) =>
+    setDrawer({ title: `${priority} incidents in this period`, filters: { priority: [priority], ...created } });
+  const openService = (row: { serviceId: number; name: string }) =>
+    setDrawer({ title: `${row.name}: incidents in this period`, filters: { serviceId: row.serviceId, ...created } });
+  const openTechnician = (row: { technicianId: number; name: string }) =>
+    setDrawer({
+      title: `${row.name}: open incidents`,
+      filters: { assigneeId: row.technicianId, status: ['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'] },
+    });
 
   const doExport = async (format: 'csv' | 'pdf') => {
     setExporting(format);
@@ -109,10 +118,10 @@ export default function Reports() {
               {EXPORT_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
             </TextField>
             <Button variant="outlined" startIcon={<DownloadIcon />} disabled={rangeInvalid || exporting !== null} onClick={() => doExport('csv')}>
-              {exporting === 'csv' ? 'Preparing…' : 'Download CSV'}
+              {exporting === 'csv' ? 'Preparing...' : 'Download CSV'}
             </Button>
             <Button variant="outlined" startIcon={<DownloadIcon />} disabled={rangeInvalid || exporting !== null} onClick={() => doExport('pdf')}>
-              {exporting === 'pdf' ? 'Preparing…' : 'Download PDF'}
+              {exporting === 'pdf' ? 'Preparing...' : 'Download PDF'}
             </Button>
           </Stack>
         </Stack>
@@ -150,12 +159,12 @@ export default function Reports() {
                 <ToggleButton value="technician">Technician</ToggleButton>
               </ToggleButtonGroup>
             }>
-            {(d) => <SlaChart data={d} onBarClick={groupBy === 'priority' ? toTickets : undefined} />}
+            {(d) => <SlaChart data={d} onBarClick={groupBy === 'priority' ? openPriority : undefined} />}
           </ChartCard>
         </Grid>
         <Grid item xs={12} md={5}>
           <ChartCard title="Incidents by priority" query={priorities} isEmpty={(d) => d.every((p) => p.count === 0)} emptyMessage="No incidents in this period">
-            {(d) => <PriorityDonut data={d} onSliceClick={toTickets} />}
+            {(d) => <PriorityDonut data={d} onSliceClick={openPriority} />}
           </ChartCard>
         </Grid>
         <Grid item xs={12} md={6}>
@@ -165,17 +174,18 @@ export default function Reports() {
         </Grid>
         <Grid item xs={12} md={6}>
           <ChartCard title="Incidents by service" query={services} isEmpty={(d) => d.length === 0} emptyMessage="No incidents in this period">
-            {(d) => <ServiceBars data={d} />}
+            {(d) => <ServiceBars data={d} onBarClick={openService} />}
           </ChartCard>
         </Grid>
         <Grid item xs={12}>
           <ChartCard title="Technician workload" query={workload} isEmpty={(d) => d.length === 0} emptyMessage="No technicians yet">
-            {(d) => <WorkloadChart data={d} />}
+            {(d) => <WorkloadChart data={d} onBarClick={openTechnician} />}
           </ChartCard>
         </Grid>
         <Grid item xs={12}><CoverageRiskCard /></Grid>
         <Grid item xs={12}><SlaViolationsCard range={range} /></Grid>
       </Grid>
+      <IncidentsDrawer target={drawer} onClose={() => setDrawer(null)} />
     </Box>
   );
 }

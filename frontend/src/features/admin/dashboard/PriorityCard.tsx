@@ -1,6 +1,4 @@
-import { Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { tokens } from '../../../theme/theme';
 import { getOverview, getPriorityDistribution } from '../../../api/reports';
 import { ChartCard } from '../reports/common';
 import { PriorityDonut, formatMinutes } from '../reports/Charts';
@@ -18,10 +16,7 @@ export function PriorityCard() {
     <ChartCard title="Incidents by priority, last 30 days" query={dist} isEmpty={(d) => d.length === 0} emptyMessage="No incidents in the last 30 days.">
       {(d) => (
         <>
-          <PriorityDonut data={d} />
-          <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13, mt: 1 }}>
-            Average time to resolve: <strong style={{ color: tokens.onSurface }}>{mttr}</strong>
-          </Typography>
+          <PriorityDonut data={d} center={{ caption: 'Avg to resolve', value: mttr }} />
         </>
       )}
     </ChartCard>

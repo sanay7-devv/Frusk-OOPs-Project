@@ -6,12 +6,15 @@ import {
   Stack, Collapse, IconButton, MenuItem, TextField, TablePagination,
 } from '@mui/material';
 import {
-  Refresh as RefreshIcon, KeyboardArrowDown as DownIcon, KeyboardArrowUp as UpIcon, ArrowForward as ArrowIcon,
+  Refresh as RefreshIcon, Download as DownloadIcon, KeyboardArrowDown as DownIcon, KeyboardArrowUp as UpIcon, ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
 import { AUDIT_ACTIONS, searchAudit, type AuditAction, type AuditSearchParams } from '../../api/audit';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import AuditSealPanel from './AuditSealPanel';
+import AuditHistogram from './AuditHistogram';
+import { exportAuditCsv } from './auditCsv';
+import { useToast } from '../../components/Toast';
 
 type Tone = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary';
 const ACTION_TONE: Record<AuditAction, Tone> = {
@@ -40,6 +43,8 @@ function toParams(f: Filters, page: number, size: number): AuditSearchParams {
 }
 
 export default function AuditLog() {
+  const toast = useToast();
+  const [exporting, setExporting] = useState(false);
   const [draft, setDraft] = useState<Filters>(EMPTY);
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [page, setPage] = useState(0);
@@ -61,6 +66,28 @@ export default function AuditLog() {
 
   const items = data?.items ?? [];
 
+  const downloadCsv = async () => {
+    setExporting(true);
+    try {
+      const { page: _p, size: _s, ...params } = toParams(filters, 0, 1);
+      const res = await exportAuditCsv(params);
+      const url = URL.createObjectURL(res.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-trail-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast(
+        res.truncated ? `Downloaded the newest ${res.rows} of ${res.total} matching records.` : `Downloaded ${res.rows} records.`,
+        res.truncated ? 'warning' : 'success'
+      );
+    } catch (e) {
+      toast(apiErrorMessage(e), 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} mb={3} spacing={2}>
@@ -70,7 +97,12 @@ export default function AuditLog() {
             Append-only record of incident changes, assignments, failed logins, access denials and configuration changes.
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => refetch()} disabled={isFetching}>Refresh</Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<DownloadIcon />} onClick={downloadCsv} disabled={exporting || items.length === 0}>
+            {exporting ? 'Preparing...' : 'Export CSV'}
+          </Button>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => refetch()} disabled={isFetching}>Refresh</Button>
+        </Stack>
       </Stack>
 
       <AuditSealPanel />
@@ -95,6 +127,8 @@ export default function AuditLog() {
         : isError ? <ErrorState onRetry={() => refetch()} message={apiErrorMessage(error)} />
         : items.length === 0 ? <EmptyState message="No audit records match these filters." />
         : (
+        <>
+        <AuditHistogram items={items} />
         <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
           <Table size="small">
             <TableHead>
@@ -169,6 +203,7 @@ export default function AuditLog() {
             sx={{ '& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': { fontSize: 13 } }}
           />
         </TableContainer>
+        </>
       )}
     </Box>
   );
