@@ -3,6 +3,7 @@ import { Autocomplete, Box, Button, Chip, Paper, Stack, TextField, ToggleButton,
 import { Add as AddIcon } from '@mui/icons-material';
 import { tokens } from '../../../theme/theme';
 import { BUSINESS_KEYS as K } from './configMeta';
+import { alpha } from '../palette';
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const FULL: Record<string, string> = { MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday', FRI: 'Friday', SAT: 'Saturday', SUN: 'Sunday' };
@@ -70,7 +71,7 @@ export default function BusinessCalendarCard({ values, errors, onChange }: Props
         {DAYS.map((d) => (
           <ToggleButton
             key={d} value={d} aria-label={FULL[d]}
-            sx={{ textTransform: 'none', fontSize: 13, px: 2, color: tokens.onSurfaceVariant, '&.Mui-selected': { color: tokens.onSurface, bgcolor: 'rgba(99, 102, 241, 0.25)' } }}
+            sx={{ textTransform: 'none', fontSize: 13, px: 2, color: tokens.onSurfaceVariant, '&.Mui-selected': { color: tokens.onSurface, bgcolor: alpha(tokens.primary, 0.25) } }}
           >
             {d}
           </ToggleButton>
@@ -82,7 +83,7 @@ export default function BusinessCalendarCard({ values, errors, onChange }: Props
         {DAYS.map((d) => {
           const on = days.includes(d);
           return (
-            <Box key={d} sx={{ p: 1, borderRadius: '8px', textAlign: 'center', bgcolor: on ? 'rgba(99, 102, 241, 0.15)' : tokens.surfaceContainerHighest, border: `1px solid ${tokens.outlineVariant}` }}>
+            <Box key={d} sx={{ p: 1, borderRadius: '8px', textAlign: 'center', bgcolor: on ? alpha(tokens.primary, 0.15) : tokens.surfaceContainerHighest, border: `1px solid ${tokens.outlineVariant}` }}>
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>{d}</Typography>
               <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{on ? `${open || '?'} to ${close || '?'}` : 'Closed'}</Typography>
             </Box>

@@ -7,6 +7,7 @@ import { getOverview, getSlaCompliance } from '../../../api/reports';
 import { ErrorState, LoadingState } from '../../../components/StateViews';
 import { apiErrorMessage } from '../../../utils/errors';
 import { lastDays } from './dates';
+import { tone } from '../palette';
 
 function Kpi({ label, value, hint, color, to }: { label: string; value: string | number; hint: string; color: string; to: string }) {
   const navigate = useNavigate();
@@ -62,10 +63,10 @@ export function KpiRow() {
         <Kpi label="Open now" value={c.open} hint={`${c.total} incidents in total`} color={tokens.primary} to="/admin/tickets?tab=all&status=ACTIVE" />
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
-        <Kpi label="Critical (P1)" value={c.critical} hint="Open P1 incidents" color="#f43f5e" to="/admin/tickets?tab=all&priority=P1" />
+        <Kpi label="Critical (P1)" value={c.critical} hint="Open P1 incidents" color={tone.danger} to="/admin/tickets?tab=all&priority=P1" />
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
-        <Kpi label="SLA violations" value={c.slaViolations} hint={complianceHint} color="#fb923c" to="/admin/reports" />
+        <Kpi label="SLA violations" value={c.slaViolations} hint={complianceHint} color={tone.caution} to="/admin/reports" />
       </Grid>
     </Grid>
   );

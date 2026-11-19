@@ -203,7 +203,7 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
                 {node.hasOpenP1 && (
                   <g transform={`translate(${NODE_W - 38} 10)`}>
                     <rect width={28} height={18} rx={4} fill={HEALTH_COLOR.OUTAGE} />
-                    <text x={14} y={13} textAnchor="middle" fill="#ffffff" fontSize={12} fontWeight={700}>
+                    <text x={14} y={13} textAnchor="middle" fill={tokens.onSurface} fontSize={12} fontWeight={700}>
                       P1
                     </text>
                   </g>

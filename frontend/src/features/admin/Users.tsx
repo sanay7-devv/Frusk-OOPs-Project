@@ -22,6 +22,7 @@ import TechnicianDialog from './users/TechnicianDialog';
 import UserDrawer from './users/UserDrawer';
 import { EditUserDialog, GrantAdminDialog } from './users/AccountDialogs';
 import { isLead } from './users/techForm';
+import { tone } from './palette';
 
 const USERS_KEY = ['admin-users-directory'];
 const OPEN_STATUSES = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
@@ -254,7 +255,7 @@ export default function Users() {
 
       <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
         {menu && menuItems(menu.user).map((it) => (
-          <MenuItem key={it.label} sx={{ fontSize: 14, color: it.danger ? '#fb7185' : undefined }} onClick={() => { setMenu(null); it.run(); }}>{it.label}</MenuItem>
+          <MenuItem key={it.label} sx={{ fontSize: 14, color: it.danger ? tone.danger : undefined }} onClick={() => { setMenu(null); it.run(); }}>{it.label}</MenuItem>
         ))}
       </Menu>
 

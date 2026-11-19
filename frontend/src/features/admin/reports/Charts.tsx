@@ -95,8 +95,8 @@ function HBars<T extends object>({ data, nameKey, valueKey, onBarClick }: {
   );
 }
 
-export const CategoryBars = ({ data }: { data: LabelCount[] }) => (
-  <HBars data={[...data].sort((a, b) => b.count - a.count).slice(0, 8)} nameKey="label" valueKey="count" />
+export const CategoryBars = ({ data, onBarClick }: { data: LabelCount[]; onBarClick?: (label: string) => void }) => (
+  <HBars<LabelCount> data={[...data].sort((a, b) => b.count - a.count).slice(0, 8)} nameKey="label" valueKey="count" onBarClick={onBarClick && ((r) => onBarClick(r.label))} />
 );
 export const ServiceBars = ({ data, onBarClick }: { data: ServiceReportRow[]; onBarClick?: (row: ServiceReportRow) => void }) => (
   <HBars data={[...data].sort((a, b) => b.count - a.count)} nameKey="name" valueKey="count" onBarClick={onBarClick} />

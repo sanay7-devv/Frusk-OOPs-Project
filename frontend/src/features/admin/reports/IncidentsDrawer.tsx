@@ -9,6 +9,7 @@ import PriorityBadge from '../../../components/PriorityBadge';
 import StatusChip from '../../../components/StatusChip';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
+import { alpha } from '../palette';
 
 export interface DrawerTarget {
   title: string;
@@ -71,7 +72,7 @@ export default function IncidentsDrawer({ target, onClose }: { target: DrawerTar
                   border: `1px solid ${tokens.outlineVariant}`,
                   textDecoration: 'none',
                   color: tokens.onSurface,
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.04)' },
+                  '&:hover': { bgcolor: alpha(tokens.onSurface, 0.04) },
                 }}
               >
                 <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>

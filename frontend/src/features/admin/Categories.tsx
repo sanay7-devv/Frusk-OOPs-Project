@@ -15,6 +15,7 @@ import { tokens } from '../../theme/theme';
 import { apiErrorMessage } from '../../utils/errors';
 import CategoryDialog from './categories/CategoryDialog';
 import SkillDialog from './categories/SkillDialog';
+import { alpha, tone } from './palette';
 
 const CATEGORIES_KEY = ['admin-categories-list'];
 const SKILLS_KEY = ['admin-skills-list'];
@@ -146,14 +147,14 @@ export default function Categories() {
                           {c.requiredSkillIds && c.requiredSkillIds.length > 0 ? (
                             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                               {c.requiredSkillIds.map((sid) => (
-                                <Chip key={sid} label={skillName(sid)} size="small" sx={{ fontSize: 12, height: 22, bgcolor: 'rgba(99, 102, 241, 0.15)', color: tokens.primaryLight }} />
+                                <Chip key={sid} label={skillName(sid)} size="small" sx={{ fontSize: 12, height: 22, bgcolor: alpha(tokens.primary, 0.15), color: tokens.primaryLight }} />
                               ))}
                             </Stack>
                           ) : <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>None</Typography>}
                         </TableCell>
                         <TableCell>
                           <Chip label={c.active ? 'Active' : 'Inactive'} size="small"
-                            sx={{ fontSize: 12, fontWeight: 700, bgcolor: c.active ? 'rgba(16, 185, 129, 0.15)' : tokens.surfaceContainerHighest, color: c.active ? '#34d399' : tokens.onSurfaceVariant }} />
+                            sx={{ fontSize: 12, fontWeight: 700, bgcolor: c.active ? alpha(tone.success, 0.15) : tokens.surfaceContainerHighest, color: c.active ? tone.success : tokens.onSurfaceVariant }} />
                         </TableCell>
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                           <Tooltip title="Edit"><IconButton aria-label={`Edit ${c.name}`} onClick={() => setCatDialog({ category: c })}><EditIcon fontSize="small" /></IconButton></Tooltip>

@@ -4,6 +4,7 @@ import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '
 import { FactCheck as VerifyIcon, Lock as SealIcon } from '@mui/icons-material';
 import { sealAudit, verifyAudit, type SealView, type VerifyView } from '../../api/audit';
 import { apiErrorMessage } from '../../utils/errors';
+import AuditChainVisual from './AuditChainVisual';
 
 const shortHash = (h?: string | null) => (h ? `${h.slice(0, 12)}…${h.slice(-6)}` : '—');
 const mono = { fontFamily: 'JetBrains Mono, monospace', fontSize: 12 } as const;
@@ -89,6 +90,7 @@ export default function AuditSealPanel() {
               )}
             </Alert>
           )}
+          {verify && <AuditChainVisual verify={verify} />}
           {verify && (
             <Typography sx={{ ...mono, color: 'text.secondary' }}>
               Last seal: {verify.lastSealId != null ? `#${verify.lastSealId}` : 'none yet'}

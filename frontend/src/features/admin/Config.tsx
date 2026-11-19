@@ -15,6 +15,7 @@ import ConfigField from './config/ConfigField';
 import WeightBar from './config/WeightBar';
 import BusinessCalendarCard from './config/BusinessCalendarCard';
 import { BUSINESS_KEY_SET, GROUPS, OTHER_GROUP, STRATEGY_HELP, WEIGHT_SETS, checkValue, groupOf, type Group } from './config/configMeta';
+import { tone, alpha } from './palette';
 
 const CONFIG_KEY = ['admin-config-settings'];
 const headSx = { fontWeight: 700, color: tokens.onSurfaceVariant, fontSize: 12, fontFamily: 'JetBrains Mono, monospace' };
@@ -114,10 +115,10 @@ export default function Config() {
     const v = value(cfg.key);
     const help = cfg.key === 'assignment.strategy' ? STRATEGY_HELP[v.trim()] : undefined;
     return (
-      <TableRow key={cfg.key} sx={{ '& td': { borderBottom: `1px solid ${tokens.outlineVariant}`, verticalAlign: 'top' }, bgcolor: modified ? 'rgba(245, 158, 11, 0.07)' : undefined, boxShadow: modified ? `inset 3px 0 0 #f59e0b` : undefined }}>
+      <TableRow key={cfg.key} sx={{ '& td': { borderBottom: `1px solid ${tokens.outlineVariant}`, verticalAlign: 'top' }, bgcolor: modified ? alpha(tone.warning, 0.07) : undefined, boxShadow: modified ? `inset 3px 0 0 ${tone.warning}` : undefined }}>
         <TableCell sx={{ width: '26%' }}>
           <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.primaryLight, fontSize: 13, wordBreak: 'break-all' }}>{cfg.key}</Typography>
-          {modified && <Chip size="small" label="modified" sx={{ mt: 0.5, fontSize: 12, height: 20, color: '#fbbf24', bgcolor: 'rgba(245, 158, 11, 0.15)' }} />}
+          {modified && <Chip size="small" label="modified" sx={{ mt: 0.5, fontSize: 12, height: 20, color: tone.warning, bgcolor: alpha(tone.warning, 0.15) }} />}
         </TableCell>
         <TableCell>
           <Typography sx={{ color: tokens.onSurface, fontSize: 13 }}>{cfg.description}</Typography>
@@ -156,7 +157,7 @@ export default function Config() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={1.5} alignItems="center">
-          {changes.length > 0 && <Chip label={`${changes.length} unsaved`} sx={{ fontSize: 13, color: '#fbbf24', bgcolor: 'rgba(245, 158, 11, 0.15)' }} />}
+          {changes.length > 0 && <Chip label={`${changes.length} unsaved`} sx={{ fontSize: 13, color: tone.warning, bgcolor: alpha(tone.warning, 0.15) }} />}
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleReset} disabled={changes.length === 0 && Object.keys(draft).length === 0}
             sx={{ borderColor: tokens.outlineVariant, color: tokens.onSurfaceVariant, textTransform: 'none', fontWeight: 600 }}>
             Discard changes
@@ -201,7 +202,7 @@ export default function Config() {
                     <Stack direction="row" spacing={1.5} alignItems="center">
                       <Typography sx={{ fontWeight: 700, color: tokens.onSurface }}>{group.title}</Typography>
                       <Chip size="small" label={`${items.length} settings`} sx={{ fontSize: 12 }} />
-                      {modCount > 0 && <Chip size="small" label={`${modCount} modified`} sx={{ fontSize: 12, color: '#fbbf24', bgcolor: 'rgba(245, 158, 11, 0.15)' }} />}
+                      {modCount > 0 && <Chip size="small" label={`${modCount} modified`} sx={{ fontSize: 12, color: tone.warning, bgcolor: alpha(tone.warning, 0.15) }} />}
                       {errCount > 0 && <Chip size="small" color="error" label={`${errCount} with errors`} sx={{ fontSize: 12 }} />}
                     </Stack>
                   </AccordionSummary>

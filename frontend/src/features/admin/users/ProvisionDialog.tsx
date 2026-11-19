@@ -11,6 +11,7 @@ import { apiErrorMessage } from '../../../utils/errors';
 import { dialogPaperSx, errFor, fieldMap, fieldSx, leftoverErrors } from '../adminForm';
 import TechnicianFields from './TechnicianFields';
 import { emptyTechForm, toTechnicianRequest, validateTech, type TechForm } from './techForm';
+import { tone } from '../palette';
 
 const SHOWN = ['name', 'email', 'password', 'department', 'location', 'roles', 'experienceLevel', 'maxLoad', 'availability', 'escalationLevel', 'skills', 'scope', 'administrator'];
 
@@ -105,7 +106,7 @@ export default function ProvisionDialog({ open, onClose, onCreated }: { open: bo
           <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mt: '-8px !important' }}>
             Every account is an Employee. Add roles as needed.
           </Typography>
-          {errFor(errors, 'roles') && <Typography sx={{ fontSize: 12, color: '#f43f5e' }}>{errFor(errors, 'roles')}</Typography>}
+          {errFor(errors, 'roles') && <Typography sx={{ fontSize: 12, color: tone.danger }}>{errFor(errors, 'roles')}</Typography>}
           <FormControlLabel control={<Checkbox checked={technician} onChange={(e) => setTechnician(e.target.checked)} />}
             label={<Typography sx={{ fontSize: 14 }}>Technician (handles incidents)</Typography>} />
           {technician && (

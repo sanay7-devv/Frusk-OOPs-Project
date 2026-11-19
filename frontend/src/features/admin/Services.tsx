@@ -18,6 +18,7 @@ import { apiErrorMessage } from '../../utils/errors';
 import { cardSx, monoLabelSx } from './adminForm';
 import { HEALTH_COLOR, HEALTH_LABEL } from './servicegraph/health';
 import { DependenciesDialog, ImpactDialog, ServiceFormDialog } from './services/ServiceDialogs';
+import { tone } from './palette';
 
 const LIST_KEY = ['admin-services-records'];
 const HEALTH_KEY = ['service-health'];
@@ -191,8 +192,10 @@ export default function Services() {
           <MenuItem key="d" sx={{ fontSize: 14 }} onClick={() => { setDeps(menu.service); setMenu(null); }}>Dependencies</MenuItem>,
           <MenuItem key="i" sx={{ fontSize: 14 }} onClick={() => { setImpact(menu.service); setMenu(null); }}>Impact if it fails</MenuItem>,
           <MenuItem key="s" sx={{ fontSize: 14 }} onClick={() => { navigate('/admin/sla'); setMenu(null); }}>SLA policies</MenuItem>,
+          <MenuItem key="inc" sx={{ fontSize: 14 }} onClick={() => { navigate(`/admin/tickets?serviceId=${menu.service.id}`); setMenu(null); }}>View incidents</MenuItem>,
+          <MenuItem key="cat" sx={{ fontSize: 14 }} onClick={() => { navigate('/admin/categories'); setMenu(null); }}>Categories</MenuItem>,
           menu.service.active
-            ? <MenuItem key="r" sx={{ fontSize: 14, color: '#fb7185' }} onClick={() => { setRetire(menu.service); setMenu(null); }}>Retire</MenuItem>
+            ? <MenuItem key="r" sx={{ fontSize: 14, color: tone.danger }} onClick={() => { setRetire(menu.service); setMenu(null); }}>Retire</MenuItem>
             : <MenuItem key="a" sx={{ fontSize: 14 }} onClick={() => { reactivate.mutate(menu.service); setMenu(null); }}>Reactivate</MenuItem>,
         ]}
       </Menu>

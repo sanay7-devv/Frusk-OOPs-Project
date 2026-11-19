@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { tokens } from '../../../theme/theme';
 import { getWorkloadReport } from '../../../api/reports';
 import { ChartCard } from '../reports/common';
+import { tone } from '../palette';
 
 export function CapacityCard() {
   const query = useQuery({ queryKey: ['dashboard', 'workload'], queryFn: getWorkloadReport, refetchInterval: 30_000 });
@@ -24,7 +25,7 @@ export function CapacityCard() {
               <Box key={t.technicianId}>
                 <Stack direction="row" justifyContent="space-between" spacing={1}>
                   <Typography sx={{ fontSize: 13, color: tokens.onSurface }}>{t.name}</Typography>
-                  <Typography sx={{ fontSize: 12, color: full ? '#f43f5e' : tokens.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: full ? tone.danger : tokens.onSurfaceVariant }}>
                     {t.load} of {t.maxLoad} load, {t.active} active
                   </Typography>
                 </Stack>
@@ -32,7 +33,7 @@ export function CapacityCard() {
                   variant="determinate"
                   value={pct}
                   aria-label={`${t.name} load`}
-                  sx={{ height: 6, borderRadius: 3, bgcolor: tokens.surfaceContainerHigh, '& .MuiLinearProgress-bar': { bgcolor: full ? '#f43f5e' : tokens.secondary } }}
+                  sx={{ height: 6, borderRadius: 3, bgcolor: tokens.surfaceContainerHigh, '& .MuiLinearProgress-bar': { bgcolor: full ? tone.danger : tokens.secondary } }}
                 />
               </Box>
             );

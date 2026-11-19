@@ -47,7 +47,7 @@ export default function AuditHistogram({ items }: { items: AuditEntryView[] }) {
       </Typography>
       <ResponsiveContainer width="100%" height={140}>
         <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+          <CartesianGrid stroke={tokens.outlineVariant} vertical={false} />
           <XAxis dataKey="label" stroke={tokens.onSurfaceVariant} fontSize={12} interval="preserveStartEnd" minTickGap={24} />
           <YAxis allowDecimals={false} stroke={tokens.onSurfaceVariant} fontSize={12} />
           <Tooltip
