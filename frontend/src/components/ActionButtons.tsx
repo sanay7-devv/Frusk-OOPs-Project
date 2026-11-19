@@ -10,7 +10,7 @@ const LABEL: Partial<Record<IncidentAction, string>> = {
   VERIFY: 'Confirm fixed',
   GIVE_FEEDBACK: 'Give feedback',
   REOPEN: 'Reopen',
-  WITHDRAW: 'Withdraw ticket',
+  WITHDRAW: 'Withdraw incident',
   REASSIGN: 'Reassign',
   ESCALATE: 'Escalate',
   ASSIGN: 'Assign',

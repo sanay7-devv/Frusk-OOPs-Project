@@ -13,7 +13,7 @@ export default function PriorityBadge({ priority }: { priority: Priority | null 
           color: '#94a3b8',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 600,
         }}
       />
@@ -52,7 +52,7 @@ export default function PriorityBadge({ priority }: { priority: Priority | null 
         component="span"
         sx={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
           color: color,
           letterSpacing: '0.04em',

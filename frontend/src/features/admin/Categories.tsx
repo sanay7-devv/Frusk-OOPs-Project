@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Box, Button, Chip, Grid, IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon, Restore as RestoreIcon, Block as BlockIcon } from '@mui/icons-material';
@@ -6,6 +7,7 @@ import {
   deactivateAdminCategory, deleteAdminSkill, getAdminCategories, getAdminSkills, updateAdminCategory,
   type AdminCategory, type AdminSkill,
 } from '../../api/admin';
+import { getCoverageRisk, type CoverageItem } from '../../api/reports';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
@@ -50,6 +52,17 @@ export default function Categories() {
 
   const cats = useQuery({ queryKey: CATEGORIES_KEY, queryFn: getAdminCategories });
   const skillsQ = useQuery({ queryKey: SKILLS_KEY, queryFn: getAdminSkills });
+  // Coverage report: how many available technicians hold the skills each category needs.
+  const coverage = useQuery({ queryKey: ['coverage-risk', false], queryFn: () => getCoverageRisk(false) });
+  const eligibleByCategory = useMemo(() => {
+    const m = new Map<number, CoverageItem>();
+    (coverage.data?.items ?? []).forEach((it) => {
+      if (!it.category) return;
+      const prev = m.get(it.category.id);
+      if (!prev || it.eligibleCount < prev.eligibleCount) m.set(it.category.id, it);
+    });
+    return m;
+  }, [coverage.data]);
   const categories = cats.data ?? [];
   const skills = skillsQ.data ?? [];
   const tree = useMemo(() => toTree(categories), [categories]);
@@ -115,6 +128,7 @@ export default function Categories() {
                     <TableRow>
                       <TableCell sx={headSx}>CATEGORY</TableCell>
                       <TableCell sx={headSx}>REQUIRED SKILLS</TableCell>
+                      <TableCell sx={headSx}>ELIGIBLE TECHNICIANS</TableCell>
                       <TableCell sx={headSx}>STATUS</TableCell>
                       <TableCell sx={headSx} align="right">ACTIONS</TableCell>
                     </TableRow>

@@ -89,7 +89,7 @@ export interface ServiceStatus {
   criticality: number;
   status: 'OUTAGE' | 'DEGRADED' | 'HEALTHY';
   reason?: string;
-  open?: { total: number; p1: number; p2: number; p3: number; p4: number };
+  open?: { total: number; P1: number; P2: number; P3: number; P4: number };
   slaCompliancePercent?: number;
   slaJudged?: number;
 }

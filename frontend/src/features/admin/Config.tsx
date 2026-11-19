@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, InputAdornment, Paper, Stack, Table, TableBody,
@@ -121,6 +122,11 @@ export default function Config() {
         <TableCell>
           <Typography sx={{ color: tokens.onSurface, fontSize: 13 }}>{cfg.description}</Typography>
           {help && <Typography sx={{ color: tokens.secondaryLight, fontSize: 12, mt: 0.5 }}>{help}</Typography>}
+          {cfg.key === 'assignment.strategy' && (
+            <Button component={RouterLink} to="/admin/simulator" size="small" sx={{ textTransform: 'none', fontSize: 12, px: 0, mt: 0.5 }}>
+              Compare strategies in the simulator
+            </Button>
+          )}
         </TableCell>
         <TableCell sx={{ width: 280 }}>
           <ConfigField item={cfg} value={v} error={errors[cfg.key]} onChange={(nv) => setValue(cfg.key, nv)} />

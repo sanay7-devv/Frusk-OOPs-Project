@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast';
 import { tokenStore, requestRefresh } from '../api/client';
 import { unreadCount } from '../api/notifications';
 import type { AppNotification } from '../api/types';
+import { apiErrorMessage } from '../utils/errors';
 
 /** One STOMP client after login. If the socket is down, poll unread-count every 10 s. */
 export function useRealtime() {
@@ -59,26 +60,33 @@ export function useRealtime() {
             client.subscribe('/topic/dashboard', () => {
               qc.invalidateQueries({ queryKey: ['dashboard'] });
               qc.invalidateQueries({ queryKey: ['admin-incidents-kpi'] });
+              qc.invalidateQueries({ queryKey: ['admin-incidents-list'] });
               qc.invalidateQueries({ queryKey: ['admin-incidents-all'] });
               qc.invalidateQueries({ queryKey: ['admin-audit-logs-feed'] });
             });
           }
         },
+        // Every (re)connect sends the newest access token, also after a silent refresh.
+        beforeConnect: (c) => {
+          c.connectHeaders = { Authorization: `Bearer ${tokenStore.getAccess() ?? ''}` };
+        },
         onWebSocketClose: async (evt) => {
           setConnected(false);
-          // Exponential backoff
+          const c = clientRef.current;
+          if (!active || !c) return;
+          // Exponential backoff for the library's own reconnect: 2 s, 3 s, 4.5 s ... up to 30 s.
           backoffRef.current = Math.min(backoffRef.current * 1.5, 30000);
-
-          // Handle 4001: TOKEN_EXPIRED -> refresh and reconnect
-          if (evt.code === 4001 && active) {
+          c.reconnectDelay = backoffRef.current;
+          // Close code 4001 = TOKEN_EXPIRED: refresh once, then reconnect right away with the new token.
+          if (evt.code === 4001) {
             try {
-              const authData = await requestRefresh();
-              if (active && clientRef.current) {
-                clientRef.current.connectHeaders = { Authorization: `Bearer ${authData.accessToken}` };
-                clientRef.current.activate();
+              await requestRefresh();
+              if (active) {
+                backoffRef.current = 2000;
+                c.reconnectDelay = 2000;
               }
-            } catch {
-              // Refresh failed, auth failure handler will handle logout
+            } catch (e) {
+              toast(`Live updates stopped: ${apiErrorMessage(e)}`, 'warning');
             }
           }
         },

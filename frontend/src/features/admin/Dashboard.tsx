@@ -8,7 +8,7 @@ import { PriorityCard } from './dashboard/PriorityCard';
 import { CapacityCard } from './dashboard/CapacityCard';
 import { AttentionCard, LiveFeedCard } from './dashboard/LiveCards';
 import { OperationsCard } from './dashboard/OperationsCard';
-import { DeclareDialog } from './dashboard/DeclareDialog';
+import { IncidentCreateDialog } from '../../components/IncidentCreateDialog';
 
 /** Admin dashboard: every number comes from /dashboard/live or /reports/*. */
 export default function Dashboard() {
@@ -37,7 +37,7 @@ export default function Dashboard() {
         <Grid item xs={12}><OperationsCard /></Grid>
       </Grid>
 
-      <DeclareDialog open={declareOpen} onClose={() => setDeclareOpen(false)} />
+      <IncidentCreateDialog open={declareOpen} onClose={() => setDeclareOpen(false)} />
     </Box>
   );
 }

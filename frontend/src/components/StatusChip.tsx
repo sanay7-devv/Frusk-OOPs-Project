@@ -60,7 +60,7 @@ export default function StatusChip({
         component="span"
         sx={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 10.5,
+          fontSize: 12,
           fontWeight: 600,
           color: color,
           letterSpacing: '0.03em',

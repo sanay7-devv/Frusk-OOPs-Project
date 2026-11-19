@@ -1,5 +1,5 @@
 import type { ElementType } from 'react';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { Fragment, useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -46,6 +46,9 @@ import {
   Terminal as TerminalIcon,
   CrisisAlert as CrisisAlertIcon,
   Hub as HubIcon,
+  ManageAccounts as ManageAccountsIcon,
+  Science as ScienceIcon,
+  Tune as TuneIcon,
   Search as SearchIcon,
   Bolt as BoltIcon,
   Menu as MenuIcon,
@@ -110,7 +113,9 @@ const NAV_ICONS: Record<string, ElementType> = {
   'Team queue': AssignmentIcon,
   'Escalations': CrisisAlertIcon,
   'Dashboard': DashboardIcon,
-  'Tickets': ConfirmationNumberIcon,
+  'Account security': ManageAccountsIcon,
+  'Simulator': ScienceIcon,
+  'Demo controls': TuneIcon,
   'Incidents': ConfirmationNumberIcon,
   'Users': PeopleIcon,
   'Services': DnsIcon,
@@ -163,7 +168,7 @@ export default function AppShell() {
     } else if (activeWorkspace === 'lead') {
       navigate(`/lead/team-queue?q=${q}`);
     } else {
-      navigate(`/admin/tickets?q=${q}`);
+      navigate(`/admin/incidents?q=${q}`);
     }
   };
 
@@ -402,7 +407,7 @@ export default function AppShell() {
                   '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
                 }}
               >
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#94a3b8' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#94a3b8' }}>
                   ⌘K
                 </Typography>
               </Box>
@@ -491,7 +496,7 @@ export default function AppShell() {
                   sx={{
                     px: 1.5,
                     py: 0.8,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 600,
                     color: '#64748b',
                     textTransform: 'uppercase',
@@ -573,7 +578,7 @@ export default function AppShell() {
                 '& .MuiBadge-badge': {
                   bgcolor: '#f751a1',
                   color: '#ffffff',
-                  fontSize: 10,
+                  fontSize: 12,
                   fontFamily: 'JetBrains Mono, monospace',
                   fontWeight: 700,
                   boxShadow: '0 0 8px rgba(247, 81, 161, 0.8)',
@@ -613,7 +618,7 @@ export default function AppShell() {
               <Typography
                 sx={{
                   fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 9.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   color: '#4cd7f6',
                   letterSpacing: '0.04em',
@@ -692,7 +697,7 @@ export default function AppShell() {
                 <Typography
                   sx={{
                     fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 700,
                     color: '#64748b',
                     textTransform: 'uppercase',
@@ -704,7 +709,7 @@ export default function AppShell() {
                   {activeWorkspace.toUpperCase()} CONSOLE
                 </Typography>
                 <List disablePadding>
-                  {navItems.map((item) => {
+                  {navItems.map((item, idx) => {
                     const RawIcon = NAV_ICONS[item.label] || DashboardIcon;
                     const IconComp = (RawIcon && (RawIcon as any).default) ? (RawIcon as any).default : RawIcon;
                     const isExact = location.pathname === item.to;
@@ -716,6 +721,12 @@ export default function AppShell() {
                     const isActive = isExact || isSubRoute;
 
                     return (
+                      <Fragment key={item.to}>
+                      {item.group && item.group !== navItems[idx - 1]?.group && (
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', px: 1.2, mt: idx === 0 ? 0 : 1.5, mb: 0.6 }}>
+                          {item.group}
+                        </Typography>
+                      )}
                       <ListItemButton
                         key={item.to}
                         component={NavLink}
@@ -763,6 +774,7 @@ export default function AppShell() {
                           }}
                         />
                       </ListItemButton>
+                      </Fragment>
                     );
                   })}
                 </List>
