@@ -49,8 +49,8 @@ class AssignmentStrategyTests {
     }
 
     @Test void experience_priority_favors_senior_fit_for_critical_work() {
-        var senior = new TechnicianCandidate(null, null, 0, 0);
-        var junior = new TechnicianCandidate(null, null, 0, 0);
+        var senior = candidate("senior@iitsm.demo", NOW.minusSeconds(60));
+        var junior = candidate("junior@iitsm.demo", NOW);
         Map<TechnicianCandidate, AssignmentFactors> rows = Map.of(
                 senior, new AssignmentFactors(.4, .4, 1.0, 1.0, .4, java.util.List.of()),
                 junior, new AssignmentFactors(.9, .9, .4, .4, .9, java.util.List.of()));
