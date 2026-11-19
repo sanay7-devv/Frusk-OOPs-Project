@@ -113,6 +113,21 @@ function signInWithSeedAccount(email: string) {
 }
 
 describe('Auth and Navigation Flow', () => {
+  it('Rejects empty and malformed credentials before calling the API', async () => {
+    localStorage.clear();
+    renderApp('/login');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
+    expect(await screen.findByText('Please enter a valid email address')).toBeTruthy();
+    expect(screen.getByText('Password is required')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'bad-address' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'example' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
+    expect(await screen.findByText('Please enter a valid email address')).toBeTruthy();
+    expect(vi.mocked(api.post).mock.calls.filter(([url]) => url === '/auth/login')).toHaveLength(0);
+  });
+
   it('Admin login routes to Admin Dashboard', async () => {
     localStorage.clear();
     renderApp('/login');
