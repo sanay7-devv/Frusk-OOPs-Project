@@ -7,8 +7,8 @@ Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af
 | Measure | Recorded result |
 |---|---:|
 | Handbook cases T01–T26 | 26 passed, 0 failed |
-| Backend tests in seeded jobs | 40 run; 38 passed, 2 seed-only checks skipped in the schema-only job |
-| Frontend tests at this snapshot | 3 passed |
+| Backend tests on this branch | 53 run, 0 failed; 2 seed-only checks skipped in the schema-only job and 0 skipped in seeded jobs |
+| Frontend tests on this branch | 7 passed across 2 files |
 | Seed generator tests | 7 passed |
 | API smoke requests | 40 passed |
 | Postman collection (follow-up) | 71 requests, 149 assertions passed |
@@ -39,6 +39,12 @@ The automated requests below ran against the disposable demo stack on 2026-11-15
 ## Case evidence index
 
 The 26 rows in [test_cases.csv](test_cases.csv) give the scenario, expected and actual result, date and commit. For T01–T04, T08–T09, T11–T15 and T17–T26, inspect the `HandbookIntegrationTest` Surefire XML in the backend test artifact of the [current main run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44458560238). T05–T07 are covered by `PriorityEngineTest` and `EligibilityFilterTest` in that artifact. T10 and T16 are real-HTTP checks in `iitsm-handbook-contracts.json` in the demo-stack artifact. The report uses CI logs and downloadable test outputs as evidence; individual screenshots for each case have not been captured.
+
+## Additional regression coverage on this branch
+
+Five new backend test classes cover tokenizer/TF-IDF similarity, keyword category and intake fallback, SLA risk factors, permission unions and escalation boundaries. The login form validation, status labels and SLA display states add four frontend tests. [Branch CI run 44479334732](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44479334732) recorded 53 backend tests (2 schema-only skips) and 7 frontend tests; the demo-stack job was still running when these figures were written. The existing T01–T26 cases remain part of that backend run.
+
+Further handbook unit-test classes and newer frontend screens still need coverage. The recording-laptop reset, browser script-text display and final video remain unmeasured/manual.
 
 ## Lessons and next checks
 
