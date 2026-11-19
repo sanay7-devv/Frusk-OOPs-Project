@@ -52,18 +52,28 @@ export const SlaChart = ({ data, onBarClick }: { data: SlaComplianceRow[]; onBar
   );
 };
 
-export const PriorityDonut = ({ data, onSliceClick }: { data: LabelCount[]; onSliceClick?: (label: string) => void }) => (
-  <ResponsiveContainer width="100%" height={240}>
-    <PieChart>
-      <Pie data={data} dataKey="count" nameKey="label" innerRadius={60} outerRadius={95} paddingAngle={2} isAnimationActive={false}
-        label={(p: { name?: string; value?: number }) => `${p.name}: ${p.value}`}
-        cursor={onSliceClick ? 'pointer' : undefined}
-        onClick={(d) => onSliceClick?.((d as unknown as LabelCount).label)}>
-        {data.map((d) => <Cell key={d.label} fill={PRIORITY_COLORS[d.label] ?? tokens.outline} stroke="none" />)}
-      </Pie>
-      <Tooltip contentStyle={TOOLTIP_STYLE} />
-    </PieChart>
-  </ResponsiveContainer>
+export const PriorityDonut = ({ data, onSliceClick, center }: {
+  data: LabelCount[]; onSliceClick?: (label: string) => void; center?: { caption: string; value: string };
+}) => (
+  <Box sx={{ position: 'relative' }}>
+    <ResponsiveContainer width="100%" height={240}>
+      <PieChart>
+        <Pie data={data} dataKey="count" nameKey="label" innerRadius={60} outerRadius={95} paddingAngle={2} isAnimationActive={false}
+          label={(p: { name?: string; value?: number }) => `${p.name}: ${p.value}`}
+          cursor={onSliceClick ? 'pointer' : undefined}
+          onClick={(d) => onSliceClick?.((d as unknown as LabelCount).label)}>
+          {data.map((d) => <Cell key={d.label} fill={PRIORITY_COLORS[d.label] ?? tokens.outline} stroke="none" />)}
+        </Pie>
+        <Tooltip contentStyle={TOOLTIP_STYLE} />
+      </PieChart>
+    </ResponsiveContainer>
+    {center && (
+      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{center.caption}</Typography>
+        <Typography sx={{ fontSize: 20, fontWeight: 700, color: tokens.onSurface }}>{center.value}</Typography>
+      </Box>
+    )}
+  </Box>
 );
 
 function HBars<T extends object>({ data, nameKey, valueKey, onBarClick }: {
@@ -88,11 +98,11 @@ function HBars<T extends object>({ data, nameKey, valueKey, onBarClick }: {
 export const CategoryBars = ({ data }: { data: LabelCount[] }) => (
   <HBars data={[...data].sort((a, b) => b.count - a.count).slice(0, 8)} nameKey="label" valueKey="count" />
 );
-export const ServiceBars = ({ data }: { data: ServiceReportRow[] }) => (
-  <HBars data={[...data].sort((a, b) => b.count - a.count)} nameKey="name" valueKey="count" />
+export const ServiceBars = ({ data, onBarClick }: { data: ServiceReportRow[]; onBarClick?: (row: ServiceReportRow) => void }) => (
+  <HBars data={[...data].sort((a, b) => b.count - a.count)} nameKey="name" valueKey="count" onBarClick={onBarClick} />
 );
 
-export const WorkloadChart = ({ data }: { data: WorkloadReportRow[] }) => (
+export const WorkloadChart = ({ data, onBarClick }: { data: WorkloadReportRow[]; onBarClick?: (row: WorkloadReportRow) => void }) => (
   <Box>
     <ResponsiveContainer width="100%" height={Math.max(180, data.length * 52 + 30)}>
       <BarChart data={data} layout="vertical" margin={{ top: 0, right: 32, left: 8, bottom: 0 }}>
@@ -101,7 +111,8 @@ export const WorkloadChart = ({ data }: { data: WorkloadReportRow[] }) => (
         <YAxis type="category" dataKey="name" width={130} {...AXIS} />
         <Tooltip contentStyle={TOOLTIP_STYLE} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="load" name="Current load" fill={CHART_COLORS.bar} isAnimationActive={false}>
+        <Bar dataKey="load" name="Current load" fill={CHART_COLORS.bar} isAnimationActive={false}
+          cursor={onBarClick ? 'pointer' : undefined} onClick={(d) => onBarClick?.(d as unknown as WorkloadReportRow)}>
           <LabelList dataKey="load" position="right" fill={LABEL_FILL} fontSize={12} />
         </Bar>
         <Bar dataKey="maxLoad" name="Capacity" fill={tokens.surfaceContainerHighest} isAnimationActive={false}>

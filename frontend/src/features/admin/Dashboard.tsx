@@ -7,6 +7,7 @@ import { VelocityCard } from './dashboard/VelocityCard';
 import { PriorityCard } from './dashboard/PriorityCard';
 import { CapacityCard } from './dashboard/CapacityCard';
 import { AttentionCard, LiveFeedCard } from './dashboard/LiveCards';
+import { OperationsCard } from './dashboard/OperationsCard';
 import { DeclareDialog } from './dashboard/DeclareDialog';
 
 /** Admin dashboard: every number comes from /dashboard/live or /reports/*. */
@@ -27,10 +28,13 @@ export default function Dashboard() {
         <Grid item xs={12} md={8}><VelocityCard /></Grid>
         <Grid item xs={12} md={4}><PriorityCard /></Grid>
       </Grid>
-      <Grid container spacing={2}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} md={4}><AttentionCard /></Grid>
         <Grid item xs={12} md={4}><CapacityCard /></Grid>
         <Grid item xs={12} md={4}><LiveFeedCard /></Grid>
+      </Grid>
+      <Grid container spacing={2}>
+        <Grid item xs={12}><OperationsCard /></Grid>
       </Grid>
 
       <DeclareDialog open={declareOpen} onClose={() => setDeclareOpen(false)} />
