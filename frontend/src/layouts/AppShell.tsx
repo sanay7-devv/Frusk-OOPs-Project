@@ -183,7 +183,7 @@ export default function AppShell() {
   // Impersonation removed: no backend supports it
 
   const activeWorkspace: Workspace = (workspace && NAV[workspace] ? workspace : workspaces[0] || 'employee');
-  const navItems = NAV[activeWorkspace] || [];
+  const navItems = (NAV[activeWorkspace] || []).filter((i) => !i.permission || !!user?.permissions?.includes(i.permission));
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#090d16', color: '#dfe2ef', position: 'relative' }}>

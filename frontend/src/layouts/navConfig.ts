@@ -1,5 +1,6 @@
 import type { Workspace } from '../auth/AuthContext';
-export const NAV: Record<Workspace, { label: string; to: string }[]> = {
+export interface NavItem { label: string; to: string; permission?: string }
+export const NAV: Record<Workspace, NavItem[]> = {
   employee: [
     { label: 'Home', to: '/employee/home' },
     { label: 'Report incident', to: '/employee/report' },
@@ -25,5 +26,7 @@ export const NAV: Record<Workspace, { label: string; to: string }[]> = {
     { label: 'Categories', to: '/admin/categories' }, { label: 'Config', to: '/admin/config' },
     { label: 'Escalation', to: '/admin/escalation' }, { label: 'Audit log', to: '/admin/audit' },
     { label: 'Reports', to: '/admin/reports' },
+    { label: 'Simulator', to: '/admin/simulator', permission: 'CONFIG_MANAGE' },
+    { label: 'Demo controls', to: '/admin/demo', permission: 'CONFIG_MANAGE' },
   ],
 };
