@@ -599,7 +599,7 @@ export default function TechWorkbench() {
               Back to Queue
             </Button>
             <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>/</Typography>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: tokens.primary }}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', color: tokens.primary }}>
               {incident.code}
             </Typography>
           </Box>
@@ -621,7 +621,7 @@ export default function TechWorkbench() {
             >
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: tokens.primary, animation: 'pulse 1.5s infinite' }} />
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
-                {user?.name || 'Technician'} // Assigned SRE
+                {user?.name || 'Technician'}
               </Typography>
               <IconButton aria-label="Refresh incident" size="small" onClick={handleRefreshAll} sx={{ color: tokens.onSurfaceVariant, p: 0.2 }}>
                 <RefreshIcon sx={{ fontSize: 14 }} />
@@ -790,7 +790,7 @@ export default function TechWorkbench() {
                 <span>•</span>
                 <span>Assignee: <strong>{incident.assignee?.name || 'Unassigned'}</strong></span>
                 <span>•</span>
-                <span>Impact: <strong>{incident.affectedUsers} users affected</strong></span>
+                <span>Impact: <strong>{incident.affectedUsers} {incident.affectedUsers === 1 ? 'user' : 'users'} affected</strong></span>
                 <span>•</span>
                 <span>Opened: <strong>{new Date(incident.createdAt).toLocaleString()}</strong></span>
                 {incident.acknowledgedAt && (
@@ -814,7 +814,7 @@ export default function TechWorkbench() {
                 {incident.priorityBreakdown && (
                   <>
                     <span>•</span>
-                    <span>Calculated Score: <strong>{incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})</strong></span>
+                    <span>Priority score: <strong>{incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})</strong></span>
                   </>
                 )}
               </Box>

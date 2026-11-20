@@ -175,7 +175,7 @@ export default function WorkloadInsights({ deadlines, skills }: { deadlines: Dea
                     <Button
                       size="small"
                       onClick={() => navigate(`/tech/incidents/${d.incidentId}`)}
-                      sx={{ textTransform: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, p: 0, minWidth: 0 }}
+                      sx={{ textTransform: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, p: 0, minWidth: 0, whiteSpace: 'nowrap' }}
                     >
                       {d.code}
                     </Button>
