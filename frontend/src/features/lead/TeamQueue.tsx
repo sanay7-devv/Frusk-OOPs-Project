@@ -74,6 +74,14 @@ const SORTS = [
 ];
 const SLA_STATES: SlaState[] = ['OK', 'WARNING', 'AT_RISK', 'VIOLATED', 'PAUSED'];
 
+/** "INC-1 (90%)" or "INC-1 (90%) and 4 more" so the banner never lists every code. */
+function dupText(hints: { code: string; similarity: number }[]): string {
+  const [first, ...rest] = hints;
+  if (!first) return '';
+  const head = `${first.code} (${Math.round(first.similarity * 100)}%)`;
+  return rest.length ? `${head} and ${rest.length} more` : head;
+}
+
 export default function TeamQueue() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -291,11 +299,11 @@ export default function TeamQueue() {
               color: COLORS.onSurfaceVariant,
             }}
           >
-            Team Lead Workspace
+            Team lead
           </Typography>
           <ChevronRightIcon sx={{ fontSize: 15, color: COLORS.onSurfaceVariant }} />
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface }}>
-            Unassigned Triage Queue
+            Unassigned incidents
           </Typography>
         </Box>
 
@@ -320,7 +328,7 @@ export default function TeamQueue() {
                   letterSpacing: '-0.02em',
                 }}
               >
-                Team Triage &amp; Explainable Allocation
+                Team queue
               </Typography>
               <Chip
                 size="small"
@@ -412,7 +420,7 @@ export default function TeamQueue() {
                       boxShadow: `0 4px 14px ${alpha(tokens.primary, 0.35)}`,
                     }}
                   >
-                    Auto-Assign Ticket
+                    Auto-assign
                   </Button>
                 </span>
               </Tooltip>
@@ -592,9 +600,9 @@ export default function TeamQueue() {
                       },
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: COLORS.secondary }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minWidth: 0, '& > *': { whiteSpace: 'nowrap' } }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>
                           {inc.code}
                         </Typography>
                         <PriorityBadge priority={inc.priority} />
@@ -615,7 +623,7 @@ export default function TeamQueue() {
                           />
                         )}
                       </Box>
-                      <Box sx={{ textAlign: 'right' }}>
+                      <Box sx={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
                         <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                           {inc.responseDue ? 'Response due' : 'Resolution due'}
                         </Typography>
@@ -723,16 +731,16 @@ export default function TeamQueue() {
                   border: `1px solid ${COLORS.border}`,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 800, color: COLORS.secondary }}>
+                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>
                       {incidentDetail.code}
                     </Typography>
                     <PriorityBadge priority={incidentDetail.priority} />
                     <StatusChip status={incidentDetail.status} />
                     {incidentDetail.major && <Chip label="MAJOR" size="small" sx={{ height: 20, fontSize: 12, fontWeight: 800, color: tokens.tertiaryLight }} />}
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', '& .MuiButton-root': { whiteSpace: 'nowrap' } }}>
                     <ActionButtons
                       allowed={incidentDetail.allowedActions}
                       exclude={TEAM_EXCLUDED}
@@ -748,7 +756,7 @@ export default function TeamQueue() {
                           onClick={() => navigate(`${problemBase}/${incidentDetail.problemId}`)}
                           sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
                         >
-                          Problem #{incidentDetail.problemId}: resolve the whole problem
+                          Problem #{incidentDetail.problemId}
                         </Button>
                       )
                     ) : (
@@ -775,7 +783,7 @@ export default function TeamQueue() {
                 </Box>
                 {duplicateHints.length > 0 && (
                   <Alert severity="warning" sx={{ mb: 1.5, fontSize: 12.5 }}>
-                    Possible duplicate of {duplicateHints.map((d) => `${d.code} (${Math.round(d.similarity * 100)}%)`).join(', ')}.
+                    Possible duplicate of {dupText(duplicateHints)}.
                   </Alert>
                 )}
 

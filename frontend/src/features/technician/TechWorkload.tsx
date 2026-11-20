@@ -210,10 +210,10 @@ export default function TechWorkload() {
                 mb: 0.5,
               }}
             >
-              Technician Workload, Capacity &amp; SLA Performance
+              My workload
             </Typography>
             <Typography sx={{ fontSize: 13.5, color: tokens.onSurfaceVariant, maxWidth: 780 }}>
-              Real-time concurrency quotas, shift throughput velocity, and ITIL SLA delivery compliance.
+              Your capacity, resolved work and SLA results.
             </Typography>
           </Box>
 
@@ -290,6 +290,8 @@ export default function TechWorkload() {
                 onClick={handleToggleAvailability}
                 sx={{
                   fontSize: 12,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   py: 0.2,
                   px: 1,
                   textTransform: 'none',
@@ -440,9 +442,6 @@ export default function TechWorkload() {
               <TaskAltIcon sx={{ fontSize: 32, color: tokens.primary }} />
             </Box>
             <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.primary }}>
-                Live Queue Tickets
-              </Typography>
               <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Currently assigned to you
               </Typography>
@@ -486,9 +485,6 @@ export default function TechWorkload() {
               <VerifiedIcon sx={{ fontSize: 32, color: tokens.success }} />
             </Box>
             <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.success }}>
-                Completed Resolutions
-              </Typography>
               <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Resolved tickets this calendar week
               </Typography>
@@ -532,9 +528,6 @@ export default function TechWorkload() {
               <TimerIcon sx={{ fontSize: 32, color: tokens.secondary }} />
             </Box>
             <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.secondary }}>
-                Next Commitments
-              </Typography>
               <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Upcoming SLA commitment deadlines
               </Typography>
@@ -602,7 +595,7 @@ export default function TechWorkload() {
                 {deadlines.map((d: Deadline) => {
                   return (
                     <tr key={`${d.incidentId}-${d.type}`} style={{ borderBottom: `1px solid ${tokens.outlineVariant}` }}>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 700, color: tokens.secondary }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 700, whiteSpace: 'nowrap', color: tokens.secondary }}>
                         <span
                           style={{ cursor: 'pointer', textDecoration: 'underline' }}
                           onClick={() => navigate(`/tech/incidents/${d.incidentId}`)}
