@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box, Chip, Grid, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { tokens } from '../../theme/theme';
@@ -9,6 +10,8 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import GraphCanvas from './servicegraph/GraphCanvas';
 import MajorIncidentPanel, { NO_PATH, type CausePath } from './servicegraph/MajorIncidentPanel';
 import DirectorBar from './DirectorBar';
+import ServiceGraphMinimap from '../../components/ServiceGraphMinimap';
+import LiveEventPulse from '../../components/LiveEventPulse';
 import Inspector from './servicegraph/Inspector';
 import DependenciesDialog from './servicegraph/DependenciesDialog';
 import { computeLayout } from './servicegraph/layout';
@@ -29,6 +32,7 @@ function Kpi({ label, value, color }: { label: string; value: number; color?: st
 }
 
 export default function ServiceGraph() {
+  const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [healthFilter, setHealthFilter] = useState<'ALL' | ServiceHealth>('ALL');
   const [search, setSearch] = useState('');
@@ -144,6 +148,10 @@ export default function ServiceGraph() {
           />
         </Grid>
         <Grid item xs={12} md={4} lg={3}>
+          <Stack spacing={2} sx={{ mb: 2 }}>
+            <ServiceGraphMinimap selectedId={selectedId} onSelect={setSelectedId} />
+            <LiveEventPulse max={5} onSelect={(id) => navigate(`/admin/incidents/${id}`)} />
+          </Stack>
           <Inspector
             node={selectedNode}
             health={selectedId !== null ? health.get(selectedId) : undefined}
