@@ -73,7 +73,7 @@ import PriorityBadge from '../../components/PriorityBadge';
 import SlaCountdown from '../../components/SlaCountdown';
 import { tokens, slaStateColor } from '../../theme/theme';
 import type { IncidentSummary, SavedFilterView } from '../../api/types';
-import { alpha, BRAND_GRADIENT, BRAND_GRADIENT_REVERSE, CAPACITY_WARN_PERCENT } from './staffStyle';
+import { alpha, BRAND_GRADIENT, BRAND_GRADIENT_REVERSE } from './staffStyle';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA map.
 
@@ -467,6 +467,7 @@ export default function TechQueue() {
   const activeLoad = workload?.load ?? queue.length;
   const maxQuota = workload?.maxLoad ?? 10;
   const capacityPercent = Math.min(100, Math.round((activeLoad / maxQuota) * 100));
+  const capacityWarnAt = workload?.capacityWarnPercent ?? Infinity;
 
   return (
     <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 6 }}>
@@ -648,8 +649,8 @@ export default function TechQueue() {
                       }}
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.secondary, fontWeight: 700, fontSize: 12 }}>
-                    {capacityPercent >= CAPACITY_WARN_PERCENT && <WarningIcon sx={{ fontSize: 15 }} />}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.secondary, fontWeight: 700, fontSize: 12 }}>
+                    {capacityPercent >= capacityWarnAt && <WarningIcon sx={{ fontSize: 15 }} />}
                     <span>{activeLoad} of {maxQuota} weighted load ({capacityPercent}% Capacity)</span>
                   </Box>
                 </Box>
@@ -670,7 +671,7 @@ export default function TechQueue() {
                   bgcolor: tokens.surfaceContainerHighest,
                   mb: 1,
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.primary,
+                    bgcolor: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.primary,
                     borderRadius: 1,
                   },
                 }}
@@ -678,8 +679,8 @@ export default function TechQueue() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: tokens.onSurfaceVariant }}>
                 <span>Active tickets: {queue.length}</span>
                 <span>Resolved this week: {workload?.resolvedThisWeek ?? 0}</span>
-                <span style={{ color: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.textDisabled }}>
-                  {capacityPercent >= CAPACITY_WARN_PERCENT ? 'Near Capacity' : 'Available Capacity'}
+                <span style={{ color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.textDisabled }}>
+                  {capacityPercent >= capacityWarnAt ? 'Near Capacity' : 'Available Capacity'}
                 </span>
               </Box>
             </Box>

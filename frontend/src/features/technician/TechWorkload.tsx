@@ -39,7 +39,7 @@ import {
   type TechnicianView,
   type Deadline,
 } from '../../api/technicians';
-import { alpha, CAPACITY_WARN_PERCENT } from './staffStyle';
+import { alpha } from './staffStyle';
 import QueueRowActions from './QueueRowActions';
 import { useProblemBasePath } from '../problems/problemAccess';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
@@ -80,6 +80,7 @@ export default function TechWorkload() {
   const activeLoad = workload?.load ?? 0;
   const maxQuota = workload?.maxLoad ?? 10;
   const capacityPercent = Math.min(100, Math.round((activeLoad / maxQuota) * 100));
+  const capacityWarnAt = workload?.capacityWarnPercent ?? Infinity;
   const deadlines = workload?.upcomingDeadlines || [];
   // Newest known value wins: our own PUT response, then the technician list, then the sign-in profile.
   const [availabilityOverride, setAvailabilityOverride] = useState<TechnicianView['availability'] | null>(null);
@@ -377,7 +378,7 @@ export default function TechWorkload() {
               </Box>
 
               <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: tokens.surfaceContainerLow, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 800, color: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.primary }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.primary }}>
                   {capacityPercent}%
                 </Typography>
               </Box>
@@ -386,10 +387,10 @@ export default function TechWorkload() {
             <Box sx={{ pt: 2 }}>
               <Chip
                 size="small"
-                label={capacityPercent >= CAPACITY_WARN_PERCENT ? 'Near Capacity' : 'Capacity Available'}
+                label={capacityPercent >= capacityWarnAt ? 'Near Capacity' : 'Capacity Available'}
                 sx={{
-                  bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? alpha(tokens.danger, 0.15) : alpha(tokens.success, 0.15),
-                  color: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.success,
+                  bgcolor: capacityPercent >= capacityWarnAt ? alpha(tokens.danger, 0.15) : alpha(tokens.success, 0.15),
+                  color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.success,
                   fontWeight: 700,
                   fontSize: 12,
                   height: 22,

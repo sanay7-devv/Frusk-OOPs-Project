@@ -13,6 +13,8 @@ export interface WorkloadView {
   load: number;
   maxLoad: number;
   activeIncidents: number;
+  /** From this percent of maxLoad the capacity bar warns (app_config, DEC-121). */
+  capacityWarnPercent?: number;
   resolvedThisWeek: number;
   upcomingDeadlines: Deadline[];
 }

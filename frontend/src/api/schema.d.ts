@@ -2303,6 +2303,7 @@ export interface components {
             /** Format: int32 */
             reopenCount?: number;
             reporter?: components["schemas"]["Ref"];
+            reporterContact?: components["schemas"]["ReporterContact"] | null;
             resolution?: components["schemas"]["ResolutionView"];
             /** Format: date-time */
             resolutionDue?: string;
@@ -2311,6 +2312,7 @@ export interface components {
             /** Format: date-time */
             responseDue?: string;
             service?: components["schemas"]["Ref"];
+            slaCalendar?: components["schemas"]["SlaCalendarView"] | null;
             /** @enum {string} */
             slaState?: "OK" | "WARNING" | "AT_RISK" | "VIOLATED" | "PAUSED" | "MET";
             /** @enum {string} */
@@ -2696,6 +2698,12 @@ export interface components {
             /** Format: int64 */
             total?: number;
         };
+        /** @description The reporter's contact details. Only staff on the incident (assignee, or users who see all incidents) get them; null for everyone else (DEC-121). */
+        ReporterContact: {
+            department?: string | null;
+            email?: string;
+            location?: string | null;
+        };
         RequestInfoRequest: {
             message: string;
         };
@@ -2960,6 +2968,19 @@ export interface components {
             /** Format: int64 */
             id?: number;
             name?: string;
+        };
+        /** @description How the incident's SLA minutes are counted. For BUSINESS_HOURS the company calendar from app_config is included; for ALWAYS the other fields are null (DEC-121). */
+        SlaCalendarView: {
+            /** @example 18:00 */
+            close?: string | null;
+            /** @example MON,TUE,WED,THU,FRI */
+            days?: string | null;
+            /** @example 09:00 */
+            open?: string | null;
+            /** @enum {string} */
+            type?: "ALWAYS" | "BUSINESS_HOURS";
+            /** @example Asia/Kolkata */
+            zone?: string | null;
         };
         SlaComplianceRow: {
             /** Format: double */
@@ -3249,6 +3270,8 @@ export interface components {
         WorkloadView: {
             /** Format: int32 */
             activeIncidents?: number;
+            /** @description From this percent of maxLoad the capacity bar warns (app_config workload.capacity.warn.percent, default 80, DEC-121). */
+            capacityWarnPercent?: number;
             /** Format: int32 */
             load?: number;
             /** Format: int32 */

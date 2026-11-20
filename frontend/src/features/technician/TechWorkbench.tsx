@@ -62,7 +62,6 @@ import ActionButtons from '../../components/ActionButtons';
 import { isStaleDataError, fieldErrorFor } from './apiErrors';
 import WhyAssignee from '../lead/shared/WhyAssignee';
 import SlaClockPair from '../lead/shared/SlaClockPair';
-import { getDirectoryUser } from '../../api/adminDirectory';
 import SlaCountdown from '../../components/SlaCountdown';
 import PriorityExplainer from '../../components/PriorityExplainer';
 import { useAuth } from '../../auth/AuthContext';
@@ -83,7 +82,7 @@ import {
 } from '../../api/incidents';
 import { resolveProblem } from '../../api/problems';
 import { getServiceImpact } from '../../api/services';
-import type { CommentView, AuditEntry, AttachmentView, RecommendationView, IncidentAction } from '../../api/types';
+import type { CommentView, AuditEntry, AttachmentView, RecommendationView, IncidentAction, IncidentDetail } from '../../api/types';
 import {
   acknowledgeIncident,
   startIncident,
@@ -130,6 +129,15 @@ const RIBBON_ICONS: Partial<Record<IncidentAction, ReactNode>> = {
   CLOSE: <DoneAllIcon />,
   RESOLVE: <DoneAllIcon />,
 };
+
+/** One-line description of the calendar the SLA clocks run on. */
+function slaCalendarNote(c: IncidentDetail['slaCalendar']): string {
+  if (!c) return '';
+  if (c.type === 'ALWAYS') return 'SLA calendar: 24/7';
+  const days = (c.days ?? '').split(',').filter(Boolean);
+  const range = days.length > 1 ? `${days[0]}-${days[days.length - 1]}` : days[0] ?? '';
+  return `Business hours: ${[range, c.open && c.close ? `${c.open}-${c.close}` : '', c.zone ?? ''].filter(Boolean).join(' ')}`;
+}
 
 export default function TechWorkbench() {
   const { id } = useParams<{ id: string }>();
@@ -246,15 +254,7 @@ export default function TechWorkbench() {
     enabled: serviceId != null,
   });
 
-  // 10. Reporter contact and department: only GET /admin/users/{id} has them and it needs USER_MANAGE.
-  const canSeeContacts = !!user?.permissions?.includes('USER_MANAGE');
-  const reporterId = incident?.reporter?.id;
-  const { data: reporterContact, isError: contactError, error: contactErr, refetch: refetchContact } = useQuery({
-    queryKey: ['incident-reporter-contact', reporterId],
-    queryFn: () => getDirectoryUser(reporterId as number),
-    enabled: canSeeContacts && reporterId != null,
-    staleTime: 5 * 60_000,
-  });
+  const reporterContact = incident?.reporterContact ?? null;
 
   const [resolveWholeProblem, setResolveWholeProblem] = useState(false);
   const allowedActions = incident?.allowedActions || [];
@@ -834,6 +834,7 @@ export default function TechWorkbench() {
               }}
             >
               <SlaClockPair incident={incident} />
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{slaCalendarNote(incident.slaCalendar)}</Typography>
             </Box>
           </Box>
 
@@ -1355,7 +1356,7 @@ export default function TechWorkbench() {
               </Box>
             </Paper>
 
-            {/* Reporter: name from the incident; email, department and location need USER_MANAGE (GET /admin/users/{id}) */}
+            {/* Reporter: contact comes with the incident for staff (null for non-staff) */}
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
               <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
                 Reporter
@@ -1382,12 +1383,9 @@ export default function TechWorkbench() {
                   </>
                 )}
               </Box>
-              {contactError && (
-                <ErrorState message={`Reporter contact did not load: ${apiErrorMessage(contactErr)}`} onRetry={() => refetchContact()} />
-              )}
-              {!canSeeContacts && (
+              {!reporterContact && (
                 <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 1 }}>
-                  Email and department are shown to administrators only: the incident API returns the reporter&apos;s id and name, and GET /admin/users/{'{id}'} needs the USER_MANAGE permission. Use the comment thread to reach them.
+                  No contact details are available for this reporter. Use the comment thread to reach them.
                 </Typography>
               )}
             </Paper>

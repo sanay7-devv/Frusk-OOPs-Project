@@ -142,6 +142,10 @@ export interface IncidentDetail extends IncidentSummary {
   feedback: { rating: number; comment: string; createdAt?: string } | null; allowedActions: IncidentAction[];
   escalationPreview?: EscalationPreview | null;
   version?: number;
+  /** Email, department and location of the reporter; null for non-staff callers. */
+  reporterContact?: { email: string; department: string | null; location: string | null } | null;
+  /** Calendar the SLA clocks run on; `days` is a comma list like MON,TUE,WED. */
+  slaCalendar?: { type: 'ALWAYS' | 'BUSINESS_HOURS'; zone?: string | null; open?: string | null; close?: string | null; days?: string | null } | null;
 }
 export interface Page<T> { items: T[]; page: number; size: number; totalItems: number; totalPages: number }
 export interface ApiError {
