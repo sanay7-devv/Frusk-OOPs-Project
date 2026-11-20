@@ -16,6 +16,8 @@ import {
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
 import { apiErrorMessage } from '../../../utils/errors';
 import { COLORS, MONO } from './ui';
+import { alpha } from '../../technician/staffStyle';
+import { tokens } from '../../../theme/theme';
 
 const riskColor = { LOW: COLORS.success, MEDIUM: COLORS.warning, HIGH: COLORS.error } as const;
 
@@ -46,7 +48,7 @@ export function SlaRiskCard({ incidentId }: { incidentId: number }) {
         <Chip
           size="small"
           label={`${data.level} RISK`}
-          sx={{ fontFamily: MONO, fontWeight: 800, fontSize: 12, color: riskColor[data.level], bgcolor: 'rgba(255,255,255,0.05)' }}
+          sx={{ fontFamily: MONO, fontWeight: 800, fontSize: 12, color: riskColor[data.level], bgcolor: alpha(tokens.onSurface, 0.05) }}
         />
         <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>
           score {Math.round(data.score * 100) / 100} / threshold {data.threshold}
@@ -56,7 +58,7 @@ export function SlaRiskCard({ incidentId }: { incidentId: number }) {
       <LinearProgress
         variant="determinate"
         value={Math.min(100, Math.max(0, data.score * 100))}
-        sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.08)', '& .MuiLinearProgress-bar': { bgcolor: riskColor[data.level] } }}
+        sx={{ height: 6, borderRadius: 3, bgcolor: alpha(tokens.onSurface, 0.08), '& .MuiLinearProgress-bar': { bgcolor: riskColor[data.level] } }}
       />
       {data.factors.map((f) => (
         <Typography key={f.name} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.75 }}>

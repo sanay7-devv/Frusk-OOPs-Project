@@ -15,9 +15,9 @@ export const COLORS = {
   primary: tokens.primary,
   secondary: tokens.secondary,
   // Status colours are not in `tokens`; they match the MUI palette in theme.ts.
-  error: '#f43f5e',
-  warning: '#f59e0b',
-  success: '#10b981',
+  error: tokens.danger,
+  warning: tokens.warning,
+  success: tokens.success,
 } as const;
 
 export const MONO = 'JetBrains Mono, monospace';
@@ -53,6 +53,12 @@ export const fmtDateTime = (iso: string | null | undefined): string =>
 export function invalidateIncidentCaches(qc: QueryClient) {
   const keys = [
     'incidents',
+    'incident-detail',
+    'incident-history',
+    'incident-comments',
+    'incident-attachments',
+    'incident-recommendations',
+    'incident-service-impact',
     'lead-team-queue',
     'lead-escalated-incidents',
     'lead-escalated-detail',
@@ -92,3 +98,9 @@ export const STRATEGY_INFO: Record<string, { label: string; text: string }> = {
     text: 'Sends higher-priority incidents to more experienced technicians and lower-priority ones to less experienced ones.',
   },
 };
+
+/** Internal-note text saved when a lead assigns someone other than the engine's top candidate (the assign API has no reason field). */
+export function overrideAssignNote(a: { name: string; rank: number; score: number; topName: string | null; topScore: number | null; reason: string }): string {
+  const top = a.topName ? `${a.topName}${a.topScore != null ? ` (${a.topScore}%)` : ''}` : 'the top match';
+  return `Assigned to ${a.name} (rank ${a.rank}, ${a.score}%) instead of ${top}, the engine's first choice. Reason: ${a.reason}`;
+}
