@@ -25,6 +25,8 @@ import { errorMessage } from '../../utils/errors';
 import { passwordRule } from '../../utils/validation';
 import logoIcon from '../../assets/logo.png';
 
+import { tokens } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 const schema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Max 100 characters'),
@@ -93,7 +95,7 @@ export default function Register() {
       px={2}
       py={4}
       sx={{
-        bgcolor: '#090d16',
+        bgcolor: tokens.background,
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -104,7 +106,7 @@ export default function Register() {
           width: '500px',
           height: '500px',
           borderRadius: '50%',
-          bgcolor: 'rgba(99, 102, 241, 0.1)',
+          bgcolor: alpha(tokens.primary, 0.1),
           filter: 'blur(130px)',
           pointerEvents: 'none',
         },
@@ -116,7 +118,7 @@ export default function Register() {
           width: '500px',
           height: '500px',
           borderRadius: '50%',
-          bgcolor: 'rgba(6, 182, 212, 0.08)',
+          bgcolor: alpha(tokens.secondary, 0.08),
           filter: 'blur(130px)',
           pointerEvents: 'none',
         },
@@ -129,10 +131,10 @@ export default function Register() {
           width: '100%',
           maxWidth: 480,
           borderRadius: '16px',
-          bgcolor: 'rgba(20, 24, 36, 0.85)',
+          bgcolor: alpha(tokens.paper, 0.85),
           backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.7), 0 0 24px rgba(99, 102, 241, 0.12)',
+          border: `1px solid ${tokens.outlineVariant}`,
+          boxShadow: `0 24px 64px ${alpha(tokens.black, 0.7)}, 0 0 24px ${alpha(tokens.primary, 0.12)}`,
           position: 'relative',
           zIndex: 1,
         }}
@@ -143,24 +145,24 @@ export default function Register() {
               width: 58,
               height: 58,
               borderRadius: '14px',
-              bgcolor: '#141824',
-              border: '1px solid rgba(99, 102, 241, 0.4)',
+              bgcolor: tokens.paper,
+              border: `1px solid ${alpha(tokens.primary, 0.4)}`,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               mb: 1.5,
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)',
+              boxShadow: `0 0 20px ${alpha(tokens.primary, 0.3)}`,
               overflow: 'hidden',
             }}
           >
             <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 46, height: 46, objectFit: 'contain' }} />
           </Box>
           <Typography
-            variant="h5"
+            variant="h5" component="h1"
             sx={{
               fontFamily: 'Sora, sans-serif',
               fontWeight: 700,
-              color: '#ffffff',
+              color: tokens.white,
               letterSpacing: '-0.02em',
               mb: 0.5,
             }}
@@ -170,7 +172,7 @@ export default function Register() {
           <Typography
             variant="body2"
             sx={{
-              color: '#94a3b8',
+              color: tokens.onSurfaceVariant,
               fontFamily: 'Geist, sans-serif',
               fontSize: 13,
             }}
@@ -219,11 +221,11 @@ export default function Register() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
+                    <IconButton aria-label="Toggle password visibility"
                       size="small"
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
-                      sx={{ color: '#94a3b8' }}
+                      sx={{ color: tokens.onSurfaceVariant }}
                     >
                       {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                     </IconButton>
@@ -245,9 +247,9 @@ export default function Register() {
               <Alert
                 severity="error"
                 sx={{
-                  bgcolor: 'rgba(244, 63, 94, 0.12)',
-                  color: '#ffdad6',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  bgcolor: alpha(tokens.danger, 0.12),
+                  color: tokens.errorPale,
+                  border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                   fontSize: 13,
                 }}
               >
@@ -264,12 +266,12 @@ export default function Register() {
                 py: 1.3,
                 fontWeight: 700,
                 fontSize: 14,
-                background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                color: '#ffffff',
-                boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+                background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                color: tokens.white,
+                boxShadow: `0 0 20px ${alpha(tokens.primary, 0.4)}`,
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
-                  boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+                  background: `linear-gradient(135deg, ${tokens.primaryStrong} 0%, ${tokens.secondaryStrong} 100%)`,
+                  boxShadow: `0 0 28px ${alpha(tokens.secondary, 0.55)}`,
                 },
               }}
               disabled={isSubmitting}
@@ -280,14 +282,14 @@ export default function Register() {
         </form>
 
         <Box mt={3} textAlign="center">
-          <Typography sx={{ color: '#94a3b8', fontSize: 13, fontFamily: 'Geist, sans-serif' }}>
+          <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13, fontFamily: 'Geist, sans-serif' }}>
             Already have an account?{' '}
             <Link
               component="button"
               type="button"
               sx={{
                 fontWeight: 700,
-                color: '#4cd7f6',
+                color: tokens.secondaryLight,
                 textDecoration: 'none',
                 fontFamily: 'Geist, sans-serif',
                 fontSize: 13,
@@ -301,7 +303,7 @@ export default function Register() {
           <Link
             component={RouterLink}
             to="/forgot-password"
-            sx={{ display: 'inline-block', mt: 1, fontSize: 13, color: '#4cd7f6', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+            sx={{ display: 'inline-block', mt: 1, fontSize: 13, color: tokens.secondaryLight, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
           >
             Forgot password?
           </Link>

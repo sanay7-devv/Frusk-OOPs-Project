@@ -22,6 +22,7 @@ import { deleteDevice, listDevices, registerDevice, type DeviceView } from '../.
 import { tokens } from '../../theme/theme';
 import { apiErrorMessage } from '../../utils/errors';
 
+import { alpha } from '@mui/material/styles';
 const PLATFORMS = ['WEB', 'ANDROID', 'IOS'] as const;
 const MIN_TOKEN = 8; // RegisterDeviceRequest: @Size(min = 8, max = 255)
 const MAX_TOKEN = 255;
@@ -141,7 +142,7 @@ export default function PushDevicesDialog({ open, onClose }: { open: boolean; on
                     gap: 1.5,
                     p: 1.2,
                     borderRadius: '10px',
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
+                    bgcolor: alpha(tokens.white, 0.03),
                     border: `1px solid ${tokens.outlineVariant}`,
                   }}
                 >

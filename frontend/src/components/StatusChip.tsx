@@ -1,7 +1,8 @@
 import { Box } from '@mui/material';
-import { statusColor } from '../theme/theme';
+import { statusColor, tokens } from '../theme/theme';
 import type { IncidentStatus } from '../api/types';
 
+import { alpha } from '@mui/material/styles';
 const FRIENDLY_LABELS: Record<string, string> = {
   NEW: 'Submitted',
   CLASSIFIED: 'Triaged',
@@ -26,7 +27,7 @@ export default function StatusChip({
   friendly?: boolean;
 }) {
   const isWithdrawn = status === 'CLOSED' && closureReason === 'WITHDRAWN';
-  const color = isWithdrawn ? '#64748b' : (statusColor[status] || '#94a3b8');
+  const color = isWithdrawn ? tokens.textDisabled : (statusColor[status] || tokens.onSurfaceVariant);
   const reopened = status === 'REOPENED';
   const rawKey = isWithdrawn ? 'WITHDRAWN' : status;
   const label = friendly ? (FRIENDLY_LABELS[rawKey] || status.replace(/_/g, ' ')) : (isWithdrawn ? 'WITHDRAWN' : status.replace(/_/g, ' '));
@@ -41,8 +42,8 @@ export default function StatusChip({
         px: 1.2,
         py: 0.3,
         borderRadius: '9999px',
-        bgcolor: reopened ? 'rgba(244, 63, 94, 0.15)' : `${color}18`,
-        border: `1px solid ${reopened ? '#f43f5e' : `${color}40`}`,
+        bgcolor: reopened ? alpha(tokens.danger, 0.15) : `${color}18`,
+        border: `1px solid ${reopened ? '${tokens.danger}' : `${color}40`}`,
         boxShadow: `0 0 8px ${color}15`,
         verticalAlign: 'middle',
       }}

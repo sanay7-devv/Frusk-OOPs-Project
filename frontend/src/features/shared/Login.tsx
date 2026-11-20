@@ -28,6 +28,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { tokens } from '../../theme/theme';
 import logoIcon from '../../assets/logo.png';
 
+import { alpha } from '@mui/material/styles';
 declare global {
   interface Window {
     google?: any;
@@ -172,7 +173,7 @@ export default function Login() {
           width: '500px',
           height: '500px',
           borderRadius: '50%',
-          bgcolor: 'rgba(99, 102, 241, 0.1)',
+          bgcolor: alpha(tokens.primary, 0.1),
           filter: 'blur(130px)',
           pointerEvents: 'none',
         },
@@ -184,7 +185,7 @@ export default function Login() {
           width: '500px',
           height: '500px',
           borderRadius: '50%',
-          bgcolor: 'rgba(6, 182, 212, 0.08)',
+          bgcolor: alpha(tokens.secondary, 0.08),
           filter: 'blur(130px)',
           pointerEvents: 'none',
         },
@@ -197,10 +198,10 @@ export default function Login() {
           width: '100%',
           maxWidth: 480,
           borderRadius: '16px',
-          bgcolor: 'rgba(20, 24, 36, 0.85)',
+          bgcolor: alpha(tokens.paper, 0.85),
           backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.7), 0 0 24px rgba(99, 102, 241, 0.12)',
+          border: `1px solid ${tokens.outlineVariant}`,
+          boxShadow: `0 24px 64px ${alpha(tokens.black, 0.7)}, 0 0 24px ${alpha(tokens.primary, 0.12)}`,
           position: 'relative',
           zIndex: 1,
         }}
@@ -213,12 +214,12 @@ export default function Login() {
               height: 60,
               borderRadius: '14px',
               bgcolor: tokens.surfaceContainer,
-              border: '1px solid rgba(99, 102, 241, 0.4)',
+              border: `1px solid ${alpha(tokens.primary, 0.4)}`,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               mb: 1.5,
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)',
+              boxShadow: `0 0 20px ${alpha(tokens.primary, 0.3)}`,
               overflow: 'hidden',
             }}
           >
@@ -230,11 +231,11 @@ export default function Login() {
             />
           </Box>
           <Typography
-            variant="h5"
+            variant="h5" component="h1"
             sx={{
               fontFamily: 'Sora, sans-serif',
               fontWeight: 700,
-              color: '#ffffff',
+              color: tokens.white,
               letterSpacing: '-0.02em',
               mb: 0.5,
             }}
@@ -258,9 +259,9 @@ export default function Login() {
             severity="success"
             sx={{
               mb: 2.5,
-              bgcolor: 'rgba(16, 185, 129, 0.12)',
-              color: '#6ee7b7',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+              bgcolor: alpha(tokens.success, 0.12),
+              color: tokens.successLight,
+              border: `1px solid ${alpha(tokens.success, 0.3)}`,
               fontFamily: 'Geist, sans-serif',
               fontSize: 13,
             }}
@@ -311,7 +312,7 @@ export default function Login() {
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
+                  <IconButton aria-label="Toggle password visibility"
                     size="small"
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
@@ -354,9 +355,9 @@ export default function Login() {
               severity="error"
               sx={{
                 mt: 2,
-                bgcolor: 'rgba(244, 63, 94, 0.12)',
-                color: '#ffdad6',
-                border: '1px solid rgba(244, 63, 94, 0.3)',
+                bgcolor: alpha(tokens.danger, 0.12),
+                color: tokens.errorPale,
+                border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                 fontSize: 13,
               }}
             >
@@ -374,12 +375,12 @@ export default function Login() {
               py: 1.3,
               fontWeight: 700,
               fontSize: 14,
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
+              boxShadow: `0 0 20px ${alpha(tokens.primary, 0.4)}`,
               '&:hover': {
-                background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
-                boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+                background: `linear-gradient(135deg, ${tokens.primaryStrong} 0%, ${tokens.secondaryStrong} 100%)`,
+                boxShadow: `0 0 28px ${alpha(tokens.secondary, 0.55)}`,
               },
             }}
             disabled={isSubmitting || (needCode && totp.length !== 6)}
@@ -391,7 +392,7 @@ export default function Login() {
         {/* Google OAuth 2.0 Sign-In */}
         {hasGoogleAuth && (
           <>
-            <Divider sx={{ my: 2.5, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+            <Divider sx={{ my: 2.5, borderColor: tokens.outlineVariant }}>
               <Typography
                 sx={{
                   fontFamily: 'JetBrains Mono, monospace',
@@ -434,8 +435,8 @@ export default function Login() {
                   mt: 1.5,
                   p: 1.8,
                   textAlign: 'left',
-                  bgcolor: 'rgba(10, 14, 23, 0.9)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  bgcolor: alpha(tokens.surfaceDim, 0.9),
+                  border: `1px solid ${tokens.outlineVariant}`,
                   borderRadius: '10px',
                 }}
               >
@@ -461,12 +462,12 @@ export default function Login() {
                         p: 0.8,
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        bgcolor: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.04)',
+                        bgcolor: alpha(tokens.white, 0.02),
+                        border: `1px solid ${tokens.hover}`,
                         transition: 'all 0.15s',
                         '&:hover': {
-                          bgcolor: 'rgba(99, 102, 241, 0.12)',
-                          borderColor: 'rgba(99, 102, 241, 0.3)',
+                          bgcolor: alpha(tokens.primary, 0.12),
+                          borderColor: alpha(tokens.primary, 0.3),
                         },
                       }}
                     >

@@ -2,22 +2,24 @@ import { Alert, Button, Skeleton, Stack, Typography, Box } from '@mui/material';
 import { ErrorOutline as ErrorOutlineIcon, Inbox as InboxIcon } from '@mui/icons-material';
 import type { ReactNode } from 'react';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 export const LoadingState = () => (
   <Stack spacing={1.5} sx={{ py: 2 }}>
     <Skeleton
       variant="rounded"
       height={56}
-      sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', borderRadius: '10px' }}
+      sx={{ bgcolor: tokens.hover, borderRadius: '10px' }}
     />
     <Skeleton
       variant="rounded"
       height={56}
-      sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', borderRadius: '10px' }}
+      sx={{ bgcolor: tokens.hover, borderRadius: '10px' }}
     />
     <Skeleton
       variant="rounded"
       height={56}
-      sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)', borderRadius: '10px' }}
+      sx={{ bgcolor: tokens.hover, borderRadius: '10px' }}
     />
   </Stack>
 );
@@ -31,8 +33,8 @@ export const EmptyState = ({ message, action }: { message: string; action?: Reac
       py: 8,
       px: 3,
       borderRadius: '12px',
-      border: '1px dashed rgba(255, 255, 255, 0.1)',
-      bgcolor: 'rgba(18, 22, 34, 0.4)',
+      border: `1px dashed ${alpha(tokens.white, 0.1)}`,
+      bgcolor: alpha(tokens.surfaceContainerLow, 0.4),
       textAlign: 'center',
     }}
   >
@@ -41,16 +43,16 @@ export const EmptyState = ({ message, action }: { message: string; action?: Reac
         width: 48,
         height: 48,
         borderRadius: '50%',
-        bgcolor: 'rgba(255, 255, 255, 0.04)',
+        bgcolor: tokens.hover,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#64748b',
+        color: tokens.textDisabled,
       }}
     >
       <InboxIcon sx={{ fontSize: 24 }} />
     </Box>
-    <Typography sx={{ color: '#94a3b8', fontSize: 14, fontFamily: 'Geist, sans-serif' }}>
+    <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 14, fontFamily: 'Geist, sans-serif' }}>
       {message}
     </Typography>
     {action}
@@ -60,7 +62,7 @@ export const EmptyState = ({ message, action }: { message: string; action?: Reac
 export const ErrorState = ({ onRetry, message }: { onRetry: () => void; message?: string }) => (
   <Alert
     severity="error"
-    icon={<ErrorOutlineIcon sx={{ color: '#f43f5e' }} />}
+    icon={<ErrorOutlineIcon sx={{ color: tokens.danger }} />}
     action={
       <Button
         size="small"
@@ -68,19 +70,19 @@ export const ErrorState = ({ onRetry, message }: { onRetry: () => void; message?
         color="inherit"
         onClick={onRetry}
         sx={{
-          borderColor: 'rgba(244, 63, 94, 0.4)',
-          color: '#ffb0cd',
+          borderColor: alpha(tokens.danger, 0.4),
+          color: tokens.tertiaryLight,
           fontSize: 12,
-          '&:hover': { bgcolor: 'rgba(244, 63, 94, 0.15)' },
+          '&:hover': { bgcolor: alpha(tokens.danger, 0.15) },
         }}
       >
         Retry
       </Button>
     }
     sx={{
-      bgcolor: 'rgba(244, 63, 94, 0.12)',
-      color: '#ffdad6',
-      border: '1px solid rgba(244, 63, 94, 0.3)',
+      bgcolor: alpha(tokens.danger, 0.12),
+      color: tokens.errorPale,
+      border: `1px solid ${alpha(tokens.danger, 0.3)}`,
       borderRadius: '10px',
       fontFamily: 'Geist, sans-serif',
       fontSize: 13,

@@ -84,6 +84,7 @@ import { errorMessage } from '../../utils/errors';
 import { reasonRule } from '../../utils/validation';
 import { tokens, slaStateColor } from '../../theme/theme';
 
+import { alpha } from '@mui/material/styles';
 const COLORS = {
   surface: tokens.background,
   surfaceContainerLowest: tokens.surfaceContainerLowest,
@@ -439,7 +440,7 @@ export default function EmployeeIncidentDetail() {
       {/* Top Header Bar */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton
+          <IconButton aria-label="Back to my incidents"
             onClick={() => navigate('/employee/incidents')}
             sx={{
               bgcolor: COLORS.surfaceContainer,
@@ -462,9 +463,9 @@ export default function EmployeeIncidentDetail() {
                   label="MAJOR OUTAGE"
                   size="small"
                   sx={{
-                    bgcolor: 'rgba(244, 63, 94, 0.2)',
+                    bgcolor: alpha(tokens.danger, 0.2),
                     color: COLORS.error,
-                    border: '1px solid rgba(244, 63, 94, 0.4)',
+                    border: `1px solid ${alpha(tokens.danger, 0.4)}`,
                     fontFamily: 'JetBrains Mono, monospace',
                     fontWeight: 800,
                     fontSize: 12,
@@ -476,9 +477,9 @@ export default function EmployeeIncidentDetail() {
                   label={`Problem Record #${incident.problemId}`}
                   size="small"
                   sx={{
-                    bgcolor: 'rgba(6, 182, 212, 0.15)',
+                    bgcolor: alpha(tokens.secondary, 0.15),
                     color: COLORS.secondary,
-                    border: '1px solid rgba(6, 182, 212, 0.35)',
+                    border: `1px solid ${alpha(tokens.secondary, 0.35)}`,
                     fontFamily: 'JetBrains Mono, monospace',
                     fontSize: 12,
                     fontWeight: 700,
@@ -491,9 +492,9 @@ export default function EmployeeIncidentDetail() {
                   size="small"
                   onClick={() => navigate(`/employee/incidents/${incident.duplicateOfId}`)}
                   sx={{
-                    bgcolor: 'rgba(251, 191, 36, 0.15)',
-                    color: '#fbbf24',
-                    border: '1px solid rgba(251, 191, 36, 0.35)',
+                    bgcolor: alpha(tokens.amberLight, 0.15),
+                    color: tokens.amberLight,
+                    border: `1px solid ${alpha(tokens.amberLight, 0.35)}`,
                     fontFamily: 'JetBrains Mono, monospace',
                     fontSize: 12,
                     fontWeight: 700,
@@ -502,7 +503,7 @@ export default function EmployeeIncidentDetail() {
                 />
               )}
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mt: 0.5 }}>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif', mt: 0.5 }}>
               {incident.title}
             </Typography>
           </Box>
@@ -536,14 +537,14 @@ export default function EmployeeIncidentDetail() {
               onClick={() => setProvideInfoOpen(true)}
               startIcon={<ReplyIcon />}
               sx={{
-                background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
-                color: '#ffffff',
+                background: `linear-gradient(135deg, ${tokens.tertiary} 0%, ${tokens.primary} 100%)`,
+                color: tokens.white,
                 fontWeight: 700,
                 fontSize: 12.5,
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 2.2,
-                boxShadow: '0 0 16px rgba(247, 81, 161, 0.4)',
+                boxShadow: `0 0 16px ${alpha(tokens.tertiary, 0.4)}`,
               }}
             >
               Provide Information
@@ -558,13 +559,13 @@ export default function EmployeeIncidentDetail() {
               startIcon={verifyMutation.isPending ? <CircularProgress size={14} color="inherit" /> : <VerifiedIcon />}
               sx={{
                 bgcolor: COLORS.success,
-                color: '#ffffff',
+                color: tokens.white,
                 fontWeight: 700,
                 fontSize: 12.5,
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 2.2,
-                '&:hover': { bgcolor: '#059669' },
+                '&:hover': { bgcolor: tokens.successDark },
               }}
             >
               Verify Fix
@@ -575,17 +576,17 @@ export default function EmployeeIncidentDetail() {
             <Button
               variant="outlined"
               onClick={() => setFeedbackOpen(true)}
-              startIcon={<StarIcon sx={{ color: '#fbbf24' }} />}
+              startIcon={<StarIcon sx={{ color: tokens.amberLight }} />}
               sx={{
-                borderColor: 'rgba(251, 191, 36, 0.4)',
-                bgcolor: 'rgba(251, 191, 36, 0.1)',
-                color: '#fef08a',
+                borderColor: alpha(tokens.amberLight, 0.4),
+                bgcolor: alpha(tokens.amberLight, 0.1),
+                color: tokens.yellowLight,
                 fontWeight: 700,
                 fontSize: 12.5,
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 2,
-                '&:hover': { bgcolor: 'rgba(251, 191, 36, 0.2)', borderColor: '#fbbf24' },
+                '&:hover': { bgcolor: alpha(tokens.amberLight, 0.2), borderColor: tokens.amberLight },
               }}
             >
               Rate Resolution
@@ -615,15 +616,15 @@ export default function EmployeeIncidentDetail() {
               onClick={() => setReopenOpen(true)}
               startIcon={<RestartAltIcon />}
               sx={{
-                borderColor: 'rgba(244, 63, 94, 0.4)',
-                bgcolor: 'rgba(244, 63, 94, 0.08)',
+                borderColor: alpha(tokens.danger, 0.4),
+                bgcolor: alpha(tokens.danger, 0.08),
                 color: COLORS.error,
                 fontWeight: 700,
                 fontSize: 12.5,
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 1.8,
-                '&:hover': { bgcolor: 'rgba(244, 63, 94, 0.15)', borderColor: COLORS.error },
+                '&:hover': { bgcolor: alpha(tokens.danger, 0.15), borderColor: COLORS.error },
               }}
             >
               Reopen
@@ -643,7 +644,7 @@ export default function EmployeeIncidentDetail() {
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 1.8,
-                '&:hover': { borderColor: 'rgba(255, 255, 255, 0.25)', bgcolor: COLORS.surfaceContainerHigh },
+                '&:hover': { borderColor: alpha(tokens.white, 0.25), bgcolor: COLORS.surfaceContainerHigh },
               }}
             >
               Withdraw
@@ -691,8 +692,8 @@ export default function EmployeeIncidentDetail() {
             p: 2.5,
             mb: 3,
             borderRadius: 3,
-            bgcolor: 'rgba(247, 81, 161, 0.08)',
-            border: '1px solid rgba(247, 81, 161, 0.35)',
+            bgcolor: alpha(tokens.tertiary, 0.08),
+            border: `1px solid ${alpha(tokens.tertiary, 0.35)}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -701,12 +702,12 @@ export default function EmployeeIncidentDetail() {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-            <WarningIcon sx={{ color: '#f751a1', fontSize: 24, mt: 0.2 }} />
+            <WarningIcon sx={{ color: tokens.tertiary, fontSize: 24, mt: 0.2 }} />
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#f751a1', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: tokens.tertiary, textTransform: 'uppercase' }}>
                 Technician Inquiry (SLA Paused)
               </Typography>
-              <Typography sx={{ fontSize: 13.5, color: '#ffffff', fontWeight: 600, mt: 0.3 }}>
+              <Typography sx={{ fontSize: 13.5, color: tokens.white, fontWeight: 600, mt: 0.3 }}>
                 "{lastQuestion.body}"
               </Typography>
               <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
@@ -719,8 +720,8 @@ export default function EmployeeIncidentDetail() {
             onClick={() => setProvideInfoOpen(true)}
             startIcon={<ReplyIcon />}
             sx={{
-              background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.tertiary} 0%, ${tokens.primary} 100%)`,
+              color: tokens.white,
               fontWeight: 700,
               fontSize: 12.5,
               textTransform: 'none',
@@ -816,7 +817,7 @@ export default function EmployeeIncidentDetail() {
 
               {/* Closure Information (when closed/verified) */}
               {(incident.closureReason || incident.closedAt || incident.reopenCount > 0) && (
-                <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(255, 255, 255, 0.03)', borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: alpha(tokens.white, 0.03), borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
                   <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', mb: 0.5 }}>
                     Lifecycle &amp; Closure Information
                   </Typography>
@@ -830,7 +831,7 @@ export default function EmployeeIncidentDetail() {
 
               {/* Resolution Summary (when resolved) */}
               {incident.resolution && (
-                <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(16, 185, 129, 0.08)', borderRadius: 2, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: alpha(tokens.success, 0.08), borderRadius: 2, border: `1px solid ${alpha(tokens.success, 0.25)}` }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <CheckCircleIcon sx={{ fontSize: 18, color: COLORS.success }} />
                     <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.success, fontFamily: 'JetBrains Mono, monospace' }}>
@@ -853,10 +854,10 @@ export default function EmployeeIncidentDetail() {
 
               {/* Feedback Record */}
               {incident.feedback && (
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(251, 191, 36, 0.08)', borderRadius: 2, border: '1px solid rgba(251, 191, 36, 0.25)' }}>
+                <Box sx={{ mt: 2, p: 2, bgcolor: alpha(tokens.amberLight, 0.08), borderRadius: 2, border: `1px solid ${alpha(tokens.amberLight, 0.25)}` }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <StarIcon sx={{ fontSize: 18, color: '#fbbf24' }} />
-                    <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#fef08a', fontFamily: 'JetBrains Mono, monospace' }}>
+                    <StarIcon sx={{ fontSize: 18, color: tokens.amberLight }} />
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: tokens.yellowLight, fontFamily: 'JetBrains Mono, monospace' }}>
                       YOUR FEEDBACK ({incident.feedback.rating}/5)
                     </Typography>
                   </Box>
@@ -975,8 +976,8 @@ export default function EmployeeIncidentDetail() {
                         disabled={!commentText.trim() || commentMutation.isPending}
                         startIcon={commentMutation.isPending ? <CircularProgress size={16} /> : <SendIcon sx={{ fontSize: 16 }} />}
                         sx={{
-                          background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                          color: '#ffffff',
+                          background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                          color: tokens.white,
                           fontWeight: 700,
                           textTransform: 'none',
                           borderRadius: 2,
@@ -1087,8 +1088,8 @@ export default function EmployeeIncidentDetail() {
                       onClick={() => selectedFile && uploadMutation.mutate(selectedFile)}
                       startIcon={uploadMutation.isPending ? <CircularProgress size={14} /> : <AttachFileIcon />}
                       sx={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                        color: '#ffffff',
+                        background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                        color: tokens.white,
                         fontWeight: 700,
                         textTransform: 'none',
                       }}
@@ -1180,7 +1181,7 @@ export default function EmployeeIncidentDetail() {
                                 sx={{
                                   fontSize: 12,
                                   height: 18,
-                                  bgcolor: s.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                  bgcolor: s.match === 'DUPLICATE' ? alpha(tokens.danger, 0.15) : alpha(tokens.primary, 0.15),
                                   color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.primary,
                                 }}
                               />
@@ -1366,8 +1367,8 @@ export default function EmployeeIncidentDetail() {
             onClick={() => provideInfoMutation.mutate(provideInfoText)}
             startIcon={provideInfoMutation.isPending ? <CircularProgress size={16} /> : <SendIcon />}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 2,
@@ -1405,9 +1406,9 @@ export default function EmployeeIncidentDetail() {
             onChange={(_, val) => setFeedbackRating(val)}
             size="large"
             sx={{
-              color: '#fbbf24',
+              color: tokens.amberLight,
               mb: 2.5,
-              '& .MuiRating-iconEmpty': { color: 'rgba(255, 255, 255, 0.2)' },
+              '& .MuiRating-iconEmpty': { color: alpha(tokens.white, 0.2) },
             }}
           />
           <TextField
@@ -1435,11 +1436,11 @@ export default function EmployeeIncidentDetail() {
             startIcon={feedbackMutation.isPending ? <CircularProgress size={16} /> : <CheckCircleIcon />}
             sx={{
               bgcolor: COLORS.success,
-              color: '#ffffff',
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 2,
-              '&:hover': { bgcolor: '#059669' },
+              '&:hover': { bgcolor: tokens.successDark },
             }}
           >
             Submit Feedback
@@ -1494,11 +1495,11 @@ export default function EmployeeIncidentDetail() {
             startIcon={reopenMutation.isPending ? <CircularProgress size={16} /> : <RestartAltIcon />}
             sx={{
               bgcolor: COLORS.warning,
-              color: '#ffffff',
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 2,
-              '&:hover': { bgcolor: '#d97706' },
+              '&:hover': { bgcolor: tokens.amberDark },
             }}
           >
             Reopen Ticket {reopenReason.trim().length < 10 ? `(${10 - reopenReason.trim().length} more chars)` : ''}
@@ -1553,11 +1554,11 @@ export default function EmployeeIncidentDetail() {
             startIcon={withdrawMutation.isPending ? <CircularProgress size={16} /> : <CancelIcon />}
             sx={{
               bgcolor: COLORS.error,
-              color: '#ffffff',
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 2,
-              '&:hover': { bgcolor: '#dc2626' },
+              '&:hover': { bgcolor: tokens.redDark },
             }}
           >
             Withdraw Report {withdrawReason.trim().length < 10 ? `(${10 - withdrawReason.trim().length} more chars)` : ''}
@@ -1599,11 +1600,11 @@ export default function EmployeeIncidentDetail() {
             onClick={() => verifyMutation.mutate()}
             sx={{
               bgcolor: COLORS.success,
-              color: '#ffffff',
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 2,
-              '&:hover': { bgcolor: '#059669' },
+              '&:hover': { bgcolor: tokens.successDark },
             }}
           >
             Confirm &amp; Verify
@@ -1656,8 +1657,8 @@ export default function EmployeeIncidentDetail() {
             onClick={() => editMutation.mutate()}
             startIcon={editMutation.isPending ? <CircularProgress size={16} /> : <EditIcon />}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
             }}

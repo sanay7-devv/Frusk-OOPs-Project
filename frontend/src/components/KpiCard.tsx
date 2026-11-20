@@ -2,6 +2,8 @@ import type { ElementType, ReactNode } from 'react';
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 export interface KpiCardProps {
   title: string;
   value: string | number;
@@ -17,7 +19,7 @@ export default function KpiCard({
   value,
   subtitle,
   icon: Icon,
-  color = '#6366f1',
+  color = tokens.primary,
   badge,
   onClick,
 }: KpiCardProps) {
@@ -25,16 +27,16 @@ export default function KpiCard({
     <Card
       onClick={onClick}
       sx={{
-        bgcolor: 'rgba(18, 22, 34, 0.7)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+        border: `1px solid ${tokens.outlineVariant}`,
         borderRadius: '12px',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
         '&:hover': onClick
           ? {
               transform: 'translateY(-2px)',
-              borderColor: 'rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+              borderColor: alpha(tokens.white, 0.2),
+              boxShadow: `0 8px 24px ${alpha(tokens.black, 0.4)}`,
             }
           : undefined,
       }}
@@ -45,7 +47,7 @@ export default function KpiCard({
             sx={{
               fontSize: '0.8rem',
               fontWeight: 600,
-              color: '#94a3b8',
+              color: tokens.onSurfaceVariant,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}
@@ -71,11 +73,11 @@ export default function KpiCard({
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
           <Typography
-            variant="h4"
+            variant="h4" component="p"
             sx={{
               fontWeight: 800,
               fontFamily: 'JetBrains Mono, monospace',
-              color: '#ffffff',
+              color: tokens.white,
               lineHeight: 1,
             }}
           >
@@ -84,7 +86,7 @@ export default function KpiCard({
           {badge}
         </Box>
         {subtitle && (
-          <Typography sx={{ color: '#64748b', fontSize: '0.75rem', mt: 1 }}>
+          <Typography sx={{ color: tokens.textDisabled, fontSize: '0.75rem', mt: 1 }}>
             {subtitle}
           </Typography>
         )}

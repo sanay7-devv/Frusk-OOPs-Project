@@ -69,12 +69,6 @@ export const createIncident = async (body: CreateIncidentPayload): Promise<Incid
   return res.data;
 };
 
-// Generic action endpoint: acknowledge, start, request-info, provide-info, resolve, verify, close, reopen, reassign, escalate...
-export const incidentAction = async (id: number, action: string, body?: unknown) => {
-  const res = await api.post<IncidentDetail>(`/incidents/${id}/${action}`, body);
-  return res.data;
-};
-
 export const provideInfo = async (id: number, message: string): Promise<IncidentDetail> => {
   const res = await api.post<IncidentDetail>(`/incidents/${id}/provide-info`, { message });
   return res.data;
