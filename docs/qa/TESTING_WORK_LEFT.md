@@ -6,12 +6,12 @@ This update is on branch `testing/task3-incident-exception-tests`; it is not on 
 
 - **R11: started, not yet complete.** `IncidentStateTest` checks all ten status-to-state mappings and the legal-action sets, plus a few rejected transitions. It still needs the handbook's full state/action transition coverage, including successful next-state assertions and rejection of every invalid move. `ExceptionMappingTest` checks the expected code and HTTP status for all 22 current `ItsmException` subclasses; it still needs to check `GlobalExceptionHandler`'s `ErrorResponse` output.
 - **Backend validation is pending.** The tests could not be run here because this environment has no Java runtime. A teammate with the project JDK should run them, fix any compile or test failures, and run the full backend suite.
-- **R10 frontend tests added on this branch:** `remaining-screens.test.tsx` covers audit verification, MFA setup, forgot/reset password, problem-list tabs/major label, and invalid report dates disabling exports. `npm test -- --run` passes (34 tests in 9 files), `npm run lint` passes, and `npm run build` passes. Remaining UI coverage: successful CSV/PDF export, SLA colour checks, filter bar behavior, and deeper flows on the audit/security/problems/reports screens. The build reports a bundle-size warning (main JS chunk is about 1.9 MB before gzip) and Vite/plugin deprecation warnings.
+- **R10 frontend tests added on this branch:** `remaining-screens.test.tsx` covers audit verification, MFA setup, forgot/reset password, problem-list tabs/major label, invalid report dates, CSV/PDF export calls and clearing incident filters. `incident-ui.test.tsx` checks all six SLA colours. `npm test -- --run` passes (37 tests in 9 files), `npm run lint` passes, and `npm run build` passes. Deeper coverage could still exercise individual filter selections, report chart/table interactions, audit sealing/failure, and MFA disable/error responses. The build reports a bundle-size warning (main JS chunk is about 1.9 MB before gzip) and Vite/plugin deprecation warnings.
 
 ### Remaining handoff items
 
 1. Finish and run R11 backend tests as described above; have a teammate with Java validate them and the full backend suite.
-2. R10: add tests for successful CSV/PDF export, SLA colour states and filter-bar behavior; coordinate deeper screen coverage with the Frontend Developer.
+2. R10: coordinate deeper screen tests with the Frontend Developer for individual filter selections, report chart/table interactions, audit sealing/failure, and MFA disable/error responses.
 3. R6: on the recording laptop, time the demo reset and fresh-clone setup; update `deploy/README.md` and re-check the JDK image in `deploy/backend.Dockerfile`.
 4. A7: run the load test and record the measurements in `backend/docs/SCALING.md` or the designated report.
 5. R5: fill the dry-run log, rehearse all five demo segments, and record the demo with the team.

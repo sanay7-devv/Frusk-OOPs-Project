@@ -1,7 +1,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material';
 import { theme } from './theme/theme';
@@ -12,12 +12,15 @@ import ProblemsList from './features/problems/ProblemsList';
 import ForgotPassword from './features/shared/ForgotPassword';
 import ResetPassword from './features/shared/ResetPassword';
 import Reports from './features/admin/Reports';
+import Tickets from './features/admin/Tickets';
 import * as auditApi from './api/audit';
 import * as authApi from './api/auth';
 import * as problemsApi from './api/problems';
 import * as reportsApi from './api/reports';
 import * as servicesApi from './api/services';
 import * as incidentsApi from './api/incidents';
+import * as techniciansApi from './api/technicians';
+import * as adminApi from './api/admin';
 
 vi.mock('./features/admin/AuditChainVisual', () => ({ default: () => <div>Audit chain diagram</div> }));
 vi.mock('./features/problems/problemAccess', () => ({
@@ -40,6 +43,11 @@ function renderWithProviders(ui: React.ReactNode, path = '/') {
       </QueryClientProvider>
     </ThemeProvider>,
   );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location-search">{location.search}</output>;
 }
 
 describe('remaining Task 3 screens', () => {
@@ -134,5 +142,37 @@ describe('remaining Task 3 screens', () => {
     expect(screen.getByRole('button', { name: 'Download CSV' })).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Download PDF' })).toHaveProperty('disabled', true);
     expect(download).not.toHaveBeenCalled();
+  });
+
+  it('downloads both report formats for the selected range', async () => {
+    const download = vi.spyOn(reportsApi, 'downloadReport').mockResolvedValue(undefined);
+    vi.spyOn(reportsApi, 'getOverview').mockResolvedValue({} as any);
+    vi.spyOn(reportsApi, 'getTrends').mockResolvedValue([]);
+    vi.spyOn(reportsApi, 'getSlaCompliance').mockResolvedValue([]);
+    vi.spyOn(reportsApi, 'getPriorityDistribution').mockResolvedValue([]);
+    vi.spyOn(reportsApi, 'getCategoryDistribution').mockResolvedValue([]);
+    vi.spyOn(reportsApi, 'getServiceReport').mockResolvedValue([]);
+    vi.spyOn(reportsApi, 'getWorkloadReport').mockResolvedValue([]);
+    vi.spyOn(reportsApi, 'getCoverageRisk').mockResolvedValue({ items: [], flaggedCount: 0, windowDays: 30, minHolders: 2 } as any);
+    vi.spyOn(servicesApi, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(incidentsApi, 'getSlaViolations').mockResolvedValue({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 10 } as any);
+
+    renderWithProviders(<Reports />);
+    fireEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(download).toHaveBeenCalledWith('incidents', 'csv', expect.objectContaining({ from: expect.any(String), to: expect.any(String) })));
+    fireEvent.click(screen.getByRole('button', { name: 'Download PDF' }));
+    await waitFor(() => expect(download).toHaveBeenCalledWith('incidents', 'pdf', expect.objectContaining({ from: expect.any(String), to: expect.any(String) })));
+  });
+
+  it('clears incident-list filters while preserving the selected tab', async () => {
+    vi.spyOn(incidentsApi, 'listIncidents').mockResolvedValue({ items: [], totalItems: 0, totalPages: 0 } as any);
+    vi.spyOn(servicesApi, 'getServices').mockResolvedValue([]);
+    vi.spyOn(servicesApi, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(techniciansApi, 'listTechnicians').mockResolvedValue([]);
+    vi.spyOn(adminApi, 'getAdminUsers').mockResolvedValue([]);
+
+    renderWithProviders(<><Tickets /><LocationProbe /></>, '/admin/tickets?tab=all&priority=P1&status=ACTIVE');
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear filters' }));
+    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=all'));
   });
 });
