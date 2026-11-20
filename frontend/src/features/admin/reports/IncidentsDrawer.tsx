@@ -40,7 +40,7 @@ export default function IncidentsDrawer({ target, onClose }: { target: DrawerTar
       anchor="right"
       open={target !== null}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 480 }, bgcolor: tokens.surfaceContainerLow, p: 2.5 } }}
+      PaperProps={{ sx: { width: { xs: '100%', sm: 480 }, top: 64, height: 'calc(100% - 64px)', bgcolor: tokens.surfaceContainerLow, p: 2.5 } }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography sx={{ fontWeight: 700, fontSize: 18, color: tokens.onSurface }}>{target?.title}</Typography>

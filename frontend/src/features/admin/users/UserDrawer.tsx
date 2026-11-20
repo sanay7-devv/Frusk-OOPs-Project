@@ -8,6 +8,7 @@ import type { IncidentSummary } from '../../../api/types';
 import PriorityBadge from '../../../components/PriorityBadge';
 import StatusChip from '../../../components/StatusChip';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
+import { humanizeEnum } from '../../../utils/format';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
 import { monoLabelSx } from '../adminForm';
@@ -80,7 +81,7 @@ export default function UserDrawer({ userId, onClose, actions }: { userId: numbe
 
   return (
     <Drawer anchor="right" open={userId != null} onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 460 }, bgcolor: tokens.surfaceContainerLow, borderLeft: `1px solid ${tokens.outlineVariant}`, p: 3 } }}>
+      PaperProps={{ sx: { width: { xs: '100%', sm: 460 }, top: 64, height: 'calc(100% - 64px)', bgcolor: tokens.surfaceContainerLow, borderLeft: `1px solid ${tokens.outlineVariant}`, p: 3 } }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
         <Box>
           <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800 }}>{u?.name ?? 'Account'}</Typography>
@@ -111,7 +112,7 @@ export default function UserDrawer({ userId, onClose, actions }: { userId: numbe
           {t && (
             <Box>
               <Typography sx={{ ...monoLabelSx, mb: 1 }}>Technician profile</Typography>
-              <Row label="Availability" value={t.availability.replace('_', ' ')} />
+              <Row label="Availability" value={t.availability === 'AVAILABLE' && t.maxLoad > 0 && t.currentLoad >= t.maxLoad ? 'Full' : humanizeEnum(t.availability)} />
               <Row label="Experience" value={`${t.experienceLevel} · ${EXPERIENCE_LABELS[t.experienceLevel] ?? ''}`} />
               <Row label="Escalation level" value={t.escalationLevel >= 1 ? '1 (team lead)' : '0 (technician)'} />
               <Row label="Workload" value={`${t.currentLoad} of ${t.maxLoad} (${t.activeIncidents} active incident${t.activeIncidents === 1 ? '' : 's'})`} />

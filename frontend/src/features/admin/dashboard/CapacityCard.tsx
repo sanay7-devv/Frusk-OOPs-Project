@@ -26,7 +26,7 @@ export function CapacityCard() {
                 <Stack direction="row" justifyContent="space-between" spacing={1}>
                   <Typography sx={{ fontSize: 13, color: tokens.onSurface }}>{t.name}</Typography>
                   <Typography sx={{ fontSize: 12, color: full ? tone.danger : tokens.onSurfaceVariant }}>
-                    {t.load} of {t.maxLoad} load, {t.active} active
+                    {t.load} of {t.maxLoad} slots used{full ? ' (full)' : ''}
                   </Typography>
                 </Stack>
                 <LinearProgress

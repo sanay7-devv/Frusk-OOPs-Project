@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../utils/format';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -82,7 +83,7 @@ function DemoPanels({ now, offsetMinutes }: { now: string; offsetMinutes: number
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
         <Paper sx={{ p: 2 }}>
           <Typography sx={{ fontWeight: 600, mb: 1 }}>Demo clock</Typography>
-          <Typography sx={{ fontSize: 14 }}>Application time: <strong>{new Date(now).toLocaleString()}</strong></Typography>
+          <Typography sx={{ fontSize: 14 }}>Application time: <strong>{formatDateTime(now)}</strong></Typography>
           <Typography sx={{ fontSize: 14, color: tokens.onSurfaceVariant, mb: 2 }}>
             {offsetMinutes} min ahead of real time
           </Typography>

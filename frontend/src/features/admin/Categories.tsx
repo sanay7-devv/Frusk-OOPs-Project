@@ -22,7 +22,7 @@ const CATEGORIES_KEY = ['admin-categories-list'];
 const SKILLS_KEY = ['admin-skills-list'];
 const headSx = { fontWeight: 700, color: tokens.onSurfaceVariant, fontSize: 12, fontFamily: 'JetBrains Mono, monospace' };
 const rowSx = { '& td': { borderBottom: `1px solid ${tokens.outlineVariant}` } };
-const tableBox = { borderRadius: 3, border: `1px solid ${tokens.outlineVariant}`, bgcolor: tokens.surfaceContainer, overflow: 'hidden' };
+const tableBox = { borderRadius: 3, border: `1px solid ${tokens.outlineVariant}`, bgcolor: tokens.surfaceContainer, overflowX: 'auto' };
 
 /** Depth-first order: each category directly under its parent, children sorted by name. */
 function toTree(categories: AdminCategory[]): { category: AdminCategory; depth: number }[] {
@@ -118,7 +118,7 @@ export default function Categories() {
       </Stack>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={7}>
+        <Grid item xs={12} md={8}>
           <Typography variant="h6" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif', mb: 1.5 }}>Incident categories</Typography>
           {cats.isLoading ? <LoadingState />
             : cats.isError ? <ErrorState onRetry={() => void cats.refetch()} message={apiErrorMessage(cats.error)} />
@@ -128,11 +128,11 @@ export default function Categories() {
                 <Table size="small">
                   <TableHead sx={{ bgcolor: tokens.surfaceContainerLow }}>
                     <TableRow>
-                      <TableCell sx={headSx}>CATEGORY</TableCell>
-                      <TableCell sx={headSx}>REQUIRED SKILLS</TableCell>
-                      <TableCell sx={headSx}>ELIGIBLE TECHNICIANS</TableCell>
-                      <TableCell sx={headSx}>STATUS</TableCell>
-                      <TableCell sx={headSx} align="right">ACTIONS</TableCell>
+                      <TableCell sx={headSx}>Category</TableCell>
+                      <TableCell sx={headSx}>Required skills</TableCell>
+                      <TableCell sx={headSx}>Eligible</TableCell>
+                      <TableCell sx={headSx}>Status</TableCell>
+                      <TableCell sx={headSx} align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -152,6 +152,17 @@ export default function Categories() {
                               ))}
                             </Stack>
                           ) : <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>None</Typography>}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const cov = eligibleByCategory.get(c.id);
+                            if (!cov) return <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>{coverage.isLoading ? '…' : 'Not reported'}</Typography>;
+                            return (
+                              <Tooltip title={cov.eligibleTechnicians.map((t) => t.name).join(', ') || cov.message}>
+                                <Typography sx={{ fontSize: 13, color: cov.flagged ? tone.danger : tokens.onSurface }}>{cov.eligibleCount}</Typography>
+                              </Tooltip>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Chip label={c.active ? 'Active' : 'Inactive'} size="small"
@@ -175,7 +186,7 @@ export default function Categories() {
             )}
         </Grid>
 
-        <Grid item xs={12} md={5}>
+        <Grid item xs={12} md={4}>
           <Typography variant="h6" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif', mb: 1.5 }}>Skills</Typography>
           {skillsQ.isLoading ? <LoadingState />
             : skillsQ.isError ? <ErrorState onRetry={() => void skillsQ.refetch()} message={apiErrorMessage(skillsQ.error)} />
@@ -185,8 +196,8 @@ export default function Categories() {
                 <Table size="small">
                   <TableHead sx={{ bgcolor: tokens.surfaceContainerLow }}>
                     <TableRow>
-                      <TableCell sx={headSx}>SKILL</TableCell>
-                      <TableCell sx={headSx} align="right">ACTIONS</TableCell>
+                      <TableCell sx={headSx}>Skill</TableCell>
+                      <TableCell sx={headSx} align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>

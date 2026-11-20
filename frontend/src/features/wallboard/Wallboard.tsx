@@ -123,7 +123,18 @@ export default function Wallboard() {
 
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '1.2fr 1fr' } }}>
             <Panel title="Nearest to missing SLA">
-              {!atRisk.length && <Typography sx={{ color: tokens.onSurfaceVariant }}>No open incident is close to its SLA deadline.</Typography>}
+              {!atRisk.length && (
+                <Box>
+                  <Typography sx={{ color: tokens.onSurfaceVariant }}>No open incident is about to miss its SLA.</Typography>
+                  {live.data && live.data.counters.slaViolations > 0 && (
+                    <Typography sx={{ color: tokens.onSurfaceVariant, mt: 1 }}>
+                      {live.data.counters.slaViolations} incidents have already missed their SLA.{' '}
+                      <Box component="a" href="/admin/tickets?slaState=VIOLATED" onClick={(e: { preventDefault(): void }) => { e.preventDefault(); navigate('/admin/tickets?slaState=VIOLATED'); }}
+                        sx={{ color: slaStateColor.VIOLATED }}>See the breached incidents</Box>
+                    </Typography>
+                  )}
+                </Box>
+              )}
               {atRisk.map((i) => (
                 <Box
                   key={i.id}

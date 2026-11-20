@@ -9,13 +9,15 @@ import { getSlaCompliance } from '../../../api/reports';
 import { ErrorState, LoadingState } from '../../../components/StateViews';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
+import { formatDateTime, humanizeEnum } from '../../../utils/format';
 import { cardSx, fieldSx, monoLabelSx } from '../adminForm';
 import { tone } from '../palette';
 
 export const formatMinutes = (m: number) => {
   if (m < 60) return `${m} min`;
   if (m < 1440) return `${+(m / 60).toFixed(1)} h`;
-  return `${+(m / 1440).toFixed(1)} days`;
+  const d = +(m / 1440).toFixed(1);
+  return d === 1 ? '1 day' : `${d} days`;
 };
 
 /** Compliance by priority and the latest breaches, from the reports API (all history, all services). */
@@ -69,9 +71,9 @@ export function ComplianceStrip() {
                 onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/admin/tickets/${v.incidentId}`); }}
                 sx={{ cursor: 'pointer', p: 1, borderRadius: 2, '&:hover': { bgcolor: tokens.surfaceContainerHigh } }}>
                 <Typography sx={{ fontSize: 13 }}>
-                  <b style={{ fontFamily: 'JetBrains Mono, monospace' }}>{v.incidentCode}</b> · {v.type.toLowerCase()} · {formatMinutes(Math.round(v.overdueSeconds / 60))} over
+                  <b style={{ fontFamily: 'JetBrains Mono, monospace' }}>{v.incidentCode}</b> · {humanizeEnum(v.type).toLowerCase()} · {formatMinutes(Math.round(v.overdueSeconds / 60))} over
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{v.technician?.name ?? 'Unassigned'} · {new Date(v.createdAt).toLocaleString()}</Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{v.technician?.name ?? 'Unassigned'} · {formatDateTime(v.createdAt)}</Typography>
               </Box>
             ))}
           </Stack>
@@ -94,7 +96,7 @@ export function CalendarSummary() {
     <Paper elevation={0} sx={{ ...cardSx, mb: 3 }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1} alignItems={{ sm: 'center' }}>
         <Box>
-          <Typography sx={monoLabelSx}>Business-hours calendar (for BUSINESS_HOURS policies)</Typography>
+          <Typography sx={monoLabelSx}>Business-hours calendar (for policies that use business hours)</Typography>
           {config.isLoading && <Typography sx={{ fontSize: 14, color: tokens.onSurfaceVariant, mt: 0.5 }}>Loading…</Typography>}
           {config.isError && <Typography sx={{ fontSize: 14, color: tone.danger, mt: 0.5 }}>{apiErrorMessage(config.error)}</Typography>}
           {config.data && (
@@ -124,7 +126,7 @@ export function EffectivePolicy({ policies, services }: { policies: SlaPolicyRec
     <Paper elevation={0} sx={{ ...cardSx, mb: 3 }}>
       <Typography sx={monoLabelSx}>Which policy applies?</Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={1.5} alignItems={{ sm: 'center' }}>
-        <TextField select size="small" label="Service" value={serviceId} onChange={(e) => setServiceId(e.target.value)} sx={{ ...fieldSx, minWidth: 220 }}
+        <TextField select size="small" label="Service" InputLabelProps={{ shrink: true }} value={serviceId} onChange={(e) => setServiceId(e.target.value)} sx={{ ...fieldSx, minWidth: 220 }}
           SelectProps={{ displayEmpty: true, renderValue: (val) => (val === '' ? 'Any service (global only)' : services.find((s) => String(s.id) === val)?.name ?? String(val)) }}>
           <MenuItem value="">Any service (global only)</MenuItem>
           {services.map((s) => <MenuItem key={s.id} value={String(s.id)}>{s.name}</MenuItem>)}
@@ -135,7 +137,7 @@ export function EffectivePolicy({ policies, services }: { policies: SlaPolicyRec
         <Typography sx={{ fontSize: 14, color: hit ? tokens.onSurface : tone.danger }}>
           {hit
             ? `${hit.via === 'service' ? 'Service policy' : 'Global default'}: respond in ${formatMinutes(hit.policy.responseMinutes)}, resolve in ${formatMinutes(hit.policy.resolutionMinutes)}, ${hit.policy.calendarType === 'ALWAYS' ? 'clock always runs' : 'business hours only'}`
-            : 'No policy: incidents of this service and priority are rejected with SLA_NOT_CONFIGURED. Add a global default.'}
+            : 'No policy: incidents of this service and priority are rejected because no SLA is configured. Add a global default.'}
         </Typography>
       </Stack>
     </Paper>

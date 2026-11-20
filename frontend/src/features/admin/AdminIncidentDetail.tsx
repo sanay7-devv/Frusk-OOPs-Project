@@ -55,7 +55,8 @@ import { apiErrorMessage } from '../../utils/errors';
 import type { AttachmentView, CommentView } from '../../api/types';
 import { tokens } from '../../theme/theme';
 import { alpha, tint, tone } from './palette';
-import { MAX_REASON, MIN_REASON, MONO, dialogPaperSx, fieldSx, fmtDateTime, invalidateIncidentCaches } from '../lead/shared/ui';
+import { formatDateTime, humanizeEnum } from '../../utils/format';
+import { MAX_REASON, MIN_REASON, MONO, dialogPaperSx, fieldSx, invalidateIncidentCaches } from '../lead/shared/ui';
 import IntelligencePanel, { SlaRiskCard } from '../lead/shared/IntelligencePanel';
 import { CandidatePicker } from '../lead/shared/TeamComponents';
 import {
@@ -140,7 +141,7 @@ export default function AdminIncidentDetail() {
   const commentMutation = useMutation({
     mutationFn: () => addComment(incidentId, newComment.trim(), commentVisibility),
     onSuccess: () => {
-      toast('Comment posted to incident stream', 'success');
+      toast('Note posted', 'success');
       setNewComment('');
       afterChange();
     },
@@ -191,7 +192,7 @@ export default function AdminIncidentDetail() {
     mutationFn: () => downloadPostIncidentReportPdf(incidentId),
     onSuccess: (blob) => {
       saveBlob(blob, `incident-report-${incident?.code ?? incidentId}.pdf`);
-      toast('Post-incident report PDF downloaded.', 'success');
+      toast('Post-incident report downloaded.', 'success');
     },
     onError: (e) => reportFailure(toast, e, afterChange),
   });
@@ -331,10 +332,10 @@ export default function AdminIncidentDetail() {
             {incident.resolution && (
               <Box sx={{ mt: 3, p: 2, ...tint(tone.success, 0.1), borderRadius: 2 }}>
                 <Typography variant="subtitle2" fontWeight="bold" sx={{ fontFamily: MONO }}>
-                  Root Cause &amp; Resolution:
+                  Root cause and resolution:
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  {incident.resolution.rootCause ? `Root Cause: ${incident.resolution.rootCause}` : ''}
+                  {incident.resolution.rootCause ? `Root cause: ${incident.resolution.rootCause}` : ''}
                   {incident.resolution.notes ? ` - ${incident.resolution.notes}` : ''}
                 </Typography>
               </Box>
@@ -349,12 +350,12 @@ export default function AdminIncidentDetail() {
           {/* Discussion */}
           <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
             <Typography variant="h6" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif', mb: 2 }}>
-              Admin Command Notes &amp; Discussion
+              Notes and discussion
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 1.5, alignItems: 'center' }}>
               <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Visibility:</Typography>
               <Chip
-                label="INTERNAL (Ops Only)"
+                label="Internal (staff only)"
                 clickable
                 size="small"
                 onClick={() => setCommentVisibility('INTERNAL')}
@@ -366,7 +367,7 @@ export default function AdminIncidentDetail() {
                 }}
               />
               <Chip
-                label="PUBLIC (Reporter Visible)"
+                label="Public (reporter can see)"
                 clickable
                 size="small"
                 onClick={() => setCommentVisibility('PUBLIC')}
@@ -382,7 +383,7 @@ export default function AdminIncidentDetail() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Post administrative note or technician guidance..."
+                placeholder="Write a note or guidance for the technician"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 error={newComment.length > 4000}
@@ -406,9 +407,9 @@ export default function AdminIncidentDetail() {
                   <Box key={c.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                       <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.secondary }}>
-                        {c.author.name} <Chip size="small" label={c.visibility} sx={{ height: 18, fontSize: 12, ml: 0.5 }} />
+                        {c.author.name} <Chip size="small" label={c.visibility === 'PUBLIC' ? 'Public' : 'Internal'} sx={{ height: 18, fontSize: 12, ml: 0.5 }} />
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: MONO }}>{fmtDateTime(c.createdAt)}</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: MONO }}>{formatDateTime(c.createdAt)}</Typography>
                     </Box>
                     <Typography sx={{ fontSize: 13, color: tokens.onSurface, whiteSpace: 'pre-wrap' }}>{c.body}</Typography>
                   </Box>
@@ -431,7 +432,7 @@ export default function AdminIncidentDetail() {
                 {history.map((h) => (
                   <Box key={h.id} sx={{ p: 1.25, borderRadius: 2, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
                     <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: MONO }}>
-                      {fmtDateTime(h.timestamp)} | {h.actor?.name ?? 'System'} | {h.action}
+                      {formatDateTime(h.timestamp)} | {h.actor?.name ?? 'System'} | {humanizeEnum(h.action)}
                     </Typography>
                     <Typography sx={{ fontSize: 13, color: tokens.onSurface }}>{h.description}</Typography>
                   </Box>
@@ -445,10 +446,10 @@ export default function AdminIncidentDetail() {
         <Grid item xs={12} md={4}>
           <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
-              SLA Timers &amp; Target
+              SLA timers
             </Typography>
             <Field label="Response due">
-              {fmtDateTime(incident.responseDue)}
+              {formatDateTime(incident.responseDue)}
               {incident.acknowledgedAt ? ' (acknowledged)' : ' (not acknowledged yet)'}
             </Field>
             <Box my={2}>
@@ -459,7 +460,7 @@ export default function AdminIncidentDetail() {
             </Box>
             {incident.pausedAt && (
               <Alert severity="info" sx={{ fontSize: 12.5, mb: 1.5 }}>
-                SLA clock paused since {fmtDateTime(incident.pausedAt)} (waiting for the reporter).
+                SLA clock paused since {formatDateTime(incident.pausedAt)} (waiting for the reporter).
               </Alert>
             )}
             {preview && (
@@ -488,12 +489,12 @@ export default function AdminIncidentDetail() {
             </Typography>
             <Field label="Escalation level">{incident.escalationLevel}</Field>
             <Field label="Times reopened">{incident.reopenCount}</Field>
-            <Field label="Created">{fmtDateTime(incident.createdAt)}</Field>
-            <Field label="Acknowledged">{fmtDateTime(incident.acknowledgedAt)}</Field>
-            <Field label="Resolved">{fmtDateTime(incident.resolvedAt)}</Field>
+            <Field label="Created">{formatDateTime(incident.createdAt)}</Field>
+            <Field label="Acknowledged">{formatDateTime(incident.acknowledgedAt)}</Field>
+            <Field label="Resolved">{formatDateTime(incident.resolvedAt)}</Field>
             <Field label="Closed">
-              {fmtDateTime(incident.closedAt)}
-              {incident.closureReason ? ` (${incident.closureReason})` : ''}
+              {formatDateTime(incident.closedAt)}
+              {incident.closureReason ? ` (${humanizeEnum(incident.closureReason).toLowerCase()})` : ''}
             </Field>
             {incident.feedback && (
               <Field label="Reporter feedback">
@@ -505,11 +506,11 @@ export default function AdminIncidentDetail() {
             <Divider sx={{ my: 2, borderColor: tokens.outlineVariant }} />
 
             <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
-              Assignment &amp; Stakeholders
+              People and service
             </Typography>
-            <Field label="Assigned Technician">{incident.assignee?.name ?? 'Unassigned (waiting in queue)'}</Field>
+            <Field label="Assigned technician">{incident.assignee?.name ?? 'Unassigned (waiting in queue)'}</Field>
             <Field label="Reporter">{incident.reporter.name}</Field>
-            <Field label="Impacted Service">{incident.service.name}</Field>
+            <Field label="Affected service">{incident.service.name}</Field>
             <Field label="Category">{incident.category?.name ?? 'None yet (needs triage)'}</Field>
 
             <Box sx={{ my: 2 }}>
@@ -531,7 +532,7 @@ export default function AdminIncidentDetail() {
             <Stack spacing={1}>
               {(canAssign || canReassign) && (
                 <Button variant="outlined" fullWidth startIcon={<SwapHorizIcon />} onClick={() => setAssignOpen(true)} sx={actionButtonSx}>
-                  {assignMode === 'assign' ? 'Assign Technician' : 'Reassign Technician'}
+                  {assignMode === 'assign' ? 'Assign technician' : 'Reassign technician'}
                 </Button>
               )}
               {allowed.includes('EDIT') && (
@@ -558,7 +559,7 @@ export default function AdminIncidentDetail() {
                   onClick={() => setOverrideOpen(true)}
                   sx={{ borderColor: alpha(tone.warning, 0.3), color: tone.warning, textTransform: 'none', '&:hover': { borderColor: tone.warning, bgcolor: alpha(tone.warning, 0.08) } }}
                 >
-                  Override Priority
+                  Override priority
                 </Button>
               )}
               {allowed.includes('CLOSE') && (
@@ -570,12 +571,12 @@ export default function AdminIncidentDetail() {
                   onClick={() => setCloseConfirmOpen(true)}
                   sx={{ borderColor: alpha(tone.danger, 0.3), color: tone.danger, textTransform: 'none', '&:hover': { borderColor: tone.danger, bgcolor: alpha(tone.danger, 0.08) } }}
                 >
-                  Close Incident
+                  Close incident
                 </Button>
               )}
               {!anyAction && (
                 <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, fontStyle: 'italic' }}>
-                  No actions available in current status ({incident.status})
+                  No actions available in the current status ({humanizeEnum(incident.status).toLowerCase()})
                 </Typography>
               )}
             </Stack>
@@ -651,11 +652,11 @@ export default function AdminIncidentDetail() {
             )}
           </Paper>
 
-          {/* Post-Incident Report PDF */}
+          {/* Post-incident report PDF */}
           {(incident.status === 'RESOLVED' || incident.status === 'CLOSED' || incident.status === 'VERIFIED' || incident.major) && (
             <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}` }}>
               <Typography variant="subtitle1" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }} gutterBottom>
-                Compliance PDF Dossier
+                Post-incident report
               </Typography>
               <Typography variant="caption" sx={{ color: tokens.onSurfaceVariant, display: 'block', mb: 1.5 }}>
                 Official post-incident report with full audit timeline.
@@ -669,7 +670,7 @@ export default function AdminIncidentDetail() {
                 onClick={() => pdfMutation.mutate()}
                 sx={{ borderColor: tokens.secondary, color: tokens.secondary, textTransform: 'none', fontSize: 12.5, fontWeight: 700 }}
               >
-                Download PDF Report
+                Download PDF report
               </Button>
             </Paper>
           )}
@@ -679,7 +680,7 @@ export default function AdminIncidentDetail() {
       {/* Assign / reassign dialog */}
       <Dialog open={assignOpen} onClose={assignMutation.isPending ? undefined : closeAssign} maxWidth="sm" fullWidth PaperProps={{ sx: dialogPaperSx }}>
         <DialogTitle sx={{ fontWeight: 'bold', fontFamily: 'Sora, sans-serif' }}>
-          {assignMode === 'assign' ? 'Assign Incident' : 'Reassign Incident'}
+          {assignMode === 'assign' ? 'Assign incident' : 'Reassign incident'}
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
@@ -728,10 +729,10 @@ export default function AdminIncidentDetail() {
         onClose={() => setCloseConfirmOpen(false)}
         onConfirm={() => closeMutation.mutate()}
         isLoading={closeMutation.isPending}
-        title="Close Verified Incident"
-        description="Are you sure you want to administratively close this incident? This action completes the ITIL lifecycle."
+        title="Close incident"
+        description="Are you sure you want to close this incident? This completes its lifecycle and cannot be undone."
         confirmColor="error"
-        confirmLabel="Close Incident"
+        confirmLabel="Close incident"
       />
     </Box>
   );

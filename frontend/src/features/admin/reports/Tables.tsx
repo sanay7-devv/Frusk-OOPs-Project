@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../../utils/format';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -97,7 +98,7 @@ export function SlaViolationsCard({ range }: { range: DateRange | null }) {
                     <TableCell sx={cell}>{v.type === 'RESPONSE' ? 'First response' : 'Resolution'}</TableCell>
                     <TableCell sx={cell}>{overdue(v.overdueSeconds)}</TableCell>
                     <TableCell sx={cell}>{v.technician?.name ?? 'Not assigned'}</TableCell>
-                    <TableCell sx={cell}>{new Date(v.createdAt).toLocaleString()}</TableCell>
+                    <TableCell sx={cell}>{formatDateTime(v.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

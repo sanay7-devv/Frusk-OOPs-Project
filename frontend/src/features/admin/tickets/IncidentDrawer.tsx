@@ -9,6 +9,7 @@ import SlaCountdown from '../../../components/SlaCountdown';
 import { ErrorState, LoadingState } from '../../../components/StateViews';
 import StatusChip from '../../../components/StatusChip';
 import { tokens } from '../../../theme/theme';
+import { formatDateTime } from '../../../utils/format';
 import { apiErrorMessage } from '../../../utils/errors';
 
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -24,7 +25,7 @@ export default function IncidentDrawer({ id, onClose }: { id: number | null; onC
   const i = q.data;
   return (
     <Drawer anchor="right" open={id != null} onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 420 }, bgcolor: tokens.surfaceContainerLow, p: 2.5 } }}>
+      PaperProps={{ sx: { width: { xs: '100%', sm: 420 }, top: 64, height: 'calc(100% - 64px)', bgcolor: tokens.surfaceContainerLow, p: 2.5 } }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{i ? i.code : 'Incident'}</Typography>
         <IconButton onClick={onClose} aria-label="Close panel"><CloseIcon /></IconButton>
@@ -44,7 +45,7 @@ export default function IncidentDrawer({ id, onClose }: { id: number | null; onC
           <Row label="Assignee">{i.assignee?.name ?? 'Unassigned'}</Row>
           <Row label="Escalation level">{i.escalationLevel}</Row>
           <Row label="Resolution SLA"><SlaCountdown due={i.resolutionDue} slaState={i.slaState} /></Row>
-          <Row label="Created">{new Date(i.createdAt).toLocaleString()}</Row>
+          <Row label="Created">{formatDateTime(i.createdAt)}</Row>
           <Button component={RouterLink} to={`/admin/incidents/${i.id}`} variant="contained" fullWidth sx={{ mt: 2, textTransform: 'none' }}>
             Open full page
           </Button>

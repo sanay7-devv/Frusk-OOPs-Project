@@ -1,3 +1,4 @@
+import { humanizeEnum } from '../../../utils/format';
 // How each runtime setting is edited. The API (`ConfigItemView`) carries only key, value, default and description,
 // so the kind and range of every key are copied from the backend's `ConfigKey` enum (the same ranges the server
 // enforces). A key missing here (a newer backend) still renders as a plain text field and the server validates it.
@@ -163,6 +164,16 @@ export const WEIGHT_SETS: { id: string; title: string; keys: { key: string; labe
   },
 ];
 export const WEIGHT_TOLERANCE = 0.001;
+
+/** Plain-words names for the assignment strategies. */
+export const STRATEGY_LABEL: Record<string, string> = {
+  COMPOSITE: 'Weighted mix',
+  SKILL: 'Best skill match',
+  LOAD: 'Least busy',
+  ROUND_ROBIN: 'Round robin',
+  EXPERIENCE_PRIORITY: 'Seniority for urgent incidents',
+};
+export const strategyLabel = (s: string) => STRATEGY_LABEL[s] ?? humanizeEnum(s);
 
 /** What each assignment strategy does (from the backend strategy classes). */
 export const STRATEGY_HELP: Record<string, string> = {

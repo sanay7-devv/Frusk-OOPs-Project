@@ -334,6 +334,7 @@ export const theme = createTheme({
           borderRadius: 8,
           fontWeight: 600,
           textTransform: 'none',
+          whiteSpace: 'nowrap',
           transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         },
         containedPrimary: {

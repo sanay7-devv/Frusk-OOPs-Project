@@ -32,8 +32,8 @@ export default function PriorityExplainer({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
-          ITIL Priority Formula Breakdown
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tokens.onSurfaceVariant }}>
+          How the priority was worked out
         </Typography>
         <PriorityBadge priority={priority} />
       </Box>

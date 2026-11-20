@@ -23,7 +23,7 @@ const SIBLING_KEYS: string[][] = [];
 const CONFIG_KEY = ['admin-config-settings'];
 
 // Who an incident is escalated to at each level (docs/SYSTEM_GUIDE.md section 7.5 and the escalation module).
-const TARGETS: Record<number, string> = { 1: 'Team Lead', 2: 'System Admin', 3: 'IT Manager' };
+const TARGETS: Record<number, string> = { 1: 'Team lead', 2: 'System admin', 3: 'IT manager' };
 const PRIORITIES = ['P1', 'P2'] as const; // the server only allows escalation levels for P1 and P2
 const MAX_LEVEL = 3;
 const TIMEOUT_MIN = 1;
@@ -113,8 +113,8 @@ function PolicyDialog({ state, highestOf, onClose, onSaved }: { state: EditState
 }
 
 const CONFIG_FIELDS = [
-  { key: 'escalation.exhausted.minutes', label: 'Exhausted-alert wait', unit: 'minutes', min: 1, max: 1440 },
-  { key: 'escalation.monitor.interval.seconds', label: 'Escalation check interval', unit: 'seconds', min: 5, max: 3600 },
+  { key: 'escalation.exhausted.minutes', label: 'Wait before the final alert', hint: 'How long a P1 or P2 can stay unacknowledged at the last level', unit: 'minutes', min: 1, max: 1440 },
+  { key: 'escalation.monitor.interval.seconds', label: 'Overdue check interval', hint: 'How often the system looks for overdue incidents', unit: 'seconds', min: 5, max: 3600 },
 ] as const;
 
 /** The two settings that shape escalation but live in the runtime configuration (CONFIG_MANAGE). */
@@ -162,7 +162,8 @@ function RelatedSettings() {
         {CONFIG_FIELDS.map((f) => (
           <TextField key={f.key} size="small" type="number" label={f.label} sx={{ flex: 1, ...fieldSx }}
             value={draft[f.key] ?? saved[f.key] ?? ''} onChange={(e) => { setDraft((d) => ({ ...d, [f.key]: e.target.value })); setErrors((x) => ({ ...x, [f.key]: '' })); }}
-            error={!!(errors[f.key] || invalid(f))} helperText={errors[f.key] || invalid(f) || `${f.key} (${f.unit})`}
+            error={!!(errors[f.key] || invalid(f))} helperText={errors[f.key] || invalid(f) || `${f.hint} (in ${f.unit})`}
+            FormHelperTextProps={{ title: f.key }}
             inputProps={{ min: f.min, max: f.max, step: 1 }} />
         ))}
         <Button variant="contained" disabled={changes.length === 0 || anyInvalid || save.isPending} onClick={() => save.mutate(changes)} sx={{ textTransform: 'none', fontWeight: 700, minWidth: 110 }}>
