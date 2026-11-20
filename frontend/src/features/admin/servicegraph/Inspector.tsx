@@ -14,6 +14,8 @@ interface Props {
   impact: { data?: ServiceImpact; isLoading: boolean; isError: boolean; error: unknown; refetch: () => void };
   onEditDependencies: (node: GraphNode) => void;
   onSelectService: (id: number) => void;
+  /** Rendered inside the canvas drawer, which supplies the frame. */
+  floating?: boolean;
 }
 
 const Label = ({ children }: { children: string }) => (
@@ -24,7 +26,7 @@ const Label = ({ children }: { children: string }) => (
 
 const hops = (d: number) => (d === 1 ? 'direct' : `${d} hops`);
 
-export default function Inspector({ node, health, impact, onEditDependencies, onSelectService }: Props) {
+export default function Inspector({ node, health, impact, onEditDependencies, onSelectService, floating = false }: Props) {
   const navigate = useNavigate();
   if (!node) {
     return <EmptyState message="Select a service on the graph to see its health and everything that depends on it." />;
@@ -33,7 +35,7 @@ export default function Inspector({ node, health, impact, onEditDependencies, on
   const affected = impact.data?.affected ?? [];
 
   return (
-    <Box sx={{ p: 2, borderRadius: '12px', border: `1px solid ${tokens.outlineVariant}`, bgcolor: tokens.surfaceContainerLow }}>
+    <Box sx={floating ? { p: 2 } : { p: 2, borderRadius: '12px', border: `1px solid ${tokens.outlineVariant}`, bgcolor: tokens.surfaceContainerLow }}>
       <Typography sx={{ color: tokens.onSurface, fontWeight: 700, fontSize: 18 }}>{node.name}</Typography>
       <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', rowGap: 1 }}>
         {health && (

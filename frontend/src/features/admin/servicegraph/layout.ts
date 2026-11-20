@@ -1,9 +1,15 @@
 import type { GraphEdge, GraphNode } from '../../../api/services';
 
-export const NODE_W = 208;
-export const NODE_H = 76;
-const GAP_X = 40;
-const GAP_Y = 96;
+export const NODE_W = 216;
+export const NODE_H = 100;
+const GAP_X = 28;
+const GAP_Y = 80;
+const GAP_ROW = 20;
+const MAX_PER_ROW = 5;
+/** Room above the top row for its layer banner. */
+export const BANNER_H = 36;
+/** Room under the bottom row for the legend pill. */
+const LEGEND_H = 56;
 
 export interface PositionedNode {
   node: GraphNode;
@@ -16,6 +22,8 @@ export interface PositionedNode {
 export interface GraphLayout {
   nodes: PositionedNode[];
   byId: Map<number, PositionedNode>;
+  /** Top y of each layer (its first row), for the layer banners. */
+  layerTop: Map<number, number>;
   width: number;
   height: number;
 }
@@ -70,19 +78,29 @@ export function computeLayout(nodes: GraphNode[], edges: GraphEdge[]): GraphLayo
     row.forEach((n, i) => order.set(n.id, i));
   }
 
-  const widest = Math.max(1, ...rows.map((r) => r.length));
+  // A layer wider than MAX_PER_ROW wraps onto further rows so the graph stays readable on a laptop screen.
+  const perRow = rows.map((r) => Math.min(r.length, MAX_PER_ROW));
+  const widest = Math.max(1, ...perRow);
   const width = widest * NODE_W + (widest - 1) * GAP_X;
-  const height = (maxLayer + 1) * NODE_H + maxLayer * GAP_Y;
+  const rowCount = rows.map((r) => Math.max(1, Math.ceil(r.length / MAX_PER_ROW)));
+  const layerHeight = rowCount.map((c) => c * NODE_H + (c - 1) * GAP_ROW);
   const positioned: PositionedNode[] = [];
   const byId = new Map<number, PositionedNode>();
-  rows.forEach((row, l) => {
-    const rowWidth = row.length * NODE_W + (row.length - 1) * GAP_X;
-    const left = (width - rowWidth) / 2;
+  const layerTop = new Map<number, number>();
+  let y = BANNER_H;
+  for (let l = maxLayer; l >= 0; l--) {
+    layerTop.set(l, y);
+    const row = rows[l];
     row.forEach((node, i) => {
-      const p = { node, layer: l, x: left + i * (NODE_W + GAP_X), y: (maxLayer - l) * (NODE_H + GAP_Y) };
+      const r = Math.floor(i / MAX_PER_ROW);
+      const inRow = Math.min(MAX_PER_ROW, row.length - r * MAX_PER_ROW);
+      const left = (width - (inRow * NODE_W + (inRow - 1) * GAP_X)) / 2;
+      const p = { node, layer: l, x: left + (i % MAX_PER_ROW) * (NODE_W + GAP_X), y: y + r * (NODE_H + GAP_ROW) };
       positioned.push(p);
       byId.set(node.id, p);
     });
-  });
-  return { nodes: positioned, byId, width, height };
+    y += layerHeight[l] + GAP_Y;
+  }
+  const height = y - GAP_Y + LEGEND_H;
+  return { nodes: positioned, byId, width, height, layerTop };
 }
