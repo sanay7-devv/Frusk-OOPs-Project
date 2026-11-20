@@ -1,44 +1,12 @@
 import { api } from './client';
+import type { DirectoryUser } from './adminDirectory';
 
 // ==========================================
 // Admin User & Technician Types & API
 // ==========================================
 
-/** Mirrors the contract `AdminUserView`; fields marked "not in contract" are optional leftovers some older callers read. */
-export interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  active: boolean;
-  department?: string | null;
-  location?: string | null;
-  roles: ('EMPLOYEE' | 'TECHNICIAN' | 'ADMINISTRATOR')[];
-  technician?: {
-    id?: number;
-    name?: string;
-    email?: string;
-    escalationLevel: number;
-    availability: 'AVAILABLE' | 'BUSY' | 'AWAY' | 'OFF_DUTY' | string;
-    /** Contract: integer. */
-    experienceLevel?: number;
-    maxLoad?: number;
-    currentLoad?: number;
-    activeIncidents?: number;
-    /** Contract `SkillLevel`: skillId, name, proficiency. */
-    skills?: { skillId: number; name?: string; proficiency: number; /** not in contract */ skillName?: string }[];
-    /** Not in contract (use maxLoad). */
-    maxActiveIncidents?: number;
-    /** Not in contract (use activeIncidents). */
-    activeIncidentCount?: number;
-  } | null;
-  administrator?: {
-    scope: 'SYSTEM_ADMIN' | 'IT_MANAGER' | string;
-  } | null;
-  /** Not in contract. */
-  permissions?: string[];
-  /** Not in contract. */
-  createdAt?: string;
-}
+/** The contract `AdminUserView`, exactly as in `adminDirectory.ts` (no extra fields). */
+export type AdminUser = DirectoryUser;
 
 export const getAdminUsers = async (): Promise<AdminUser[]> => {
   const res = await api.get<AdminUser[]>('/admin/users');

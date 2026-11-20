@@ -11,6 +11,7 @@ import { apiErrorMessage } from '../../../utils/errors';
 import { dialogPaperSx, fieldMap, leftoverErrors } from '../adminForm';
 import TechnicianFields from './TechnicianFields';
 import { emptyTechForm, skillRequests, techFormFrom, toTechnicianRequest, validateTech, type TechForm } from './techForm';
+import { failureMessage } from '../adminErrors';
 
 interface Props {
   /** The user to grant the Technician role to ("grant") or whose profile is edited ("manage"). */
@@ -78,7 +79,7 @@ export default function TechnicianDialog({ user, mode, onClose, onSaved }: Props
     } catch (e) {
       const map = fieldMap(e);
       setErrors(map);
-      setFormError(Object.keys(map).length ? '' : apiErrorMessage(e));
+      setFormError(Object.keys(map).length ? '' : failureMessage(e));
     } finally {
       setSaving(false);
     }

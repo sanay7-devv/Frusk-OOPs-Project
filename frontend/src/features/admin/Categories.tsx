@@ -16,6 +16,7 @@ import { apiErrorMessage } from '../../utils/errors';
 import CategoryDialog from './categories/CategoryDialog';
 import SkillDialog from './categories/SkillDialog';
 import { alpha, tone } from './palette';
+import { reportFailure } from './adminErrors';
 
 const CATEGORIES_KEY = ['admin-categories-list'];
 const SKILLS_KEY = ['admin-skills-list'];
@@ -80,18 +81,18 @@ export default function Categories() {
   const deactivate = useMutation({
     mutationFn: (id: number) => deactivateAdminCategory(id),
     onSuccess: () => { toast('Category switched off', 'success'); setToDeactivate(null); refreshCategories(); },
-    onError: (e) => { toast(apiErrorMessage(e), 'error'); setToDeactivate(null); },
+    onError: (e) => { reportFailure(toast, e); setToDeactivate(null); },
   });
   const reactivate = useMutation({
     mutationFn: (c: AdminCategory) => updateAdminCategory(c.id, { name: c.name, parentId: c.parentId ?? null, requiredSkillIds: c.requiredSkillIds ?? [], active: true }),
     onSuccess: (c) => { toast(`Category ${c.name} is active again`, 'success'); refreshCategories(); },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e),
   });
   const removeSkill = useMutation({
     mutationFn: (id: number) => deleteAdminSkill(id),
     onSuccess: () => { toast('Skill deleted', 'success'); setSkillToDelete(null); refreshSkills(); },
     // the server refuses with its own message while a category or technician still uses the skill
-    onError: (e) => { toast(apiErrorMessage(e), 'error'); setSkillToDelete(null); },
+    onError: (e) => { reportFailure(toast, e); setSkillToDelete(null); },
   });
 
   const skillName = (id: number) => skills.find((s) => s.id === id)?.name ?? `Skill #${id}`;

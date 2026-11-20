@@ -3,18 +3,22 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip,
-  Stack, Collapse, IconButton, MenuItem, TextField, TablePagination,
+  Stack, Collapse, IconButton, MenuItem, TextField, TablePagination, Autocomplete, Checkbox, ListItemText,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon, Download as DownloadIcon, KeyboardArrowDown as DownIcon, KeyboardArrowUp as UpIcon, ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
-import { AUDIT_ACTIONS, searchAudit, type AuditAction, type AuditSearchParams } from '../../api/audit';
+import { AUDIT_ACTIONS, type AuditAction } from '../../api/audit';
+import { listDirectoryUsers, type DirectoryUser } from '../../api/adminDirectory';
+import { listIncidents } from '../../api/incidents';
+import { searchAuditActions, type AuditQuery } from './auditSearch';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import AuditSealPanel from './AuditSealPanel';
 import AuditHistogram from './AuditHistogram';
 import { exportAuditCsv } from './auditCsv';
 import { useToast } from '../../components/Toast';
+import { reportFailure } from './adminErrors';
 
 type Tone = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary';
 const ACTION_TONE: Record<AuditAction, Tone> = {
@@ -29,14 +33,15 @@ const ACTION_TONE: Record<AuditAction, Tone> = {
 const label = (a: string) => a.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 const head = { fontWeight: 600, fontSize: 12, color: 'text.secondary' } as const;
 
-interface Filters { action: string; actorId: string; incidentId: string; from: string; to: string }
-const EMPTY: Filters = { action: '', actorId: '', incidentId: '', from: '', to: '' };
+/** `incidentId` is what the API filters by; `incidentCode` is what the admin typed. */
+interface Filters { actions: AuditAction[]; actor: DirectoryUser | null; incidentCode: string; incidentId: number | null; from: string; to: string }
+const EMPTY: Filters = { actions: [], actor: null, incidentCode: '', incidentId: null, from: '', to: '' };
 
-function toParams(f: Filters, page: number, size: number): AuditSearchParams {
-  const p: AuditSearchParams = { page, size };
-  if (f.action) p.action = f.action as AuditAction;
-  if (f.actorId) p.actorId = Number(f.actorId);
-  if (f.incidentId) p.incidentId = Number(f.incidentId);
+function toParams(f: Filters, page: number, size: number): AuditQuery {
+  const p: AuditQuery = { page, size };
+  if (f.actions.length) p.actions = f.actions;
+  if (f.actor) p.actorId = f.actor.id;
+  if (f.incidentId != null) p.incidentId = f.incidentId;
   if (f.from) p.from = new Date(f.from).toISOString();
   if (f.to) p.to = new Date(f.to).toISOString();
   return p;
@@ -53,16 +58,40 @@ export default function AuditLog() {
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['audit-log', filters, page, size],
-    queryFn: () => searchAudit(toParams(filters, page, size)),
+    queryFn: () => searchAuditActions(toParams(filters, page, size)),
   });
+  const users = useQuery({ queryKey: ['audit-actor-options'], queryFn: listDirectoryUsers, staleTime: 5 * 60_000 });
+  const [codeError, setCodeError] = useState('');
+  const [resolving, setResolving] = useState(false);
 
   const rangeBad = !!draft.from && !!draft.to && new Date(draft.to) <= new Date(draft.from);
-  const apply = () => { if (rangeBad) return; setPage(0); setFilters(draft); };
-  const reset = () => { setPage(0); setDraft(EMPTY); setFilters(EMPTY); };
+  // The API filters by incident id; turn a typed code (INC-2026-00213) into its id first.
+  const apply = async () => {
+    if (rangeBad) return;
+    const code = draft.incidentCode.trim();
+    let incidentId: number | null = null;
+    if (code) {
+      setResolving(true);
+      try {
+        const hit = (await listIncidents({ code, size: 1 })).items[0];
+        if (!hit) { setCodeError(`No incident has the code ${code}.`); return; }
+        incidentId = hit.id;
+      } catch (e) {
+        setCodeError(apiErrorMessage(e));
+        return;
+      } finally {
+        setResolving(false);
+      }
+    }
+    setCodeError('');
+    setPage(0);
+    setFilters({ ...draft, incidentCode: code, incidentId });
+  };
+  const reset = () => { setPage(0); setCodeError(''); setDraft(EMPTY); setFilters(EMPTY); };
   const toggle = (id: number) =>
     setOpen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const field = (k: keyof Filters) => (e: React.ChangeEvent<HTMLInputElement>) => setDraft({ ...draft, [k]: e.target.value });
-  const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') apply(); };
+  const field = (k: 'incidentCode' | 'from' | 'to') => (e: React.ChangeEvent<HTMLInputElement>) => setDraft({ ...draft, [k]: e.target.value });
+  const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') void apply(); };
 
   const items = data?.items ?? [];
 
@@ -82,7 +111,7 @@ export default function AuditLog() {
         res.truncated ? 'warning' : 'success'
       );
     } catch (e) {
-      toast(apiErrorMessage(e), 'error');
+      reportFailure(toast, e);
     } finally {
       setExporting(false);
     }
@@ -109,16 +138,30 @@ export default function AuditLog() {
 
       <Paper elevation={0} sx={{ p: 2, mb: 2, borderRadius: 3, border: 1, borderColor: 'divider' }}>
         <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
-          <TextField select size="small" label="Action" value={draft.action} onChange={field('action')} sx={{ minWidth: 220 }}>
-            <MenuItem value="">All actions</MenuItem>
-            {AUDIT_ACTIONS.map((a) => <MenuItem key={a} value={a}>{label(a)}</MenuItem>)}
+          <TextField select size="small" label="Actions" value={draft.actions} sx={{ minWidth: 240 }}
+            onChange={(e) => setDraft({ ...draft, actions: (typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value) as AuditAction[] })}
+            SelectProps={{ multiple: true, renderValue: (v) => ((v as string[]).length ? (v as string[]).map(label).join(', ') : 'All actions') , displayEmpty: true }}
+            InputLabelProps={{ shrink: true }}>
+            {AUDIT_ACTIONS.map((a) => (
+              <MenuItem key={a} value={a}>
+                <Checkbox size="small" checked={draft.actions.includes(a)} />
+                <ListItemText primary={label(a)} />
+              </MenuItem>
+            ))}
           </TextField>
-          <TextField size="small" label="Actor (user ID)" type="number" value={draft.actorId} onChange={field('actorId')} onKeyDown={onKey} sx={{ width: 150 }} />
-          <TextField size="small" label="Incident (ID)" type="number" value={draft.incidentId} onChange={field('incidentId')} onKeyDown={onKey} sx={{ width: 150 }} />
+          <Autocomplete size="small" sx={{ width: 240 }} options={users.data ?? []} loading={users.isLoading}
+            value={draft.actor} onChange={(_, v) => setDraft({ ...draft, actor: v })}
+            getOptionLabel={(u) => u.name} isOptionEqualToValue={(a, b) => a.id === b.id}
+            renderInput={(params) => (
+              <TextField {...params} label="Actor" error={users.isError}
+                helperText={users.isError ? apiErrorMessage(users.error) : undefined} />
+            )} />
+          <TextField size="small" label="Incident code" placeholder="INC-2026-00213" value={draft.incidentCode} onChange={field('incidentCode')}
+            onKeyDown={onKey} error={!!codeError} helperText={codeError || undefined} sx={{ width: 190 }} />
           <TextField size="small" label="From" type="datetime-local" value={draft.from} onChange={field('from')} InputLabelProps={{ shrink: true }} />
           <TextField size="small" label="To" type="datetime-local" value={draft.to} onChange={field('to')} InputLabelProps={{ shrink: true }}
             error={rangeBad} helperText={rangeBad ? 'To must be after From' : 'To is exclusive'} />
-          <Button variant="contained" onClick={apply} disabled={rangeBad}>Apply</Button>
+          <Button variant="contained" onClick={() => void apply()} disabled={rangeBad || resolving}>Apply</Button>
           <Button onClick={reset}>Clear</Button>
         </Stack>
       </Paper>
@@ -200,6 +243,7 @@ export default function AuditLog() {
             rowsPerPageOptions={[10, 25, 50, 100]}
             onPageChange={(_, p) => setPage(p)}
             onRowsPerPageChange={(e) => { setSize(Number(e.target.value)); setPage(0); }}
+            labelDisplayedRows={filters.actions.length > 1 ? ({ from, to }) => `${from}-${to} on this page (each action paged separately)` : undefined}
             sx={{ '& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': { fontSize: 13 } }}
           />
         </TableContainer>

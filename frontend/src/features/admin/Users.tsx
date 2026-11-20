@@ -23,6 +23,7 @@ import UserDrawer from './users/UserDrawer';
 import { EditUserDialog, GrantAdminDialog } from './users/AccountDialogs';
 import { isLead } from './users/techForm';
 import { tone } from './palette';
+import { reportFailure } from './adminErrors';
 
 const USERS_KEY = ['admin-users-directory'];
 const OPEN_STATUSES = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
@@ -109,7 +110,7 @@ export default function Users() {
       refresh(c.user.id);
       setConfirm(null);
     },
-    onError: (e) => { toast(apiErrorMessage(e), 'error'); setConfirm(null); },
+    onError: (e) => { reportFailure(toast, e); setConfirm(null); },
   });
 
   const all = users.data ?? [];
@@ -216,7 +217,7 @@ export default function Users() {
       {users.isLoading && <LoadingState />}
       {users.isError && <ErrorState onRetry={() => users.refetch()} message={apiErrorMessage(users.error)} />}
       {users.data && rows.length === 0 && (
-        <EmptyState message={all.length === 0 ? 'No accounts yet.' : 'No account matches this search or filter.'}
+        <EmptyState message={all.length === 0 ? 'No accounts yet.' : search.trim() ? `No account matches "${search.trim()}"${filter !== 'ALL' ? ' in this group' : ''}.` : 'No account is in this group.'}
           action={search || filter !== 'ALL' ? <Button onClick={() => { setSearch(''); setFilter('ALL'); }} sx={{ textTransform: 'none' }}>Clear filters</Button> : undefined} />
       )}
       {rows.length > 0 && (

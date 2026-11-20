@@ -7,6 +7,8 @@ import type { ServiceHealth } from '../../api/services';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import GraphCanvas from './servicegraph/GraphCanvas';
+import MajorIncidentPanel, { NO_PATH, type CausePath } from './servicegraph/MajorIncidentPanel';
+import DirectorBar from './DirectorBar';
 import Inspector from './servicegraph/Inspector';
 import DependenciesDialog from './servicegraph/DependenciesDialog';
 import { computeLayout } from './servicegraph/layout';
@@ -31,6 +33,8 @@ export default function ServiceGraph() {
   const [healthFilter, setHealthFilter] = useState<'ALL' | ServiceHealth>('ALL');
   const [search, setSearch] = useState('');
   const [depsFor, setDepsFor] = useState<GraphNode | null>(null);
+  const [problemId, setProblemId] = useState<number | null>(null);
+  const [causePath, setCausePath] = useState<CausePath>(NO_PATH);
 
   const graph = useQuery({ queryKey: ['service-graph'], queryFn: getServiceGraph, refetchInterval: REFRESH_MS });
   const board = useQuery({ queryKey: ['service-health'], queryFn: getServiceHealthBoard, refetchInterval: REFRESH_MS });
@@ -88,6 +92,9 @@ export default function ServiceGraph() {
         An arrow points from a service to the service it depends on. Health is {board.data?.label?.toLowerCase() ?? 'based on reported incidents'}.
       </Typography>
 
+      <DirectorBar defaultServiceId={selectedId} />
+      <MajorIncidentPanel problemId={problemId} onPick={setProblemId} onPath={setCausePath} selectedServiceId={selectedId} />
+
       <Stack direction="row" spacing={1.5} sx={{ mb: 2, flexWrap: 'wrap', rowGap: 1.5 }}>
         <Kpi label="Services" value={graph.data.nodes.length} />
         <Kpi label="Outage" value={counts.OUTAGE} color={HEALTH_COLOR.OUTAGE} />
@@ -133,6 +140,7 @@ export default function ServiceGraph() {
             affectedIds={affectedIds}
             visibleIds={visibleIds}
             onSelect={setSelectedId}
+            causePath={causePath}
           />
         </Grid>
         <Grid item xs={12} md={4} lg={3}>

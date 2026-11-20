@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../../components/StateV
 import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
+import { reportFailure, failureMessage } from '../adminErrors';
 
 interface Props {
   open: boolean;
@@ -45,7 +46,7 @@ export default function SavedViewsDialog({ open, onClose, current, onApply }: Pr
     },
     onError: (e) => {
       setToDelete(null);
-      toast(apiErrorMessage(e), 'error');
+      reportFailure(toast, e);
     },
   });
 
@@ -57,7 +58,7 @@ export default function SavedViewsDialog({ open, onClose, current, onApply }: Pr
         <DialogTitle>Saved views</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            {save.isError && <Alert severity="error">{apiErrorMessage(save.error)}</Alert>}
+            {save.isError && <Alert severity="error">{failureMessage(save.error)}</Alert>}
             <Stack direction="row" spacing={1} alignItems="flex-start">
               <TextField size="small" fullWidth label="Name for the current filters" value={name} disabled={save.isPending || !hasFilters}
                 onChange={(e) => setName(e.target.value)} inputProps={{ maxLength: 60 }}

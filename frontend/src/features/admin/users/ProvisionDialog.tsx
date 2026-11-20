@@ -12,6 +12,7 @@ import { dialogPaperSx, errFor, fieldMap, fieldSx, leftoverErrors } from '../adm
 import TechnicianFields from './TechnicianFields';
 import { emptyTechForm, toTechnicianRequest, validateTech, type TechForm } from './techForm';
 import { tone } from '../palette';
+import { failureMessage } from '../adminErrors';
 
 const SHOWN = ['name', 'email', 'password', 'department', 'location', 'roles', 'experienceLevel', 'maxLoad', 'availability', 'escalationLevel', 'skills', 'scope', 'administrator'];
 
@@ -59,7 +60,7 @@ export default function ProvisionDialog({ open, onClose, onCreated }: { open: bo
     onError: (e) => {
       const map = fieldMap(e);
       setErrors(map);
-      setFormError(Object.keys(map).length ? '' : apiErrorMessage(e));
+      setFormError(Object.keys(map).length ? '' : failureMessage(e));
     },
   });
 

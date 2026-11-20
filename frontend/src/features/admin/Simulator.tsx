@@ -18,6 +18,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { useToast } from '../../components/Toast';
 import ResultCharts, { SERIES } from './simulator/ResultCharts';
 import { hasErrors, toRequest, validateRun, type ConfigDraft, type RunDraft } from './simulator/validation';
+import { reportFailure } from './adminErrors';
 
 // Live setting keys behind the five weights (ConfigKey on the backend).
 const WEIGHT_CONFIG_KEY: Record<WeightName, string> = {
@@ -74,7 +75,7 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
   const run = useMutation({
     mutationFn: () => runSimulation(toRequest(draft)),
     onSuccess: (r) => setResult(r),
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e),
   });
   const apply = useMutation({
     mutationFn: (c: ConfigurationView) => applySimulation({
@@ -86,7 +87,7 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
       setApplyTarget(null);
       qc.invalidateQueries({ queryKey: ['admin-config-settings'] });
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e),
   });
 
   const patch = (key: number, p: Partial<ConfigDraft>) =>

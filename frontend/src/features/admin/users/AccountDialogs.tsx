@@ -7,6 +7,7 @@ import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
 import { dialogPaperSx, errFor, fieldMap, fieldSx, leftoverErrors } from '../adminForm';
+import { failureMessage } from '../adminErrors';
 
 /** Edit name, department and location (PUT /admin/users/{id}); the active flag is kept as it is. */
 export function EditUserDialog({ user, onClose, onSaved }: { user: DirectoryUser | null; onClose: () => void; onSaved: () => void }) {
@@ -44,7 +45,7 @@ export function EditUserDialog({ user, onClose, onSaved }: { user: DirectoryUser
     } catch (e) {
       const map = fieldMap(e);
       setErrors(map);
-      setFormError(Object.keys(map).length ? '' : apiErrorMessage(e));
+      setFormError(Object.keys(map).length ? '' : failureMessage(e));
     } finally {
       setSaving(false);
     }
@@ -96,7 +97,7 @@ export function GrantAdminDialog({ user, onClose, onSaved }: { user: DirectoryUs
       onSaved();
       onClose();
     } catch (e) {
-      setError(apiErrorMessage(e));
+      setError(failureMessage(e));
     } finally {
       setSaving(false);
     }

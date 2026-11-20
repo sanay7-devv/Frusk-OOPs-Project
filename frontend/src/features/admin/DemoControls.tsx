@@ -13,6 +13,7 @@ import { apiErrorMessage } from '../../utils/errors';
 import { tokens } from '../../theme/theme';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
+import { reportFailure } from './adminErrors';
 
 const QUICK = [10, 60, 240];
 
@@ -60,7 +61,7 @@ function DemoPanels({ now, offsetMinutes }: { now: string; offsetMinutes: number
       // The access token is checked against the same clock: renew it so the session survives a big jump.
       requestRefresh().catch((e) => toast(`Clock moved, but renewing the session failed: ${apiErrorMessage(e)}`, 'error'));
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e),
   });
   const startDrill = useMutation({
     mutationFn: () => runOutageDrill(Number(serviceId)),
@@ -68,7 +69,7 @@ function DemoPanels({ now, offsetMinutes }: { now: string; offsetMinutes: number
       setDrill(r);
       toast('Outage drill started', 'success');
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e),
   });
 
   return (

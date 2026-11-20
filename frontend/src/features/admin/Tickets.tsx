@@ -28,6 +28,7 @@ import IncidentDrawer from './tickets/IncidentDrawer';
 import SavedViewsDialog from './tickets/SavedViewsDialog';
 import { ALL_STATUSES, SLA_STATES, dateRange, fromSnapshot, snapshot, tabOf, toApiFilters } from './tickets/filters';
 import type { TabKey } from './tickets/filters';
+import { reportFailure } from './adminErrors';
 
 const PAGE_SIZE = 25;
 const TAB_LABEL: Record<TabKey, string> = { today: 'Today', previous: 'Earlier', all: 'All' };
@@ -102,7 +103,7 @@ export default function Tickets() {
       const range = { from: createdFrom, to: createdTo };
       await downloadReport('incidents', format, range);
     } catch (e) {
-      toast(apiErrorMessage(e), 'error');
+      reportFailure(toast, e);
     } finally {
       setExporting(false);
     }

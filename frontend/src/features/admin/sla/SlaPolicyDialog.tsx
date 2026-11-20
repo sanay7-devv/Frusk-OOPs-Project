@@ -8,6 +8,7 @@ import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
 import { dialogPaperSx, errFor, fieldMap, fieldSx, leftoverErrors } from '../adminForm';
+import { failureMessage } from '../adminErrors';
 
 export const RESPONSE_MAX = 10080;
 export const RESOLUTION_MAX = 43200;
@@ -63,7 +64,7 @@ export default function SlaPolicyDialog({ open, policy, services, onClose, onSav
     onError: (e) => {
       const map = fieldMap(e);
       setErrors(map);
-      setFormError(Object.keys(map).length ? '' : apiErrorMessage(e));
+      setFormError(Object.keys(map).length ? '' : failureMessage(e));
     },
   });
 

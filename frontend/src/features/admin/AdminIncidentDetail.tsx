@@ -64,6 +64,7 @@ import {
   MarkDuplicateDialog,
   OverridePriorityDialog,
 } from '../lead/shared/IncidentActionDialogs';
+import { reportFailure } from './adminErrors';
 
 const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'gif', 'pdf', 'txt', 'log'];
 const MAX_ATTACH_BYTES = 5 * 1024 * 1024;
@@ -143,7 +144,7 @@ export default function AdminIncidentDetail() {
       setNewComment('');
       afterChange();
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e, afterChange),
   });
 
   const closeAssign = () => {
@@ -163,7 +164,7 @@ export default function AdminIncidentDetail() {
     },
     onError: (e) => {
       if ((e as { response?: { status?: number } })?.response?.status === 409) afterChange();
-      toast(apiErrorMessage(e), 'error');
+      reportFailure(toast, e, afterChange);
     },
   });
 
@@ -174,7 +175,7 @@ export default function AdminIncidentDetail() {
       setCloseConfirmOpen(false);
       afterChange();
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e, afterChange),
   });
 
   const uploadMutation = useMutation({
@@ -183,7 +184,7 @@ export default function AdminIncidentDetail() {
       toast(`Uploaded ${a.filename}`, 'success');
       afterChange();
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e, afterChange),
   });
 
   const pdfMutation = useMutation({
@@ -192,13 +193,13 @@ export default function AdminIncidentDetail() {
       saveBlob(blob, `incident-report-${incident?.code ?? incidentId}.pdf`);
       toast('Post-incident report PDF downloaded.', 'success');
     },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e, afterChange),
   });
 
   const downloadMutation = useMutation({
     mutationFn: async (att: AttachmentView) => ({ att, blob: await downloadAttachment(att.id) }),
     onSuccess: ({ att, blob }) => saveBlob(blob, att.filename),
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e, afterChange),
   });
 
   function saveBlob(blob: Blob, name: string) {

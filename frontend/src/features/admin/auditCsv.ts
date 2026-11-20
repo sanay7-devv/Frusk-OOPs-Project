@@ -1,4 +1,5 @@
-import { searchAudit, type AuditEntryView, type AuditSearchParams } from '../../api/audit';
+import type { AuditEntryView } from '../../api/audit';
+import { searchAuditActions, type AuditQuery } from './auditSearch';
 
 /** The API caps a page at 100 (AuditController @Max(100)). */
 const PAGE_SIZE = 100;
@@ -42,11 +43,11 @@ export function auditToCsv(rows: AuditEntryView[]): string {
 }
 
 /** Every record that matches the filters (all pages, up to CSV_MAX_ROWS), as a CSV file. */
-export async function exportAuditCsv(params: Omit<AuditSearchParams, 'page' | 'size'>): Promise<AuditCsvResult> {
+export async function exportAuditCsv(params: Omit<AuditQuery, 'page' | 'size'>): Promise<AuditCsvResult> {
   const rows: AuditEntryView[] = [];
   let total = 0;
   for (let page = 0; rows.length < CSV_MAX_ROWS; page++) {
-    const res = await searchAudit({ ...params, page, size: PAGE_SIZE });
+    const res = await searchAuditActions({ ...params, page, size: PAGE_SIZE });
     total = res.totalItems;
     rows.push(...res.items);
     if (page + 1 >= res.totalPages) break;

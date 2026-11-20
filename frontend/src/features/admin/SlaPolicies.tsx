@@ -16,6 +16,7 @@ import { cardSx, monoLabelSx } from './adminForm';
 import { CalendarSummary, ComplianceStrip, EffectivePolicy, formatMinutes } from './sla/SlaInsights';
 import SlaPolicyDialog from './sla/SlaPolicyDialog';
 import { alpha, tone } from './palette';
+import { reportFailure } from './adminErrors';
 
 const POLICIES_KEY = ['admin-sla-policies-list'];
 
@@ -31,7 +32,7 @@ export default function SlaPolicies() {
   const remove = useMutation({
     mutationFn: (p: SlaPolicyRecord) => deleteSlaPolicyRecord(p.id),
     onSuccess: (_d, p) => { toast(`${p.priority} policy deleted`, 'success'); qc.invalidateQueries({ queryKey: POLICIES_KEY }); setDel(null); },
-    onError: (e) => { toast(apiErrorMessage(e), 'error'); setDel(null); },
+    onError: (e) => { reportFailure(toast, e); setDel(null); },
   });
 
   const list = [...(policies.data ?? [])].sort((a, b) =>
