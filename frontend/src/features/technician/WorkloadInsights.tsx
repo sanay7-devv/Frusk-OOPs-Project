@@ -9,6 +9,7 @@ import { priorityColor, slaStateColor, slaStateLabel, tokens } from '../../theme
 import { listIncidents } from '../../api/incidents';
 import { getMyQueue, getSlaRisk, type Deadline, type SkillLevel } from '../../api/technicians';
 import type { Priority, SlaState } from '../../api/types';
+import { alpha } from './staffStyle';
 
 const cardSx = {
   p: 2.5,
@@ -88,7 +89,7 @@ export default function WorkloadInsights({ deadlines, skills }: { deadlines: Dea
                   <CartesianGrid stroke={tokens.outlineVariant} vertical={false} />
                   <XAxis dataKey="name" tick={{ fill: tokens.onSurfaceVariant, fontSize: 12 }} />
                   <YAxis allowDecimals={false} tick={{ fill: tokens.onSurfaceVariant, fontSize: 12 }} />
-                  <Tooltip {...chartTooltip} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                  <Tooltip {...chartTooltip} cursor={{ fill: alpha(tokens.onSurface, 0.04) }} />
                   <Bar dataKey="count" name="Incidents" radius={[4, 4, 0, 0]}>
                     {byPriority.map((d) => (
                       <Cell key={d.name} fill={priorityColor[d.name as Priority]} />
@@ -118,7 +119,7 @@ export default function WorkloadInsights({ deadlines, skills }: { deadlines: Dea
                   <CartesianGrid stroke={tokens.outlineVariant} vertical={false} />
                   <XAxis dataKey="name" tick={{ fill: tokens.onSurfaceVariant, fontSize: 12 }} />
                   <YAxis allowDecimals={false} tick={{ fill: tokens.onSurfaceVariant, fontSize: 12 }} />
-                  <Tooltip {...chartTooltip} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                  <Tooltip {...chartTooltip} cursor={{ fill: alpha(tokens.onSurface, 0.04) }} />
                   <Bar dataKey="count" name="Incidents" radius={[4, 4, 0, 0]}>
                     {bySla.map((d) => (
                       <Cell key={d.state} fill={slaStateColor[d.state]} />
@@ -192,7 +193,7 @@ export default function WorkloadInsights({ deadlines, skills }: { deadlines: Dea
                           height: 22,
                           fontSize: 12,
                           fontWeight: 700,
-                          bgcolor: r.data.atRisk ? 'rgba(244, 63, 94, 0.15)' : 'rgba(74, 222, 128, 0.15)',
+                          bgcolor: r.data.atRisk ? alpha(tokens.danger, 0.15) : alpha(priorityColor.P4, 0.15),
                           color: r.data.atRisk ? slaStateColor.VIOLATED : slaStateColor.MET,
                         }}
                       />

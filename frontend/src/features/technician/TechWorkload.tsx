@@ -39,6 +39,11 @@ import {
   type TechnicianView,
   type Deadline,
 } from '../../api/technicians';
+import { alpha, CAPACITY_WARN_PERCENT } from './staffStyle';
+import QueueRowActions from './QueueRowActions';
+import { useProblemBasePath } from '../problems/problemAccess';
+import { useLiveRefresh } from '../shared/useLiveRefresh';
+import { acknowledgeIncident, startIncident } from '../../api/technicians';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA map.
 const COLORS = {
@@ -55,7 +60,7 @@ const COLORS = {
   primaryContainer: tokens.primaryDark,
   secondary: tokens.secondary,
   error: slaStateColor.VIOLATED,
-  errorContainer: 'rgba(244, 63, 94, 0.15)',
+  errorContainer: alpha(tokens.danger, 0.15),
   tertiary: tokens.onSurfaceVariant,
 };
 
@@ -104,6 +109,28 @@ export default function TechWorkload() {
     : currentAvailability === 'AWAY' ? 'Away'
     : currentAvailability === 'OFF_DUTY' ? 'Off duty'
     : 'Unknown';
+
+  // Server pushes (STOMP via realtime/useRealtime) reload the workload at once.
+  useLiveRefresh(() => {
+    queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+    queryClient.invalidateQueries({ queryKey: ['incidents'] });
+  });
+  const problemBase = useProblemBasePath();
+  const [actionPendingId, setActionPendingId] = useState<number | null>(null);
+  const runRowAction = async (id: number, run: (id: number) => Promise<{ code: string }>, doneText: string) => {
+    setActionPendingId(id);
+    try {
+      const res = await run(id);
+      toast(`${res.code} ${doneText}`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+      queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+    } catch (err) {
+      toast(apiErrorMessage(err), 'error');
+    } finally {
+      setActionPendingId(null);
+    }
+  };
 
   const handleToggleAvailability = async () => {
     const next = isAvailable ? 'AWAY' : 'AVAILABLE';
@@ -228,7 +255,7 @@ export default function TechWorkload() {
                   height: 26,
                   borderRadius: '50%',
                   bgcolor: COLORS.primaryContainer,
-                  color: '#ffffff',
+                  color: tokens.onSurface,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -268,7 +295,7 @@ export default function TechWorkload() {
                   height: 8,
                   borderRadius: '50%',
                   bgcolor: isAvailable ? COLORS.secondary : COLORS.error,
-                  boxShadow: isAvailable ? '0 0 8px #06b6d4' : '0 0 8px #f43f5e',
+                  boxShadow: isAvailable ? `0 0 8px ${tokens.secondary}` : `0 0 8px ${tokens.danger}`,
                 }}
               />
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
@@ -367,7 +394,7 @@ export default function TechWorkload() {
               </Box>
 
               <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: COLORS.surfaceContainerLow, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 800, color: capacityPercent >= 80 ? COLORS.error : COLORS.primary }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : COLORS.primary }}>
                   {capacityPercent}%
                 </Typography>
               </Box>
@@ -376,10 +403,10 @@ export default function TechWorkload() {
             <Box sx={{ pt: 2 }}>
               <Chip
                 size="small"
-                label={capacityPercent >= 80 ? 'Near Capacity' : 'Capacity Available'}
+                label={capacityPercent >= CAPACITY_WARN_PERCENT ? 'Near Capacity' : 'Capacity Available'}
                 sx={{
-                  bgcolor: capacityPercent >= 80 ? COLORS.errorContainer : 'rgba(16, 185, 129, 0.15)',
-                  color: capacityPercent >= 80 ? COLORS.error : '#10b981',
+                  bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.errorContainer : alpha(tokens.success, 0.15),
+                  color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : tokens.success,
                   fontWeight: 700,
                   fontSize: 12,
                   height: 22,
@@ -468,14 +495,14 @@ export default function TechWorkload() {
                 >
                   Resolved This Week
                 </Typography>
-                <Typography sx={{ fontSize: 28, fontWeight: 700, color: '#10b981', lineHeight: 1.1 }}>
+                <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.success, lineHeight: 1.1 }}>
                   {workload?.resolvedThisWeek ?? 0}
                 </Typography>
               </Box>
-              <VerifiedIcon sx={{ fontSize: 32, color: '#10b981' }} />
+              <VerifiedIcon sx={{ fontSize: 32, color: tokens.success }} />
             </Box>
             <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.success }}>
                 Completed Resolutions
               </Typography>
               <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
@@ -567,7 +594,7 @@ export default function TechWorkload() {
 
         {deadlines.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
-            <CheckCircleIcon sx={{ fontSize: 36, color: '#10b981', mb: 1 }} />
+            <CheckCircleIcon sx={{ fontSize: 36, color: tokens.success, mb: 1 }} />
             <Typography sx={{ fontSize: 14, fontWeight: 700, color: COLORS.onSurface }}>
               No Imminent Deadlines
             </Typography>
@@ -606,13 +633,27 @@ export default function TechWorkload() {
                         <Chip
                           label={slaStateLabel[d.slaState]}
                           size="small"
-                          sx={{ height: 22, fontSize: 12, fontWeight: 700, bgcolor: `${slaStateColor[d.slaState]}26`, color: slaStateColor[d.slaState] }}
+                          sx={{ height: 22, fontSize: 12, fontWeight: 700, bgcolor: alpha(slaStateColor[d.slaState], 0.15), color: slaStateColor[d.slaState] }}
                         />
                       </td>
                       <td style={{ padding: '12px' }}>
                         <SlaCountdown due={d.due} slaState={d.slaState} />
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
+                        {deadlines.findIndex((x: Deadline) => x.incidentId === d.incidentId) === deadlines.indexOf(d) && (
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.75 }}>
+                            <QueueRowActions
+                              incident={{ id: d.incidentId, code: d.code }}
+                              problemBase={problemBase}
+                              pendingId={actionPendingId}
+                              actions={['ACKNOWLEDGE', 'START_WORK']}
+                              handlers={{
+                                onAcknowledge: (i) => runRowAction(i.id, acknowledgeIncident, 'acknowledged. Response timer stopped.'),
+                                onStart: (i) => runRowAction(i.id, startIncident, 'is now in progress.'),
+                              }}
+                            />
+                          </Box>
+                        )}
                         <Button
                           size="small"
                           variant="contained"

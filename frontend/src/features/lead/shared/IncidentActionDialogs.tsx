@@ -29,6 +29,8 @@ import ConfirmDialog from '../../../components/ConfirmDialog';
 import { useToast } from '../../../components/Toast';
 import { apiErrorMessage } from '../../../utils/errors';
 import { COLORS, MAX_REASON, MIN_REASON, MONO, dialogPaperSx, fieldSx, invalidateIncidentCaches } from './ui';
+import { alpha } from '../../technician/staffStyle';
+import { tokens } from '../../../theme/theme';
 
 const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -215,7 +217,7 @@ export function MarkDuplicateDialog({ open, incidentId, onClose }: { open: boole
                   p: 1.25,
                   borderRadius: 2,
                   cursor: 'pointer',
-                  bgcolor: picked === s.incidentId && !manualId ? 'rgba(99,102,241,0.15)' : COLORS.surfaceContainerLow,
+                  bgcolor: picked === s.incidentId && !manualId ? alpha(tokens.primary, 0.15) : COLORS.surfaceContainerLow,
                   border: `1px solid ${picked === s.incidentId && !manualId ? COLORS.primary : COLORS.border}`,
                 }}
               >
@@ -441,6 +443,74 @@ export function InternalNoteDialog({ open, incidentId, onClose }: { open: boolea
           sx={{ textTransform: 'none', fontWeight: 700 }}
         >
           Add note
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/**
+ * Confirmation before assigning someone other than the engine's top candidate. The reason is optional;
+ * POST /incidents/{id}/assign has no reason field, so a reason given here is saved as an internal note
+ * (see `overrideAssignNote`) and shows in the incident's timeline.
+ */
+export function LowerRankedAssignDialog({
+  open,
+  technicianName,
+  score,
+  topName,
+  topScore,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  technicianName: string;
+  score: number;
+  topName: string | null;
+  topScore: number | null;
+  busy: boolean;
+  onConfirm: (reason: string) => void;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  useEffect(() => {
+    if (open) setReason('');
+  }, [open]);
+  const tooLong = reason.length > MAX_REASON;
+  return (
+    <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="sm" fullWidth PaperProps={{ sx: dialogPaperSx }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>Assign a lower-ranked technician?</DialogTitle>
+      <DialogContent>
+        <Typography sx={{ fontSize: 13.5, color: COLORS.onSurface, mb: 1.5 }}>
+          {technicianName} scored {score}%{topScore != null ? ` against ${topScore}%` : ''}
+          {topName ? ` for ${topName}, the top match` : ' for the top match'}. This overrides the engine&apos;s choice.
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          size="small"
+          label="Reason (optional, saved as an internal note)"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          error={tooLong}
+          helperText={`${reason.length}/${MAX_REASON}`}
+          sx={fieldSx}
+        />
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} disabled={busy} sx={{ color: COLORS.onSurfaceVariant, textTransform: 'none' }}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          disabled={busy || tooLong}
+          onClick={() => onConfirm(reason.trim())}
+          startIcon={busy ? <CircularProgress size={16} /> : undefined}
+          sx={{ textTransform: 'none', fontWeight: 700 }}
+        >
+          Assign anyway
         </Button>
       </DialogActions>
     </Dialog>

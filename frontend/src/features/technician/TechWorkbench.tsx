@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
@@ -56,7 +56,13 @@ import { apiErrorMessage } from '../../utils/errors';
 import PriorityBadge from '../../components/PriorityBadge';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { ErrorState } from '../../components/StateViews';
-import { ReassignDialog, MarkDuplicateDialog, OverridePriorityDialog, LinkProblemDialog } from './WorkbenchDialogs';
+import { ReassignDialog, AssignDialog, MarkDuplicateDialog, OverridePriorityDialog, LinkProblemDialog } from './WorkbenchDialogs';
+import { EditIncidentDialog } from '../lead/shared/IncidentActionDialogs';
+import ActionButtons from '../../components/ActionButtons';
+import { isStaleDataError, fieldErrorFor } from './apiErrors';
+import WhyAssignee from '../lead/shared/WhyAssignee';
+import SlaClockPair from '../lead/shared/SlaClockPair';
+import { getDirectoryUser } from '../../api/adminDirectory';
 import SlaCountdown from '../../components/SlaCountdown';
 import PriorityExplainer from '../../components/PriorityExplainer';
 import { useAuth } from '../../auth/AuthContext';
@@ -72,11 +78,12 @@ import {
   uploadAttachment,
   downloadAttachment,
   verifyIncident,
+  reopenIncident,
   closeIncident,
 } from '../../api/incidents';
 import { resolveProblem } from '../../api/problems';
 import { getServiceImpact } from '../../api/services';
-import type { CommentView, AuditEntry, AttachmentView, RecommendationView } from '../../api/types';
+import type { CommentView, AuditEntry, AttachmentView, RecommendationView, IncidentAction } from '../../api/types';
 import {
   acknowledgeIncident,
   startIncident,
@@ -92,6 +99,7 @@ import {
   type SlaRiskView,
   type ThreadSummaryView,
 } from '../../api/technicians';
+import { alpha } from './staffStyle';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA/priority maps.
 const COLORS = {
@@ -110,6 +118,34 @@ const COLORS = {
   error: slaStateColor.VIOLATED,
   success: slaStateColor.MET,
   tertiary: tokens.tertiary,
+};
+
+/** Actions that belong to someone else or to another part of this screen: the note composer (COMMENT) and the reporter's own actions. */
+const RIBBON_EXCLUDED: IncidentAction[] = ['COMMENT', 'PROVIDE_INFO', 'GIVE_FEEDBACK', 'WITHDRAW'];
+const RIBBON_LABELS: Partial<Record<IncidentAction, string>> = {
+  ACKNOWLEDGE: 'Acknowledge incident',
+  START_WORK: 'Start investigation',
+  REQUEST_INFO: 'Request info (pause SLA)',
+  ESCALATE: 'Escalate level',
+  OVERRIDE_PRIORITY: 'Priority / what-if',
+  VERIFY: 'Verify fix',
+  CLOSE: 'Close incident',
+  RESOLVE: 'Resolve incident',
+  REOPEN: 'Reopen incident',
+  EDIT: 'Edit incident',
+};
+const RIBBON_ICONS: Partial<Record<IncidentAction, ReactNode>> = {
+  ACKNOWLEDGE: <CheckCircleIcon />,
+  START_WORK: <PlayArrowIcon />,
+  REQUEST_INFO: <PauseCircleIcon />,
+  ESCALATE: <TrendingUpIcon />,
+  ASSIGN: <SwapHorizIcon />,
+  REASSIGN: <SwapHorizIcon />,
+  OVERRIDE_PRIORITY: <FlagIcon />,
+  MARK_DUPLICATE: <ContentCopyIcon />,
+  VERIFY: <CheckCircleIcon />,
+  CLOSE: <DoneAllIcon />,
+  RESOLVE: <DoneAllIcon />,
 };
 
 export default function TechWorkbench() {
@@ -131,6 +167,8 @@ export default function TechWorkbench() {
   const [resolveSteps, setResolveSteps] = useState('');
   const [resolveTimeSpent, setResolveTimeSpent] = useState<string>('');
   const [resolveReusable, setResolveReusable] = useState(true);
+  // The server's field errors (ApiError.fieldErrors) from the last failed resolve, shown under the matching fields.
+  const [resolveErr, setResolveErr] = useState<unknown>(null);
 
   const [isEscalateOpen, setIsEscalateOpen] = useState(false);
   const [escalateReason, setEscalateReason] = useState('');
@@ -149,7 +187,9 @@ export default function TechWorkbench() {
   const [isDupOpen, setIsDupOpen] = useState(false);
   const [isPriorityOpen, setIsPriorityOpen] = useState(false);
   const [isProblemOpen, setIsProblemOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<'CLOSE' | 'VERIFY' | 'PUBLIC_NOTE' | null>(null);
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'CLOSE' | 'VERIFY' | 'REOPEN' | 'PUBLIC_NOTE' | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -223,6 +263,16 @@ export default function TechWorkbench() {
     enabled: serviceId != null,
   });
 
+  // 10. Reporter contact and department: only GET /admin/users/{id} has them and it needs USER_MANAGE.
+  const canSeeContacts = !!user?.permissions?.includes('USER_MANAGE');
+  const reporterId = incident?.reporter?.id;
+  const { data: reporterContact, isError: contactError, error: contactErr, refetch: refetchContact } = useQuery({
+    queryKey: ['incident-reporter-contact', reporterId],
+    queryFn: () => getDirectoryUser(reporterId as number),
+    enabled: canSeeContacts && reporterId != null,
+    staleTime: 5 * 60_000,
+  });
+
   const [resolveWholeProblem, setResolveWholeProblem] = useState(false);
   const allowedActions = incident?.allowedActions || [];
 
@@ -253,6 +303,7 @@ export default function TechWorkbench() {
       handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -263,6 +314,7 @@ export default function TechWorkbench() {
       handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -279,6 +331,7 @@ export default function TechWorkbench() {
       handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -296,6 +349,7 @@ export default function TechWorkbench() {
       toast('Time spent must be a whole number of minutes from 1 to 10080.', 'warning');
       return;
     }
+    setResolveErr(null);
     try {
       const updated = await resolveIncident(incidentId, {
         rootCause: resolveRootCause.trim(),
@@ -323,7 +377,9 @@ export default function TechWorkbench() {
       setIsResolveOpen(false);
       handleRefreshAll();
     } catch (err: any) {
+      setResolveErr(err);
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -344,6 +400,7 @@ export default function TechWorkbench() {
       handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -357,6 +414,7 @@ export default function TechWorkbench() {
       refetchHistory();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -368,17 +426,22 @@ export default function TechWorkbench() {
       toast('AI thread summary and handover notes generated.', 'success');
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     } finally {
       setIsSummarizing(false);
     }
   };
 
-  const handleConfirmed = async () => {
+  const handleConfirmed = async (reason?: string) => {
     if (!confirmAction) return;
     setConfirmBusy(true);
     try {
       if (confirmAction === 'PUBLIC_NOTE') {
         await handleAddNote();
+      } else if (confirmAction === 'REOPEN') {
+        await reopenIncident(incidentId, reason ?? '');
+        toast(`${incident?.code ?? 'Incident'} reopened.`, 'success');
+        handleRefreshAll();
       } else if (confirmAction === 'CLOSE') {
         await closeIncident(incidentId);
         toast(`${incident?.code ?? 'Incident'} closed.`, 'success');
@@ -390,6 +453,7 @@ export default function TechWorkbench() {
       }
     } catch (err) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     } finally {
       setConfirmBusy(false);
       setConfirmAction(null);
@@ -411,6 +475,7 @@ export default function TechWorkbench() {
       refetchHistory();
     } catch (err) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = '';
@@ -428,6 +493,7 @@ export default function TechWorkbench() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) handleRefreshAll();
     }
   };
 
@@ -438,6 +504,26 @@ export default function TechWorkbench() {
     setResolveReusable(true);
     setIsResolveOpen(true);
     toast(`Filled the resolve form from ${res.code}. Review it before you resolve.`, 'info');
+  };
+
+  /** One place that turns an allowedActions key from the ribbon into what happens next. */
+  const onRibbonAction = (a: IncidentAction) => {
+    switch (a) {
+      case 'ACKNOWLEDGE': return handleAcknowledge();
+      case 'START_WORK': return handleStartWork();
+      case 'REQUEST_INFO': return setIsRequestInfoOpen(true);
+      case 'ESCALATE': return setIsEscalateOpen(true);
+      case 'ASSIGN': return setIsAssignOpen(true);
+      case 'REASSIGN': return setIsReassignOpen(true);
+      case 'OVERRIDE_PRIORITY': return setIsPriorityOpen(true);
+      case 'MARK_DUPLICATE': setDupTargetId(null); return setIsDupOpen(true);
+      case 'EDIT': return setIsEditOpen(true);
+      case 'VERIFY': return setConfirmAction('VERIFY');
+      case 'CLOSE': return setConfirmAction('CLOSE');
+      case 'REOPEN': return setConfirmAction('REOPEN');
+      case 'RESOLVE': return setIsResolveOpen(true);
+      default: return undefined;
+    }
   };
 
   const timelineEntries = [
@@ -503,8 +589,6 @@ export default function TechWorkbench() {
 
   const isCritical = incident.priority === 'P1';
   const isHigh = incident.priority === 'P2';
-  // The server's single slaState describes the clock that is running: response until acknowledged, then resolution.
-  const responseActive = !incident.acknowledgedAt && !incident.resolvedAt;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
@@ -631,7 +715,7 @@ export default function TechWorkbench() {
                     size="small"
                     label={`Escalation L${incident.escalationLevel}`}
                     sx={{
-                      bgcolor: 'rgba(244, 63, 94, 0.15)',
+                      bgcolor: alpha(tokens.danger, 0.15),
                       color: COLORS.error,
                       fontWeight: 700,
                       fontSize: 12,
@@ -645,9 +729,9 @@ export default function TechWorkbench() {
                     size="small"
                     label="MAJOR INCIDENT"
                     sx={{
-                      bgcolor: 'rgba(244, 63, 94, 0.2)',
-                      color: '#fb7185',
-                      border: '1px solid rgba(244, 63, 94, 0.4)',
+                      bgcolor: alpha(tokens.danger, 0.2),
+                      color: tokens.tertiaryLight,
+                      border: `1px solid ${alpha(tokens.danger, 0.4)}`,
                       fontWeight: 800,
                       fontSize: 12,
                       fontFamily: 'monospace',
@@ -663,9 +747,9 @@ export default function TechWorkbench() {
                     clickable={!!problemBase}
                     onClick={problemBase ? () => navigate(`${problemBase}/${incident.problemId}`) : undefined}
                     sx={{
-                      bgcolor: 'rgba(99, 102, 241, 0.15)',
+                      bgcolor: alpha(tokens.primary, 0.15),
                       color: COLORS.primary,
-                      border: `1px solid rgba(99, 102, 241, 0.35)`,
+                      border: `1px solid ${alpha(tokens.primary, 0.35)}`,
                       fontWeight: 700,
                       fontSize: 12,
                       fontFamily: 'monospace',
@@ -686,7 +770,7 @@ export default function TechWorkbench() {
                   <Chip
                     size="small"
                     label={`Reopened ${incident.reopenCount}x`}
-                    sx={{ bgcolor: 'rgba(244, 63, 94, 0.15)', color: COLORS.error, fontSize: 12, height: 24 }}
+                    sx={{ bgcolor: alpha(tokens.danger, 0.15), color: COLORS.error, fontSize: 12, height: 24 }}
                   />
                 )}
 
@@ -766,36 +850,7 @@ export default function TechWorkbench() {
                 minWidth: 260,
               }}
             >
-              {([
-                { label: 'Response', due: incident.responseDue, active: responseActive, doneAt: incident.acknowledgedAt, doneText: 'Acknowledged' },
-                { label: 'Resolution', due: incident.resolutionDue, active: !responseActive && !incident.resolvedAt, doneAt: incident.resolvedAt, doneText: 'Resolved' },
-              ] as const).map((c) => (
-                <Box key={c.label}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: COLORS.onSurfaceVariant }}>
-                    {c.label} clock
-                  </Typography>
-                  {c.active ? (
-                    <Box sx={{ fontSize: 18 }}>
-                      <SlaCountdown due={c.due} createdAt={incident.createdAt} slaState={incident.slaState} />
-                    </Box>
-                  ) : c.doneAt ? (
-                    <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
-                      {c.doneText} {new Date(c.doneAt).toLocaleString()}
-                    </Typography>
-                  ) : (
-                    <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
-                      {c.due ? `Due ${new Date(c.due).toLocaleString()}` : 'No target'}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-              {incident.slaState === 'PAUSED' && (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                  {incident.pausedAt
-                    ? `Paused since ${new Date(incident.pausedAt).toLocaleString()} while the reporter provides information. It resumes, with the time left kept, when they reply.`
-                    : 'Paused while waiting for the reporter. It resumes when they reply.'}
-                </Typography>
-              )}
+              <SlaClockPair incident={incident} />
             </Box>
           </Box>
 
@@ -811,114 +866,13 @@ export default function TechWorkbench() {
               borderTop: `1px solid ${COLORS.border}`,
             }}
           >
-            {allowedActions.includes('ACKNOWLEDGE') && (
-              <Button
-                variant="contained"
-                onClick={handleAcknowledge}
-                startIcon={<CheckCircleIcon />}
-                sx={{
-                  bgcolor: COLORS.primary,
-                  fontWeight: 700,
-                  fontSize: 12.5,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  '&:hover': { bgcolor: COLORS.primaryContainer },
-                }}
-              >
-                Acknowledge Incident
-              </Button>
-            )}
-
-            {allowedActions.includes('START_WORK') && (
-              <Button
-                variant="contained"
-                onClick={handleStartWork}
-                startIcon={<PlayArrowIcon />}
-                sx={{
-                  bgcolor: COLORS.primary,
-                  fontWeight: 700,
-                  fontSize: 12.5,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  '&:hover': { bgcolor: COLORS.primaryContainer },
-                }}
-              >
-                Start Investigation
-              </Button>
-            )}
-
-            {allowedActions.includes('REQUEST_INFO') && (
-              <Button
-                variant="outlined"
-                onClick={() => setIsRequestInfoOpen(true)}
-                startIcon={<PauseCircleIcon />}
-                sx={{
-                  borderColor: COLORS.border,
-                  color: COLORS.onSurface,
-                  fontWeight: 600,
-                  fontSize: 12.5,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  '&:hover': { bgcolor: COLORS.surfaceContainerLow },
-                }}
-              >
-                Request Info (Pause SLA)
-              </Button>
-            )}
-
-            {allowedActions.includes('ESCALATE') && (
-              <Button
-                variant="outlined"
-                onClick={() => setIsEscalateOpen(true)}
-                startIcon={<TrendingUpIcon />}
-                sx={{
-                  borderColor: COLORS.border,
-                  color: COLORS.onSurface,
-                  fontWeight: 600,
-                  fontSize: 12.5,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  bgcolor: COLORS.surfaceContainerLowest,
-                  '&:hover': { bgcolor: COLORS.surfaceContainerLow },
-                }}
-              >
-                Escalate Level
-              </Button>
-            )}
-
-            {allowedActions.includes('REASSIGN') && (
-              <Button
-                variant="outlined"
-                onClick={() => setIsReassignOpen(true)}
-                startIcon={<SwapHorizIcon />}
-                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
-              >
-                Reassign
-              </Button>
-            )}
-
-            {allowedActions.includes('OVERRIDE_PRIORITY') && (
-              <Button
-                variant="outlined"
-                onClick={() => setIsPriorityOpen(true)}
-                startIcon={<FlagIcon />}
-                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
-              >
-                Priority / What-if
-              </Button>
-            )}
-
-            {allowedActions.includes('MARK_DUPLICATE') && (
-              <Button
-                variant="outlined"
-                onClick={() => { setDupTargetId(null); setIsDupOpen(true); }}
-                startIcon={<ContentCopyIcon />}
-                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
-              >
-                Mark duplicate
-              </Button>
-            )}
+            <ActionButtons
+              allowed={allowedActions}
+              exclude={RIBBON_EXCLUDED}
+              onAction={onRibbonAction}
+              labels={RIBBON_LABELS}
+              icons={RIBBON_ICONS}
+            />
 
             {isStaffLead && !incident.problemId && (
               <Button
@@ -931,68 +885,25 @@ export default function TechWorkbench() {
               </Button>
             )}
 
-            {allowedActions.includes('VERIFY') && (
-              <Button
-                variant="outlined"
-                onClick={() => setConfirmAction('VERIFY')}
-                startIcon={<CheckCircleIcon />}
-                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
-              >
-                Verify fix
-              </Button>
-            )}
-
-            {allowedActions.includes('CLOSE') && (
-              <Button
-                variant="outlined"
-                onClick={() => setConfirmAction('CLOSE')}
-                startIcon={<DoneAllIcon />}
-                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
-              >
-                Close incident
-              </Button>
-            )}
-
             {canSummarize && (
-            <Button
-              variant="outlined"
-              onClick={handleGenerateSummary}
-              disabled={isSummarizing}
-              startIcon={<PsychologyIcon sx={{ color: COLORS.secondary }} />}
-              sx={{
-                borderColor: 'rgba(6, 182, 212, 0.3)',
-                color: COLORS.secondary,
-                fontWeight: 600,
-                fontSize: 12.5,
-                textTransform: 'none',
-                borderRadius: 2,
-                bgcolor: COLORS.surfaceContainerLowest,
-                '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.1)' },
-              }}
-            >
-              {isSummarizing ? 'Analyzing...' : 'Generate AI Handover'}
-            </Button>
-            )}
-
-            {allowedActions.includes('RESOLVE') && (
-              <Box sx={{ ml: 'auto' }}>
-                <Button
-                  variant="contained"
-                  onClick={() => setIsResolveOpen(true)}
-                  startIcon={<DoneAllIcon />}
-                  sx={{
-                    bgcolor: COLORS.success,
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: 12.5,
-                    textTransform: 'none',
-                    borderRadius: 2,
-                    '&:hover': { bgcolor: '#0b6623' },
-                  }}
-                >
-                  Resolve Incident
-                </Button>
-              </Box>
+              <Button
+                variant="outlined"
+                onClick={handleGenerateSummary}
+                disabled={isSummarizing}
+                startIcon={<PsychologyIcon sx={{ color: COLORS.secondary }} />}
+                sx={{
+                  borderColor: alpha(tokens.secondary, 0.3),
+                  color: COLORS.secondary,
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  bgcolor: COLORS.surfaceContainerLowest,
+                  '&:hover': { bgcolor: alpha(tokens.secondary, 0.1) },
+                }}
+              >
+                {isSummarizing ? 'Analyzing...' : 'Generate AI Handover'}
+              </Button>
             )}
           </Box>
         </Paper>
@@ -1000,7 +911,7 @@ export default function TechWorkbench() {
 
       {/* AI handover summary, shown above both columns */}
       {summaryData && (
-        <Paper sx={{ p: 2, mb: 2.5, bgcolor: COLORS.surfaceContainer, border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: 2 }}>
+        <Paper sx={{ p: 2, mb: 2.5, bgcolor: COLORS.surfaceContainer, border: `1px solid ${alpha(tokens.secondary, 0.3)}`, borderRadius: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <PsychologyIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
             <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.secondary }}>
@@ -1100,7 +1011,7 @@ export default function TechWorkbench() {
                                 height: 22,
                                 fontSize: 12.5,
                                 fontWeight: 800,
-                                bgcolor: 'rgba(16, 185, 129, 0.15)',
+                                bgcolor: alpha(tokens.success, 0.15),
                                 color: COLORS.success,
                               }}
                             />
@@ -1112,7 +1023,7 @@ export default function TechWorkbench() {
                                   height: 22,
                                   fontSize: 12,
                                   fontWeight: 700,
-                                  bgcolor: 'rgba(99, 102, 241, 0.15)',
+                                  bgcolor: alpha(tokens.primary, 0.15),
                                   color: COLORS.primary,
                                 }}
                               />
@@ -1199,7 +1110,7 @@ export default function TechWorkbench() {
                           fontSize: 12,
                           fontWeight: 700,
                           bgcolor: noteVisibility === 'INTERNAL' ? COLORS.primary : COLORS.surfaceContainerHigh,
-                          color: noteVisibility === 'INTERNAL' ? '#ffffff' : COLORS.onSurfaceVariant,
+                          color: noteVisibility === 'INTERNAL' ? tokens.onSurface : COLORS.onSurfaceVariant,
                         }}
                       />
                       <Chip
@@ -1211,7 +1122,7 @@ export default function TechWorkbench() {
                           fontSize: 12,
                           fontWeight: 700,
                           bgcolor: noteVisibility === 'PUBLIC' ? COLORS.secondary : COLORS.surfaceContainerHigh,
-                          color: noteVisibility === 'PUBLIC' ? '#ffffff' : COLORS.onSurfaceVariant,
+                          color: noteVisibility === 'PUBLIC' ? tokens.onSurface : COLORS.onSurfaceVariant,
                         }}
                       />
                     </Box>
@@ -1280,9 +1191,9 @@ export default function TechWorkbench() {
                                 bgcolor:
                                   item.type === 'comment'
                                     ? item.visibility === 'INTERNAL'
-                                      ? 'rgba(247, 81, 161, 0.15)'
-                                      : 'rgba(6, 182, 212, 0.15)'
-                                    : 'rgba(99, 102, 241, 0.15)',
+                                      ? alpha(tokens.tertiary, 0.15)
+                                      : alpha(tokens.secondary, 0.15)
+                                    : alpha(tokens.primary, 0.15),
                                 color:
                                   item.type === 'comment'
                                     ? item.visibility === 'INTERNAL'
@@ -1358,7 +1269,7 @@ export default function TechWorkbench() {
                                 height: 22,
                                 fontSize: 12,
                                 fontWeight: 800,
-                                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                                bgcolor: alpha(tokens.primary, 0.15),
                                 color: COLORS.primary,
                               }}
                             />
@@ -1370,7 +1281,7 @@ export default function TechWorkbench() {
                                   height: 22,
                                   fontSize: 12,
                                   fontWeight: 800,
-                                  bgcolor: s.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                                  bgcolor: s.match === 'DUPLICATE' ? alpha(tokens.danger, 0.15) : alpha(tokens.secondary, 0.15),
                                   color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.secondary,
                                 }}
                               />
@@ -1396,7 +1307,7 @@ export default function TechWorkbench() {
                               sx={{
                                 textTransform: 'none',
                                 color: COLORS.error,
-                                borderColor: 'rgba(244, 63, 94, 0.4)',
+                                borderColor: alpha(tokens.danger, 0.4),
                                 fontSize: 12.5,
                                 fontWeight: 700,
                               }}
@@ -1452,13 +1363,50 @@ export default function TechWorkbench() {
                   <strong>{incident.reopenCount}</strong>
                 </Box>
                 {incident.priorityBreakdown?.overrideRule && (
-                  <Box sx={{ bgcolor: 'rgba(99, 102, 241, 0.1)', p: 1, borderRadius: 1.5, mt: 0.5 }}>
+                  <Box sx={{ bgcolor: alpha(tokens.primary, 0.1), p: 1, borderRadius: 1.5, mt: 0.5 }}>
                     <Typography sx={{ fontSize: 12, color: COLORS.primary, fontWeight: 700 }}>
                       Override Rule: {incident.priorityBreakdown.overrideRule}
                     </Typography>
                   </Box>
                 )}
               </Box>
+            </Paper>
+
+            {/* Reporter: name from the incident; email, department and location need USER_MANAGE (GET /admin/users/{id}) */}
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
+                Reporter
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, fontSize: 12.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: COLORS.onSurfaceVariant }}>Name:</span>
+                  <strong>{incident.reporter?.name ?? 'Unknown'}</strong>
+                </Box>
+                {reporterContact && (
+                  <>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                      <span style={{ color: COLORS.onSurfaceVariant }}>Email:</span>
+                      <a href={`mailto:${reporterContact.email}`} style={{ color: COLORS.primary, fontWeight: 700 }}>{reporterContact.email}</a>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: COLORS.onSurfaceVariant }}>Department:</span>
+                      <strong>{reporterContact.department ?? 'Not set'}</strong>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: COLORS.onSurfaceVariant }}>Location:</span>
+                      <strong>{reporterContact.location ?? 'Not set'}</strong>
+                    </Box>
+                  </>
+                )}
+              </Box>
+              {contactError && (
+                <ErrorState message={`Reporter contact did not load: ${apiErrorMessage(contactErr)}`} onRetry={() => refetchContact()} />
+              )}
+              {!canSeeContacts && (
+                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 1 }}>
+                  Email and department are shown to administrators only: the incident API returns the reporter&apos;s id and name, and GET /admin/users/{'{id}'} needs the USER_MANAGE permission. Use the comment thread to reach them.
+                </Typography>
+              )}
             </Paper>
 
             {/* SLA Risk Scorecard */}
@@ -1478,7 +1426,7 @@ export default function TechWorkbench() {
                       height: 22,
                       fontWeight: 800,
                       fontSize: 12.5,
-                      bgcolor: slaRisk.atRisk ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                      bgcolor: slaRisk.atRisk ? alpha(tokens.danger, 0.15) : alpha(tokens.success, 0.15),
                       color: slaRisk.atRisk ? COLORS.error : COLORS.success,
                     }}
                   />
@@ -1635,50 +1583,19 @@ export default function TechWorkbench() {
             )}
 
             {/* Why This Technician: the current assignee's row in the allocation ranking */}
-            {recommendations && incident.assignee && (() => {
-              const rank = recommendations.recommendations.findIndex((r) => r.technicianId === incident.assignee?.id);
-              const mine = rank >= 0 ? recommendations.recommendations[rank] : null;
-              return (
-                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
-                    Why {incident.assignee.name} ({recommendations.strategy})
-                  </Typography>
-                  {mine ? (
-                    <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
-                          Rank {rank + 1} of {recommendations.recommendations.length}
-                        </Typography>
-                        <Typography sx={{ fontSize: 12, fontWeight: 800, color: COLORS.primary }}>score {mine.score}</Typography>
-                      </Box>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 0.5 }}>
-                        Load {mine.currentLoad}/{mine.maxLoad}
-                      </Typography>
-                      {Object.entries(mine.factors ?? {}).map(([k, v]) => (
-                        <Box key={k} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                          <span>{k}</span>
-                          <span>{typeof v === 'number' ? v.toFixed(2) : String(v)}</span>
-                        </Box>
-                      ))}
-                      {mine.reasons?.map((reason, idx) => (
-                        <Typography key={idx} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>• {reason}</Typography>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                      {incident.assignee.name} is not in the current ranking (for example at full load or away now), so no score is shown.
-                      {recommendations.excluded.find((x) => x.technicianId === incident.assignee?.id)?.reason
-                        ? ` Reason: ${recommendations.excluded.find((x) => x.technicianId === incident.assignee?.id)?.reason}`
-                        : ''}
-                    </Typography>
-                  )}
-                </Paper>
-              );
-            })()}
+            <WhyAssignee incidentId={incidentId} assignee={incident.assignee} />
           </Box>
         </Grid>
       </Grid>
 
+      <AssignDialog
+        open={isAssignOpen}
+        incident={incident}
+        recommendations={recommendations}
+        onClose={() => setIsAssignOpen(false)}
+        onDone={handleRefreshAll}
+      />
+      <EditIncidentDialog open={isEditOpen} incident={incident} onClose={() => setIsEditOpen(false)} />
       <ReassignDialog
         open={isReassignOpen}
         incident={incident}
@@ -1716,18 +1633,23 @@ export default function TechWorkbench() {
             ? 'Post a public note?'
             : confirmAction === 'CLOSE'
               ? `Close ${incident.code}?`
-              : `Verify the fix for ${incident.code}?`
+              : confirmAction === 'REOPEN'
+                ? `Reopen ${incident.code}?`
+                : `Verify the fix for ${incident.code}?`
         }
         description={
           confirmAction === 'PUBLIC_NOTE'
             ? `This note is visible to the reporter (${incident.reporter?.name ?? 'the reporter'}) and cannot be made private later.`
             : confirmAction === 'CLOSE'
               ? 'The incident moves to CLOSED. The reporter can still reopen it inside the reopen window.'
-              : 'Confirms that the resolution worked. The incident then moves on towards CLOSED.'
+              : confirmAction === 'REOPEN'
+                ? 'The incident goes back to work and the reason is kept in its history.'
+                : 'Confirms that the resolution worked. The incident then moves on towards CLOSED.'
         }
-        confirmLabel={confirmAction === 'PUBLIC_NOTE' ? 'Post publicly' : confirmAction === 'CLOSE' ? 'Close incident' : 'Verify'}
+        requireReason={confirmAction === 'REOPEN'}
+        confirmLabel={confirmAction === 'PUBLIC_NOTE' ? 'Post publicly' : confirmAction === 'CLOSE' ? 'Close incident' : confirmAction === 'REOPEN' ? 'Reopen' : 'Verify'}
         isLoading={confirmBusy}
-        onConfirm={handleConfirmed}
+        onConfirm={(r) => handleConfirmed(r)}
         onClose={() => setConfirmAction(null)}
       />
 
@@ -1762,7 +1684,8 @@ export default function TechWorkbench() {
                 value={resolveRootCause}
                 onChange={(e) => setResolveRootCause(e.target.value)}
                 inputProps={{ maxLength: 2000 }}
-                helperText={`${resolveRootCause.length}/2000`}
+                error={!!fieldErrorFor(resolveErr, 'rootCause')}
+                helperText={fieldErrorFor(resolveErr, 'rootCause') ?? `${resolveRootCause.length}/2000`}
                 placeholder="Identify underlying cause (deadlock, packet loss, config misconfiguration, etc.)"
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
@@ -1780,7 +1703,8 @@ export default function TechWorkbench() {
                 value={resolveNotes}
                 onChange={(e) => setResolveNotes(e.target.value)}
                 inputProps={{ maxLength: 4000 }}
-                helperText={`${resolveNotes.length}/4000`}
+                error={!!fieldErrorFor(resolveErr, 'notes')}
+                helperText={fieldErrorFor(resolveErr, 'notes') ?? `${resolveNotes.length}/4000`}
                 placeholder="Describe corrective actions taken to resolve the failure..."
                 sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
@@ -1810,8 +1734,8 @@ export default function TechWorkbench() {
                 value={resolveTimeSpent}
                 onChange={(e) => setResolveTimeSpent(e.target.value)}
                 inputProps={{ min: 1, max: 10080, step: 1 }}
-                helperText="1 to 10080 minutes"
-                error={resolveTimeSpent !== '' && !(Number.isInteger(Number(resolveTimeSpent)) && Number(resolveTimeSpent) >= 1 && Number(resolveTimeSpent) <= 10080)}
+                helperText={fieldErrorFor(resolveErr, 'timeSpentMinutes') ?? '1 to 10080 minutes'}
+                error={!!fieldErrorFor(resolveErr, 'timeSpentMinutes') || resolveTimeSpent !== '' && !(Number.isInteger(Number(resolveTimeSpent)) && Number(resolveTimeSpent) >= 1 && Number(resolveTimeSpent) <= 10080)}
                 sx={{ width: 200, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
               />
               <FormControlLabel
@@ -1856,7 +1780,7 @@ export default function TechWorkbench() {
               textTransform: 'none',
               bgcolor: COLORS.success,
               fontWeight: 700,
-              '&:hover': { bgcolor: '#0b6623' },
+              '&:hover': { bgcolor: tokens.success, filter: 'brightness(0.9)' },
             }}
           >
             Resolve
@@ -1999,9 +1923,9 @@ export default function TechWorkbench() {
             sx={{
               textTransform: 'none',
               bgcolor: COLORS.secondary,
-              color: '#000000',
+              color: tokens.background,
               fontWeight: 800,
-              '&:hover': { bgcolor: '#22d3ee' },
+              '&:hover': { bgcolor: tokens.secondaryLight },
             }}
           >
             Send Request &amp; Freeze Clock

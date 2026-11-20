@@ -21,6 +21,8 @@ import type { AuditEntry, RecommendationView } from '../../../api/types';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
 import { apiErrorMessage } from '../../../utils/errors';
 import { COLORS, MONO, dialogPaperSx, fieldSx, fmtDateTime } from './ui';
+import { alpha } from '../../technician/staffStyle';
+import { tokens } from '../../../theme/theme';
 
 export const AVAILABILITY_COLOR: Record<string, string> = {
   AVAILABLE: COLORS.success,
@@ -35,7 +37,7 @@ function AvailabilityChip({ value }: { value: string }) {
     <Chip
       size="small"
       label={value}
-      sx={{ height: 20, fontSize: 12, fontWeight: 700, color: c, bgcolor: 'rgba(255,255,255,0.05)', border: `1px solid ${c}` }}
+      sx={{ height: 20, fontSize: 12, fontWeight: 700, color: c, bgcolor: alpha(tokens.onSurface, 0.05), border: `1px solid ${c}` }}
     />
   );
 }
@@ -98,7 +100,7 @@ export function CandidatePicker({
               borderRadius: 2,
               cursor: blocked ? 'not-allowed' : 'pointer',
               opacity: blocked ? 0.55 : 1,
-              bgcolor: selected ? 'rgba(99,102,241,0.15)' : COLORS.surfaceContainerLow,
+              bgcolor: selected ? alpha(tokens.primary, 0.15) : COLORS.surfaceContainerLow,
               border: `1px solid ${selected ? COLORS.primary : COLORS.border}`,
             }}
           >
@@ -117,7 +119,7 @@ export function CandidatePicker({
             <LinearProgress
               variant="determinate"
               value={ratio}
-              sx={{ height: 4, borderRadius: 2, my: 0.75, bgcolor: 'rgba(255,255,255,0.08)', '& .MuiLinearProgress-bar': { bgcolor: ratio >= 90 ? COLORS.error : COLORS.secondary } }}
+              sx={{ height: 4, borderRadius: 2, my: 0.75, bgcolor: alpha(tokens.onSurface, 0.08), '& .MuiLinearProgress-bar': { bgcolor: ratio >= 90 ? COLORS.error : COLORS.secondary } }}
             />
             {t.skills.length > 0 && (
               <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
@@ -205,7 +207,7 @@ export function TeamWorkloadDialog({
                   <LinearProgress
                     variant="determinate"
                     value={ratio}
-                    sx={{ height: 5, borderRadius: 3, my: 0.75, bgcolor: 'rgba(255,255,255,0.08)', '& .MuiLinearProgress-bar': { bgcolor: ratio >= 90 ? COLORS.error : COLORS.secondary } }}
+                    sx={{ height: 5, borderRadius: 3, my: 0.75, bgcolor: alpha(tokens.onSurface, 0.08), '& .MuiLinearProgress-bar': { bgcolor: ratio >= 90 ? COLORS.error : COLORS.secondary } }}
                   />
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                     {t.skills.map((s) => (

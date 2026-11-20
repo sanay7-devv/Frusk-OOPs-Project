@@ -17,7 +17,9 @@ import { tokens } from '../../theme/theme';
 import { useToast } from '../../components/Toast';
 import { apiErrorMessage } from '../../utils/errors';
 import PriorityBadge from '../../components/PriorityBadge';
-import { markDuplicate, overridePriority, priorityWhatIf } from '../../api/incidents';
+import { addComment, assignIncident, markDuplicate, overridePriority, priorityWhatIf } from '../../api/incidents';
+import { overrideAssignNote } from '../lead/shared/ui';
+import { isStaleDataError } from './apiErrors';
 import { createProblem } from '../../api/problems';
 import { escalateIncident, reassignIncident, type SimilarIncidentView } from '../../api/technicians';
 import type { IncidentDetail, Priority, RecommendationView, WhatIfView } from '../../api/types';
@@ -79,6 +81,7 @@ export function ReassignDialog({
       onClose();
     } catch (e) {
       toast(apiErrorMessage(e), 'error');
+      if (isStaleDataError(e)) onDone();
     } finally {
       setBusy(false);
     }
@@ -148,6 +151,124 @@ export function ReassignDialog({
   );
 }
 
+/**
+ * POST /incidents/{id}/assign. The list is the engine's ranking (GET /incidents/{id}/recommendations), best first.
+ * Picking anyone but the top candidate asks for confirmation with an optional reason; the assign API has no
+ * reason field, so the reason is saved as an internal note on the incident.
+ */
+export function AssignDialog({
+  open,
+  incident,
+  recommendations,
+  onClose,
+  onDone,
+}: BaseProps & { recommendations: RecommendationView | undefined }) {
+  const toast = useToast();
+  const [technicianId, setTechnicianId] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const ranking = recommendations?.recommendations ?? [];
+  useEffect(() => {
+    if (open) {
+      setTechnicianId('');
+      setReason('');
+    }
+  }, [open]);
+
+  const rank = ranking.findIndex((r) => String(r.technicianId) === technicianId);
+  const chosen = rank >= 0 ? ranking[rank] : null;
+  const top = ranking[0] ?? null;
+  const overridesEngine = chosen != null && rank > 0;
+  const valid = chosen != null && reason.length <= REASON_MAX;
+
+  const submit = async () => {
+    if (!chosen) return;
+    setBusy(true);
+    try {
+      await assignIncident(incident.id, chosen.technicianId);
+      toast(`${incident.code} assigned to ${chosen.name}.`, 'success');
+      if (overridesEngine && reason.trim()) {
+        try {
+          await addComment(
+            incident.id,
+            overrideAssignNote({ name: chosen.name, rank: rank + 1, score: chosen.score, topName: top?.name ?? null, topScore: top?.score ?? null, reason: reason.trim() }),
+            'INTERNAL',
+          );
+        } catch (e) {
+          toast(`Assigned, but the override note was not saved: ${apiErrorMessage(e)}`, 'warning');
+        }
+      }
+      onDone();
+      onClose();
+    } catch (e) {
+      toast(apiErrorMessage(e), 'error');
+      if (isStaleDataError(e)) onDone();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="sm" fullWidth PaperProps={{ sx: paperSx }}>
+      <DialogTitle sx={{ fontSize: 16, fontWeight: 700, color: tokens.onSurface }}>Assign {incident.code}</DialogTitle>
+      <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {!recommendations ? (
+            <Alert severity="info">Loading eligible technicians…</Alert>
+          ) : ranking.length === 0 ? (
+            <Alert severity="warning">No technician is eligible for this incident right now.</Alert>
+          ) : (
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Technician"
+              value={technicianId}
+              onChange={(e) => setTechnicianId(e.target.value)}
+              helperText={`Ranked by the ${recommendations.strategy} strategy, best match first`}
+              sx={fieldSx}
+            >
+              {ranking.map((r, i) => (
+                <MenuItem key={r.technicianId} value={String(r.technicianId)}>
+                  {i + 1}. {r.name} · score {r.score} · load {r.currentLoad}/{r.maxLoad}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+          {overridesEngine && chosen && top && (
+            <>
+              <Alert severity="warning">
+                {chosen.name} scored {chosen.score} against {top.score} for {top.name}, the top match. This overrides the engine&apos;s choice.
+              </Alert>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                size="small"
+                label="Reason (optional, saved as an internal note)"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                inputProps={{ maxLength: REASON_MAX }}
+                helperText={`${reason.length}/${REASON_MAX}`}
+                sx={fieldSx}
+              />
+            </>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} disabled={busy} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={submit} disabled={!valid || busy} sx={{ textTransform: 'none', fontWeight: 700 }}>
+          {busy ? <CircularProgress size={18} color="inherit" /> : overridesEngine ? 'Assign anyway' : 'Assign'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 /** POST /incidents/{id}/mark-duplicate. The target is picked from the similar-incidents list. */
 export function MarkDuplicateDialog({
   open,
@@ -177,6 +298,7 @@ export function MarkDuplicateDialog({
       onClose();
     } catch (e) {
       toast(apiErrorMessage(e), 'error');
+      if (isStaleDataError(e)) onDone();
     } finally {
       setBusy(false);
     }
@@ -283,6 +405,7 @@ export function OverridePriorityDialog({ open, incident, onClose, onDone }: Base
     } catch (e) {
       setWhatIf(null);
       toast(apiErrorMessage(e), 'error');
+      if (isStaleDataError(e)) onDone();
     } finally {
       setPreviewing(false);
     }
@@ -297,6 +420,7 @@ export function OverridePriorityDialog({ open, incident, onClose, onDone }: Base
       onClose();
     } catch (e) {
       toast(apiErrorMessage(e), 'error');
+      if (isStaleDataError(e)) onDone();
     } finally {
       setBusy(false);
     }
@@ -473,6 +597,7 @@ export function EscalateDialog({ open, incident, onClose, onDone }: BaseProps) {
       onClose();
     } catch (e) {
       toast(apiErrorMessage(e), 'error');
+      if (isStaleDataError(e)) onDone();
     } finally {
       setBusy(false);
     }

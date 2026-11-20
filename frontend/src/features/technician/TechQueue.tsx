@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QueueRowActions from './QueueRowActions';
+import { isStaleDataError } from './apiErrors';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,6 +21,8 @@ import {
   LinearProgress,
   MenuItem,
   Select,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -70,6 +73,7 @@ import PriorityBadge from '../../components/PriorityBadge';
 import SlaCountdown from '../../components/SlaCountdown';
 import { tokens, slaStateColor } from '../../theme/theme';
 import type { IncidentSummary, SavedFilterView } from '../../api/types';
+import { alpha, BRAND_GRADIENT, BRAND_GRADIENT_REVERSE, CAPACITY_WARN_PERCENT } from './staffStyle';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA map.
 const COLORS = {
@@ -141,6 +145,9 @@ export default function TechQueue() {
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [slaFilter, setSlaFilter] = useState('ALL');
   const [sortOrder, setSortOrder] = useState('DEFAULT');
+  // 'MINE' = GET /technicians/me/queue; 'TEAM' = GET /incidents without assignedToMe (the server decides what this person may see).
+  const [scope, setScope] = useState<'MINE' | 'TEAM'>('MINE');
+  const canSeeTeam = !!user?.permissions?.includes('TEAM_VIEW');
   const [saveViewOpen, setSaveViewOpen] = useState(false);
   const [viewName, setViewName] = useState('');
   const [activeViewId, setActiveViewId] = useState<number | null>(null);
@@ -222,10 +229,10 @@ export default function TechQueue() {
   }, [searchInput]);
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab]);
+  }, [searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab, scope]);
 
   const serverFiltered =
-    searchQuery !== '' || serviceFilter !== 'ALL' || priorityFilter !== 'ALL' || slaFilter !== 'ALL' || sortOrder !== 'DEFAULT';
+    scope === 'TEAM' || searchQuery !== '' || serviceFilter !== 'ALL' || priorityFilter !== 'ALL' || slaFilter !== 'ALL' || sortOrder !== 'DEFAULT';
 
   // 7. Filtered / sorted list from the server: GET /incidents?assignedToMe=true&...
   const {
@@ -234,10 +241,10 @@ export default function TechQueue() {
     error: filteredError,
     refetch: refetchFiltered,
   } = useQuery({
-    queryKey: ['tech-my-queue', 'filtered', searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab, page, pageSize],
+    queryKey: ['tech-my-queue', 'filtered', scope, searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab, page, pageSize],
     queryFn: () =>
       listIncidents({
-        assignedToMe: true,
+        assignedToMe: scope === 'MINE',
         status: TAB_STATUSES[filterTab],
         q: searchQuery || undefined,
         serviceId: serviceFilter === 'ALL' ? undefined : Number(serviceFilter),
@@ -291,6 +298,10 @@ export default function TechQueue() {
       queryClient.invalidateQueries({ queryKey: ['auth-me'] });
     } catch (err) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) {
+        queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }
     }
   };
 
@@ -301,8 +312,13 @@ export default function TechQueue() {
       toast(`Incident ${res?.code || `#${id}`} acknowledged. Response timer stopped.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) {
+        queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }
     } finally {
       setActionInProgressId(null);
     }
@@ -315,8 +331,13 @@ export default function TechQueue() {
       toast(`Work started on ${res?.code || `#${id}`}. Status moved to IN_PROGRESS.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) {
+        queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }
     } finally {
       setActionInProgressId(null);
     }
@@ -333,6 +354,10 @@ export default function TechQueue() {
       setNoteText('');
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) {
+        queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }
     }
   };
 
@@ -345,8 +370,13 @@ export default function TechQueue() {
       setRequestInfoText('');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) {
+        queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }
     }
   };
 
@@ -368,8 +398,13 @@ export default function TechQueue() {
       setReassignTargetId('');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
+      if (isStaleDataError(err)) {
+        queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }
     }
   };
 
@@ -473,9 +508,9 @@ export default function TechQueue() {
                 px: 1.5,
                 py: 0.4,
                 borderRadius: 3,
-                bgcolor: queueError ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                bgcolor: queueError ? alpha(tokens.danger, 0.15) : alpha(tokens.primary, 0.15),
                 color: queueError ? COLORS.error : COLORS.primary,
-                border: `1px solid ${queueError ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
+                border: `1px solid ${queueError ? '${alpha(tokens.danger, 0.3)}' : '${alpha(tokens.primary, 0.3)}'}`,
                 fontSize: 12.5,
                 fontWeight: 700,
                 fontFamily: 'JetBrains Mono, monospace',
@@ -487,7 +522,7 @@ export default function TechQueue() {
                   height: 6,
                   borderRadius: '50%',
                   bgcolor: queueError ? COLORS.error : COLORS.primary,
-                  boxShadow: queueError ? '0 0 8px #f43f5e' : '0 0 8px #6366f1',
+                  boxShadow: queueError ? `0 0 8px ${tokens.danger}` : `0 0 8px ${tokens.primary}`,
                   animation: 'pulse 1.5s infinite',
                 }}
               />
@@ -538,7 +573,7 @@ export default function TechQueue() {
               height: 10,
               borderRadius: '50%',
               bgcolor: isAvailable ? COLORS.secondary : COLORS.error,
-              boxShadow: isAvailable ? '0 0 10px #06b6d4' : '0 0 10px #f43f5e',
+              boxShadow: isAvailable ? `0 0 10px ${tokens.secondary}` : `0 0 10px ${tokens.danger}`,
             }}
           />
           <Box>
@@ -597,8 +632,8 @@ export default function TechQueue() {
                     width: 42,
                     height: 42,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                    color: '#ffffff',
+                    background: BRAND_GRADIENT,
+                    color: tokens.onSurface,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -621,14 +656,14 @@ export default function TechQueue() {
                         fontSize: 12,
                         fontWeight: 700,
                         fontFamily: 'JetBrains Mono, monospace',
-                        bgcolor: 'rgba(99, 102, 241, 0.15)',
+                        bgcolor: alpha(tokens.primary, 0.15),
                         color: COLORS.primary,
-                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        border: `1px solid ${alpha(tokens.primary, 0.3)}`,
                       }}
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= 80 ? COLORS.error : COLORS.secondary, fontWeight: 700, fontSize: 12 }}>
-                    {capacityPercent >= 80 && <WarningIcon sx={{ fontSize: 15 }} />}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : COLORS.secondary, fontWeight: 700, fontSize: 12 }}>
+                    {capacityPercent >= CAPACITY_WARN_PERCENT && <WarningIcon sx={{ fontSize: 15 }} />}
                     <span>{activeLoad} of {maxQuota} weighted load ({capacityPercent}% Capacity)</span>
                   </Box>
                 </Box>
@@ -649,7 +684,7 @@ export default function TechQueue() {
                   bgcolor: COLORS.surfaceContainerHighest,
                   mb: 1,
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: capacityPercent >= 80 ? COLORS.error : COLORS.primary,
+                    bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : COLORS.primary,
                     borderRadius: 1,
                   },
                 }}
@@ -657,8 +692,8 @@ export default function TechQueue() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>
                 <span>Active tickets: {queue.length}</span>
                 <span>Resolved this week: {workload?.resolvedThisWeek ?? 0}</span>
-                <span style={{ color: capacityPercent >= 80 ? COLORS.error : '#64748b' }}>
-                  {capacityPercent >= 80 ? 'Near Capacity' : 'Available Capacity'}
+                <span style={{ color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : tokens.textDisabled }}>
+                  {capacityPercent >= CAPACITY_WARN_PERCENT ? 'Near Capacity' : 'Available Capacity'}
                 </span>
               </Box>
             </Box>
@@ -676,7 +711,7 @@ export default function TechQueue() {
                   p: 2,
                   borderRadius: 2.5,
                   bgcolor: COLORS.surfaceContainer,
-                  border: needsAckCount > 0 ? '1px solid rgba(244, 63, 94, 0.3)' : `1px solid ${COLORS.border}`,
+                  border: needsAckCount > 0 ? `1px solid ${alpha(tokens.danger, 0.3)}` : `1px solid ${COLORS.border}`,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -711,7 +746,7 @@ export default function TechQueue() {
                   p: 2,
                   borderRadius: 2.5,
                   bgcolor: COLORS.surfaceContainer,
-                  border: atRiskCount > 0 ? '1px solid rgba(244, 63, 94, 0.3)' : `1px solid ${COLORS.border}`,
+                  border: atRiskCount > 0 ? `1px solid ${alpha(tokens.danger, 0.3)}` : `1px solid ${COLORS.border}`,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -828,11 +863,11 @@ export default function TechQueue() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: COLORS.surfaceContainerLow, p: 0.5, borderRadius: 2, border: `1px solid ${COLORS.border}`, flexWrap: 'wrap' }}>
             {(
               [
-                { id: 'ALL', label: 'All Active', count: queue.length, bg: COLORS.primary, text: '#ffffff' },
-                { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: COLORS.error, text: '#ffffff' },
-                { id: 'AT_RISK', label: 'At-Risk SLAs', count: atRiskCount, bg: 'rgba(244, 63, 94, 0.2)', text: COLORS.error },
-                { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, bg: 'rgba(99, 102, 241, 0.2)', text: COLORS.primary },
-                { id: 'PENDING_INFO', label: 'Pending Info (Paused)', count: pendingInfoCount, bg: 'rgba(6, 182, 212, 0.2)', text: COLORS.secondary },
+                { id: 'ALL', label: 'All Active', count: queue.length, bg: COLORS.primary, text: tokens.onSurface },
+                { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: COLORS.error, text: tokens.onSurface },
+                { id: 'AT_RISK', label: 'At-Risk SLAs', count: atRiskCount, bg: alpha(tokens.danger, 0.2), text: COLORS.error },
+                { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, bg: alpha(tokens.primary, 0.2), text: COLORS.primary },
+                { id: 'PENDING_INFO', label: 'Pending Info (Paused)', count: pendingInfoCount, bg: alpha(tokens.secondary, 0.2), text: COLORS.secondary },
               ] as const
             ).map((tab) => {
               const isSelected = filterTab === tab.id;
@@ -898,6 +933,19 @@ export default function TechQueue() {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            {canSeeTeam && (
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={scope}
+                onChange={(_, v) => v && setScope(v)}
+                aria-label="Queue scope"
+                sx={{ '& .MuiToggleButton-root': { fontSize: 12, fontWeight: 700, textTransform: 'none', px: 1.5, py: 0.4, color: COLORS.onSurfaceVariant } }}
+              >
+                <ToggleButton value="MINE">Only mine</ToggleButton>
+                <ToggleButton value="TEAM">Team</ToggleButton>
+              </ToggleButtonGroup>
+            )}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Service:
@@ -1018,7 +1066,7 @@ export default function TechQueue() {
                 deleteIcon={<DeleteIcon sx={{ fontSize: '16px !important' }} />}
                 sx={{
                   fontSize: 12,
-                  bgcolor: activeViewId === sv.id ? 'rgba(6, 182, 212, 0.2)' : COLORS.surfaceContainerLow,
+                  bgcolor: activeViewId === sv.id ? alpha(tokens.secondary, 0.2) : COLORS.surfaceContainerLow,
                   color: activeViewId === sv.id ? COLORS.secondary : COLORS.onSurface,
                   border: `1px solid ${activeViewId === sv.id ? COLORS.secondary : COLORS.border}`,
                 }}
@@ -1062,8 +1110,8 @@ export default function TechQueue() {
                   backdropFilter: 'blur(16px)',
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    borderColor: 'rgba(99, 102, 241, 0.4)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                    borderColor: alpha(tokens.primary, 0.4),
+                    boxShadow: `0 8px 24px ${alpha(tokens.surfaceContainerLowest, 0.3)}`,
                   },
                 }}
               >
@@ -1086,8 +1134,8 @@ export default function TechQueue() {
                           label="MAJOR INCIDENT"
                           size="small"
                           sx={{
-                            bgcolor: '#ef4444',
-                            color: '#ffffff',
+                            bgcolor: tokens.danger,
+                            color: tokens.onSurface,
                             fontWeight: 800,
                             fontSize: 12,
                             fontFamily: 'JetBrains Mono, monospace',
@@ -1122,7 +1170,7 @@ export default function TechQueue() {
                         </>
                       )}
                       <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>•</Typography>
-                      <Typography sx={{ fontSize: 12.5, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
+                      <Typography sx={{ fontSize: 12.5, color: tokens.textDisabled, fontFamily: 'JetBrains Mono, monospace' }}>
                         {timeAgo(inc.createdAt)}
                       </Typography>
                       {inc.escalationLevel > 0 && (
@@ -1133,9 +1181,9 @@ export default function TechQueue() {
                             height: 22,
                             fontSize: 12,
                             fontWeight: 700,
-                            bgcolor: 'rgba(244, 63, 94, 0.15)',
+                            bgcolor: alpha(tokens.danger, 0.15),
                             color: COLORS.error,
-                            border: '1px solid rgba(244, 63, 94, 0.3)',
+                            border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                           }}
                         />
                       )}
@@ -1168,7 +1216,7 @@ export default function TechQueue() {
                           height: 22,
                           fontSize: 12,
                           fontWeight: 700,
-                          bgcolor: inc.status === 'ASSIGNED' ? 'rgba(244, 63, 94, 0.15)' : inc.status === 'IN_PROGRESS' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                          bgcolor: inc.status === 'ASSIGNED' ? alpha(tokens.danger, 0.15) : inc.status === 'IN_PROGRESS' ? alpha(tokens.primary, 0.15) : alpha(tokens.secondary, 0.15),
                           color: inc.status === 'ASSIGNED' ? COLORS.error : inc.status === 'IN_PROGRESS' ? COLORS.primary : COLORS.secondary,
                           borderRadius: 1,
                         }}
@@ -1215,7 +1263,7 @@ export default function TechQueue() {
                   </Box>
                 </Box>
 
-                {/* Bottom Quick-Action Toolbar */}
+                {/* Bottom toolbar: the row's buttons come from the incident's allowedActions (ActionButtons) */}
                 <Box
                   sx={{
                     display: 'flex',
@@ -1227,150 +1275,58 @@ export default function TechQueue() {
                     borderTop: `1px solid ${COLORS.border}`,
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {inc.status === 'ASSIGNED' && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        disabled={actionInProgressId === inc.id}
-                        onClick={() => handleAcknowledge(inc.id)}
-                        startIcon={<BoltIcon sx={{ fontSize: 16 }} />}
-                        sx={{
-                          bgcolor: COLORS.error,
-                          color: '#ffffff',
-                          fontWeight: 700,
-                          fontSize: 12,
-                          textTransform: 'none',
-                          px: 2,
-                          py: 0.6,
-                          borderRadius: 1.5,
-                          '&:hover': { bgcolor: '#e11d48' },
-                        }}
-                      >
-                        {actionInProgressId === inc.id ? 'Acknowledging...' : 'Acknowledge Ticket'}
-                      </Button>
-                    )}
-
-                    {inc.status === 'ACKNOWLEDGED' && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        disabled={actionInProgressId === inc.id}
-                        onClick={() => handleStartWork(inc.id)}
-                        startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
-                        sx={{
-                          bgcolor: COLORS.primary,
-                          color: '#ffffff',
-                          fontWeight: 700,
-                          fontSize: 12,
-                          textTransform: 'none',
-                          px: 2,
-                          py: 0.6,
-                          borderRadius: 1.5,
-                          '&:hover': { bgcolor: tokens.primaryDark },
-                        }}
-                      >
-                        {actionInProgressId === inc.id ? 'Starting...' : 'Start Investigation'}
-                      </Button>
-                    )}
-
-                    <Button
-                      size="small"
-                      onClick={() => setNoteModalIncident(inc)}
-                      startIcon={<EditNoteIcon sx={{ fontSize: 16 }} />}
-                      sx={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: COLORS.onSurface,
-                        bgcolor: COLORS.surfaceContainerLow,
-                        border: `1px solid ${COLORS.border}`,
-                        textTransform: 'none',
-                        px: 1.5,
-                        borderRadius: 1.5,
-                        '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <QueueRowActions
+                      incident={inc}
+                      problemBase={problemBase}
+                      pendingId={actionInProgressId}
+                      handlers={{
+                        onAcknowledge: (i) => handleAcknowledge(i.id),
+                        onStart: (i) => handleStartWork(i.id),
+                        onRequestInfo: setRequestInfoIncident,
+                        onNote: setNoteModalIncident,
+                        onReassign: setReassignIncident,
                       }}
-                    >
-                      Append Note
-                    </Button>
-
-                    {inc.status === 'IN_PROGRESS' && (
-                      <Button
-                        size="small"
-                        onClick={() => setRequestInfoIncident(inc)}
-                        startIcon={<ChatIcon sx={{ fontSize: 15 }} />}
-                        sx={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: COLORS.onSurface,
-                          bgcolor: COLORS.surfaceContainerLow,
-                          border: `1px solid ${COLORS.border}`,
-                          textTransform: 'none',
-                          px: 1.5,
-                          borderRadius: 1.5,
-                          '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
-                        }}
-                      >
-                        Request Info
-                      </Button>
-                    )}
-
+                    />
                     {inc.major && problemBase && (
                       <Button
                         size="small"
                         onClick={() => openProblem(inc)}
                         startIcon={<HubIcon sx={{ fontSize: 15 }} />}
                         sx={{
-                          fontSize: 12,
+                          fontSize: 12.5,
                           fontWeight: 700,
                           color: COLORS.error,
-                          bgcolor: 'rgba(244, 63, 94, 0.1)',
-                          border: '1px solid rgba(244, 63, 94, 0.3)',
+                          bgcolor: alpha(tokens.danger, 0.1),
+                          border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                           textTransform: 'none',
                           px: 1.5,
                           borderRadius: 1.5,
-                          '&:hover': { bgcolor: 'rgba(244, 63, 94, 0.2)' },
+                          '&:hover': { bgcolor: alpha(tokens.danger, 0.2) },
                         }}
                       >
                         Open problem
                       </Button>
                     )}
                   </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'REOPENED'].includes(inc.status) && (
-                      <Button
-                        size="small"
-                        onClick={() => setReassignIncident(inc)}
-                        sx={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: COLORS.onSurfaceVariant,
-                          textTransform: 'none',
-                        }}
-                      >
-                        Reassign
-                      </Button>
-                    )}
-                    <QueueRowActions incident={inc} problemBase={problemBase} />
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => navigate(`/tech/incidents/${inc.id}`)}
-                      endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
-                      sx={{
-                        borderColor: COLORS.primary,
-                        color: COLORS.primary,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        textTransform: 'none',
-                        px: 1.8,
-                        borderRadius: 1.5,
-                        '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.1)' },
-                      }}
-                    >
-                      Diagnose in Workbench
-                    </Button>
-                  </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => navigate(`/tech/incidents/${inc.id}`)}
+                    endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
+                    sx={{
+                      borderColor: COLORS.primary,
+                      color: COLORS.primary,
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      px: 1.8,
+                      borderRadius: 1.5,
+                      '&:hover': { bgcolor: alpha(tokens.primary, 0.1) },
+                    }}
+                  >
+                    Diagnose in Workbench
+                  </Button>
                 </Box>
               </Paper>
             );
@@ -1486,7 +1442,7 @@ export default function TechQueue() {
                 variant="contained"
                 onClick={handleSaveNote}
                 disabled={!noteText.trim()}
-                sx={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)', textTransform: 'none', fontWeight: 700 }}
+                sx={{ background: BRAND_GRADIENT, textTransform: 'none', fontWeight: 700 }}
               >
                 Save to Incident Timeline
               </Button>
@@ -1551,7 +1507,7 @@ export default function TechQueue() {
                 variant="contained"
                 onClick={handleSendInfoRequest}
                 disabled={requestInfoText.trim().length < 10}
-                sx={{ background: 'linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)', textTransform: 'none', fontWeight: 700 }}
+                sx={{ background: BRAND_GRADIENT_REVERSE, textTransform: 'none', fontWeight: 700 }}
               >
                 Send Request & Pause Clock
               </Button>
@@ -1645,7 +1601,7 @@ export default function TechQueue() {
                 variant="contained"
                 onClick={handleReassign}
                 disabled={!reassignTargetId || reassignReason.trim().length < 10}
-                sx={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)', textTransform: 'none', fontWeight: 700 }}
+                sx={{ background: BRAND_GRADIENT, textTransform: 'none', fontWeight: 700 }}
               >
                 Confirm Transfer
               </Button>

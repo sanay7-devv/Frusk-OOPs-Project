@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -40,11 +40,16 @@ import {
   Upgrade as UpgradeIcon,
 } from '@mui/icons-material';
 
+import LinkIcon from '@mui/icons-material/Link';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../auth/AuthContext';
 import { listIncidents, getIncident, getSlaViolations } from '../../api/incidents';
 import { reassignIncident } from '../../api/technicians';
-import type { IncidentSummary, IncidentDetail, IncidentStatus, SlaViolationView } from '../../api/types';
+import type { IncidentSummary, IncidentDetail, IncidentStatus, IncidentAction, SlaViolationView } from '../../api/types';
+import ActionButtons from '../../components/ActionButtons';
+import { useLiveRefresh } from '../shared/useLiveRefresh';
+import { LinkProblemDialog } from '../technician/WorkbenchDialogs';
+import { useProblemBasePath } from '../problems/problemAccess';
 import PriorityBadge from '../../components/PriorityBadge';
 import StatusChip from '../../components/StatusChip';
 import SlaCountdown from '../../components/SlaCountdown';
@@ -53,6 +58,8 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import { apiErrorMessage } from '../../utils/errors';
 import { COLORS, MAX_REASON, MIN_REASON, MONO, dialogPaperSx, fieldSx, fmtDateTime, invalidateIncidentCaches } from './shared/ui';
 import IntelligencePanel, { SlaRiskCard } from './shared/IntelligencePanel';
+import WhyAssignee from './shared/WhyAssignee';
+import SlaClockPair from './shared/SlaClockPair';
 import { CandidatePicker, EscalationTimeline } from './shared/TeamComponents';
 import {
   EscalateDialog,
@@ -61,11 +68,21 @@ import {
   OverridePriorityDialog,
 } from './shared/IncidentActionDialogs';
 import { violationsToCsv } from './shared/violationsCsv';
+import { alpha, BRAND_GRADIENT } from '../technician/staffStyle';
+import { tokens, slaStateColor } from '../../theme/theme';
 
 /** Every status an escalated ticket can still be in, apart from the finished ones (CLOSED, VERIFIED). */
 const OPEN_STATUSES: IncidentStatus[] = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'RESOLVED', 'REOPENED'];
 /** Statuses where the work is still going on; RESOLVED is shown apart, waiting for the reporter to verify. */
 const WORKING_STATUSES: IncidentStatus[] = OPEN_STATUSES.filter((s) => s !== 'RESOLVED');
+
+/** Lifecycle actions that are not supervisory (the assignee works them from the workbench). */
+const ESC_EXCLUDED: IncidentAction[] = ['ACKNOWLEDGE', 'START_WORK', 'REQUEST_INFO', 'RESOLVE', 'VERIFY', 'CLOSE', 'REOPEN', 'ASSIGN', 'EDIT', 'PROVIDE_INFO', 'GIVE_FEEDBACK', 'WITHDRAW'];
+const ESC_LABELS: Partial<Record<IncidentAction, string>> = { ESCALATE: 'Escalate now', COMMENT: 'Add internal note' };
+const ESC_ICONS: Partial<Record<IncidentAction, ReactNode>> = {
+  ESCALATE: <UpgradeIcon sx={{ fontSize: 16 }} />,
+  REASSIGN: <AssignIcon sx={{ fontSize: 16 }} />,
+};
 
 type Tab = 'escalations' | 'at-risk' | 'violations';
 
@@ -98,6 +115,10 @@ export default function Escalations() {
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
+  // Server pushes (STOMP via realtime/useRealtime) reload every list and the open dossier.
+  useLiveRefresh(() => invalidateIncidentCaches(queryClient));
+  const [problemOpen, setProblemOpen] = useState(false);
+  const problemBase = useProblemBasePath();
   const [takeOverOpen, setTakeOverOpen] = useState(false);
 
   // Violations filters
@@ -234,6 +255,17 @@ export default function Escalations() {
   const reasonLen = reassignReason.trim().length;
   const reasonBad = reassignReason.length > 0 && reasonLen < MIN_REASON;
   const reasonValid = reasonLen >= MIN_REASON && reassignReason.length <= MAX_REASON;
+  /** One place that turns an allowedActions key into the dialog it opens. */
+  const onSupervisorAction = (a: IncidentAction) => {
+    switch (a) {
+      case 'ESCALATE': return setEscalateOpen(true);
+      case 'REASSIGN': return setReassignModalOpen(true);
+      case 'OVERRIDE_PRIORITY': return setOverrideOpen(true);
+      case 'MARK_DUPLICATE': return setDuplicateOpen(true);
+      case 'COMMENT': return setNoteOpen(true);
+      default: return undefined;
+    }
+  };
   const blocked = (action: string) => (incidentDetail ? `${action} is not allowed while the incident is ${incidentDetail.status}.` : '');
 
   const renderRow = (inc: IncidentSummary) => {
@@ -246,7 +278,7 @@ export default function Escalations() {
         sx={{
           p: 2,
           borderRadius: 2.5,
-          bgcolor: isSelected ? 'rgba(244, 63, 94, 0.12)' : COLORS.surfaceContainer,
+          bgcolor: isSelected ? alpha(tokens.danger, 0.12) : COLORS.surfaceContainer,
           border: `1px solid ${isSelected ? COLORS.error : COLORS.border}`,
           cursor: 'pointer',
           transition: 'all 0.2s',
@@ -266,9 +298,9 @@ export default function Escalations() {
                   fontSize: 12,
                   fontWeight: 800,
                   fontFamily: MONO,
-                  bgcolor: 'rgba(244, 63, 94, 0.25)',
-                  color: '#fb7185',
-                  border: '1px solid rgba(244, 63, 94, 0.5)',
+                  bgcolor: alpha(tokens.danger, 0.25),
+                  color: tokens.tertiaryLight,
+                  border: `1px solid ${alpha(tokens.danger, 0.5)}`,
                 }}
               />
             )}
@@ -280,9 +312,9 @@ export default function Escalations() {
                 fontSize: 12,
                 fontWeight: 800,
                 fontFamily: MONO,
-                bgcolor: 'rgba(244, 63, 94, 0.2)',
+                bgcolor: alpha(tokens.danger, 0.2),
                 color: COLORS.error,
-                border: '1px solid rgba(244, 63, 94, 0.4)',
+                border: `1px solid ${alpha(tokens.danger, 0.4)}`,
               }}
             />
           </Box>
@@ -367,7 +399,7 @@ export default function Escalations() {
               fontWeight: 700,
               fontSize: 12.5,
               color: COLORS.onSurfaceVariant,
-              '&.Mui-selected': { color: '#ffffff', bgcolor: COLORS.surfaceContainerHighest },
+              '&.Mui-selected': { color: tokens.onSurface, bgcolor: COLORS.surfaceContainerHighest },
             },
             '& .MuiTabs-indicator': { display: 'none' },
           }}
@@ -457,7 +489,7 @@ export default function Escalations() {
                     p: 3,
                     borderRadius: 3,
                     bgcolor: COLORS.surfaceContainer,
-                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                     position: 'relative',
                     overflow: 'hidden',
                   }}
@@ -470,7 +502,7 @@ export default function Escalations() {
                       <Chip
                         label={`ESCALATION LEVEL ${incidentDetail.escalationLevel}`}
                         size="small"
-                        sx={{ bgcolor: COLORS.error, color: '#ffffff', fontWeight: 800, fontSize: 12, fontFamily: MONO }}
+                        sx={{ bgcolor: COLORS.error, color: tokens.onSurface, fontWeight: 800, fontSize: 12, fontFamily: MONO }}
                       />
                       <StatusChip status={incidentDetail.status} />
                     </Box>
@@ -501,8 +533,7 @@ export default function Escalations() {
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>Resolution due</Typography>
-                      <SlaCountdown due={incidentDetail.resolutionDue} createdAt={incidentDetail.createdAt} slaState={incidentDetail.slaState} />
+                      <SlaClockPair incident={incidentDetail} fontSize={14} />
                     </Grid>
                   </Grid>
 
@@ -519,7 +550,7 @@ export default function Escalations() {
                           <Grid item xs={12}>
                             <Alert
                               severity="warning"
-                              sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#fcd34d', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: 12.5, py: 0.5 }}
+                              sx={{ bgcolor: alpha(tokens.warning, 0.1), color: slaStateColor.WARNING, border: `1px solid ${alpha(tokens.warning, 0.3)}`, fontSize: 12.5, py: 0.5 }}
                             >
                               Escalation Exhausted: All supervisory tiers notified. Top supervisory tier reached.
                             </Alert>
@@ -566,40 +597,18 @@ export default function Escalations() {
 
                   {/* Supervisory Actions, driven by allowedActions */}
                   <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
-                    <Tooltip title={canEscalate ? '' : blocked('Escalating')}>
-                      <span>
-                        <Button
-                          variant="contained"
-                          color="error"
-                          disabled={!canEscalate}
-                          onClick={() => setEscalateOpen(true)}
-                          startIcon={<UpgradeIcon sx={{ fontSize: 16 }} />}
-                          sx={{ fontWeight: 700, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
-                        >
-                          Escalate now
-                        </Button>
-                      </span>
-                    </Tooltip>
-                    <Tooltip title={canReassign ? '' : blocked('Reassigning')}>
-                      <span>
-                        <Button
-                          variant="contained"
-                          disabled={!canReassign}
-                          onClick={() => setReassignModalOpen(true)}
-                          startIcon={<AssignIcon sx={{ fontSize: 16 }} />}
-                          sx={{
-                            background: canReassign ? 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)' : undefined,
-                            color: '#ffffff',
-                            fontWeight: 700,
-                            fontSize: 12.5,
-                            textTransform: 'none',
-                            borderRadius: 2,
-                          }}
-                        >
-                          Reassign
-                        </Button>
-                      </span>
-                    </Tooltip>
+                    <ActionButtons
+                      allowed={allowed}
+                      exclude={ESC_EXCLUDED}
+                      onAction={onSupervisorAction}
+                      labels={ESC_LABELS}
+                      icons={ESC_ICONS}
+                    />
+                    {!canEscalate && !canReassign && (
+                      <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, alignSelf: 'center' }}>
+                        {blocked('Escalating or reassigning')}
+                      </Typography>
+                    )}
                     {canReassign && user && incidentDetail.assignee?.id !== user.id && (
                       <Button
                         variant="outlined"
@@ -609,32 +618,30 @@ export default function Escalations() {
                         Take over
                       </Button>
                     )}
-                    {allowed.includes('OVERRIDE_PRIORITY') && (
-                      <Button
-                        variant="outlined"
-                        onClick={() => setOverrideOpen(true)}
-                        sx={{ borderColor: 'rgba(245,158,11,0.4)', color: COLORS.warning, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
-                      >
-                        Override priority
-                      </Button>
-                    )}
-                    {allowed.includes('MARK_DUPLICATE') && (
-                      <Button
-                        variant="outlined"
-                        onClick={() => setDuplicateOpen(true)}
-                        sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
-                      >
-                        Mark duplicate
-                      </Button>
-                    )}
-                    {allowed.includes('COMMENT') && (
-                      <Button
-                        variant="outlined"
-                        onClick={() => setNoteOpen(true)}
-                        sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
-                      >
-                        Add internal note
-                      </Button>
+                    {incidentDetail.problemId ? (
+                      problemBase && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<LinkIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => navigate(`${problemBase}/${incidentDetail.problemId}`)}
+                          sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
+                        >
+                          Problem #{incidentDetail.problemId}: resolve the whole problem
+                        </Button>
+                      )
+                    ) : (
+                      problemBase && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<LinkIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => setProblemOpen(true)}
+                          sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
+                        >
+                          Open problem
+                        </Button>
+                      )
                     )}
                     <Button
                       variant="outlined"
@@ -653,6 +660,8 @@ export default function Escalations() {
                   <Typography sx={{ fontWeight: 800, color: COLORS.onSurface, mt: 3, mb: 1.5 }}>SLA risk</Typography>
                   <SlaRiskCard incidentId={incidentDetail.id} />
                 </Paper>
+
+                <WhyAssignee incidentId={incidentDetail.id} assignee={incidentDetail.assignee} />
 
                 <IntelligencePanel incidentId={incidentDetail.id} showSlaRisk={false} onOpenIncident={(id) => navigate(`/tech/incidents/${id}`)} />
               </Box>
@@ -818,9 +827,9 @@ export default function Escalations() {
                             fontFamily: MONO,
                             fontWeight: 800,
                             fontSize: 12,
-                            bgcolor: 'rgba(244, 63, 94, 0.15)',
+                            bgcolor: alpha(tokens.danger, 0.15),
                             color: COLORS.error,
-                            border: '1px solid rgba(244, 63, 94, 0.3)',
+                            border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                           }}
                         />
                       </TableCell>
@@ -911,7 +920,7 @@ export default function Escalations() {
               }
             }}
             startIcon={reassignMutation.isPending ? <CircularProgress size={16} /> : <AssignIcon />}
-            sx={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)', color: '#ffffff', fontWeight: 700, textTransform: 'none', borderRadius: 2 }}
+            sx={{ background: BRAND_GRADIENT, color: tokens.onSurface, fontWeight: 700, textTransform: 'none', borderRadius: 2 }}
           >
             Confirm Reassignment
           </Button>
@@ -937,6 +946,17 @@ export default function Escalations() {
       />
       {selectedIncidentId && <EscalateDialog open={escalateOpen} incidentId={selectedIncidentId} onClose={() => setEscalateOpen(false)} />}
       {selectedIncidentId && <MarkDuplicateDialog open={duplicateOpen} incidentId={selectedIncidentId} onClose={() => setDuplicateOpen(false)} />}
+      {incidentDetail && (
+        <LinkProblemDialog
+          open={problemOpen}
+          incident={incidentDetail}
+          onClose={() => setProblemOpen(false)}
+          onDone={(problemId) => {
+            invalidateIncidentCaches(queryClient);
+            if (problemBase) navigate(`${problemBase}/${problemId}`);
+          }}
+        />
+      )}
       {selectedIncidentId && <InternalNoteDialog open={noteOpen} incidentId={selectedIncidentId} onClose={() => setNoteOpen(false)} />}
       {incidentDetail && <OverridePriorityDialog open={overrideOpen} incident={incidentDetail} onClose={() => setOverrideOpen(false)} />}
     </Box>

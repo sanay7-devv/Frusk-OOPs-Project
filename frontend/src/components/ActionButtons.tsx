@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { Button, Stack } from '@mui/material';
 import type { IncidentAction } from '../api/types';
 import { tokens } from '../theme/theme';
+import { alpha, BRAND_GRADIENT, BRAND_GRADIENT_HOVER } from '../features/technician/staffStyle';
 
 const LABEL: Partial<Record<IncidentAction, string>> = {
   ACKNOWLEDGE: 'Acknowledge',
@@ -32,6 +34,8 @@ export interface ActionButtonsProps {
   exclude?: IncidentAction[];
   /** Label overrides for one screen, per action. */
   labels?: Partial<Record<IncidentAction, string>>;
+  /** Optional start icon per action. */
+  icons?: Partial<Record<IncidentAction, ReactNode>>;
   /** Action currently being sent: shown disabled with a busy label. */
   pending?: IncidentAction | null;
   disabled?: boolean;
@@ -44,6 +48,7 @@ export default function ActionButtons({
   onAction,
   exclude,
   labels,
+  icons,
   pending,
   disabled,
 }: ActionButtonsProps) {
@@ -62,6 +67,7 @@ export default function ActionButtons({
               size="small"
               variant={isPrimary ? 'contained' : 'outlined'}
               disabled={disabled || pending === a}
+              startIcon={icons?.[a]}
               onClick={() => onAction(a)}
               sx={{
                 borderRadius: '8px',
@@ -71,33 +77,33 @@ export default function ActionButtons({
                 fontWeight: 600,
                 ...(isPrimary
                   ? {
-                      background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                      color: '#ffffff',
-                      boxShadow: '0 0 14px rgba(99, 102, 241, 0.35)',
+                      background: BRAND_GRADIENT,
+                      color: tokens.onSurface,
+                      boxShadow: `0 0 14px ${alpha(tokens.primary, 0.35)}`,
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
-                        boxShadow: '0 0 20px rgba(6, 182, 212, 0.45)',
+                        background: BRAND_GRADIENT_HOVER,
+                        boxShadow: `0 0 20px ${alpha(tokens.secondary, 0.45)}`,
                       },
                     }
                   : isDanger
                   ? {
-                      bgcolor: 'rgba(244, 63, 94, 0.12)',
-                      borderColor: 'rgba(244, 63, 94, 0.4)',
+                      bgcolor: alpha(tokens.danger, 0.12),
+                      borderColor: alpha(tokens.danger, 0.4),
                       color: tokens.tertiaryLight,
                       '&:hover': {
-                        bgcolor: 'rgba(244, 63, 94, 0.22)',
-                        borderColor: '#f43f5e',
-                        color: '#ffffff',
-                        boxShadow: '0 0 16px rgba(244, 63, 94, 0.3)',
+                        bgcolor: alpha(tokens.danger, 0.22),
+                        borderColor: tokens.danger,
+                        color: tokens.onSurface,
+                        boxShadow: `0 0 16px ${alpha(tokens.danger, 0.3)}`,
                       },
                     }
                   : {
-                      bgcolor: 'rgba(255, 255, 255, 0.04)',
-                      borderColor: 'rgba(255, 255, 255, 0.12)',
+                      bgcolor: alpha(tokens.onSurface, 0.04),
+                      borderColor: alpha(tokens.onSurface, 0.12),
                       color: tokens.onSurface,
                       '&:hover': {
-                        bgcolor: 'rgba(99, 102, 241, 0.12)',
-                        borderColor: '#6366f1',
+                        bgcolor: alpha(tokens.primary, 0.12),
+                        borderColor: tokens.primary,
                         color: tokens.primaryLight,
                       },
                     }),

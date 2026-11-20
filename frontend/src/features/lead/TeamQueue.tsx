@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,21 +32,34 @@ import {
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 
+import LinkIcon from '@mui/icons-material/Link';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../auth/AuthContext';
-import { listIncidents, getIncident, getRecommendations, assignIncident, getSimilarIncidents } from '../../api/incidents';
+import { listIncidents, getIncident, getRecommendations, assignIncident, addComment, getSimilarIncidents } from '../../api/incidents';
 import { getServices, getCategories } from '../../api/services';
-import type { IncidentSummary, IncidentDetail, RecommendationView, RecommendedTechnician, SlaState } from '../../api/types';
+import type { IncidentSummary, IncidentDetail, IncidentAction, RecommendationView, RecommendedTechnician, SlaState } from '../../api/types';
+import ActionButtons from '../../components/ActionButtons';
+import { isStaleDataError } from '../technician/apiErrors';
+import { LinkProblemDialog } from '../technician/WorkbenchDialogs';
+import { useProblemBasePath } from '../problems/problemAccess';
 import PriorityBadge from '../../components/PriorityBadge';
 import StatusChip from '../../components/StatusChip';
 import SlaCountdown from '../../components/SlaCountdown';
-import ConfirmDialog from '../../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { apiErrorMessage } from '../../utils/errors';
-import { COLORS, MONO, STRATEGY_INFO, fieldSx, fmtDateTime, invalidateIncidentCaches } from './shared/ui';
+import { COLORS, MONO, STRATEGY_INFO, fieldSx, fmtDateTime, invalidateIncidentCaches, overrideAssignNote } from './shared/ui';
 import IntelligencePanel from './shared/IntelligencePanel';
-import { OverridePriorityDialog, MarkDuplicateDialog } from './shared/IncidentActionDialogs';
+import { OverridePriorityDialog, MarkDuplicateDialog, LowerRankedAssignDialog } from './shared/IncidentActionDialogs';
 import { TeamWorkloadDialog } from './shared/TeamComponents';
+import { alpha, BRAND_GRADIENT } from '../technician/staffStyle';
+import { tokens } from '../../theme/theme';
+
+/** TeamQueue triages: assigning has its own cards below, so the header only offers the other supervisory actions. */
+const TEAM_EXCLUDED: IncidentAction[] = ['ACKNOWLEDGE', 'START_WORK', 'REQUEST_INFO', 'RESOLVE', 'VERIFY', 'CLOSE', 'REOPEN', 'ASSIGN', 'REASSIGN', 'ESCALATE', 'EDIT', 'COMMENT', 'PROVIDE_INFO', 'GIVE_FEEDBACK', 'WITHDRAW'];
+const TEAM_ICONS: Partial<Record<IncidentAction, ReactNode>> = {
+  OVERRIDE_PRIORITY: <PriorityHighIcon sx={{ fontSize: 16 }} />,
+  MARK_DUPLICATE: <ContentCopyIcon sx={{ fontSize: 16 }} />,
+};
 
 const SORTS = [
   { value: 'priority,asc', label: 'Priority (most urgent first)' },
@@ -82,6 +95,8 @@ export default function TeamQueue() {
 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [problemOpen, setProblemOpen] = useState(false);
+  const problemBase = useProblemBasePath();
   const [workloadOpen, setWorkloadOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<RecommendedTechnician | null>(null);
   const [justAssigned, setJustAssigned] = useState<{ technicianId: number; name: string } | null>(null);
@@ -174,8 +189,18 @@ export default function TeamQueue() {
 
   // 5. Assignment mutation
   const assignMutation = useMutation({
-    mutationFn: ({ incidentId, technicianId }: { incidentId: number; technicianId?: number | null; name?: string }) =>
-      assignIncident(incidentId, technicianId),
+    mutationFn: async ({ incidentId, technicianId, note }: { incidentId: number; technicianId?: number | null; name?: string; note?: string }) => {
+      const res = await assignIncident(incidentId, technicianId);
+      // POST /assign has no reason field, so an override reason is kept as an internal note on the incident.
+      if (note) {
+        try {
+          await addComment(incidentId, note, 'INTERNAL');
+        } catch (e) {
+          toast(`Assigned, but the override note was not saved: ${apiErrorMessage(e)}`, 'warning');
+        }
+      }
+      return res;
+    },
     onSuccess: (res, vars) => {
       invalidateIncidentCaches(queryClient);
       const name = vars.name ?? res.assignee?.name ?? 'the best match';
@@ -184,7 +209,7 @@ export default function TeamQueue() {
     },
     onError: (err, vars) => {
       // A 409 means the status or the technician's capacity changed: refresh everything the choice depended on.
-      if ((err as { response?: { status?: number } })?.response?.status === 409) {
+      if (isStaleDataError(err)) {
         invalidateIncidentCaches(queryClient);
         queryClient.invalidateQueries({ queryKey: ['lead-recommendations', vars.incidentId] });
       }
@@ -250,9 +275,9 @@ export default function TeamQueue() {
                   </Box>
                 }
                 sx={{
-                  bgcolor: 'rgba(99, 102, 241, 0.15)',
+                  bgcolor: alpha(tokens.primary, 0.15),
                   color: COLORS.primary,
-                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  border: `1px solid ${alpha(tokens.primary, 0.3)}`,
                   fontFamily: 'JetBrains Mono, monospace',
                   fontWeight: 700,
                   fontSize: 12,
@@ -320,15 +345,15 @@ export default function TeamQueue() {
                       )
                     }
                     sx={{
-                      background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                      color: '#ffffff',
+                      background: BRAND_GRADIENT,
+                      color: tokens.onSurface,
                       borderRadius: 2,
                       px: 2.5,
                       py: 0.8,
                       fontSize: 12.5,
                       fontWeight: 700,
                       textTransform: 'none',
-                      boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+                      boxShadow: `0 4px 14px ${alpha(tokens.primary, 0.35)}`,
                     }}
                   >
                     Auto-Assign Ticket
@@ -365,7 +390,7 @@ export default function TeamQueue() {
                     sx={{
                       fontSize: 12.5,
                       fontWeight: isSelected ? 800 : 600,
-                      color: isSelected ? '#ffffff' : COLORS.onSurfaceVariant,
+                      color: isSelected ? tokens.onSurface : COLORS.onSurfaceVariant,
                       bgcolor: isSelected ? COLORS.surfaceContainerHighest : 'transparent',
                       border: isSelected ? `1px solid ${COLORS.border}` : '1px solid transparent',
                       borderRadius: 1.5,
@@ -484,13 +509,13 @@ export default function TeamQueue() {
                     sx={{
                       p: 2,
                       borderRadius: 2.5,
-                      bgcolor: isSelected ? 'rgba(99, 102, 241, 0.12)' : COLORS.surfaceContainer,
+                      bgcolor: isSelected ? alpha(tokens.primary, 0.12) : COLORS.surfaceContainer,
                       border: `1px solid ${isSelected ? COLORS.primary : COLORS.border}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       '&:hover': {
                         borderColor: COLORS.primary,
-                        bgcolor: 'rgba(99, 102, 241, 0.08)',
+                        bgcolor: alpha(tokens.primary, 0.08),
                       },
                     }}
                   >
@@ -510,9 +535,9 @@ export default function TeamQueue() {
                               fontSize: 12,
                               fontWeight: 800,
                               fontFamily: MONO,
-                              bgcolor: 'rgba(244, 63, 94, 0.25)',
-                              color: '#fb7185',
-                              border: '1px solid rgba(244, 63, 94, 0.5)',
+                              bgcolor: alpha(tokens.danger, 0.25),
+                              color: tokens.tertiaryLight,
+                              border: `1px solid ${alpha(tokens.danger, 0.5)}`,
                             }}
                           />
                         )}
@@ -632,28 +657,39 @@ export default function TeamQueue() {
                     </Typography>
                     <PriorityBadge priority={incidentDetail.priority} />
                     <StatusChip status={incidentDetail.status} />
-                    {incidentDetail.major && <Chip label="MAJOR" size="small" sx={{ height: 20, fontSize: 12, fontWeight: 800, color: '#fb7185' }} />}
+                    {incidentDetail.major && <Chip label="MAJOR" size="small" sx={{ height: 20, fontSize: 12, fontWeight: 800, color: tokens.tertiaryLight }} />}
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {incidentDetail.allowedActions?.includes('OVERRIDE_PRIORITY') && (
-                      <Button
-                        size="small"
-                        onClick={() => setOverrideOpen(true)}
-                        startIcon={<PriorityHighIcon sx={{ fontSize: 16 }} />}
-                        sx={{ color: COLORS.warning, fontSize: 12.5, textTransform: 'none' }}
-                      >
-                        Override priority
-                      </Button>
-                    )}
-                    {incidentDetail.allowedActions?.includes('MARK_DUPLICATE') && (
-                      <Button
-                        size="small"
-                        onClick={() => setDuplicateOpen(true)}
-                        startIcon={<ContentCopyIcon sx={{ fontSize: 16 }} />}
-                        sx={{ color: COLORS.onSurfaceVariant, fontSize: 12.5, textTransform: 'none' }}
-                      >
-                        Mark duplicate
-                      </Button>
+                    <ActionButtons
+                      allowed={incidentDetail.allowedActions}
+                      exclude={TEAM_EXCLUDED}
+                      onAction={(a) => (a === 'OVERRIDE_PRIORITY' ? setOverrideOpen(true) : a === 'MARK_DUPLICATE' ? setDuplicateOpen(true) : undefined)}
+                      icons={TEAM_ICONS}
+                    />
+                    {incidentDetail.problemId ? (
+                      problemBase && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<LinkIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => navigate(`${problemBase}/${incidentDetail.problemId}`)}
+                          sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
+                        >
+                          Problem #{incidentDetail.problemId}: resolve the whole problem
+                        </Button>
+                      )
+                    ) : (
+                      problemBase && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<LinkIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => setProblemOpen(true)}
+                          sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
+                        >
+                          Open problem
+                        </Button>
+                      )
                     )}
                     <Button
                       size="small"
@@ -733,7 +769,7 @@ export default function TeamQueue() {
                           fontFamily: MONO,
                           fontSize: 12,
                           fontWeight: 700,
-                          bgcolor: 'rgba(6, 182, 212, 0.15)',
+                          bgcolor: alpha(tokens.secondary, 0.15),
                           color: COLORS.secondary,
                         }}
                       />
@@ -775,8 +811,8 @@ export default function TeamQueue() {
                         sx={{
                           p: 2.5,
                           borderRadius: 2.5,
-                          bgcolor: index === 0 ? 'rgba(99, 102, 241, 0.08)' : COLORS.surfaceContainerLow,
-                          border: `1px solid ${index === 0 ? 'rgba(99, 102, 241, 0.4)' : COLORS.border}`,
+                          bgcolor: index === 0 ? alpha(tokens.primary, 0.08) : COLORS.surfaceContainerLow,
+                          border: `1px solid ${index === 0 ? alpha(tokens.primary, 0.4) : COLORS.border}`,
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
@@ -811,7 +847,7 @@ export default function TeamQueue() {
                                       fontSize: 12,
                                       fontWeight: 800,
                                       bgcolor: COLORS.primary,
-                                      color: '#ffffff',
+                                      color: tokens.onSurface,
                                     }}
                                   />
                                 )}
@@ -843,7 +879,7 @@ export default function TeamQueue() {
                                 sx={{
                                   height: 20,
                                   fontSize: 12.5,
-                                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                  bgcolor: alpha(tokens.onSurface, 0.05),
                                   color: COLORS.onSurface,
                                   border: `1px solid ${COLORS.border}`,
                                 }}
@@ -875,7 +911,7 @@ export default function TeamQueue() {
                                     sx={{
                                       height: 4,
                                       borderRadius: 2,
-                                      bgcolor: 'rgba(255, 255, 255, 0.08)',
+                                      bgcolor: alpha(tokens.onSurface, 0.08),
                                       '& .MuiLinearProgress-bar': { bgcolor: COLORS.secondary },
                                     }}
                                   />
@@ -903,14 +939,14 @@ export default function TeamQueue() {
                           }
                           sx={{
                             bgcolor: index === 0 ? COLORS.primary : COLORS.surfaceContainerHighest,
-                            color: '#ffffff',
+                            color: tokens.onSurface,
                             fontWeight: 700,
                             fontSize: 12.5,
                             textTransform: 'none',
                             borderRadius: 2,
                             py: 0.8,
                             '&:hover': {
-                              bgcolor: index === 0 ? '#4f46e5' : COLORS.primary,
+                              bgcolor: index === 0 ? tokens.primaryDark : COLORS.primary,
                             },
                           }}
                         >
@@ -984,27 +1020,51 @@ export default function TeamQueue() {
       {selectedIncidentId && (
         <MarkDuplicateDialog open={duplicateOpen} incidentId={selectedIncidentId} onClose={() => setDuplicateOpen(false)} />
       )}
+      {incidentDetail && (
+        <LinkProblemDialog
+          open={problemOpen}
+          incident={incidentDetail}
+          onClose={() => setProblemOpen(false)}
+          onDone={(problemId) => {
+            invalidateIncidentCaches(queryClient);
+            if (problemBase) navigate(`${problemBase}/${problemId}`);
+          }}
+        />
+      )}
       <TeamWorkloadDialog open={workloadOpen} onClose={() => setWorkloadOpen(false)} highlightId={justAssigned?.technicianId} />
-      <ConfirmDialog
+      <LowerRankedAssignDialog
         open={confirmTarget != null}
-        title="Assign a lower-ranked technician?"
-        description={
-          confirmTarget
-            ? `${confirmTarget.name} scored ${confirmTarget.score}% against ${topScore ?? '?'}% for the top match. This overrides the engine's choice.`
-            : undefined
-        }
-        confirmLabel="Assign anyway"
-        isLoading={assignMutation.isPending}
-        onConfirm={() => {
+        technicianName={confirmTarget?.name ?? ''}
+        score={confirmTarget?.score ?? 0}
+        topName={recommendationsView?.recommendations?.[0]?.name ?? null}
+        topScore={topScore ?? null}
+        busy={assignMutation.isPending}
+        onConfirm={(reason) => {
           if (confirmTarget && selectedIncidentId) {
+            const rank = (recommendationsView?.recommendations ?? []).findIndex((r) => r.technicianId === confirmTarget.technicianId) + 1;
             assignMutation.mutate(
-              { incidentId: selectedIncidentId, technicianId: confirmTarget.technicianId, name: confirmTarget.name },
+              {
+                incidentId: selectedIncidentId,
+                technicianId: confirmTarget.technicianId,
+                name: confirmTarget.name,
+                note: reason
+                  ? overrideAssignNote({
+                      name: confirmTarget.name,
+                      rank,
+                      score: confirmTarget.score,
+                      topName: recommendationsView?.recommendations?.[0]?.name ?? null,
+                      topScore: topScore ?? null,
+                      reason,
+                    })
+                  : undefined,
+              },
               { onSettled: () => setConfirmTarget(null) }
             );
           }
         }}
         onClose={() => setConfirmTarget(null)}
       />
+
     </Box>
   );
 }
