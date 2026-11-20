@@ -8,6 +8,7 @@ import { PriorityCard } from './dashboard/PriorityCard';
 import { CapacityCard } from './dashboard/CapacityCard';
 import { AttentionCard, LiveFeedCard } from './dashboard/LiveCards';
 import { OperationsCard } from './dashboard/OperationsCard';
+import DirectorBar from './DirectorBar';
 import { IncidentCreateDialog } from '../../components/IncidentCreateDialog';
 
 /** Admin dashboard: every number comes from /dashboard/live or /reports/*. */
@@ -22,6 +23,7 @@ export default function Dashboard() {
         </Button>
       </Stack>
 
+      <DirectorBar />
       <KpiRow />
 
       <Grid container spacing={2} sx={{ mb: 2 }}>

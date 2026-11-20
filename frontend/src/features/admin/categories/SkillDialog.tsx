@@ -5,6 +5,7 @@ import { createAdminSkill, renameAdminSkill, type AdminSkill } from '../../../ap
 import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage, fieldErrors } from '../../../utils/errors';
+import { failureMessage } from '../adminErrors';
 
 // Limits from SkillRequest: name 2 to 60 characters.
 const NAME_MIN = 2;
@@ -31,7 +32,7 @@ export default function SkillDialog({ skill, onClose, onSaved }: Props) {
     onSuccess: (saved) => { toast(`Skill ${saved.name} ${editing ? 'renamed' : 'created'}`, 'success'); onSaved(); },
     onError: (e) => {
       setServerField(fieldErrors(e).find((f) => f.field === 'name')?.message ?? '');
-      setFormError(apiErrorMessage(e));
+      setFormError(failureMessage(e));
     },
   });
 

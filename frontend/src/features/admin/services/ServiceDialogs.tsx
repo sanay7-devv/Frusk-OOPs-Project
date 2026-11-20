@@ -13,6 +13,7 @@ import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
 import { dialogPaperSx, errFor, fieldMap, fieldSx, leftoverErrors } from '../adminForm';
+import { failureMessage } from '../adminErrors';
 
 const CRITICALITY_HELP: Record<number, string> = {
   1: 'Minor convenience service', 2: 'Low', 3: 'Medium', 4: 'High: many people depend on it', 5: 'Core: its outage stops the business',
@@ -57,7 +58,7 @@ export function ServiceFormDialog({ open, service, onClose, onSaved }: { open: b
     onError: (e) => {
       const map = fieldMap(e);
       setErrors(map);
-      setFormError(Object.keys(map).length ? '' : apiErrorMessage(e));
+      setFormError(Object.keys(map).length ? '' : failureMessage(e));
     },
   });
 
@@ -116,7 +117,7 @@ export function DependenciesDialog({ service, all, onClose, onSaved }: { service
   const save = useMutation({
     mutationFn: () => replaceAdminServiceDependencies(service!.id, [...picked]),
     onSuccess: () => { toast('Dependencies saved', 'success'); onSaved(); },
-    onError: (e) => setError(apiErrorMessage(e)),
+    onError: (e) => setError(failureMessage(e)),
   });
 
   if (!service) return null;

@@ -5,6 +5,7 @@ import { createAdminCategory, updateAdminCategory, type AdminCategory, type Admi
 import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage, fieldErrors } from '../../../utils/errors';
+import { failureMessage } from '../adminErrors';
 
 // Limits from CategoryRequest: name 2 to 60 characters, at most 100 required skills.
 const NAME_MIN = 2;
@@ -63,7 +64,7 @@ export default function CategoryDialog({ category, categories, skills, onClose, 
     onSuccess: (saved) => { toast(`Category ${saved.name} ${editing ? 'updated' : 'created'}`, 'success'); onSaved(); },
     onError: (e) => {
       setErrors(Object.fromEntries(fieldErrors(e).map((f) => [f.field, f.message])));
-      setFormError(apiErrorMessage(e));
+      setFormError(failureMessage(e));
     },
   });
 

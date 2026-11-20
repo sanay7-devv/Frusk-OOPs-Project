@@ -6,6 +6,7 @@ import { tokens } from '../../../theme/theme';
 import type { GraphEdge, ServiceHealth, ServiceHealthRow } from '../../../api/services';
 import { HEALTH_COLOR } from './health';
 import { NODE_H, NODE_W, type GraphLayout } from './layout';
+import { NO_PATH, edgeKey, type CausePath } from './MajorIncidentPanel';
 
 interface Props {
   layout: GraphLayout;
@@ -17,6 +18,8 @@ interface Props {
   /** Ids shown at full strength (filters). */
   visibleIds: Set<number>;
   onSelect: (id: number | null) => void;
+  /** Probable root cause and the services on its path (Major Incident Mode). */
+  causePath?: CausePath;
 }
 
 const MIN_SCALE = 0.3;
@@ -25,7 +28,7 @@ const PAD = 32;
 
 const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-export default function GraphCanvas({ layout, edges, health, selectedId, affectedIds, visibleIds, onSelect }: Props) {
+export default function GraphCanvas({ layout, edges, health, selectedId, affectedIds, visibleIds, onSelect, causePath = NO_PATH }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: PAD, y: PAD });
@@ -139,15 +142,17 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
               (selectedId === e.from ||
                 selectedId === e.to ||
                 (affectedIds.has(e.from) && (affectedIds.has(e.to) || selectedId === e.to)));
-            const dim = hasSelection && !hot;
+            const onCause = causePath.edgeKeys.has(edgeKey(e.from, e.to));
+            const dim = hasSelection && !hot && !onCause;
             return (
               <path
                 key={`${e.from}-${e.to}`}
                 d={`M${x1},${y1} C${x1},${mid} ${x2},${mid} ${x2},${y2}`}
                 fill="none"
-                stroke={hot ? tokens.primaryLight : tokens.outline}
-                strokeWidth={hot ? 2 : 1.2}
-                opacity={dim ? 0.15 : hot ? 1 : 0.55}
+                stroke={onCause ? HEALTH_COLOR.OUTAGE : hot ? tokens.primaryLight : tokens.outline}
+                strokeWidth={onCause ? 3 : hot ? 2 : 1.2}
+                strokeDasharray={onCause ? '6 4' : undefined}
+                opacity={dim ? 0.15 : hot || onCause ? 1 : 0.55}
                 markerEnd={hot ? 'url(#sg-arrow-hot)' : 'url(#sg-arrow)'}
               />
             );
@@ -157,7 +162,9 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
             const color = HEALTH_COLOR[h];
             const selected = node.id === selectedId;
             const affected = affectedIds.has(node.id);
-            const dim = !visibleIds.has(node.id) || (hasSelection && !selected && !affected);
+            const onPath = causePath.nodeIds.has(node.id);
+            const isRoot = causePath.rootId === node.id;
+            const dim = !visibleIds.has(node.id) || (hasSelection && !selected && !affected && !onPath);
             const toggle = () => onSelect(selected ? null : node.id);
             return (
               <g
@@ -187,8 +194,9 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
                   height={NODE_H}
                   rx={10}
                   fill={tokens.surfaceContainer}
-                  stroke={selected ? tokens.primaryLight : affected ? HEALTH_COLOR.DEGRADED : color}
-                  strokeWidth={selected || affected ? 3 : 1.5}
+                  stroke={selected ? tokens.primaryLight : isRoot ? HEALTH_COLOR.OUTAGE : affected || onPath ? HEALTH_COLOR.DEGRADED : color}
+                  strokeWidth={selected || affected || onPath ? 3 : 1.5}
+                  strokeDasharray={isRoot ? '6 3' : undefined}
                 />
                 <rect width={6} height={NODE_H} rx={3} fill={color} />
                 <text x={18} y={26} fill={tokens.onSurface} fontSize={14} fontWeight={700}>
@@ -200,6 +208,11 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
                 <text x={18} y={66} fill={tokens.onSurfaceVariant} fontSize={12}>
                   {`Criticality ${node.criticality} · ${node.openIncidents} open`}
                 </text>
+                {isRoot && (
+                  <text x={NODE_W - 12} y={NODE_H - 8} textAnchor="end" fill={HEALTH_COLOR.OUTAGE} fontSize={12} fontWeight={700}>
+                    Root cause
+                  </text>
+                )}
                 {node.hasOpenP1 && (
                   <g transform={`translate(${NODE_W - 38} 10)`}>
                     <rect width={28} height={18} rx={4} fill={HEALTH_COLOR.OUTAGE} />

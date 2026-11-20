@@ -7,6 +7,7 @@ import type { IncidentSummary } from '../../../api/types';
 import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
+import { failureMessage, isConflict } from '../adminErrors';
 
 /** Assign (no assignee yet: POST /assign) or reassign (POST /reassign, reason of 10 to 1000 characters). */
 export default function AssignDialog({ incident, onClose }: { incident: IncidentSummary | null; onClose: () => void }) {
@@ -32,6 +33,13 @@ export default function AssignDialog({ incident, onClose }: { incident: Incident
       qc.invalidateQueries({ queryKey: ['incidents'] });
       onClose();
     },
+    // A version conflict reloads the list so pressing the button again works on fresh data.
+    onError: (e) => {
+      if (isConflict(e)) {
+        qc.invalidateQueries({ queryKey: ['admin-incidents-list'] });
+        qc.invalidateQueries({ queryKey: ['incidents'] });
+      }
+    },
   });
 
   const reasonOk = !reassigning || (reason.trim().length >= 10 && reason.trim().length <= 1000);
@@ -43,7 +51,7 @@ export default function AssignDialog({ incident, onClose }: { incident: Incident
       <DialogTitle>{reassigning ? 'Reassign' : 'Assign'} {incident?.code}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          {save.isError && <Alert severity="error">{apiErrorMessage(save.error)}</Alert>}
+          {save.isError && <Alert severity="error">{failureMessage(save.error)}</Alert>}
           {techs.isError && <Alert severity="error">{apiErrorMessage(techs.error)}</Alert>}
           <TextField select size="small" fullWidth label="Technician" value={techId} disabled={save.isPending || techs.isLoading}
             onChange={(e) => setTechId(Number(e.target.value))}>

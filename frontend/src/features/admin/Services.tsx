@@ -19,6 +19,7 @@ import { cardSx, monoLabelSx } from './adminForm';
 import { HEALTH_COLOR, HEALTH_LABEL } from './servicegraph/health';
 import { DependenciesDialog, ImpactDialog, ServiceFormDialog } from './services/ServiceDialogs';
 import { tone } from './palette';
+import { reportFailure } from './adminErrors';
 
 const LIST_KEY = ['admin-services-records'];
 const HEALTH_KEY = ['service-health'];
@@ -51,14 +52,14 @@ export default function Services() {
   const retireMut = useMutation({
     mutationFn: (s: ServiceRecord) => retireServiceRecord(s.id),
     onSuccess: (_d, s) => { toast(`${s.name} retired`, 'success'); refresh(); setRetire(null); },
-    onError: (e) => { toast(apiErrorMessage(e), 'error'); setRetire(null); },
+    onError: (e) => { reportFailure(toast, e); setRetire(null); },
   });
   const reactivate = useMutation({
     mutationFn: (s: ServiceRecord) => updateServiceRecord(s.id, {
       name: s.name, owner: s.owner ?? '', description: s.description ?? '', criticality: s.criticality, alwaysP1: s.alwaysP1, active: true, dependencyIds: s.dependencyIds,
     }),
     onSuccess: (_d, s) => { toast(`${s.name} is active again`, 'success'); refresh(); },
-    onError: (e) => toast(apiErrorMessage(e), 'error'),
+    onError: (e) => reportFailure(toast, e),
   });
 
   const healthById = useMemo(() => new Map<number, ServiceHealthRow>((board.data?.services ?? []).map((r) => [r.id, r])), [board.data]);

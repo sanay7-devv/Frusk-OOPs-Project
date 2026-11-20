@@ -18,6 +18,7 @@ import type { GraphNode } from '../../../api/services';
 import { apiErrorMessage } from '../../../utils/errors';
 import { useToast } from '../../../components/Toast';
 import { ErrorState, LoadingState } from '../../../components/StateViews';
+import { failureMessage } from '../adminErrors';
 
 interface Props {
   service: GraphNode | null;
@@ -56,7 +57,7 @@ export default function DependenciesDialog({ service, candidates, onClose }: Pro
       qc.invalidateQueries({ queryKey: ['admin-services-deps'] });
       onClose();
     },
-    onError: (e) => setError(apiErrorMessage(e)),
+    onError: (e) => setError(failureMessage(e)),
   });
 
   const toggle = (id: number) =>

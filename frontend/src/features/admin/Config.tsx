@@ -16,6 +16,7 @@ import WeightBar from './config/WeightBar';
 import BusinessCalendarCard from './config/BusinessCalendarCard';
 import { BUSINESS_KEY_SET, GROUPS, OTHER_GROUP, STRATEGY_HELP, WEIGHT_SETS, checkValue, groupOf, type Group } from './config/configMeta';
 import { tone, alpha } from './palette';
+import { reportFailure } from './adminErrors';
 
 const CONFIG_KEY = ['admin-config-settings'];
 const headSx = { fontWeight: 700, color: tokens.onSurfaceVariant, fontSize: 12, fontFamily: 'JetBrains Mono, monospace' };
@@ -74,7 +75,7 @@ export default function Config() {
       const { byKey, loose } = issuesByKey(fieldErrors(e), sent);
       setErrors(byKey);
       setLooseErrors(loose);
-      toast(apiErrorMessage(e), 'error');
+      reportFailure(toast, e);
     },
   });
 

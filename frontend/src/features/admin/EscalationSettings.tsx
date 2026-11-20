@@ -16,6 +16,7 @@ import { useToast } from '../../components/Toast';
 import { tokens } from '../../theme/theme';
 import { apiErrorMessage, fieldErrors } from '../../utils/errors';
 import { alpha } from './palette';
+import { reportFailure, failureMessage } from './adminErrors';
 
 const POLICIES_KEY = ['admin-escalation-policies'];
 const SIBLING_KEYS: string[][] = [];
@@ -67,7 +68,7 @@ function PolicyDialog({ state, highestOf, onClose, onSaved }: { state: EditState
     },
     onError: (e) => {
       setErrors(fieldMap(e));
-      setFormError(apiErrorMessage(e));
+      setFormError(failureMessage(e));
     },
   });
 
@@ -135,7 +136,7 @@ function RelatedSettings() {
     },
     onError: (e) => {
       setErrors(fieldMap(e));
-      toast(apiErrorMessage(e), 'error');
+      reportFailure(toast, e);
     },
   });
 
@@ -188,7 +189,7 @@ export default function EscalationSettings() {
   const remove = useMutation({
     mutationFn: (id: number) => deleteAdminEscalationPolicy(id),
     onSuccess: () => { toast('Escalation level removed', 'success'); setToDelete(null); refreshAll(); },
-    onError: (e) => { toast(apiErrorMessage(e), 'error'); setToDelete(null); },
+    onError: (e) => { reportFailure(toast, e); setToDelete(null); },
   });
 
   const sorted = [...policies].sort((a, b) => a.priority.localeCompare(b.priority) || a.level - b.level);
