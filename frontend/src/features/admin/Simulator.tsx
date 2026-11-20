@@ -102,7 +102,7 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface }}>Service Desk Simulator</Typography>
+      <Typography component="h1" variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface }}>Service Desk Simulator</Typography>
       <Typography sx={{ color: tokens.onSurfaceVariant, mb: 2, fontSize: 14 }}>
         Replay recent incidents in memory under up to {SIM_LIMITS.maxConfigurations} assignment setups and compare them.
         Nothing is written until you apply a winner. Each setup starts from the live settings.

@@ -6,6 +6,7 @@ import { apiErrorMessage } from '../../utils/errors';
 
 import { tokens } from '../../theme/theme';
 import { alpha } from '@mui/material/styles';
+import { QRCodeSVG } from 'qrcode.react';
 const codeField = (e: unknown): string | null => {
   const fes = (e as any)?.response?.data?.fieldErrors as { field: string; message: string }[] | undefined;
   return fes?.find((f) => f.field === 'code')?.message ?? null;
@@ -79,8 +80,16 @@ export default function AccountSecurity() {
         {setup && (
           <Stack spacing={2}>
             <Typography sx={{ color: tokens.onSurface, fontSize: 14 }}>
-              Add this account to your authenticator app by entering the key (or opening the link on your phone), then type the first code it shows.
+              Add this account to your authenticator app by scanning the QR code (or entering the key), then type the first code it shows.
             </Typography>
+            <Box>
+              <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12, mb: 1 }}>Scan with your authenticator app</Typography>
+              {/* White quiet zone so phone cameras read it on the dark theme. */}
+              <Box sx={{ display: 'inline-block', p: 1.5, bgcolor: tokens.white, borderRadius: 1 }}>
+                <QRCodeSVG value={setup.otpauthUri} size={176} level="M" role="img"
+                  aria-label="QR code for your authenticator app" />
+              </Box>
+            </Box>
             <Box>
               <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>Secret key</Typography>
               <Stack direction="row" spacing={1} alignItems="center">

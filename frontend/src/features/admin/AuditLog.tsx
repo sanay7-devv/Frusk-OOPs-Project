@@ -121,7 +121,7 @@ export default function AuditLog() {
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} mb={3} spacing={2}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: 'text.primary' }}>Audit trail</Typography>
+          <Typography component="h1" variant="h4" fontWeight="bold" sx={{ color: 'text.primary' }}>Audit trail</Typography>
           <Typography variant="body2" sx={{ mt: 0.5, fontSize: 13 }}>
             Append-only record of incident changes, assignments, failed logins, access denials and configuration changes.
           </Typography>

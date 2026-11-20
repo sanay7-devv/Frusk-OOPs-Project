@@ -73,7 +73,7 @@ import {
 import type { IncidentDetail, Priority } from '../../api/types';
 import PriorityBadge from '../../components/PriorityBadge';
 import { useToast } from '../../components/Toast';
-import { errorMessage } from '../../utils/errors';
+import { apiErrorMessage, errorMessage } from '../../utils/errors';
 
 import { tokens } from '../../theme/theme';
 import { alpha } from '@mui/material/styles';
@@ -530,8 +530,8 @@ export default function ReportIncident() {
                         const joined = await joinProblem(knownOutages[0].problemId);
                         toast('Successfully joined known outage ticket.', 'success');
                         navigate(`/employee/incidents/${joined.id}`);
-                      } catch (err: any) {
-                        toast(err?.response?.data?.message || 'Failed to join outage', 'error');
+                      } catch (err) {
+                        toast(apiErrorMessage(err), 'error');
                       }
                     }}
                     sx={{ textTransform: 'none', fontWeight: 600 }}

@@ -31,7 +31,7 @@ function DemoScreen() {
   if (clock.isError && isDemoUnavailable(clock.error)) {
     return (
       <Box>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 2 }}>Demo controls</Typography>
+        <Typography component="h1" variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 2 }}>Demo controls</Typography>
         <EmptyState message="Demo controls are only available on the demo profile. Start the backend with SPRING_PROFILES_ACTIVE=demo to use the clock and the outage drill." />
       </Box>
     );
@@ -74,7 +74,7 @@ function DemoPanels({ now, offsetMinutes }: { now: string; offsetMinutes: number
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface }}>Demo controls</Typography>
+      <Typography component="h1" variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface }}>Demo controls</Typography>
       <Typography sx={{ color: tokens.onSurfaceVariant, mb: 2, fontSize: 14 }}>
         Aids for the recorded demo; they exist only on the demo profile. Each action is written to the audit trail.
       </Typography>

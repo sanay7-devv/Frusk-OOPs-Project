@@ -73,24 +73,9 @@ import PriorityBadge from '../../components/PriorityBadge';
 import SlaCountdown from '../../components/SlaCountdown';
 import { tokens, slaStateColor } from '../../theme/theme';
 import type { IncidentSummary, SavedFilterView } from '../../api/types';
-import { alpha, BRAND_GRADIENT, BRAND_GRADIENT_REVERSE, CAPACITY_WARN_PERCENT } from './staffStyle';
+import { alpha, BRAND_GRADIENT, BRAND_GRADIENT_REVERSE } from './staffStyle';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA map.
-const COLORS = {
-  surface: tokens.background,
-  surfaceContainerLowest: tokens.surfaceContainerLowest,
-  surfaceContainerLow: tokens.surfaceContainerLow,
-  surfaceContainer: tokens.surfaceContainer,
-  surfaceContainerHigh: tokens.surfaceContainerHigh,
-  surfaceContainerHighest: tokens.surfaceContainerHighest,
-  onSurface: tokens.onSurface,
-  onSurfaceVariant: tokens.onSurfaceVariant,
-  border: tokens.outlineVariant,
-  primary: tokens.primary,
-  secondary: tokens.secondary,
-  error: slaStateColor.VIOLATED,
-  tertiary: tokens.tertiary,
-};
 
 /** Statuses a technician still has to work on. Used when the queue is filtered on the server. */
 const ACTIVE_STATUSES = ['ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
@@ -221,7 +206,8 @@ export default function TechQueue() {
   const { data: meProfile } = useQuery({ queryKey: ['auth-me'], queryFn: fetchMe, staleTime: 30_000 });
 
   // 6. Saved views (GET/POST/DELETE /saved-filters)
-  const { data: savedViews = [] } = useQuery<SavedFilterView[]>({ queryKey: ['saved-filters'], queryFn: listSavedFilters });
+  const { data: allSavedViews = [] } = useQuery<SavedFilterView[]>({ queryKey: ['saved-filters'], queryFn: listSavedFilters });
+  const savedViews = allSavedViews.filter((v) => v.filter?.screen !== 'team-queue');
 
   useEffect(() => {
     const t = setTimeout(() => setSearchQuery(searchInput.trim()), 350);
@@ -481,6 +467,7 @@ export default function TechQueue() {
   const activeLoad = workload?.load ?? queue.length;
   const maxQuota = workload?.maxLoad ?? 10;
   const capacityPercent = Math.min(100, Math.round((activeLoad / maxQuota) * 100));
+  const capacityWarnAt = workload?.capacityWarnPercent ?? Infinity;
 
   return (
     <Box sx={{ maxWidth: 1440, mx: 'auto', pb: 6 }}>
@@ -497,7 +484,7 @@ export default function TechQueue() {
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.onSurface, letterSpacing: '-0.01em', fontFamily: 'Sora, sans-serif' }}>
+            <Typography component="h1" variant="h5" sx={{ fontWeight: 800, color: tokens.onSurface, letterSpacing: '-0.01em', fontFamily: 'Sora, sans-serif' }}>
               Technician Operational Work Queue
             </Typography>
             <Box
@@ -509,7 +496,7 @@ export default function TechQueue() {
                 py: 0.4,
                 borderRadius: 3,
                 bgcolor: queueError ? alpha(tokens.danger, 0.15) : alpha(tokens.primary, 0.15),
-                color: queueError ? COLORS.error : COLORS.primary,
+                color: queueError ? slaStateColor.VIOLATED : tokens.primary,
                 border: `1px solid ${queueError ? '${alpha(tokens.danger, 0.3)}' : '${alpha(tokens.primary, 0.3)}'}`,
                 fontSize: 12.5,
                 fontWeight: 700,
@@ -521,7 +508,7 @@ export default function TechQueue() {
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  bgcolor: queueError ? COLORS.error : COLORS.primary,
+                  bgcolor: queueError ? slaStateColor.VIOLATED : tokens.primary,
                   boxShadow: queueError ? `0 0 8px ${tokens.danger}` : `0 0 8px ${tokens.primary}`,
                   animation: 'pulse 1.5s infinite',
                 }}
@@ -537,17 +524,17 @@ export default function TechQueue() {
                 fontFamily: 'JetBrains Mono, monospace',
                 fontSize: 12,
                 height: 22,
-                bgcolor: COLORS.surfaceContainerHigh,
-                color: COLORS.onSurfaceVariant,
-                border: `1px solid ${COLORS.border}`,
+                bgcolor: tokens.surfaceContainerHigh,
+                color: tokens.onSurfaceVariant,
+                border: `1px solid ${tokens.outlineVariant}`,
                 fontWeight: 700,
               }}
             />
-            <IconButton size="small" onClick={() => { refetchQueue(); refetchWorkload(); }} sx={{ color: COLORS.onSurfaceVariant }}>
+            <IconButton aria-label="Refresh queue" size="small" onClick={() => { refetchQueue(); refetchWorkload(); }} sx={{ color: tokens.onSurfaceVariant }}>
               <RefreshIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-          <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
             Live SRE incident triage cockpit · Logged in as {user?.name || 'Technician'} ({user?.email})
           </Typography>
         </Box>
@@ -562,8 +549,8 @@ export default function TechQueue() {
             px: 2,
             py: 1,
             borderRadius: 2.5,
-            border: `1px solid ${COLORS.border}`,
-            bgcolor: COLORS.surfaceContainer,
+            border: `1px solid ${tokens.outlineVariant}`,
+            bgcolor: tokens.surfaceContainer,
             backdropFilter: 'blur(16px)',
           }}
         >
@@ -572,15 +559,15 @@ export default function TechQueue() {
               width: 10,
               height: 10,
               borderRadius: '50%',
-              bgcolor: isAvailable ? COLORS.secondary : COLORS.error,
+              bgcolor: isAvailable ? tokens.secondary : slaStateColor.VIOLATED,
               boxShadow: isAvailable ? `0 0 10px ${tokens.secondary}` : `0 0 10px ${tokens.danger}`,
             }}
           />
           <Box>
-            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: tokens.onSurface, lineHeight: 1.2 }}>
               Status: {availabilityLabel}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+            <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
               {isAvailable ? 'Accepting auto-assignment' : 'Not receiving auto-assignment'}
             </Typography>
           </Box>
@@ -589,16 +576,16 @@ export default function TechQueue() {
             onClick={handleToggleAvailability}
             sx={{
               ml: 1,
-              bgcolor: COLORS.surfaceContainerHigh,
-              color: COLORS.onSurface,
-              border: `1px solid ${COLORS.border}`,
+              bgcolor: tokens.surfaceContainerHigh,
+              color: tokens.onSurface,
+              border: `1px solid ${tokens.outlineVariant}`,
               fontSize: 12.5,
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 1.5,
               px: 1.5,
               py: 0.5,
-              '&:hover': { bgcolor: COLORS.surfaceContainerHighest },
+              '&:hover': { bgcolor: tokens.surfaceContainerHighest },
             }}
           >
             {isAvailable ? 'Set Away' : 'Set Available'}
@@ -617,8 +604,8 @@ export default function TechQueue() {
             sx={{
               p: 2.5,
               borderRadius: 3,
-              border: `1px solid ${COLORS.border}`,
-              bgcolor: COLORS.surfaceContainer,
+              border: `1px solid ${tokens.outlineVariant}`,
+              bgcolor: tokens.surfaceContainer,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -645,7 +632,7 @@ export default function TechQueue() {
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 15, fontWeight: 800, color: COLORS.onSurface }}>
+                    <Typography sx={{ fontSize: 15, fontWeight: 800, color: tokens.onSurface }}>
                       {user?.name || 'Technician 1'}
                     </Typography>
                     <Chip
@@ -657,18 +644,18 @@ export default function TechQueue() {
                         fontWeight: 700,
                         fontFamily: 'JetBrains Mono, monospace',
                         bgcolor: alpha(tokens.primary, 0.15),
-                        color: COLORS.primary,
+                        color: tokens.primary,
                         border: `1px solid ${alpha(tokens.primary, 0.3)}`,
                       }}
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : COLORS.secondary, fontWeight: 700, fontSize: 12 }}>
-                    {capacityPercent >= CAPACITY_WARN_PERCENT && <WarningIcon sx={{ fontSize: 15 }} />}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.secondary, fontWeight: 700, fontSize: 12 }}>
+                    {capacityPercent >= capacityWarnAt && <WarningIcon sx={{ fontSize: 15 }} />}
                     <span>{activeLoad} of {maxQuota} weighted load ({capacityPercent}% Capacity)</span>
                   </Box>
                 </Box>
               </Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.onSurfaceVariant, fontWeight: 600 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant, fontWeight: 600 }}>
                 Quota: {maxQuota} Max
               </Typography>
             </Box>
@@ -681,19 +668,19 @@ export default function TechQueue() {
                 sx={{
                   height: 10,
                   borderRadius: 1,
-                  bgcolor: COLORS.surfaceContainerHighest,
+                  bgcolor: tokens.surfaceContainerHighest,
                   mb: 1,
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : COLORS.primary,
+                    bgcolor: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.primary,
                     borderRadius: 1,
                   },
                 }}
               />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: tokens.onSurfaceVariant }}>
                 <span>Active tickets: {queue.length}</span>
                 <span>Resolved this week: {workload?.resolvedThisWeek ?? 0}</span>
-                <span style={{ color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : tokens.textDisabled }}>
-                  {capacityPercent >= CAPACITY_WARN_PERCENT ? 'Near Capacity' : 'Available Capacity'}
+                <span style={{ color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.textDisabled }}>
+                  {capacityPercent >= capacityWarnAt ? 'Near Capacity' : 'Available Capacity'}
                 </span>
               </Box>
             </Box>
@@ -710,8 +697,8 @@ export default function TechQueue() {
                 sx={{
                   p: 2,
                   borderRadius: 2.5,
-                  bgcolor: COLORS.surfaceContainer,
-                  border: needsAckCount > 0 ? `1px solid ${alpha(tokens.danger, 0.3)}` : `1px solid ${COLORS.border}`,
+                  bgcolor: tokens.surfaceContainer,
+                  border: needsAckCount > 0 ? `1px solid ${alpha(tokens.danger, 0.3)}` : `1px solid ${tokens.outlineVariant}`,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -719,20 +706,20 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: needsAckCount > 0 ? slaStateColor.VIOLATED : tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Needs Ack
                   </Typography>
-                  <BoltIcon sx={{ fontSize: 18, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }} />
+                  <BoltIcon sx={{ fontSize: 18, color: needsAckCount > 0 ? slaStateColor.VIOLATED : tokens.onSurfaceVariant }} />
                 </Box>
                 <Box sx={{ my: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: needsAckCount > 0 ? slaStateColor.VIOLATED : tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {needsAckCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: needsAckCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: needsAckCount > 0 ? slaStateColor.VIOLATED : tokens.onSurfaceVariant }}>
                     {needsAckCount > 0 ? 'Acknowledge' : 'Clear'}
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant }}>
                   Assigned to you
                 </Typography>
               </Paper>
@@ -745,8 +732,8 @@ export default function TechQueue() {
                 sx={{
                   p: 2,
                   borderRadius: 2.5,
-                  bgcolor: COLORS.surfaceContainer,
-                  border: atRiskCount > 0 ? `1px solid ${alpha(tokens.danger, 0.3)}` : `1px solid ${COLORS.border}`,
+                  bgcolor: tokens.surfaceContainer,
+                  border: atRiskCount > 0 ? `1px solid ${alpha(tokens.danger, 0.3)}` : `1px solid ${tokens.outlineVariant}`,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -754,20 +741,20 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: atRiskCount > 0 ? slaStateColor.VIOLATED : tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     At-Risk SLA
                   </Typography>
-                  <ErrorOutlineIcon sx={{ fontSize: 18, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant }} />
+                  <ErrorOutlineIcon sx={{ fontSize: 18, color: atRiskCount > 0 ? slaStateColor.VIOLATED : tokens.onSurfaceVariant }} />
                 </Box>
                 <Box sx={{ my: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: atRiskCount > 0 ? slaStateColor.VIOLATED : tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {atRiskCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     Tickets
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: atRiskCount > 0 ? COLORS.error : COLORS.onSurfaceVariant, fontWeight: 700 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: atRiskCount > 0 ? slaStateColor.VIOLATED : tokens.onSurfaceVariant, fontWeight: 700 }}>
                   {atRiskCount > 0 ? 'Action required' : 'All targets healthy'}
                 </Typography>
               </Paper>
@@ -780,8 +767,8 @@ export default function TechQueue() {
                 sx={{
                   p: 2,
                   borderRadius: 2.5,
-                  bgcolor: COLORS.surfaceContainer,
-                  border: `1px solid ${COLORS.border}`,
+                  bgcolor: tokens.surfaceContainer,
+                  border: `1px solid ${tokens.outlineVariant}`,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -789,20 +776,20 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     In Progress
                   </Typography>
-                  <SyncIcon sx={{ fontSize: 18, color: COLORS.primary }} />
+                  <SyncIcon sx={{ fontSize: 18, color: tokens.primary }} />
                 </Box>
                 <Box sx={{ my: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {inProgressCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     Active
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant }}>
                   Under investigation
                 </Typography>
               </Paper>
@@ -815,8 +802,8 @@ export default function TechQueue() {
                 sx={{
                   p: 2,
                   borderRadius: 2.5,
-                  bgcolor: COLORS.surfaceContainer,
-                  border: `1px solid ${COLORS.border}`,
+                  bgcolor: tokens.surfaceContainer,
+                  border: `1px solid ${tokens.outlineVariant}`,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -824,20 +811,20 @@ export default function TechQueue() {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                     Pending Info
                   </Typography>
-                  <PauseCircleIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
+                  <PauseCircleIcon sx={{ fontSize: 18, color: tokens.secondary }} />
                 </Box>
                 <Box sx={{ my: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
                     {pendingInfoCount}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     Paused
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.secondary, fontWeight: 600 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondary, fontWeight: 600 }}>
                   SLA clock frozen
                 </Typography>
               </Paper>
@@ -856,18 +843,18 @@ export default function TechQueue() {
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: 1.5,
-            borderBottom: `1px solid ${COLORS.border}`,
+            borderBottom: `1px solid ${tokens.outlineVariant}`,
             pb: 1.5,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: COLORS.surfaceContainerLow, p: 0.5, borderRadius: 2, border: `1px solid ${COLORS.border}`, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: tokens.surfaceContainerLow, p: 0.5, borderRadius: 2, border: `1px solid ${tokens.outlineVariant}`, flexWrap: 'wrap' }}>
             {(
               [
-                { id: 'ALL', label: 'All Active', count: queue.length, bg: COLORS.primary, text: tokens.onSurface },
-                { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: COLORS.error, text: tokens.onSurface },
-                { id: 'AT_RISK', label: 'At-Risk SLAs', count: atRiskCount, bg: alpha(tokens.danger, 0.2), text: COLORS.error },
-                { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, bg: alpha(tokens.primary, 0.2), text: COLORS.primary },
-                { id: 'PENDING_INFO', label: 'Pending Info (Paused)', count: pendingInfoCount, bg: alpha(tokens.secondary, 0.2), text: COLORS.secondary },
+                { id: 'ALL', label: 'All Active', count: queue.length, bg: tokens.primary, text: tokens.onSurface },
+                { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: slaStateColor.VIOLATED, text: tokens.onSurface },
+                { id: 'AT_RISK', label: 'At-Risk SLAs', count: atRiskCount, bg: alpha(tokens.danger, 0.2), text: slaStateColor.VIOLATED },
+                { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, bg: alpha(tokens.primary, 0.2), text: tokens.primary },
+                { id: 'PENDING_INFO', label: 'Pending Info (Paused)', count: pendingInfoCount, bg: alpha(tokens.secondary, 0.2), text: tokens.secondary },
               ] as const
             ).map((tab) => {
               const isSelected = filterTab === tab.id;
@@ -884,8 +871,8 @@ export default function TechQueue() {
                     fontWeight: 700,
                     textTransform: 'none',
                     bgcolor: isSelected ? tab.bg : 'transparent',
-                    color: isSelected ? tab.text : COLORS.onSurfaceVariant,
-                    '&:hover': { bgcolor: isSelected ? tab.bg : COLORS.surfaceContainerHigh },
+                    color: isSelected ? tab.text : tokens.onSurfaceVariant,
+                    '&:hover': { bgcolor: isSelected ? tab.bg : tokens.surfaceContainerHigh },
                   }}
                 >
                   {tab.label} ({tab.count})
@@ -904,15 +891,15 @@ export default function TechQueue() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 18, color: COLORS.onSurfaceVariant }} />
+                  <SearchIcon sx={{ fontSize: 18, color: tokens.onSurfaceVariant }} />
                 </InputAdornment>
               ),
             }}
             sx={{
               width: { xs: '100%', sm: 320 },
-              bgcolor: COLORS.surfaceContainerLow,
+              bgcolor: tokens.surfaceContainerLow,
               borderRadius: 2,
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant },
             }}
           />
         </Box>
@@ -923,8 +910,8 @@ export default function TechQueue() {
           sx={{
             p: 1.5,
             borderRadius: 2,
-            bgcolor: COLORS.surfaceContainer,
-            border: `1px solid ${COLORS.border}`,
+            bgcolor: tokens.surfaceContainer,
+            border: `1px solid ${tokens.outlineVariant}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -940,14 +927,14 @@ export default function TechQueue() {
                 value={scope}
                 onChange={(_, v) => v && setScope(v)}
                 aria-label="Queue scope"
-                sx={{ '& .MuiToggleButton-root': { fontSize: 12, fontWeight: 700, textTransform: 'none', px: 1.5, py: 0.4, color: COLORS.onSurfaceVariant } }}
+                sx={{ '& .MuiToggleButton-root': { fontSize: 12, fontWeight: 700, textTransform: 'none', px: 1.5, py: 0.4, color: tokens.onSurfaceVariant } }}
               >
                 <ToggleButton value="MINE">Only mine</ToggleButton>
                 <ToggleButton value="TEAM">Team</ToggleButton>
               </ToggleButtonGroup>
             )}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Service:
               </Typography>
               <Select
@@ -956,13 +943,13 @@ export default function TechQueue() {
                 onChange={(e) => setServiceFilter(e.target.value)}
                 error={!!servicesError}
                 sx={{
-                  bgcolor: COLORS.surfaceContainerLow,
+                  bgcolor: tokens.surfaceContainerLow,
                   fontSize: 12,
                   fontWeight: 600,
                   height: 30,
                   borderRadius: 1.5,
-                  color: COLORS.onSurface,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  color: tokens.onSurface,
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant },
                 }}
               >
                 <MenuItem value="ALL">All Services</MenuItem>
@@ -973,7 +960,7 @@ export default function TechQueue() {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Priority:
               </Typography>
               <Select
@@ -981,13 +968,13 @@ export default function TechQueue() {
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
                 sx={{
-                  bgcolor: COLORS.surfaceContainerLow,
+                  bgcolor: tokens.surfaceContainerLow,
                   fontSize: 12,
                   fontWeight: 600,
                   height: 30,
                   borderRadius: 1.5,
-                  color: COLORS.onSurface,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  color: tokens.onSurface,
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant },
                 }}
               >
                 <MenuItem value="ALL">All Priorities</MenuItem>
@@ -999,14 +986,14 @@ export default function TechQueue() {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 SLA:
               </Typography>
               <Select
                 size="small"
                 value={slaFilter}
                 onChange={(e) => setSlaFilter(e.target.value)}
-                sx={{ bgcolor: COLORS.surfaceContainerLow, fontSize: 12, fontWeight: 600, height: 30, borderRadius: 1.5, color: COLORS.onSurface, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
+                sx={{ bgcolor: tokens.surfaceContainerLow, fontSize: 12, fontWeight: 600, height: 30, borderRadius: 1.5, color: tokens.onSurface, '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant } }}
               >
                 <MenuItem value="ALL">Any state</MenuItem>
                 {SLA_FILTERS.map((st) => (
@@ -1016,14 +1003,14 @@ export default function TechQueue() {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                 Sort:
               </Typography>
               <Select
                 size="small"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
-                sx={{ bgcolor: COLORS.surfaceContainerLow, fontSize: 12, fontWeight: 600, height: 30, borderRadius: 1.5, color: COLORS.onSurface, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
+                sx={{ bgcolor: tokens.surfaceContainerLow, fontSize: 12, fontWeight: 600, height: 30, borderRadius: 1.5, color: tokens.onSurface, '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant } }}
               >
                 {SORT_OPTIONS.map((o) => (
                   <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
@@ -1034,7 +1021,7 @@ export default function TechQueue() {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             {serverFiltered && (
-              <Button size="small" onClick={clearFilters} sx={{ textTransform: 'none', fontSize: 12, color: COLORS.onSurfaceVariant }}>
+              <Button size="small" onClick={clearFilters} sx={{ textTransform: 'none', fontSize: 12, color: tokens.onSurfaceVariant }}>
                 Clear filters
               </Button>
             )}
@@ -1053,7 +1040,7 @@ export default function TechQueue() {
 
         {savedViews.length > 0 && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
               SAVED VIEWS:
             </Typography>
             {savedViews.map((sv) => (
@@ -1066,9 +1053,9 @@ export default function TechQueue() {
                 deleteIcon={<DeleteIcon sx={{ fontSize: '16px !important' }} />}
                 sx={{
                   fontSize: 12,
-                  bgcolor: activeViewId === sv.id ? alpha(tokens.secondary, 0.2) : COLORS.surfaceContainerLow,
-                  color: activeViewId === sv.id ? COLORS.secondary : COLORS.onSurface,
-                  border: `1px solid ${activeViewId === sv.id ? COLORS.secondary : COLORS.border}`,
+                  bgcolor: activeViewId === sv.id ? alpha(tokens.secondary, 0.2) : tokens.surfaceContainerLow,
+                  color: activeViewId === sv.id ? tokens.secondary : tokens.onSurface,
+                  border: `1px solid ${activeViewId === sv.id ? tokens.secondary : tokens.outlineVariant}`,
                 }}
               />
             ))}
@@ -1104,9 +1091,9 @@ export default function TechQueue() {
                 sx={{
                   p: 2.5,
                   borderRadius: 3,
-                  border: `1px solid ${COLORS.border}`,
-                  borderLeft: isCritical ? `4px solid ${COLORS.error}` : isHigh ? `4px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
-                  bgcolor: isPaused ? COLORS.surfaceContainerLow : COLORS.surfaceContainer,
+                  border: `1px solid ${tokens.outlineVariant}`,
+                  borderLeft: isCritical ? `4px solid ${slaStateColor.VIOLATED}` : isHigh ? `4px solid ${tokens.secondary}` : `1px solid ${tokens.outlineVariant}`,
+                  bgcolor: isPaused ? tokens.surfaceContainerLow : tokens.surfaceContainer,
                   backdropFilter: 'blur(16px)',
                   transition: 'all 0.2s ease',
                   '&:hover': {
@@ -1150,26 +1137,26 @@ export default function TechQueue() {
                           fontFamily: 'JetBrains Mono, monospace',
                           fontSize: 13,
                           fontWeight: 800,
-                          color: COLORS.secondary,
+                          color: tokens.secondary,
                           cursor: 'pointer',
                           '&:hover': { textDecoration: 'underline' },
                         }}
                       >
                         {inc.code}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>•</Typography>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>•</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant }}>
                         {inc.service?.name || 'General Service'}
                       </Typography>
                       {inc.category?.name && (
                         <>
-                          <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>•</Typography>
-                          <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>•</Typography>
+                          <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                             {inc.category.name}
                           </Typography>
                         </>
                       )}
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>•</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>•</Typography>
                       <Typography sx={{ fontSize: 12.5, color: tokens.textDisabled, fontFamily: 'JetBrains Mono, monospace' }}>
                         {timeAgo(inc.createdAt)}
                       </Typography>
@@ -1182,7 +1169,7 @@ export default function TechQueue() {
                             fontSize: 12,
                             fontWeight: 700,
                             bgcolor: alpha(tokens.danger, 0.15),
-                            color: COLORS.error,
+                            color: slaStateColor.VIOLATED,
                             border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                           }}
                         />
@@ -1194,11 +1181,11 @@ export default function TechQueue() {
                       onClick={() => navigate(`/tech/incidents/${inc.id}`)}
                       sx={{
                         fontWeight: 700,
-                        color: COLORS.onSurface,
+                        color: tokens.onSurface,
                         fontSize: 16,
                         fontFamily: 'Sora, sans-serif',
                         cursor: 'pointer',
-                        '&:hover': { color: COLORS.primary },
+                        '&:hover': { color: tokens.primary },
                         mb: 0.5,
                       }}
                     >
@@ -1206,7 +1193,7 @@ export default function TechQueue() {
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mt: 0.5 }}>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                         Reporter: <strong>{inc.reporter?.name || 'Employee'}</strong>
                       </Typography>
                       <Chip
@@ -1217,7 +1204,7 @@ export default function TechQueue() {
                           fontSize: 12,
                           fontWeight: 700,
                           bgcolor: inc.status === 'ASSIGNED' ? alpha(tokens.danger, 0.15) : inc.status === 'IN_PROGRESS' ? alpha(tokens.primary, 0.15) : alpha(tokens.secondary, 0.15),
-                          color: inc.status === 'ASSIGNED' ? COLORS.error : inc.status === 'IN_PROGRESS' ? COLORS.primary : COLORS.secondary,
+                          color: inc.status === 'ASSIGNED' ? slaStateColor.VIOLATED : inc.status === 'IN_PROGRESS' ? tokens.primary : tokens.secondary,
                           borderRadius: 1,
                         }}
                       />
@@ -1232,12 +1219,12 @@ export default function TechQueue() {
                         sx={{
                           p: 1.5,
                           borderRadius: 2,
-                          bgcolor: COLORS.surfaceContainerLowest,
-                          border: `1px solid ${COLORS.border}`,
+                          bgcolor: tokens.surfaceContainerLowest,
+                          border: `1px solid ${tokens.outlineVariant}`,
                           minWidth: 190,
                         }}
                       >
-                        <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                        <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: tokens.onSurfaceVariant, mb: 0.6 }}>
                           Response SLA
                         </Typography>
                         <SlaCountdown due={inc.responseDue} createdAt={inc.createdAt} slaState={inc.status === 'ASSIGNED' ? inc.slaState : 'MET'} />
@@ -1249,12 +1236,12 @@ export default function TechQueue() {
                         sx={{
                           p: 1.5,
                           borderRadius: 2,
-                          bgcolor: COLORS.surfaceContainerLowest,
-                          border: `1px solid ${COLORS.border}`,
+                          bgcolor: tokens.surfaceContainerLowest,
+                          border: `1px solid ${tokens.outlineVariant}`,
                           minWidth: 190,
                         }}
                       >
-                        <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: COLORS.onSurfaceVariant, mb: 0.6 }}>
+                        <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: tokens.onSurfaceVariant, mb: 0.6 }}>
                           Resolution SLA
                         </Typography>
                         <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
@@ -1272,7 +1259,7 @@ export default function TechQueue() {
                     flexWrap: 'wrap',
                     gap: 1.5,
                     pt: 1.5,
-                    borderTop: `1px solid ${COLORS.border}`,
+                    borderTop: `1px solid ${tokens.outlineVariant}`,
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -1296,7 +1283,7 @@ export default function TechQueue() {
                         sx={{
                           fontSize: 12.5,
                           fontWeight: 700,
-                          color: COLORS.error,
+                          color: slaStateColor.VIOLATED,
                           bgcolor: alpha(tokens.danger, 0.1),
                           border: `1px solid ${alpha(tokens.danger, 0.3)}`,
                           textTransform: 'none',
@@ -1315,8 +1302,8 @@ export default function TechQueue() {
                     onClick={() => navigate(`/tech/incidents/${inc.id}`)}
                     endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
                     sx={{
-                      borderColor: COLORS.primary,
-                      color: COLORS.primary,
+                      borderColor: tokens.primary,
+                      color: tokens.primary,
                       fontSize: 12.5,
                       fontWeight: 700,
                       textTransform: 'none',
@@ -1345,11 +1332,11 @@ export default function TechQueue() {
               mt: 3,
               p: 2,
               borderRadius: 2.5,
-              bgcolor: COLORS.surfaceContainer,
-              border: `1px solid ${COLORS.border}`,
+              bgcolor: tokens.surfaceContainer,
+              border: `1px solid ${tokens.outlineVariant}`,
             }}
           >
-            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
               Showing {rows.length > 0 ? page * pageSize + 1 : 0}–{Math.min((page + 1) * pageSize, totalItems)} of {totalItems} incidents
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1359,8 +1346,8 @@ export default function TechQueue() {
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 sx={{
-                  borderColor: COLORS.border,
-                  color: COLORS.onSurface,
+                  borderColor: tokens.outlineVariant,
+                  color: tokens.onSurface,
                   textTransform: 'none',
                   fontSize: 12,
                   fontWeight: 600,
@@ -1369,7 +1356,7 @@ export default function TechQueue() {
               >
                 Previous Page
               </Button>
-              <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.primary, fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: tokens.primary, fontFamily: 'JetBrains Mono, monospace' }}>
                 Page {page + 1} of {Math.max(1, totalPages)}
               </Typography>
               <Button
@@ -1378,8 +1365,8 @@ export default function TechQueue() {
                 disabled={page + 1 >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 sx={{
-                  borderColor: COLORS.border,
-                  color: COLORS.onSurface,
+                  borderColor: tokens.outlineVariant,
+                  color: tokens.onSurface,
                   textTransform: 'none',
                   fontSize: 12,
                   fontWeight: 600,
@@ -1399,25 +1386,25 @@ export default function TechQueue() {
         onClose={() => setNoteModalIncident(null)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
         {noteModalIncident && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: COLORS.secondary }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: tokens.secondary }}>
                   SRE INTERNAL WORKBENCH // {noteModalIncident.code}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
                   Append Investigation Note
                 </Typography>
               </Box>
-              <IconButton onClick={() => setNoteModalIncident(null)} size="small" sx={{ color: COLORS.onSurfaceVariant }}>
+              <IconButton aria-label="Close note dialog" onClick={() => setNoteModalIncident(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2, borderColor: COLORS.border }}>
-              <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 1.5 }}>
+            <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
+              <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 1.5 }}>
                 {noteModalIncident.title}
               </Typography>
               <TextField
@@ -1428,14 +1415,14 @@ export default function TechQueue() {
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Log diagnostic findings, root cause analysis hypothesis, or deployment timestamps..."
                 sx={{
-                  bgcolor: COLORS.surfaceContainerLowest,
+                  bgcolor: tokens.surfaceContainerLowest,
                   borderRadius: 2,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant },
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setNoteModalIncident(null)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+              <Button onClick={() => setNoteModalIncident(null)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
                 Cancel
               </Button>
               <Button
@@ -1457,29 +1444,29 @@ export default function TechQueue() {
         onClose={() => setRequestInfoIncident(null)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
         {requestInfoIncident && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: COLORS.secondary }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: tokens.secondary }}>
                   CLARIFICATION REQUEST // {requestInfoIncident.code}
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
                   Request Information from Reporter
                 </Typography>
               </Box>
-              <IconButton onClick={() => setRequestInfoIncident(null)} size="small" sx={{ color: COLORS.onSurfaceVariant }}>
+              <IconButton aria-label="Close request-info dialog" onClick={() => setRequestInfoIncident(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2, borderColor: COLORS.border }}>
-              <Paper sx={{ p: 1.8, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, borderRadius: 2, mb: 2 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>
+            <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
+              <Paper sx={{ p: 1.8, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 2, mb: 2 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.secondary }}>
                   Reporter: {requestInfoIncident.reporter?.name || 'Employee'}
                 </Typography>
-                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mt: 0.5 }}>
+                <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, mt: 0.5 }}>
                   Submitting this request will automatically freeze the SLA countdown clock until the employee provides the requested diagnostics.
                 </Typography>
               </Paper>
@@ -1493,14 +1480,14 @@ export default function TechQueue() {
                 helperText={`${requestInfoText.length}/2000 (at least 10)`}
                 placeholder="Specify the log file, screenshot, or reproduction steps required (minimum 10 characters)..."
                 sx={{
-                  bgcolor: COLORS.surfaceContainerLowest,
+                  bgcolor: tokens.surfaceContainerLowest,
                   borderRadius: 2,
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant },
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setRequestInfoIncident(null)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+              <Button onClick={() => setRequestInfoIncident(null)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
                 Cancel
               </Button>
               <Button
@@ -1522,20 +1509,20 @@ export default function TechQueue() {
         onClose={() => setReassignIncident(null)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
         {reassignIncident && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
                 Reassign Incident {reassignIncident.code}
               </Typography>
-              <IconButton onClick={() => setReassignIncident(null)} size="small" sx={{ color: COLORS.onSurfaceVariant }}>
+              <IconButton aria-label="Close reassign dialog" onClick={() => setReassignIncident(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2, borderColor: COLORS.border }}>
-              <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
+            <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
+              <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
                 Select target technician (required):
               </Typography>
               <Select
@@ -1544,7 +1531,7 @@ export default function TechQueue() {
                 value={reassignTargetId}
                 onChange={(e) => setReassignTargetId(e.target.value === '' ? '' : Number(e.target.value))}
                 displayEmpty
-                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 2, color: COLORS.onSurface, mb: 2, '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border } }}
+                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 2, color: tokens.onSurface, mb: 2, '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant } }}
               >
                 <MenuItem value="" disabled>-- Select a technician --</MenuItem>
                 {(reassignRecs?.recommendations ?? [])
@@ -1556,21 +1543,21 @@ export default function TechQueue() {
                   ))}
               </Select>
               {reassignRecsLoading && (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>Loading eligible technicians…</Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mb: 1.5 }}>Loading eligible technicians…</Typography>
               )}
               {reassignRecsError && (
-                <Typography sx={{ fontSize: 12, color: COLORS.error, mb: 1.5 }}>
+                <Typography sx={{ fontSize: 12, color: slaStateColor.VIOLATED, mb: 1.5 }}>
                   Could not load eligible technicians: {apiErrorMessage(reassignRecsError)}
                 </Typography>
               )}
               {reassignRecs && reassignRecs.recommendations.length === 0 && (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>No technician is eligible right now.</Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mb: 1.5 }}>No technician is eligible right now.</Typography>
               )}
               {reassignRecs && reassignRecs.excluded.length > 0 && (
                 <Box sx={{ mb: 1.5 }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>Not eligible</Typography>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant }}>Not eligible</Typography>
                   {reassignRecs.excluded.map((x) => (
-                    <Typography key={x.technicianId} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                    <Typography key={x.technicianId} sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                       {x.name}: {x.reason}
                     </Typography>
                   ))}
@@ -1590,11 +1577,11 @@ export default function TechQueue() {
                     ? `At least 10 characters required (${reassignReason.trim().length}/10)`
                     : 'Required by ITIL audit policy'
                 }
-                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 2 }}
+                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 2 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setReassignIncident(null)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+              <Button onClick={() => setReassignIncident(null)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
                 Cancel
               </Button>
               <Button
@@ -1616,10 +1603,10 @@ export default function TechQueue() {
         onClose={() => setSaveViewOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
-        <DialogTitle sx={{ fontSize: 16, fontWeight: 800, color: COLORS.onSurface }}>Save this view</DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+        <DialogTitle sx={{ fontSize: 16, fontWeight: 800, color: tokens.onSurface }}>Save this view</DialogTitle>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <TextField
             autoFocus
             fullWidth
@@ -1633,7 +1620,7 @@ export default function TechQueue() {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setSaveViewOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+          <Button onClick={() => setSaveViewOpen(false)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button

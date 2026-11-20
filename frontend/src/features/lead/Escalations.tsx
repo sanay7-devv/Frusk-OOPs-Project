@@ -343,7 +343,7 @@ export default function Escalations() {
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+            <Typography component="h1" variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
               Escalation Command &amp; SLA Violations
             </Typography>
             <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 13.5, mt: 0.5 }}>

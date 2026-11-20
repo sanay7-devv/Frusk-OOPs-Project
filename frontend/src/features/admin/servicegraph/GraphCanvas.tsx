@@ -33,6 +33,9 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: PAD, y: PAD });
   const [dragging, setDragging] = useState(false);
+  // Active pointers (touch points), for two-finger pinch zoom.
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; scale: number } | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
 
   const fit = useCallback(() => {
@@ -56,12 +59,29 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
 
   const zoom = (f: number) => setScale((s) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s * f)));
 
+  const pointerDistance = () => {
+    const [a, b] = [...pointers.current.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
   const onPointerDown = (e: PointerEvent) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      pinch.current = { dist: pointerDistance(), scale };
+      drag.current = null;
+      (e.currentTarget as Element).setPointerCapture(e.pointerId);
+      return;
+    }
     drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, moved: false };
     setDragging(true);
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: PointerEvent) => {
+    if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch.current && pointers.current.size === 2) {
+      const next = (pinch.current.scale * pointerDistance()) / Math.max(1, pinch.current.dist);
+      setScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, next)));
+      return;
+    }
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.x;
@@ -69,7 +89,14 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
     if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true;
     setPan({ x: d.px + dx, y: d.py + dy });
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e: PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    if (pinch.current) {
+      if (pointers.current.size < 2) pinch.current = null;
+      drag.current = null;
+      setDragging(false);
+      return;
+    }
     if (drag.current && !drag.current.moved) onSelect(null);
     drag.current = null;
     setDragging(false);
@@ -117,6 +144,7 @@ export default function GraphCanvas({ layout, edges, health, selectedId, affecte
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         style={{ display: 'block' }}
       >
         <defs>

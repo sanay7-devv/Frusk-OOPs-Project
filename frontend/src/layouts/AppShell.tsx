@@ -66,6 +66,7 @@ import { useAuth, Workspace, HOME } from '../auth/AuthContext';
 import { NAV } from './navConfig';
 import { unreadCount } from '../api/notifications';
 import ConnectionBanner from '../components/ConnectionBanner';
+import DirectorBar from '../features/admin/DirectorBar';
 import CommandPalette, { OPEN_PALETTE_EVENT } from '../components/CommandPalette';
 import RealtimeStatusPill from '../components/RealtimeStatusPill';
 import logoIcon from '../assets/logo.png';
@@ -884,6 +885,7 @@ export default function AppShell() {
         <Toolbar sx={{ minHeight: '64px !important' }} />
         <CommandPalette />
         <ConnectionBanner />
+        <Box sx={{ px: { xs: 2, md: 3 }, pt: 2, '&:empty': { display: 'none' } }}><DirectorBar /></Box>
         <Outlet />
       </Box>
     </Box>

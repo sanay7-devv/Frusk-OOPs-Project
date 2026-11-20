@@ -87,7 +87,7 @@ export default function Services() {
         <Stack direction="row" spacing={1.5} alignItems="center">
           <DnsIcon sx={{ color: tokens.primary, fontSize: 32 }} />
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ fontFamily: 'Sora, sans-serif' }}>Services</Typography>
+            <Typography component="h1" variant="h5" fontWeight={800} sx={{ fontFamily: 'Sora, sans-serif' }}>Services</Typography>
             <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>The catalog incidents are filed against: criticality, owner, dependencies and health.</Typography>
           </Box>
         </Stack>

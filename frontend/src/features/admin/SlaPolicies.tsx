@@ -46,7 +46,7 @@ export default function SlaPolicies() {
         <Stack direction="row" spacing={1.5} alignItems="center">
           <PolicyIcon sx={{ color: tokens.primary, fontSize: 32 }} />
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ fontFamily: 'Sora, sans-serif' }}>SLA policies</Typography>
+            <Typography component="h1" variant="h5" fontWeight={800} sx={{ fontFamily: 'Sora, sans-serif' }}>SLA policies</Typography>
             <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Response and resolution targets per priority. Escalation levels are edited on the <Box component={RouterLink} to="/admin/escalation" sx={{ color: tokens.primaryLight }}>Escalation</Box> screen.</Typography>
           </Box>
         </Stack>

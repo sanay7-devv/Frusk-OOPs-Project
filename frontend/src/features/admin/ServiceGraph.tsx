@@ -9,7 +9,6 @@ import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import GraphCanvas from './servicegraph/GraphCanvas';
 import MajorIncidentPanel, { NO_PATH, type CausePath } from './servicegraph/MajorIncidentPanel';
-import DirectorBar from './DirectorBar';
 import ServiceGraphMinimap from '../../components/ServiceGraphMinimap';
 import LiveEventPulse from '../../components/LiveEventPulse';
 import Inspector from './servicegraph/Inspector';
@@ -96,7 +95,6 @@ export default function ServiceGraph() {
         An arrow points from a service to the service it depends on. Health is {board.data?.label?.toLowerCase() ?? 'based on reported incidents'}.
       </Typography>
 
-      <DirectorBar defaultServiceId={selectedId} />
       <MajorIncidentPanel problemId={problemId} onPick={setProblemId} onPath={setCausePath} selectedServiceId={selectedId} />
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2, flexWrap: 'wrap', rowGap: 1.5 }}>

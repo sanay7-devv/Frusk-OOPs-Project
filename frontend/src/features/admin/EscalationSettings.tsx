@@ -201,7 +201,7 @@ export default function EscalationSettings() {
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} mb={3} spacing={2}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>Escalation levels</Typography>
+          <Typography component="h1" variant="h4" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>Escalation levels</Typography>
           <Typography sx={{ color: tokens.onSurfaceVariant, mt: 0.5, fontSize: 14 }}>
             How long a P1 or P2 incident may stay unacknowledged before it moves up to the next level. Levels are added in order and removed from the top.
           </Typography>
