@@ -206,7 +206,8 @@ export default function TechQueue() {
   const { data: meProfile } = useQuery({ queryKey: ['auth-me'], queryFn: fetchMe, staleTime: 30_000 });
 
   // 6. Saved views (GET/POST/DELETE /saved-filters)
-  const { data: savedViews = [] } = useQuery<SavedFilterView[]>({ queryKey: ['saved-filters'], queryFn: listSavedFilters });
+  const { data: allSavedViews = [] } = useQuery<SavedFilterView[]>({ queryKey: ['saved-filters'], queryFn: listSavedFilters });
+  const savedViews = allSavedViews.filter((v) => v.filter?.screen !== 'team-queue');
 
   useEffect(() => {
     const t = setTimeout(() => setSearchQuery(searchInput.trim()), 350);

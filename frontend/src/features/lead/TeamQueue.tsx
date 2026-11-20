@@ -17,6 +17,10 @@ import {
   CircularProgress,
   Divider,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   AutoAwesome as AutoAwesomeIcon,
@@ -30,14 +34,15 @@ import {
   Groups as GroupsIcon,
   PriorityHigh as PriorityHighIcon,
   ContentCopy as ContentCopyIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 
 import LinkIcon from '@mui/icons-material/Link';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../auth/AuthContext';
-import { listIncidents, getIncident, getRecommendations, assignIncident, addComment, getSimilarIncidents } from '../../api/incidents';
+import { listIncidents, getIncident, getRecommendations, assignIncident, addComment, getSimilarIncidents, listSavedFilters, createSavedFilter, deleteSavedFilter } from '../../api/incidents';
 import { getServices, getCategories } from '../../api/services';
-import type { IncidentSummary, IncidentDetail, IncidentAction, RecommendationView, RecommendedTechnician, SlaState } from '../../api/types';
+import type { SavedFilterView, IncidentSummary, IncidentDetail, IncidentAction, RecommendationView, RecommendedTechnician, SlaState } from '../../api/types';
 import ActionButtons from '../../components/ActionButtons';
 import { isStaleDataError } from '../technician/apiErrors';
 import { LinkProblemDialog } from '../technician/WorkbenchDialogs';
@@ -91,6 +96,9 @@ export default function TeamQueue() {
   const [sort, setSort] = useState('priority,asc');
 
   const [page, setPage] = useState(0);
+  const [saveViewOpen, setSaveViewOpen] = useState(false);
+  const [viewName, setViewName] = useState('');
+  const [activeViewId, setActiveViewId] = useState<number | null>(null);
   const pageSize = 25;
 
   const [overrideOpen, setOverrideOpen] = useState(false);
@@ -142,6 +150,54 @@ export default function TeamQueue() {
   const incidents: IncidentSummary[] = queueData?.items ?? [];
   const totalItems = queueData?.totalItems ?? incidents.length;
   const totalPages = queueData?.totalPages ?? 1;
+  // Saved views (GET/POST/DELETE /saved-filters); the shared list is narrowed to views saved from this screen.
+  const { data: allViews = [] } = useQuery<SavedFilterView[]>({ queryKey: ['saved-filters'], queryFn: listSavedFilters });
+  const savedViews = allViews.filter((v) => v.filter?.screen === 'team-queue');
+  const createViewMutation = useMutation({
+    mutationFn: (name: string) =>
+      createSavedFilter({
+        name,
+        filter: {
+          screen: 'team-queue',
+          q: debouncedQ || undefined,
+          serviceId: serviceId === '' ? undefined : serviceId,
+          categoryId: categoryId === '' ? undefined : categoryId,
+          priority: filterPriority === 'ALL' ? undefined : [filterPriority],
+          slaState: slaFilter || undefined,
+          sort,
+        },
+      }),
+    onSuccess: (view) => {
+      queryClient.invalidateQueries({ queryKey: ['saved-filters'] });
+      toast(`Saved view "${view.name}" created.`, 'success');
+      setActiveViewId(view.id);
+      setSaveViewOpen(false);
+      setViewName('');
+    },
+    onError: (e) => toast(apiErrorMessage(e), 'error'),
+  });
+  const deleteViewMutation = useMutation({
+    mutationFn: (id: number) => deleteSavedFilter(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-filters'] });
+      toast('Saved view deleted.', 'success');
+      setActiveViewId(null);
+    },
+    onError: (e) => toast(apiErrorMessage(e), 'error'),
+  });
+  const applySavedView = (view: SavedFilterView) => {
+    const f = view.filter ?? {};
+    setActiveViewId(view.id);
+    setSearchQuery(typeof f.q === 'string' ? f.q : '');
+    setDebouncedQ(typeof f.q === 'string' ? f.q : '');
+    setServiceId(typeof f.serviceId === 'number' ? f.serviceId : '');
+    setCategoryId(typeof f.categoryId === 'number' ? f.categoryId : '');
+    setFilterPriority(Array.isArray(f.priority) && f.priority[0] ? String(f.priority[0]) : 'ALL');
+    setSlaFilter(typeof f.slaState === 'string' ? (f.slaState as SlaState) : '');
+    setSort(typeof f.sort === 'string' ? f.sort : 'priority,asc');
+    toast(`Applied saved view "${view.name}".`, 'info');
+  };
+
   const hasFilters = filterPriority !== 'ALL' || !!debouncedQ || serviceId !== '' || categoryId !== '' || slaFilter !== '';
 
   // Auto-select the first incident when the list changes and the selection is gone.
@@ -485,6 +541,23 @@ export default function TeamQueue() {
                   </MenuItem>
                 ))}
               </TextField>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
+              <Button size="small" variant="outlined" onClick={() => setSaveViewOpen(true)} sx={{ textTransform: 'none' }}>
+                Save this view
+              </Button>
+              {savedViews.map((sv) => (
+                <Chip
+                  key={sv.id}
+                  label={sv.name}
+                  size="small"
+                  onClick={() => applySavedView(sv)}
+                  onDelete={() => deleteViewMutation.mutate(sv.id)}
+                  deleteIcon={<DeleteIcon aria-label={`Delete saved view ${sv.name}`} sx={{ fontSize: '16px !important' }} />}
+                  color={activeViewId === sv.id ? 'primary' : 'default'}
+                  sx={{ fontSize: 12 }}
+                />
+              ))}
             </Box>
           </Paper>
 
@@ -1065,6 +1138,29 @@ export default function TeamQueue() {
         onClose={() => setConfirmTarget(null)}
       />
 
+      <Dialog open={saveViewOpen} onClose={() => setSaveViewOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Save this view</DialogTitle>
+        <DialogContent dividers>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            label="View name"
+            value={viewName}
+            onChange={(e) => setViewName(e.target.value)}
+            inputProps={{ maxLength: 60 }}
+            helperText={`${viewName.length}/60. Saves search, service, category, priority, SLA state and sort.`}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSaveViewOpen(false)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button variant="contained" disabled={!viewName.trim() || createViewMutation.isPending}
+            onClick={() => createViewMutation.mutate(viewName.trim())} sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
