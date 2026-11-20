@@ -1,6 +1,6 @@
 import { Box, Tooltip } from '@mui/material';
 import type { SlaState } from '../api/types';
-import { slaStateColor } from '../theme/theme';
+import { slaStateColor, tokens } from '../theme/theme';
 
 interface SlaBarProps {
   createdAt?: string | null;
@@ -40,7 +40,7 @@ export default function SlaBar({
         sx={{
           width,
           height,
-          bgcolor: 'rgba(255, 255, 255, 0.08)',
+          bgcolor: tokens.outlineVariant,
           borderRadius: 2,
           overflow: 'hidden',
           position: 'relative',

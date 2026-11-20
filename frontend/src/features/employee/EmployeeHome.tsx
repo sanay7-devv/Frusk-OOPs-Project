@@ -64,6 +64,8 @@ import SlaCountdown from '../../components/SlaCountdown';
 import SlaBar from '../../components/SlaBar';
 import { ErrorState } from '../../components/StateViews';
 
+import { tokens } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 const ACTIVE_STATUSES = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
 const RESOLVED_STATUSES = ['RESOLVED', 'VERIFIED', 'CLOSED'];
 
@@ -246,14 +248,14 @@ export default function EmployeeHome() {
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
-            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: '0.06em' }}>
+            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.textDisabled, letterSpacing: '0.06em' }}>
               EMPLOYEE WORKSPACE
             </Typography>
           </Box>
-          <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', mb: 0.5 }}>
+          <Typography variant="h4" component="h1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, letterSpacing: '-0.02em', mb: 0.5 }}>
             Welcome back, {user?.name || 'Employee'}
           </Typography>
-          <Typography sx={{ color: '#94a3b8', fontSize: 14.5, fontFamily: 'Geist, sans-serif' }}>
+          <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 14.5, fontFamily: 'Geist, sans-serif' }}>
             Enterprise IT Service Portal
           </Typography>
         </Box>
@@ -264,11 +266,11 @@ export default function EmployeeHome() {
             <Button
               size="small"
               onClick={() => navigate('/notifications')}
-              startIcon={<NotificationsIcon sx={{ fontSize: 16, color: '#f751a1' }} />}
+              startIcon={<NotificationsIcon sx={{ fontSize: 16, color: tokens.tertiary }} />}
               sx={{
-                bgcolor: 'rgba(247, 81, 161, 0.12)',
-                border: '1px solid rgba(247, 81, 161, 0.35)',
-                color: '#ffb0cd',
+                bgcolor: alpha(tokens.tertiary, 0.12),
+                border: `1px solid ${alpha(tokens.tertiary, 0.35)}`,
+                color: tokens.tertiaryLight,
                 fontFamily: 'JetBrains Mono, monospace',
                 fontSize: 12,
                 fontWeight: 700,
@@ -276,7 +278,7 @@ export default function EmployeeHome() {
                 px: 1.8,
                 py: 0.7,
                 textTransform: 'none',
-                '&:hover': { bgcolor: 'rgba(247, 81, 161, 0.22)' },
+                '&:hover': { bgcolor: alpha(tokens.tertiary, 0.22) },
               }}
             >
               {unreadNotifications} Unread
@@ -291,34 +293,34 @@ export default function EmployeeHome() {
               px: 2,
               py: 0.8,
               borderRadius: '12px',
-              bgcolor: 'rgba(18, 22, 34, 0.85)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.85),
+              border: `1px solid ${tokens.outlineVariant}`,
+              boxShadow: `0 4px 16px ${alpha(tokens.black, 0.3)}`,
             }}
           >
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#06b6d4', boxShadow: '0 0 8px #06b6d4' }} />
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: tokens.secondary, boxShadow: `0 0 8px ${tokens.secondary}` }} />
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#dfe2ef', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase' }}>
                 Summary
               </Typography>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#4cd7f6' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondaryLight }}>
                 {activeCount} Active / {resolvedCount} Resolved
               </Typography>
             </Box>
-            <Box sx={{ width: '1px', height: 24, bgcolor: 'rgba(255, 255, 255, 0.1)', mx: 0.5 }} />
+            <Box sx={{ width: '1px', height: 24, bgcolor: alpha(tokens.white, 0.1), mx: 0.5 }} />
             <Button
               size="small"
               onClick={() => refetch()}
               disabled={isFetching}
               startIcon={isFetching ? <CircularProgress size={12} color="inherit" /> : <SyncIcon sx={{ fontSize: 14 }} />}
               sx={{
-                color: '#c0c1ff',
+                color: tokens.primaryLight,
                 fontSize: 12,
                 fontWeight: 700,
                 textTransform: 'none',
                 p: 0.5,
                 minWidth: 'auto',
-                '&:hover': { bgcolor: 'transparent', color: '#ffffff', textDecoration: 'underline' },
+                '&:hover': { bgcolor: 'transparent', color: tokens.white, textDecoration: 'underline' },
               }}
             >
               Sync
@@ -335,14 +337,14 @@ export default function EmployeeHome() {
             position: 'relative',
             overflow: 'hidden',
             borderRadius: '16px',
-            bgcolor: 'rgba(244, 63, 94, 0.08)',
-            border: '1px solid rgba(244, 63, 94, 0.35)',
+            bgcolor: alpha(tokens.danger, 0.08),
+            border: `1px solid ${alpha(tokens.danger, 0.35)}`,
             p: 2.5,
             mb: 3,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(244, 63, 94, 0.15)',
+            boxShadow: `0 8px 32px ${alpha(tokens.black, 0.4)}, 0 0 20px ${alpha(tokens.danger, 0.15)}`,
           }}
         >
-          <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 5, bgcolor: '#f43f5e', boxShadow: '0 0 12px #f43f5e' }} />
+          <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 5, bgcolor: tokens.danger, boxShadow: `0 0 12px ${tokens.danger}` }} />
           {knownOutages.map((outage) => (
             <Box
               key={outage.problemId}
@@ -361,9 +363,9 @@ export default function EmployeeHome() {
                     width: 40,
                     height: 40,
                     borderRadius: '10px',
-                    bgcolor: 'rgba(244, 63, 94, 0.15)',
-                    color: '#f43f5e',
-                    border: '1px solid rgba(244, 63, 94, 0.4)',
+                    bgcolor: alpha(tokens.danger, 0.15),
+                    color: tokens.danger,
+                    border: `1px solid ${alpha(tokens.danger, 0.4)}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -379,22 +381,22 @@ export default function EmployeeHome() {
                       label="ACTIVE OUTAGE"
                       size="small"
                       sx={{
-                        bgcolor: '#f43f5e',
-                        color: '#ffffff',
+                        bgcolor: tokens.danger,
+                        color: tokens.white,
                         fontWeight: 800,
                         fontSize: 12,
                         height: 20,
                         borderRadius: '4px',
                       }}
                     />
-                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
+                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
                       {outage.service?.name} (Lead: {outage.leadCode})
                     </Typography>
-                    <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                       • Affecting ~{outage.affectedUsers} users
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: 14.5, fontWeight: 600, color: '#ffffff' }}>
+                  <Typography sx={{ fontSize: 14.5, fontWeight: 600, color: tokens.white }}>
                     {outage.title}
                   </Typography>
                 </Box>
@@ -406,9 +408,9 @@ export default function EmployeeHome() {
                     label="Already Joined"
                     size="small"
                     sx={{
-                      bgcolor: 'rgba(16, 185, 129, 0.15)',
-                      color: '#10b981',
-                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                      bgcolor: alpha(tokens.success, 0.15),
+                      color: tokens.success,
+                      border: `1px solid ${alpha(tokens.success, 0.35)}`,
                       fontFamily: 'JetBrains Mono, monospace',
                       fontWeight: 700,
                     }}
@@ -420,15 +422,15 @@ export default function EmployeeHome() {
                     disabled={joinMutation.isPending}
                     onClick={() => joinMutation.mutate(outage.problemId)}
                     sx={{
-                      bgcolor: '#f43f5e',
-                      color: '#ffffff',
+                      bgcolor: tokens.danger,
+                      color: tokens.white,
                       textTransform: 'none',
                       fontWeight: 700,
                       fontSize: 13,
                       borderRadius: '8px',
                       px: 2.2,
                       py: 0.8,
-                      '&:hover': { bgcolor: '#e11d48' },
+                      '&:hover': { bgcolor: tokens.roseDark },
                     }}
                   >
                     Join Outage Report
@@ -448,14 +450,14 @@ export default function EmployeeHome() {
             position: 'relative',
             overflow: 'hidden',
             borderRadius: '16px',
-            bgcolor: 'rgba(247, 81, 161, 0.08)',
-            border: '1px solid rgba(247, 81, 161, 0.3)',
+            bgcolor: alpha(tokens.tertiary, 0.08),
+            border: `1px solid ${alpha(tokens.tertiary, 0.3)}`,
             p: 2.5,
             mb: 3,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(247, 81, 161, 0.15)',
+            boxShadow: `0 8px 32px ${alpha(tokens.black, 0.4)}, 0 0 20px ${alpha(tokens.tertiary, 0.15)}`,
           }}
         >
-          <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 5, bgcolor: '#f751a1', boxShadow: '0 0 12px #f751a1' }} />
+          <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 5, bgcolor: tokens.tertiary, boxShadow: `0 0 12px ${tokens.tertiary}` }} />
           <Box
             sx={{
               display: 'flex',
@@ -472,13 +474,13 @@ export default function EmployeeHome() {
                   width: 40,
                   height: 40,
                   borderRadius: '10px',
-                  bgcolor: 'rgba(247, 81, 161, 0.15)',
-                  color: '#f751a1',
-                  border: '1px solid rgba(247, 81, 161, 0.35)',
+                  bgcolor: alpha(tokens.tertiary, 0.15),
+                  color: tokens.tertiary,
+                  border: `1px solid ${alpha(tokens.tertiary, 0.35)}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 12px rgba(247, 81, 161, 0.25)',
+                  boxShadow: `0 0 12px ${alpha(tokens.tertiary, 0.25)}`,
                   flexShrink: 0,
                   mt: 0.3,
                 }}
@@ -491,8 +493,8 @@ export default function EmployeeHome() {
                     label="ACTION REQUIRED"
                     size="small"
                     sx={{
-                      bgcolor: '#f751a1',
-                      color: '#ffffff',
+                      bgcolor: tokens.tertiary,
+                      color: tokens.white,
                       fontWeight: 800,
                       fontSize: 12,
                       height: 20,
@@ -500,14 +502,14 @@ export default function EmployeeHome() {
                       letterSpacing: '0.04em',
                     }}
                   />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#dfe2ef' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
                     {pendingIncident.code}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     • Assigned technician requested clarification
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#ffffff' }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: tokens.white }}>
                   {pendingIncident.title}
                 </Typography>
               </Box>
@@ -519,16 +521,16 @@ export default function EmployeeHome() {
                 size="small"
                 onClick={() => navigate(`/employee/incidents/${pendingIncident.id}`)}
                 sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.04)',
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  color: '#dfe2ef',
+                  bgcolor: tokens.hover,
+                  borderColor: alpha(tokens.white, 0.15),
+                  color: tokens.onSurface,
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: 13,
                   borderRadius: '8px',
                   px: 2,
                   py: 0.8,
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.08)', borderColor: '#6366f1' },
+                  '&:hover': { bgcolor: tokens.outlineVariant, borderColor: tokens.primary },
                 }}
               >
                 View Details
@@ -539,15 +541,15 @@ export default function EmployeeHome() {
                 onClick={() => setReplyIncident(pendingIncident)}
                 startIcon={<ReplyIcon sx={{ fontSize: 17 }} />}
                 sx={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                  color: '#ffffff',
+                  background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                  color: tokens.white,
                   textTransform: 'none',
                   fontWeight: 700,
                   fontSize: 13,
                   borderRadius: '8px',
                   px: 2.2,
                   py: 0.8,
-                  boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)',
+                  boxShadow: `0 0 16px ${alpha(tokens.primary, 0.4)}`,
                 }}
               >
                 Respond Now
@@ -565,23 +567,23 @@ export default function EmployeeHome() {
             p: 2.5,
             mb: 3,
             borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            bgcolor: '#141824',
+            border: `1px solid ${tokens.outlineVariant}`,
+            bgcolor: tokens.paper,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.8, flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <DnsIcon sx={{ fontSize: 18, color: '#4cd7f6' }} />
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#dfe2ef', textTransform: 'uppercase' }}>
+              <DnsIcon sx={{ fontSize: 18, color: tokens.secondaryLight }} />
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.onSurface, textTransform: 'uppercase' }}>
                 Service Status Board
               </Typography>
               <Chip
                 label={statusBoard.label || 'All Systems Operational'}
                 size="small"
                 sx={{
-                  bgcolor: 'rgba(6, 182, 212, 0.12)',
-                  color: '#4cd7f6',
-                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  bgcolor: alpha(tokens.secondary, 0.12),
+                  color: tokens.secondaryLight,
+                  border: `1px solid ${alpha(tokens.secondary, 0.3)}`,
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 12,
                   fontWeight: 700,
@@ -589,7 +591,7 @@ export default function EmployeeHome() {
                 }}
               />
             </Box>
-            <Typography sx={{ fontSize: 12, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography sx={{ fontSize: 12, color: tokens.textDisabled, fontFamily: 'JetBrains Mono, monospace' }}>
               Window: {statusBoard.windowDays || 30}d basis
             </Typography>
           </Box>
@@ -599,9 +601,9 @@ export default function EmployeeHome() {
               const isHealthy = svc.status === 'HEALTHY';
               const isDegraded = svc.status === 'DEGRADED';
               const isOutage = svc.status === 'OUTAGE';
-              const badgeBg = isHealthy ? 'rgba(16, 185, 129, 0.12)' : isDegraded ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.18)';
-              const badgeBorder = isHealthy ? 'rgba(16, 185, 129, 0.3)' : isDegraded ? 'rgba(245, 158, 11, 0.35)' : 'rgba(244, 63, 94, 0.4)';
-              const badgeColor = isHealthy ? '#10b981' : isDegraded ? '#f59e0b' : '#f43f5e';
+              const badgeBg = isHealthy ? alpha(tokens.success, 0.12) : isDegraded ? alpha(tokens.amber, 0.15) : alpha(tokens.danger, 0.18);
+              const badgeBorder = isHealthy ? alpha(tokens.success, 0.3) : isDegraded ? alpha(tokens.amber, 0.35) : alpha(tokens.danger, 0.4);
+              const badgeColor = isHealthy ? tokens.success : isDegraded ? tokens.amber : tokens.danger;
 
               return (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={svc.id}>
@@ -609,15 +611,15 @@ export default function EmployeeHome() {
                     sx={{
                       p: 1.5,
                       borderRadius: '10px',
-                      bgcolor: 'rgba(18, 22, 34, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+                      border: `1px solid ${tokens.borderSubtle}`,
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 0.5,
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.white }}>
                         {svc.name}
                       </Typography>
                       <Chip
@@ -635,7 +637,7 @@ export default function EmployeeHome() {
                       />
                     </Box>
                     {svc.reason && (
-                      <Typography sx={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontStyle: 'italic' }}>
                         {svc.reason}
                       </Typography>
                     )}
@@ -656,20 +658,20 @@ export default function EmployeeHome() {
             sx={{
               p: 3,
               borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              bgcolor: '#141824',
+              border: `1px solid ${tokens.outlineVariant}`,
+              bgcolor: tokens.paper,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+              boxShadow: `0 8px 24px ${alpha(tokens.black, 0.35)}`,
             }}
           >
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Search Incidents
               </Typography>
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white, mb: 2 }}>
                 Search your reported incidents or service requests
               </Typography>
 
@@ -682,15 +684,15 @@ export default function EmployeeHome() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#64748b', fontSize: 20 }} />
+                      <SearchIcon sx={{ color: tokens.textDisabled, fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
-                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                   borderRadius: '10px',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.22)' },
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: alpha(tokens.white, 0.1) },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: alpha(tokens.white, 0.22) },
                   mb: 0.5,
                 }}
               />
@@ -705,28 +707,28 @@ export default function EmployeeHome() {
             sx={{
               p: 3,
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(6, 182, 212, 0.2) 100%)',
-              border: '1px solid rgba(99, 102, 241, 0.35)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${alpha(tokens.primary, 0.25)} 0%, ${alpha(tokens.secondary, 0.2)} 100%)`,
+              border: `1px solid ${alpha(tokens.primary, 0.35)}`,
+              color: tokens.white,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(99, 102, 241, 0.15)',
+              boxShadow: `0 8px 32px ${alpha(tokens.black, 0.5)}, 0 0 24px ${alpha(tokens.primary, 0.15)}`,
             }}
           >
             <Box sx={{ position: 'relative', zIndex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <Chip
-                  icon={<BoltIcon sx={{ fontSize: '15px !important', color: '#4cd7f6 !important' }} />}
+                  icon={<BoltIcon sx={{ fontSize: '15px !important', color: `${tokens.secondaryLight} !important` }} />}
                   label="INCIDENT DESK"
                   size="small"
                   sx={{
-                    bgcolor: 'rgba(6, 182, 212, 0.15)',
-                    border: '1px solid rgba(6, 182, 212, 0.35)',
-                    color: '#4cd7f6',
+                    bgcolor: alpha(tokens.secondary, 0.15),
+                    border: `1px solid ${alpha(tokens.secondary, 0.35)}`,
+                    color: tokens.secondaryLight,
                     fontWeight: 800,
                     fontSize: 12,
                     height: 22,
@@ -735,10 +737,10 @@ export default function EmployeeHome() {
                 />
               </Box>
 
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mb: 0.8, lineHeight: 1.25 }}>
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, mb: 0.8, lineHeight: 1.25 }}>
                 Experiencing an Interruption?
               </Typography>
-              <Typography sx={{ fontSize: 12.5, color: '#94a3b8', lineHeight: 1.5 }}>
+              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, lineHeight: 1.5 }}>
                 Dispatch a real incident ticket straight to the SRE triage queue with automated category and SLA correlation.
               </Typography>
             </Box>
@@ -749,17 +751,17 @@ export default function EmployeeHome() {
               startIcon={<BoltIcon sx={{ fontSize: 20 }} />}
               sx={{
                 mt: 2.5,
-                background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                color: '#ffffff',
+                background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                color: tokens.white,
                 fontWeight: 800,
                 fontSize: 13.5,
                 borderRadius: '8px',
                 py: 1.2,
-                boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+                boxShadow: `0 0 20px ${alpha(tokens.primary, 0.4)}`,
                 textTransform: 'none',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
-                  boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+                  background: `linear-gradient(135deg, ${tokens.primaryStrong} 0%, ${tokens.secondaryStrong} 100%)`,
+                  boxShadow: `0 0 28px ${alpha(tokens.secondary, 0.55)}`,
                 },
               }}
             >
@@ -778,30 +780,30 @@ export default function EmployeeHome() {
             sx={{
               p: 2.5,
               borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              bgcolor: '#141824',
+              border: `1px solid ${tokens.outlineVariant}`,
+              bgcolor: tokens.paper,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              boxShadow: `0 4px 20px ${alpha(tokens.black, 0.3)}`,
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                   Active Incidents
                 </Typography>
-                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, mt: 0.5 }}>
                   {activeCount}
                 </Typography>
               </Box>
-              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(99, 102, 241, 0.15)', color: '#c0c1ff', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: alpha(tokens.primary, 0.15), color: tokens.primaryLight, border: `1px solid ${alpha(tokens.primary, 0.3)}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <PendingActionsIcon sx={{ fontSize: 22 }} />
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#4cd7f6' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: `1px solid ${tokens.borderSubtle}`, mt: 1 }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondaryLight }}>
                 Open &amp; in progress (server total)
               </Typography>
             </Box>
@@ -815,30 +817,30 @@ export default function EmployeeHome() {
             sx={{
               p: 2.5,
               borderRadius: '16px',
-              border: pendingCount > 0 ? '1px solid rgba(247, 81, 161, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
-              bgcolor: pendingCount > 0 ? 'rgba(247, 81, 161, 0.06)' : '#141824',
+              border: pendingCount > 0 ? `1px solid ${alpha(tokens.tertiary, 0.4)}` : `1px solid ${tokens.outlineVariant}`,
+              bgcolor: pendingCount > 0 ? alpha(tokens.tertiary, 0.06) : tokens.paper,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              boxShadow: `0 4px 20px ${alpha(tokens.black, 0.3)}`,
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: pendingCount > 0 ? '#ffb0cd' : '#94a3b8', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: pendingCount > 0 ? tokens.tertiaryLight : tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                   Awaiting My Action
                 </Typography>
-                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: pendingCount > 0 ? '#f751a1' : '#ffffff', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: pendingCount > 0 ? tokens.tertiary : tokens.white, mt: 0.5 }}>
                   {pendingCount}
                 </Typography>
               </Box>
-              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(247, 81, 161, 0.15)', color: '#ffb0cd', border: '1px solid rgba(247, 81, 161, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: alpha(tokens.tertiary, 0.15), color: tokens.tertiaryLight, border: `1px solid ${alpha(tokens.tertiary, 0.3)}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ErrorOutlineIcon sx={{ fontSize: 22 }} />
               </Box>
             </Box>
-            <Box sx={{ pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
-              <Typography sx={{ fontSize: 12, color: '#dfe2ef' }}>
+            <Box sx={{ pt: 1.5, borderTop: `1px solid ${tokens.borderSubtle}`, mt: 1 }}>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurface }}>
                 {pendingCount > 0 ? 'SLA paused pending your clarification' : 'No pending technician queries'}
               </Typography>
             </Box>
@@ -852,31 +854,31 @@ export default function EmployeeHome() {
             sx={{
               p: 2.5,
               borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              bgcolor: '#141824',
+              border: `1px solid ${tokens.outlineVariant}`,
+              bgcolor: tokens.paper,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              boxShadow: `0 4px 20px ${alpha(tokens.black, 0.3)}`,
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                   Resolved &amp; Closed
                 </Typography>
-                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, mt: 0.5 }}>
                   {resolvedCount}
                 </Typography>
               </Box>
-              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: alpha(tokens.success, 0.15), color: tokens.successLight, border: `1px solid ${alpha(tokens.success, 0.3)}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <TaskAltIcon sx={{ fontSize: 22 }} />
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', mt: 1 }}>
-              <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#6ee7b7', fontWeight: 600 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, pt: 1.5, borderTop: `1px solid ${tokens.borderSubtle}`, mt: 1 }}>
+              <CheckCircleIcon sx={{ fontSize: 16, color: tokens.success }} />
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.successLight, fontWeight: 600 }}>
                 Resolved &amp; verified (server total)
               </Typography>
             </Box>
@@ -889,19 +891,19 @@ export default function EmployeeHome() {
         elevation={0}
         sx={{
           borderRadius: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          bgcolor: '#141824',
+          border: `1px solid ${tokens.outlineVariant}`,
+          bgcolor: tokens.paper,
           overflow: 'hidden',
           mb: 3,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          boxShadow: `0 8px 32px ${alpha(tokens.black, 0.4)}`,
         }}
       >
         {/* Table Header Bar */}
         <Box
           sx={{
             p: 2.5,
-            bgcolor: '#0e121d',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            bgcolor: tokens.surfaceDeep,
+            borderBottom: `1px solid ${tokens.borderSubtle}`,
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             alignItems: { xs: 'flex-start', md: 'center' },
@@ -911,10 +913,10 @@ export default function EmployeeHome() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box>
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                 My Reported Incidents
               </Typography>
-              <Typography sx={{ fontSize: 12, color: '#94a3b8', fontFamily: 'Geist, sans-serif' }}>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: 'Geist, sans-serif' }}>
                 Server records: {totalItems} total matches
               </Typography>
             </Box>
@@ -922,9 +924,9 @@ export default function EmployeeHome() {
               label={`${totalItems} Tickets`}
               size="small"
               sx={{
-                bgcolor: 'rgba(99, 102, 241, 0.15)',
-                border: '1px solid rgba(99, 102, 241, 0.3)',
-                color: '#c0c1ff',
+                bgcolor: alpha(tokens.primary, 0.15),
+                border: `1px solid ${alpha(tokens.primary, 0.3)}`,
+                color: tokens.primaryLight,
                 fontFamily: 'JetBrains Mono, monospace',
                 fontWeight: 700,
                 fontSize: 12,
@@ -934,7 +936,7 @@ export default function EmployeeHome() {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             {/* Filter Tabs */}
-            <Box sx={{ display: 'flex', bgcolor: 'rgba(18, 22, 34, 0.8)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', p: 0.3 }}>
+            <Box sx={{ display: 'flex', bgcolor: alpha(tokens.surfaceContainerLow, 0.8), border: `1px solid ${tokens.outlineVariant}`, borderRadius: '8px', p: 0.3 }}>
               {(['ALL', 'ACTIVE', 'PENDING', 'RESOLVED'] as const).map((tab) => {
                 const count =
                   tab === 'ALL'
@@ -956,14 +958,14 @@ export default function EmployeeHome() {
                     sx={{
                       fontSize: 12,
                       fontWeight: isSelected ? 700 : 500,
-                      color: isSelected ? '#ffffff' : '#94a3b8',
-                      bgcolor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                      color: isSelected ? tokens.white : tokens.onSurfaceVariant,
+                      bgcolor: isSelected ? alpha(tokens.primary, 0.25) : 'transparent',
                       borderRadius: '6px',
                       px: 1.5,
                       py: 0.4,
                       textTransform: 'none',
                       minWidth: 'auto',
-                      '&:hover': { bgcolor: isSelected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.04)', color: '#dfe2ef' },
+                      '&:hover': { bgcolor: isSelected ? alpha(tokens.primary, 0.3) : tokens.hover, color: tokens.onSurface },
                     }}
                   >
                     {tab.charAt(0) + tab.slice(1).toLowerCase()} ({count})
@@ -979,9 +981,9 @@ export default function EmployeeHome() {
               onClick={(e) => setFilterAnchor(e.currentTarget)}
               startIcon={<FilterListIcon sx={{ fontSize: 16 }} />}
               sx={{
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                bgcolor: 'rgba(18, 22, 34, 0.6)',
-                color: priorityFilter !== 'ALL' ? '#4cd7f6' : '#dfe2ef',
+                borderColor: alpha(tokens.white, 0.1),
+                bgcolor: alpha(tokens.surfaceContainerLow, 0.6),
+                color: priorityFilter !== 'ALL' ? tokens.secondaryLight : tokens.onSurface,
                 fontWeight: 600,
                 fontSize: 12,
                 borderRadius: '8px',
@@ -1000,16 +1002,16 @@ export default function EmployeeHome() {
             </Menu>
 
             {/* Refresh Button */}
-            <IconButton
+            <IconButton aria-label="Refresh feed"
               size="small"
               onClick={() => refetch()}
               title="Refresh Feed"
               sx={{
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: `1px solid ${alpha(tokens.white, 0.1)}`,
                 borderRadius: '8px',
                 p: 0.8,
-                bgcolor: 'rgba(18, 22, 34, 0.6)',
-                color: '#dfe2ef',
+                bgcolor: alpha(tokens.surfaceContainerLow, 0.6),
+                color: tokens.onSurface,
               }}
             >
               <SyncIcon sx={{ fontSize: 16 }} />
@@ -1020,8 +1022,8 @@ export default function EmployeeHome() {
         {/* Ledger Table */}
         {isLoading ? (
           <Box sx={{ p: 6, textAlign: 'center' }}>
-            <CircularProgress size={32} sx={{ color: '#6366f1', mb: 1.5 }} />
-            <Typography sx={{ color: '#94a3b8', fontSize: 13 }}>
+            <CircularProgress size={32} sx={{ color: tokens.primary, mb: 1.5 }} />
+            <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13 }}>
               Loading incidents from server...
             </Typography>
           </Box>
@@ -1031,11 +1033,11 @@ export default function EmployeeHome() {
           </Box>
         ) : incidents.length === 0 ? (
           <Box sx={{ p: 6, textAlign: 'center' }}>
-            <CheckCircleIcon sx={{ fontSize: 44, color: '#06b6d4', mb: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
+            <CheckCircleIcon sx={{ fontSize: 44, color: tokens.secondary, mb: 1 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
               No Incidents Found
             </Typography>
-            <Typography sx={{ fontSize: 13, color: '#94a3b8', maxWidth: 440, mx: 'auto', mt: 0.5 }}>
+            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, maxWidth: 440, mx: 'auto', mt: 0.5 }}>
               {searchQuery ? 'No tickets matched your search query on the server.' : 'You have no reported incidents in this status view.'}
             </Typography>
           </Box>
@@ -1043,26 +1045,26 @@ export default function EmployeeHome() {
           <Box sx={{ overflowX: 'auto', width: '100%' }}>
             <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <Box component="thead">
-                <Box component="tr" sx={{ bgcolor: '#0e121d', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <Box component="th" sx={{ py: 1.4, px: 2.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                <Box component="tr" sx={{ bgcolor: tokens.surfaceDeep, borderBottom: `1px solid ${tokens.outlineVariant}` }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                     Incident Code
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                     Priority
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                     Issue Summary
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                     Service
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                     Status
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 1.5, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' }}>
                     SLA Clock &amp; Bar
                   </Box>
-                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>
+                  <Box component="th" sx={{ py: 1.4, px: 2, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase', textAlign: 'right' }}>
                     Action
                   </Box>
                 </Box>
@@ -1076,12 +1078,12 @@ export default function EmployeeHome() {
                     onClick={() => navigate(`/employee/incidents/${inc.id}`)}
                     sx={{
                       cursor: 'pointer',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                      borderBottom: `1px solid ${tokens.hover}`,
                       transition: 'background 0.2s',
-                      '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.04)' },
+                      '&:hover': { bgcolor: alpha(tokens.primary, 0.04) },
                     }}
                   >
-                    <Box component="td" sx={{ py: 1.8, px: 2.5, fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: '#4cd7f6' }}>
+                    <Box component="td" sx={{ py: 1.8, px: 2.5, fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: tokens.secondaryLight }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                         {inc.code}
                         {inc.major && (
@@ -1089,9 +1091,9 @@ export default function EmployeeHome() {
                             label="MAJOR"
                             size="small"
                             sx={{
-                              bgcolor: 'rgba(244, 63, 94, 0.2)',
-                              color: '#f43f5e',
-                              border: '1px solid rgba(244, 63, 94, 0.4)',
+                              bgcolor: alpha(tokens.danger, 0.2),
+                              color: tokens.danger,
+                              border: `1px solid ${alpha(tokens.danger, 0.4)}`,
                               fontFamily: 'JetBrains Mono, monospace',
                               fontSize: 12,
                               fontWeight: 800,
@@ -1105,10 +1107,10 @@ export default function EmployeeHome() {
                       <PriorityBadge priority={inc.priority} />
                     </Box>
                     <Box component="td" sx={{ py: 1.8, px: 2 }}>
-                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
+                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.white }}>
                         {inc.title}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: '#94a3b8', fontFamily: 'JetBrains Mono, monospace', mt: 0.2 }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.2 }}>
                         Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
                       </Typography>
                     </Box>
@@ -1117,9 +1119,9 @@ export default function EmployeeHome() {
                         label={inc.service?.name || 'General'}
                         size="small"
                         sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.05)',
-                          color: '#dfe2ef',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          bgcolor: alpha(tokens.white, 0.05),
+                          color: tokens.onSurface,
+                          border: `1px solid ${tokens.outlineVariant}`,
                           fontSize: 12,
                         }}
                       />
@@ -1129,7 +1131,7 @@ export default function EmployeeHome() {
                     </Box>
                     <Box component="td" sx={{ py: 1.8, px: 1.5, minWidth: 160 }}>
                       {inc.status === 'RESOLVED' || inc.status === 'VERIFIED' || inc.status === 'CLOSED' ? (
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#10b981', fontWeight: 700 }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.success, fontWeight: 700 }}>
                           Remediated
                         </Typography>
                       ) : (
@@ -1158,11 +1160,11 @@ export default function EmployeeHome() {
                         }}
                         endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
                         sx={{
-                          color: '#4cd7f6',
+                          color: tokens.secondaryLight,
                           fontSize: 12,
                           fontWeight: 700,
                           textTransform: 'none',
-                          '&:hover': { bgcolor: 'rgba(76, 215, 246, 0.08)' },
+                          '&:hover': { bgcolor: alpha(tokens.secondaryLight, 0.08) },
                         }}
                       >
                         Details
@@ -1180,7 +1182,7 @@ export default function EmployeeHome() {
           <Box
             sx={{
               p: 2,
-              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              borderTop: `1px solid ${tokens.borderSubtle}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -1189,7 +1191,7 @@ export default function EmployeeHome() {
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography sx={{ fontSize: 12, color: '#94a3b8', fontFamily: 'JetBrains Mono, monospace' }}>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
                 Showing page {page + 1} of {totalPages} ({totalItems} total)
               </Typography>
               <FormControl size="small">
@@ -1202,9 +1204,9 @@ export default function EmployeeHome() {
                   sx={{
                     height: 28,
                     fontSize: 12,
-                    color: '#dfe2ef',
-                    bgcolor: 'rgba(18, 22, 34, 0.7)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                    color: tokens.onSurface,
+                    bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+                    '& fieldset': { borderColor: alpha(tokens.white, 0.1) },
                   }}
                 >
                   <MenuItem value={10}>10 / page</MenuItem>
@@ -1223,8 +1225,8 @@ export default function EmployeeHome() {
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 startIcon={<ChevronLeftIcon />}
                 sx={{
-                  borderColor: 'rgba(255, 255, 255, 0.12)',
-                  color: '#dfe2ef',
+                  borderColor: tokens.border,
+                  color: tokens.onSurface,
                   textTransform: 'none',
                   fontSize: 12,
                 }}
@@ -1238,8 +1240,8 @@ export default function EmployeeHome() {
                 onClick={() => setPage((p) => p + 1)}
                 endIcon={<ChevronRightIcon />}
                 sx={{
-                  borderColor: 'rgba(255, 255, 255, 0.12)',
-                  color: '#dfe2ef',
+                  borderColor: tokens.border,
+                  color: tokens.onSurface,
                   textTransform: 'none',
                   fontSize: 12,
                 }}
@@ -1260,10 +1262,10 @@ export default function EmployeeHome() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.white, 0.1)}`,
             p: 1,
-            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8), 0 0 24px rgba(99, 102, 241, 0.2)',
+            boxShadow: `0 24px 64px ${alpha(tokens.black, 0.8)}, 0 0 24px ${alpha(tokens.primary, 0.2)}`,
           },
         }}
       >
@@ -1271,45 +1273,45 @@ export default function EmployeeHome() {
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight }}>
                   RESPOND TO TECHNICIAN // {replyIncident.code}
                 </Typography>
-                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                   {replyIncident.title}
                 </Typography>
               </Box>
-              <IconButton onClick={() => setReplyIncident(null)} size="small" sx={{ color: '#94a3b8' }}>
+              <IconButton aria-label="Close reply dialog" onClick={() => setReplyIncident(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+            <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
               {/* Technician's Question Callout */}
-              <Paper sx={{ p: 1.8, bgcolor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '10px', mb: 2 }}>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff', mb: 0.5 }}>
+              <Paper sx={{ p: 1.8, bgcolor: alpha(tokens.primary, 0.1), border: `1px solid ${alpha(tokens.primary, 0.3)}`, borderRadius: '10px', mb: 2 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.primaryLight, mb: 0.5 }}>
                   Technician Query:
                 </Typography>
                 {loadingReplyComments ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
-                    <CircularProgress size={14} sx={{ color: '#c0c1ff' }} />
-                    <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Loading question from technician...</Typography>
+                    <CircularProgress size={14} sx={{ color: tokens.primaryLight }} />
+                    <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Loading question from technician...</Typography>
                   </Box>
                 ) : technicianQuestion ? (
                   <Box>
-                    <Typography sx={{ fontSize: 13, color: '#ffffff', fontFamily: 'Geist, sans-serif', fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: 13, color: tokens.white, fontFamily: 'Geist, sans-serif', fontWeight: 500 }}>
                       "{technicianQuestion.body}"
                     </Typography>
-                    <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
                       Asked by {technicianQuestion.author?.name || 'Assigned Technician'} • {new Date(technicianQuestion.createdAt).toLocaleString()}
                     </Typography>
                   </Box>
                 ) : (
-                  <Typography sx={{ fontSize: 13, color: '#dfe2ef', fontStyle: 'italic' }}>
+                  <Typography sx={{ fontSize: 13, color: tokens.onSurface, fontStyle: 'italic' }}>
                     Technician requested additional clarification regarding this issue.
                   </Typography>
                 )}
               </Paper>
 
-              <Typography sx={{ fontSize: 12, color: '#94a3b8', mb: 1 }}>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mb: 1 }}>
                 Providing response will submit your clarification to the technician and resume the SLA clock if user input was the pause condition.
               </Typography>
 
@@ -1321,13 +1323,13 @@ export default function EmployeeHome() {
                 onChange={(e) => setReplyMessage(e.target.value)}
                 placeholder="Type your clarification, additional logs, or reproduction steps..."
                 sx={{
-                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                   borderRadius: '10px',
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setReplyIncident(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+              <Button onClick={() => setReplyIncident(null)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
                 Cancel
               </Button>
               <Button
@@ -1340,8 +1342,8 @@ export default function EmployeeHome() {
                 disabled={!replyMessage.trim() || replyMutation.isPending}
                 startIcon={replyMutation.isPending ? <CircularProgress size={16} /> : <ReplyIcon />}
                 sx={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                  color: '#ffffff',
+                  background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                  color: tokens.white,
                   textTransform: 'none',
                   fontWeight: 700,
                 }}
@@ -1362,27 +1364,27 @@ export default function EmployeeHome() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.white, 0.1)}`,
             p: 1,
           },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif', color: '#ffffff', pb: 1 }}>
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif', color: tokens.white, pb: 1 }}>
           Rate Resolution Experience
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <Typography sx={{ color: '#dfe2ef', fontSize: 13, mb: 2 }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+          <Typography sx={{ color: tokens.onSurface, fontSize: 13, mb: 2 }}>
             How satisfied are you with the resolution of{' '}
-            <strong style={{ color: '#4cd7f6' }}>{ratingIncident?.code}</strong>?
+            <strong style={{ color: tokens.secondaryLight }}>{ratingIncident?.code}</strong>?
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
             <Rating
               value={ratingValue}
               onChange={(_, val) => setRatingValue(val || 1)}
-              icon={<StarIcon sx={{ fontSize: 32, color: '#f59e0b' }} />}
-              emptyIcon={<StarIcon sx={{ fontSize: 32, color: 'rgba(255, 255, 255, 0.15)' }} />}
+              icon={<StarIcon sx={{ fontSize: 32, color: tokens.amber }} />}
+              emptyIcon={<StarIcon sx={{ fontSize: 32, color: alpha(tokens.white, 0.15) }} />}
             />
           </Box>
 
@@ -1394,14 +1396,14 @@ export default function EmployeeHome() {
             onChange={(e) => setRatingComment(e.target.value)}
             placeholder="Optional comments on technician support or resolution quality..."
             sx={{
-              bgcolor: 'rgba(18, 22, 34, 0.7)',
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
               borderRadius: '10px',
               mt: 1,
             }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-          <Button onClick={() => setRatingIncident(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+          <Button onClick={() => setRatingIncident(null)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
             Skip Rating
           </Button>
           <Button
@@ -1417,8 +1419,8 @@ export default function EmployeeHome() {
               }
             }}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
             }}

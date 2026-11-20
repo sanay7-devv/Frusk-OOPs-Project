@@ -5,6 +5,7 @@ import { requestPasswordReset } from '../../api/auth';
 import { apiErrorMessage } from '../../utils/errors';
 import AuthCard from './AuthCard';
 
+import { tokens } from '../../theme/theme';
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,7 +31,7 @@ export default function ForgotPassword() {
       {sent ? (
         <Stack spacing={2}>
           <Alert severity="success">If that address has an account, we have sent a link.</Alert>
-          <Link component={RouterLink} to="/login" sx={{ color: '#4cd7f6', textAlign: 'center' }}>
+          <Link component={RouterLink} to="/login" sx={{ color: tokens.secondaryLight, textAlign: 'center' }}>
             Back to sign in
           </Link>
         </Stack>
@@ -51,7 +52,7 @@ export default function ForgotPassword() {
             <Button type="submit" variant="contained" size="large" disabled={busy || !email.trim()}>
               {busy ? 'Sending...' : 'Send reset link'}
             </Button>
-            <Link component={RouterLink} to="/login" sx={{ color: '#4cd7f6', textAlign: 'center', fontSize: 13 }}>
+            <Link component={RouterLink} to="/login" sx={{ color: tokens.secondaryLight, textAlign: 'center', fontSize: 13 }}>
               Back to sign in
             </Link>
           </Stack>

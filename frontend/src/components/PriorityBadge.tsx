@@ -1,7 +1,8 @@
 import { Box, Chip } from '@mui/material';
-import { priorityColor, priorityLabel } from '../theme/theme';
+import { priorityColor, priorityLabel, tokens } from '../theme/theme';
 import type { Priority } from '../api/types';
 
+import { alpha } from '@mui/material/styles';
 export default function PriorityBadge({ priority }: { priority: Priority | null }) {
   if (!priority) {
     return (
@@ -9,9 +10,9 @@ export default function PriorityBadge({ priority }: { priority: Priority | null 
         size="small"
         label="Unprioritized"
         sx={{
-          bgcolor: 'rgba(255, 255, 255, 0.05)',
-          color: '#94a3b8',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          bgcolor: alpha(tokens.white, 0.05),
+          color: tokens.onSurfaceVariant,
+          border: `1px solid ${alpha(tokens.white, 0.1)}`,
           fontFamily: 'JetBrains Mono, monospace',
           fontSize: 12,
           fontWeight: 600,
@@ -20,7 +21,7 @@ export default function PriorityBadge({ priority }: { priority: Priority | null 
     );
   }
 
-  const color = priorityColor[priority] || '#38bdf8';
+  const color = priorityColor[priority] || tokens.info;
 
   return (
     <Box

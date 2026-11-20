@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { Snackbar, Alert, AlertColor } from '@mui/material';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 const ToastCtx = createContext<(msg: string, severity?: AlertColor) => void>(() => {});
 export const useToast = () => useContext(ToastCtx);
 
@@ -21,11 +23,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             severity={t.severity}
             onClose={() => setT(null)}
             sx={{
-              bgcolor: '#141824',
-              color: '#dfe2ef',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
+              bgcolor: tokens.paper,
+              color: tokens.onSurface,
+              border: `1px solid ${tokens.border}`,
               borderRadius: '10px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(99, 102, 241, 0.2)',
+              boxShadow: `0 8px 32px ${alpha(tokens.black, 0.6)}, 0 0 16px ${alpha(tokens.primary, 0.2)}`,
               backdropFilter: 'blur(16px)',
               fontFamily: 'Geist, sans-serif',
               fontWeight: 500,

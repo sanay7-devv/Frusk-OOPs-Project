@@ -66,8 +66,12 @@ import { useAuth, Workspace, HOME } from '../auth/AuthContext';
 import { NAV } from './navConfig';
 import { unreadCount } from '../api/notifications';
 import ConnectionBanner from '../components/ConnectionBanner';
+import CommandPalette, { OPEN_PALETTE_EVENT } from '../components/CommandPalette';
+import RealtimeStatusPill from '../components/RealtimeStatusPill';
 import logoIcon from '../assets/logo.png';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 const WS_LABEL: Record<Workspace, string> = {
   employee: 'Employee View',
   tech: 'Technician View',
@@ -146,17 +150,6 @@ export default function AppShell() {
   const isWorkspaceMenuOpen = Boolean(workspaceAnchorEl);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -191,7 +184,7 @@ export default function AppShell() {
   const navItems = (NAV[activeWorkspace] || []).filter((i) => !i.permission || !!user?.permissions?.includes(i.permission));
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#090d16', color: '#dfe2ef', position: 'relative' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: tokens.background, color: tokens.onSurface, position: 'relative' }}>
       {/* Skip link: first focusable element, jumps past the header and navigation */}
       <Box
         component="a"
@@ -211,7 +204,7 @@ export default function AppShell() {
           py: 1,
           borderRadius: 1,
           bgcolor: 'primary.main',
-          color: '#ffffff',
+          color: tokens.white,
           fontWeight: 600,
           fontSize: 14,
           textDecoration: 'none',
@@ -230,7 +223,7 @@ export default function AppShell() {
           width: 480,
           height: 480,
           borderRadius: '50%',
-          bgcolor: 'rgba(99, 102, 241, 0.08)',
+          bgcolor: alpha(tokens.primary, 0.08),
           filter: 'blur(120px)',
           pointerEvents: 'none',
           zIndex: 0,
@@ -244,7 +237,7 @@ export default function AppShell() {
           width: 520,
           height: 520,
           borderRadius: '50%',
-          bgcolor: 'rgba(6, 182, 212, 0.06)',
+          bgcolor: alpha(tokens.secondary, 0.06),
           filter: 'blur(140px)',
           pointerEvents: 'none',
           zIndex: 0,
@@ -257,11 +250,11 @@ export default function AppShell() {
         elevation={0}
         sx={{
           zIndex: (t) => t.zIndex.drawer + 1,
-          bgcolor: 'rgba(15, 19, 28, 0.82)',
+          bgcolor: alpha(tokens.surface, 0.82),
           backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-          color: '#dfe2ef',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
+          borderBottom: `1px solid ${tokens.borderSubtle}`,
+          color: tokens.onSurface,
+          boxShadow: `0 4px 20px ${alpha(tokens.black, 0.35)}`,
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important', px: { xs: 2, sm: 3 }, gap: 2 }}>
@@ -279,18 +272,18 @@ export default function AppShell() {
                 size="small"
                 aria-label="Toggle navigation sidebar"
                 sx={{
-                  color: (isMobile ? mobileOpen : sidebarOpen) ? '#94a3b8' : '#4cd7f6',
-                  bgcolor: 'rgba(18, 22, 34, 0.8)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: (isMobile ? mobileOpen : sidebarOpen) ? tokens.onSurfaceVariant : tokens.secondaryLight,
+                  bgcolor: alpha(tokens.surfaceContainerLow, 0.8),
+                  border: `1px solid ${tokens.outlineVariant}`,
                   width: 36,
                   height: 36,
                   borderRadius: '8px',
                   transition: 'all 0.2s',
                   '&:hover': {
-                    bgcolor: 'rgba(99, 102, 241, 0.15)',
-                    borderColor: 'rgba(99, 102, 241, 0.4)',
-                    color: '#ffffff',
-                    boxShadow: '0 0 12px rgba(99, 102, 241, 0.25)',
+                    bgcolor: alpha(tokens.primary, 0.15),
+                    borderColor: alpha(tokens.primary, 0.4),
+                    color: tokens.white,
+                    boxShadow: `0 0 12px ${alpha(tokens.primary, 0.25)}`,
                   },
                 }}
               >
@@ -323,7 +316,7 @@ export default function AppShell() {
                   transform: 'scale(0.98)',
                 },
                 '&:focus-visible': {
-                  outline: '2px solid #06b6d4',
+                  outline: `2px solid ${tokens.secondary}`,
                   outlineOffset: '4px',
                   borderRadius: '8px',
                 },
@@ -334,12 +327,12 @@ export default function AppShell() {
                   width: 38,
                   height: 38,
                   borderRadius: '10px',
-                  bgcolor: '#141824',
-                  border: '1px solid rgba(99, 102, 241, 0.35)',
+                  bgcolor: tokens.paper,
+                  border: `1px solid ${alpha(tokens.primary, 0.35)}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 16px rgba(99, 102, 241, 0.25)',
+                  boxShadow: `0 0 16px ${alpha(tokens.primary, 0.25)}`,
                   overflow: 'hidden',
                   flexShrink: 0,
                 }}
@@ -353,13 +346,13 @@ export default function AppShell() {
               </Box>
               <Box>
                 <Typography
-                  variant="h6"
+                  variant="h6" component="div"
                   sx={{
                     fontFamily: 'Sora, sans-serif',
                     fontWeight: 700,
                     fontSize: '0.98rem',
                     letterSpacing: '-0.02em',
-                    color: '#ffffff',
+                    color: tokens.white,
                     lineHeight: 1.2,
                   }}
                 >
@@ -368,8 +361,8 @@ export default function AppShell() {
                 <Typography
                   sx={{
                     fontFamily: 'JetBrains Mono, monospace',
-                    color: '#4cd7f6',
-                    fontSize: '0.62rem',
+                    color: tokens.secondaryLight,
+                    fontSize: '0.75rem',
                     fontWeight: 600,
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
@@ -395,20 +388,20 @@ export default function AppShell() {
               display: { xs: 'none', md: 'flex' },
               alignItems: 'center',
               gap: 1,
-              bgcolor: 'rgba(18, 22, 34, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+              border: `1px solid ${tokens.outlineVariant}`,
               borderRadius: '10px',
               px: 1.5,
               py: 0.4,
               width: { md: 240, lg: 320 },
               transition: 'all 0.2s',
               '&:focus-within': {
-                borderColor: 'rgba(6, 182, 212, 0.5)',
-                boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)',
+                borderColor: alpha(tokens.secondary, 0.5),
+                boxShadow: `0 0 12px ${alpha(tokens.secondary, 0.2)}`,
               },
             }}
           >
-            <SearchIcon sx={{ fontSize: 18, color: '#908fa0' }} />
+            <SearchIcon sx={{ fontSize: 18, color: tokens.outline }} />
             <InputBase
               inputRef={searchInputRef}
               placeholder="Search incidents, code, title..."
@@ -416,21 +409,21 @@ export default function AppShell() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
-                color: '#dfe2ef',
+                color: tokens.onSurface,
                 fontSize: 13,
                 fontFamily: 'Geist, sans-serif',
                 width: '100%',
-                '& input::placeholder': { color: '#64748b', opacity: 1 },
+                '& input::placeholder': { color: tokens.textDisabled, opacity: 1 },
               }}
             />
-            <Tooltip title="Press Enter to search, or ⌘K / Ctrl+K to focus">
+            <Tooltip title="Open the command palette (Ctrl+K / ⌘K)">
               <Box
                 component="button"
                 type="button"
-                aria-label="Search incidents"
-                onClick={() => handleSearchSubmit()}
+                aria-label="Open command palette"
+                onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
                 sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.06)',
+                  bgcolor: tokens.borderSubtle,
                   borderRadius: '4px',
                   px: 0.8,
                   py: 0.2,
@@ -439,10 +432,10 @@ export default function AppShell() {
                   cursor: 'pointer',
                   border: 0,
                   color: 'inherit',
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
+                  '&:hover': { bgcolor: tokens.border },
                 }}
               >
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#94a3b8' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant }}>
                   ⌘K
                 </Typography>
               </Box>
@@ -467,31 +460,31 @@ export default function AppShell() {
                   py: 0.5,
                   height: 36,
                   bgcolor: isWorkspaceMenuOpen
-                    ? 'rgba(255, 255, 255, 0.08)'
-                    : 'rgba(255, 255, 255, 0.04)',
+                    ? tokens.outlineVariant
+                    : tokens.hover,
                   border: '1px solid',
                   borderColor: isWorkspaceMenuOpen
-                    ? 'rgba(76, 215, 246, 0.5)'
-                    : 'rgba(255, 255, 255, 0.1)',
+                    ? alpha(tokens.secondaryLight, 0.5)
+                    : alpha(tokens.white, 0.1),
                   borderRadius: '8px',
-                  color: '#e2e8f0',
+                  color: tokens.slate200,
                   textTransform: 'none',
                   transition: 'all 0.15s ease',
                   '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    bgcolor: tokens.outlineVariant,
+                    borderColor: alpha(tokens.white, 0.2),
                   },
                 }}
               >
                 {(() => {
                   const WIcon = WORKSPACE_META[activeWorkspace]?.icon || AdminPanelSettingsIcon;
-                  return <WIcon sx={{ fontSize: 18, color: '#4cd7f6' }} />;
+                  return <WIcon sx={{ fontSize: 18, color: tokens.secondaryLight }} />;
                 })()}
                 <Typography
                   sx={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#ffffff',
+                    color: tokens.white,
                     whiteSpace: 'nowrap',
                     lineHeight: 1,
                   }}
@@ -501,7 +494,7 @@ export default function AppShell() {
                 <KeyboardArrowDownIcon
                   sx={{
                     fontSize: 18,
-                    color: '#94a3b8',
+                    color: tokens.onSurfaceVariant,
                     transform: isWorkspaceMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                     transition: 'transform 0.2s ease',
                   }}
@@ -520,10 +513,10 @@ export default function AppShell() {
                     mt: 1,
                     minWidth: 200,
                     p: 0.75,
-                    bgcolor: '#121622 !important',
-                    border: '1px solid rgba(255, 255, 255, 0.1) !important',
+                    bgcolor: `${tokens.surfaceContainerLow} !important`,
+                    border: `1px solid ${alpha(tokens.white, 0.1)} !important`,
                     borderRadius: '8px !important',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5) !important',
+                    boxShadow: `0 8px 24px ${alpha(tokens.black, 0.5)} !important`,
                   },
                 }}
               >
@@ -533,14 +526,14 @@ export default function AppShell() {
                     py: 0.8,
                     fontSize: 12,
                     fontWeight: 600,
-                    color: '#64748b',
+                    color: tokens.textDisabled,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                   }}
                 >
                   Switch Workspace
                 </Typography>
-                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.06)', my: 0.5 }} />
+                <Divider sx={{ borderColor: tokens.borderSubtle, my: 0.5 }} />
 
                 {workspaces.map((w) => {
                   const meta = WORKSPACE_META[w];
@@ -558,19 +551,19 @@ export default function AppShell() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: 1.5,
-                        bgcolor: isCurrent ? 'rgba(76, 215, 246, 0.08) !important' : 'transparent',
+                        bgcolor: isCurrent ? `${alpha(tokens.secondaryLight, 0.08)} !important` : 'transparent',
                         '&:hover': {
-                          bgcolor: 'rgba(255, 255, 255, 0.06) !important',
+                          bgcolor: `${tokens.borderSubtle} !important`,
                         },
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                        <WIcon sx={{ fontSize: 18, color: isCurrent ? '#4cd7f6' : '#94a3b8' }} />
+                        <WIcon sx={{ fontSize: 18, color: isCurrent ? tokens.secondaryLight : tokens.onSurfaceVariant }} />
                         <Typography
                           sx={{
                             fontSize: 13,
                             fontWeight: isCurrent ? 600 : 400,
-                            color: isCurrent ? '#ffffff' : '#cbd5e1',
+                            color: isCurrent ? tokens.white : tokens.slate300,
                             whiteSpace: 'nowrap',
                           }}
                         >
@@ -578,7 +571,7 @@ export default function AppShell() {
                         </Typography>
                       </Box>
                       {isCurrent && (
-                        <CheckIcon sx={{ fontSize: 16, color: '#4cd7f6' }} />
+                        <CheckIcon sx={{ fontSize: 16, color: tokens.secondaryLight }} />
                       )}
                     </MenuItem>
                   );
@@ -587,23 +580,25 @@ export default function AppShell() {
             </>
           )}
 
+          <RealtimeStatusPill />
+
           {/* Notifications Button */}
           <IconButton
             component={NavLink}
             to="/notifications"
             aria-label="Notifications"
             sx={{
-              color: '#dfe2ef',
-              bgcolor: 'rgba(18, 22, 34, 0.8)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: tokens.onSurface,
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.8),
+              border: `1px solid ${tokens.outlineVariant}`,
               width: 36,
               height: 36,
               borderRadius: '8px',
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: 'rgba(99, 102, 241, 0.15)',
-                borderColor: 'rgba(99, 102, 241, 0.4)',
-                color: '#ffffff',
+                bgcolor: alpha(tokens.primary, 0.15),
+                borderColor: alpha(tokens.primary, 0.4),
+                color: tokens.white,
               },
             }}
           >
@@ -611,12 +606,12 @@ export default function AppShell() {
               badgeContent={unread}
               sx={{
                 '& .MuiBadge-badge': {
-                  bgcolor: '#f751a1',
-                  color: '#ffffff',
+                  bgcolor: tokens.tertiary,
+                  color: tokens.white,
                   fontSize: 12,
                   fontFamily: 'JetBrains Mono, monospace',
                   fontWeight: 700,
-                  boxShadow: '0 0 8px rgba(247, 81, 161, 0.8)',
+                  boxShadow: `0 0 8px ${alpha(tokens.tertiary, 0.8)}`,
                 },
               }}
             >
@@ -640,14 +635,14 @@ export default function AppShell() {
               cursor: 'pointer',
               color: 'inherit',
               font: 'inherit',
-              bgcolor: 'rgba(18, 22, 34, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+              border: `1px solid ${tokens.outlineVariant}`,
               borderRadius: '8px',
-              '&:hover': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+              '&:hover': { borderColor: alpha(tokens.white, 0.2) },
             }}
           >
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', textAlign: 'right' }}>
-              <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#dfe2ef', lineHeight: 1.2 }}>
+              <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: tokens.onSurface, lineHeight: 1.2 }}>
                 {user?.name ?? 'User'}
               </Typography>
               <Typography
@@ -655,7 +650,7 @@ export default function AppShell() {
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#4cd7f6',
+                  color: tokens.secondaryLight,
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
                   lineHeight: 1.2,
@@ -670,9 +665,9 @@ export default function AppShell() {
                 height: 28,
                 fontSize: 12,
                 fontWeight: 700,
-                bgcolor: '#6366f1',
-                color: '#ffffff',
-                boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
+                bgcolor: tokens.primary,
+                color: tokens.white,
+                boxShadow: `0 0 12px ${alpha(tokens.primary, 0.4)}`,
               }}
             >
               {user?.name ? user.name[0].toUpperCase() : 'U'}
@@ -700,19 +695,19 @@ export default function AppShell() {
             onClick={signOut}
             startIcon={<LogoutIcon sx={{ fontSize: 15 }} />}
             sx={{
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-              color: '#94a3b8',
+              borderColor: alpha(tokens.white, 0.1),
+              color: tokens.onSurfaceVariant,
               textTransform: 'none',
               fontWeight: 600,
               fontSize: 12.5,
               borderRadius: '8px',
               height: 34,
               px: 1.5,
-              bgcolor: 'rgba(18, 22, 34, 0.5)',
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.5),
               '&:hover': {
-                borderColor: '#f43f5e',
-                bgcolor: 'rgba(244, 63, 94, 0.12)',
-                color: '#ffb4ab',
+                borderColor: tokens.danger,
+                bgcolor: alpha(tokens.danger, 0.12),
+                color: tokens.errorLight,
               },
             }}
           >
@@ -734,7 +729,7 @@ export default function AppShell() {
                     fontFamily: 'JetBrains Mono, monospace',
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#64748b',
+                    color: tokens.textDisabled,
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
                     px: 1.2,
@@ -758,7 +753,7 @@ export default function AppShell() {
                     return (
                       <Fragment key={item.to}>
                       {item.group && item.group !== navItems[idx - 1]?.group && (
-                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', px: 1.2, mt: idx === 0 ? 0 : 1.5, mb: 0.6 }}>
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.textDisabled, textTransform: 'uppercase', letterSpacing: '0.08em', px: 1.2, mt: idx === 0 ? 0 : 1.5, mb: 0.6 }}>
                           {item.group}
                         </Typography>
                       )}
@@ -774,27 +769,27 @@ export default function AppShell() {
                           mb: 0.6,
                           py: 0.9,
                           px: 1.4,
-                          color: isActive ? '#ffffff' : '#94a3b8',
+                          color: isActive ? tokens.white : tokens.onSurfaceVariant,
                           background: isActive
-                            ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(6, 182, 212, 0.12) 100%)'
+                            ? `linear-gradient(90deg, ${alpha(tokens.primary, 0.22)} 0%, ${alpha(tokens.secondary, 0.12)} 100%)`
                             : 'transparent',
                           border: isActive
-                            ? '1px solid rgba(99, 102, 241, 0.35)'
+                            ? `1px solid ${alpha(tokens.primary, 0.35)}`
                             : '1px solid transparent',
                           fontWeight: isActive ? 600 : 500,
                           transition: 'all 0.18s ease-in-out',
-                          boxShadow: isActive ? '0 0 16px rgba(99, 102, 241, 0.15)' : 'none',
+                          boxShadow: isActive ? `0 0 16px ${alpha(tokens.primary, 0.15)}` : 'none',
                           '&:hover': {
-                            bgcolor: isActive ? undefined : 'rgba(255, 255, 255, 0.04)',
-                            color: '#dfe2ef',
-                            borderColor: isActive ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.08)',
+                            bgcolor: isActive ? undefined : tokens.hover,
+                            color: tokens.onSurface,
+                            borderColor: isActive ? alpha(tokens.primary, 0.5) : tokens.outlineVariant,
                           },
                         }}
                       >
                         <ListItemIcon
                           sx={{
                             minWidth: 30,
-                            color: isActive ? '#4cd7f6' : '#64748b',
+                            color: isActive ? tokens.secondaryLight : tokens.textDisabled,
                             transition: 'color 0.18s ease',
                           }}
                         >
@@ -830,8 +825,8 @@ export default function AppShell() {
                 display: { xs: 'block', sm: 'none' },
                 '& .MuiDrawer-paper': {
                   width: DRAWER_WIDTH,
-                  bgcolor: '#0a0e17',
-                  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+                  bgcolor: tokens.surfaceDim,
+                  borderRight: `1px solid ${tokens.borderSubtle}`,
                   boxSizing: 'border-box',
                 },
               }}
@@ -850,8 +845,8 @@ export default function AppShell() {
                 '& .MuiDrawer-paper': {
                   width: DRAWER_WIDTH,
                   boxSizing: 'border-box',
-                  borderRight: '1px solid rgba(255, 255, 255, 0.06)',
-                  bgcolor: '#0a0e17',
+                  borderRight: `1px solid ${tokens.borderSubtle}`,
+                  bgcolor: tokens.surfaceDim,
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -881,12 +876,13 @@ export default function AppShell() {
           width: { sm: sidebarOpen ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%' },
           transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           minHeight: '100vh',
-          bgcolor: '#090d16',
+          bgcolor: tokens.background,
           position: 'relative',
           zIndex: 1,
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important' }} />
+        <CommandPalette />
         <ConnectionBanner />
         <Outlet />
       </Box>

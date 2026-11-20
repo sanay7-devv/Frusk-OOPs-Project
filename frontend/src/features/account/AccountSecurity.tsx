@@ -4,6 +4,8 @@ import { Alert, Box, Button, Chip, CircularProgress, Paper, Stack, TextField, Ty
 import { disableMfa, enableMfa, getMfaStatus, setupMfa, type MfaSetup } from '../../api/auth';
 import { apiErrorMessage } from '../../utils/errors';
 
+import { tokens } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 const codeField = (e: unknown): string | null => {
   const fes = (e as any)?.response?.data?.fieldErrors as { field: string; message: string }[] | undefined;
   return fes?.find((f) => f.field === 'code')?.message ?? null;
@@ -50,17 +52,17 @@ export default function AccountSecurity() {
 
   return (
     <Box sx={{ maxWidth: 640 }}>
-      <Typography variant="h5" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#fff', mb: 2 }}>
+      <Typography variant="h5" component="h1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white, mb: 2 }}>
         Account security
       </Typography>
-      <Paper elevation={0} sx={{ p: 3, bgcolor: 'rgba(20, 24, 36, 0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+      <Paper elevation={0} sx={{ p: 3, bgcolor: alpha(tokens.paper, 0.85), border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>
         <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
-          <Typography sx={{ fontWeight: 600, color: '#fff' }}>Two-step verification</Typography>
+          <Typography sx={{ fontWeight: 600, color: tokens.white }}>Two-step verification</Typography>
           {status.isLoading ? <CircularProgress size={16} /> : status.data && (
             <Chip size="small" label={enabled ? 'On' : 'Off'} color={enabled ? 'success' : 'default'} />
           )}
         </Stack>
-        <Typography sx={{ color: '#94a3b8', fontSize: 13, mb: 2 }}>
+        <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13, mb: 2 }}>
           Ask for a code from an authenticator app when you sign in with your password.
         </Typography>
 
@@ -76,21 +78,21 @@ export default function AccountSecurity() {
 
         {setup && (
           <Stack spacing={2}>
-            <Typography sx={{ color: '#dfe2ef', fontSize: 14 }}>
+            <Typography sx={{ color: tokens.onSurface, fontSize: 14 }}>
               Add this account to your authenticator app by entering the key (or opening the link on your phone), then type the first code it shows.
             </Typography>
             <Box>
-              <Typography sx={{ color: '#94a3b8', fontSize: 12 }}>Secret key</Typography>
+              <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>Secret key</Typography>
               <Stack direction="row" spacing={1} alignItems="center">
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, color: '#4cd7f6', wordBreak: 'break-all' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, color: tokens.secondaryLight, wordBreak: 'break-all' }}>
                   {setup.secret}
                 </Typography>
                 <Button size="small" onClick={() => copy(setup.secret)}>{copied ? 'Copied' : 'Copy'}</Button>
               </Stack>
             </Box>
             <Box>
-              <Typography sx={{ color: '#94a3b8', fontSize: 12 }}>Setup link (otpauth)</Typography>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#cbd5e1', wordBreak: 'break-all' }}>
+              <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>Setup link (otpauth)</Typography>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.slate300, wordBreak: 'break-all' }}>
                 {setup.otpauthUri}
               </Typography>
               <Button size="small" onClick={() => copy(setup.otpauthUri)}>Copy link</Button>
@@ -107,7 +109,7 @@ export default function AccountSecurity() {
 
         {enabled && (
           <Stack spacing={1}>
-            <Typography sx={{ color: '#dfe2ef', fontSize: 14 }}>
+            <Typography sx={{ color: tokens.onSurface, fontSize: 14 }}>
               To turn it off, enter a fresh code from your authenticator app (not the one used to turn it on; wait for the next one).
             </Typography>
             <Stack direction="row" spacing={2} alignItems="flex-start">

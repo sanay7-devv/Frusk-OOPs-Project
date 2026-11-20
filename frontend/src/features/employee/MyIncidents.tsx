@@ -56,6 +56,7 @@ import SlaBar from '../../components/SlaBar';
 import { ErrorState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
 import { tokens, slaStateColor } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 
 const COLORS = {
   surface: tokens.background,
@@ -239,7 +240,7 @@ export default function MyIncidents() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 0.5 }}>
             <Typography
-              variant="h5"
+              variant="h5" component="h1"
               sx={{
                 fontWeight: 800,
                 color: COLORS.onSurface,
@@ -253,9 +254,9 @@ export default function MyIncidents() {
               label={`${totalItems} TICKETS`}
               size="small"
               sx={{
-                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                bgcolor: alpha(tokens.primary, 0.15),
                 color: COLORS.primary,
-                border: '1px solid rgba(99, 102, 241, 0.3)',
+                border: `1px solid ${alpha(tokens.primary, 0.3)}`,
                 fontFamily: 'JetBrains Mono, monospace',
                 fontWeight: 700,
                 fontSize: 12,
@@ -314,15 +315,15 @@ export default function MyIncidents() {
             onClick={() => navigate('/employee/report')}
             startIcon={<AddIcon />}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               borderRadius: 2,
               px: 2.5,
               py: 0.8,
               fontSize: 12.5,
               fontWeight: 700,
               textTransform: 'none',
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+              boxShadow: `0 4px 14px ${alpha(tokens.primary, 0.35)}`,
               '&:hover': { opacity: 0.9 },
             }}
           >
@@ -349,7 +350,7 @@ export default function MyIncidents() {
               onDelete={() => deleteViewMutation.mutate(sv.id)}
               deleteIcon={<DeleteIcon sx={{ fontSize: '14px !important' }} />}
               sx={{
-                bgcolor: activeSavedViewId === sv.id ? 'rgba(6, 182, 212, 0.2)' : COLORS.surfaceContainerLow,
+                bgcolor: activeSavedViewId === sv.id ? alpha(tokens.secondary, 0.2) : COLORS.surfaceContainerLow,
                 color: activeSavedViewId === sv.id ? COLORS.secondary : COLORS.onSurface,
                 border: activeSavedViewId === sv.id ? `1px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
                 fontFamily: 'JetBrains Mono, monospace',
@@ -416,7 +417,7 @@ export default function MyIncidents() {
                 sx={{
                   fontWeight: isSelected ? 800 : 600,
                   fontSize: 12,
-                  color: isSelected ? '#ffffff' : COLORS.onSurfaceVariant,
+                  color: isSelected ? tokens.white : COLORS.onSurfaceVariant,
                   bgcolor: isSelected ? COLORS.surfaceContainerHighest : 'transparent',
                   border: isSelected ? `1px solid ${COLORS.border}` : '1px solid transparent',
                   borderRadius: 1.5,
@@ -435,7 +436,7 @@ export default function MyIncidents() {
                     py: 0.1,
                     borderRadius: 1,
                     bgcolor: isSelected ? COLORS.primary : COLORS.surfaceContainerHighest,
-                    color: '#ffffff',
+                    color: tokens.white,
                     fontSize: 12,
                     fontFamily: 'JetBrains Mono, monospace',
                     fontWeight: 700,
@@ -628,7 +629,7 @@ export default function MyIncidents() {
                     sx={{
                       cursor: 'pointer',
                       borderBottom: `1px solid ${COLORS.border}`,
-                      '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.04)' },
+                      '&:hover': { bgcolor: alpha(tokens.primary, 0.04) },
                     }}
                   >
                     <TableCell sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: COLORS.secondary }}>
@@ -639,9 +640,9 @@ export default function MyIncidents() {
                             label="MAJOR"
                             size="small"
                             sx={{
-                              bgcolor: 'rgba(244, 63, 94, 0.2)',
-                              color: '#f43f5e',
-                              border: '1px solid rgba(244, 63, 94, 0.4)',
+                              bgcolor: alpha(tokens.danger, 0.2),
+                              color: tokens.danger,
+                              border: `1px solid ${alpha(tokens.danger, 0.4)}`,
                               fontFamily: 'JetBrains Mono, monospace',
                               fontSize: 12,
                               fontWeight: 800,
@@ -661,9 +662,9 @@ export default function MyIncidents() {
                             label="Action Required"
                             size="small"
                             sx={{
-                              bgcolor: 'rgba(247, 81, 161, 0.2)',
-                              color: '#f751a1',
-                              border: '1px solid rgba(247, 81, 161, 0.4)',
+                              bgcolor: alpha(tokens.tertiary, 0.2),
+                              color: tokens.tertiary,
+                              border: `1px solid ${alpha(tokens.tertiary, 0.4)}`,
                               height: 18,
                               fontSize: 12,
                               fontWeight: 700,
@@ -747,7 +748,7 @@ export default function MyIncidents() {
                           textTransform: 'none',
                           borderRadius: 1.5,
                           px: 1.5,
-                          '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.1)' },
+                          '&:hover': { bgcolor: alpha(tokens.secondary, 0.1) },
                         }}
                       >
                         Details
@@ -887,8 +888,8 @@ export default function MyIncidents() {
             disabled={!viewName.trim() || createViewMutation.isPending}
             onClick={() => createViewMutation.mutate(viewName.trim())}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
             }}

@@ -26,6 +26,8 @@ import { useNavigate } from 'react-router-dom';
 import { getServicesStatus, getKnownOutages, joinProblem } from '../../api/incidents';
 import type { KnownOutageView, ServiceStatus as IServiceStatus } from '../../api/types';
 
+import { tokens } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 export default function ServiceStatus() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -69,13 +71,13 @@ export default function ServiceStatus() {
   const getStatusIcon = (status: IServiceStatus['status']) => {
     switch (status) {
       case 'HEALTHY':
-        return <CheckCircleIcon sx={{ fontSize: 20, color: '#10b981' }} />;
+        return <CheckCircleIcon sx={{ fontSize: 20, color: tokens.success }} />;
       case 'DEGRADED':
-        return <WarningIcon sx={{ fontSize: 20, color: '#f59e0b' }} />;
+        return <WarningIcon sx={{ fontSize: 20, color: tokens.amber }} />;
       case 'OUTAGE':
-        return <ErrorIcon sx={{ fontSize: 20, color: '#ef4444' }} />;
+        return <ErrorIcon sx={{ fontSize: 20, color: tokens.red }} />;
       default:
-        return <CheckCircleIcon sx={{ fontSize: 20, color: '#94a3b8' }} />;
+        return <CheckCircleIcon sx={{ fontSize: 20, color: tokens.onSurfaceVariant }} />;
     }
   };
 
@@ -100,23 +102,23 @@ export default function ServiceStatus() {
           <Button
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate('/employee/home')}
-            sx={{ color: '#94a3b8', textTransform: 'none', '&:hover': { color: '#ffffff' } }}
+            sx={{ color: tokens.onSurfaceVariant, textTransform: 'none', '&:hover': { color: tokens.white } }}
           >
             Home
           </Button>
           <Box>
             <Typography
-              variant="h4"
+              variant="h4" component="h1"
               sx={{
                 fontWeight: 700,
                 fontFamily: 'Sora, sans-serif',
-                color: '#ffffff',
+                color: tokens.white,
                 fontSize: { xs: '1.4rem', sm: '1.8rem' },
               }}
             >
               Enterprise Service Health
             </Typography>
-            <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+            <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
               Real-time operational status, SLA compliance, and ongoing service alerts
             </Typography>
           </Box>
@@ -126,10 +128,10 @@ export default function ServiceStatus() {
             onClick={handleRefresh}
             aria-label="Refresh service status"
             sx={{
-              bgcolor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#dfe2ef',
-              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' },
+              bgcolor: alpha(tokens.white, 0.05),
+              border: `1px solid ${alpha(tokens.white, 0.1)}`,
+              color: tokens.onSurface,
+              '&:hover': { bgcolor: alpha(tokens.white, 0.1) },
             }}
           >
             <RefreshIcon sx={{ fontSize: 20 }} />
@@ -151,7 +153,7 @@ export default function ServiceStatus() {
               fontFamily: 'JetBrains Mono, monospace',
               fontSize: '0.8rem',
               fontWeight: 700,
-              color: '#ef4444',
+              color: tokens.red,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               mb: 1.5,
@@ -167,8 +169,8 @@ export default function ServiceStatus() {
               <Grid item xs={12} key={outage.problemId}>
                 <Card
                   sx={{
-                    bgcolor: 'rgba(239, 68, 68, 0.06)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    bgcolor: alpha(tokens.red, 0.06),
+                    border: `1px solid ${alpha(tokens.red, 0.3)}`,
                     borderRadius: '12px',
                     p: 2,
                   }}
@@ -180,17 +182,17 @@ export default function ServiceStatus() {
                           label={outage.leadPriority || 'P1'}
                           size="small"
                           sx={{
-                            bgcolor: '#ef4444',
-                            color: '#ffffff',
+                            bgcolor: tokens.red,
+                            color: tokens.white,
                             fontWeight: 700,
                             fontSize: '0.75rem',
                           }}
                         />
-                        <Typography sx={{ fontWeight: 700, color: '#ffffff', fontSize: '1rem' }}>
+                        <Typography sx={{ fontWeight: 700, color: tokens.white, fontSize: '1rem' }}>
                           {outage.title}
                         </Typography>
                       </Box>
-                      <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                      <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
                         Service: <strong>{outage.service?.name}</strong> • Affected users:{' '}
                         <strong>{outage.affectedUsers}</strong> • Ongoing since{' '}
                         {new Date(outage.since).toLocaleTimeString()}
@@ -202,11 +204,11 @@ export default function ServiceStatus() {
                       disabled={outage.alreadyJoined || joinMutation.isPending}
                       onClick={() => joinMutation.mutate(outage.problemId)}
                       sx={{
-                        bgcolor: outage.alreadyJoined ? 'rgba(255, 255, 255, 0.1)' : '#ef4444',
-                        color: '#ffffff',
+                        bgcolor: outage.alreadyJoined ? alpha(tokens.white, 0.1) : tokens.red,
+                        color: tokens.white,
                         textTransform: 'none',
                         fontWeight: 600,
-                        '&:hover': { bgcolor: '#dc2626' },
+                        '&:hover': { bgcolor: tokens.redDark },
                       }}
                     >
                       {outage.alreadyJoined ? 'Joined Outage' : 'I am affected (Join)'}
@@ -238,14 +240,14 @@ export default function ServiceStatus() {
               mb: 2,
               p: 2,
               borderRadius: '10px',
-              bgcolor: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
+              bgcolor: alpha(tokens.white, 0.02),
+              border: `1px solid ${tokens.borderSubtle}`,
             }}
           >
-            <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+            <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
               Window: <strong>{statusBoard.windowDays} days</strong> • Basis: <strong>{statusBoard.basis}</strong>
             </Typography>
-            <Typography sx={{ color: '#64748b', fontSize: '0.75rem', fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography sx={{ color: tokens.textDisabled, fontSize: '0.75rem', fontFamily: 'JetBrains Mono, monospace' }}>
               Generated: {new Date(statusBoard.generatedAt).toLocaleString()}
             </Typography>
           </Box>
@@ -255,8 +257,8 @@ export default function ServiceStatus() {
               <Grid item xs={12} md={6} key={svc.id}>
                 <Card
                   sx={{
-                    bgcolor: 'rgba(18, 22, 34, 0.7)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+                    border: `1px solid ${tokens.outlineVariant}`,
                     borderRadius: '12px',
                     p: 2.5,
                     height: '100%',
@@ -269,7 +271,7 @@ export default function ServiceStatus() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         {getStatusIcon(svc.status)}
-                        <Typography sx={{ fontWeight: 600, color: '#ffffff', fontSize: '1.05rem' }}>
+                        <Typography sx={{ fontWeight: 600, color: tokens.white, fontSize: '1.05rem' }}>
                           {svc.name}
                         </Typography>
                       </Box>
@@ -282,7 +284,7 @@ export default function ServiceStatus() {
                     </Box>
 
                     {svc.reason && (
-                      <Typography sx={{ color: '#f59e0b', fontSize: '0.82rem', mb: 1.5, fontStyle: 'italic' }}>
+                      <Typography sx={{ color: tokens.amber, fontSize: '0.82rem', mb: 1.5, fontStyle: 'italic' }}>
                         {svc.reason}
                       </Typography>
                     )}
@@ -290,7 +292,7 @@ export default function ServiceStatus() {
                     {svc.slaCompliancePercent !== undefined && (
                       <Box sx={{ mb: 2, mt: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography sx={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                          <Typography sx={{ fontSize: '0.78rem', color: tokens.onSurfaceVariant }}>
                             SLA Compliance ({svc.slaJudged ?? 0} incidents judged)
                           </Typography>
                           <Typography
@@ -298,7 +300,7 @@ export default function ServiceStatus() {
                               fontSize: '0.78rem',
                               fontFamily: 'JetBrains Mono, monospace',
                               fontWeight: 700,
-                              color: svc.slaCompliancePercent >= 95 ? '#10b981' : '#f59e0b',
+                              color: svc.slaCompliancePercent >= 95 ? tokens.success : tokens.amber,
                             }}
                           >
                             {svc.slaCompliancePercent.toFixed(1)}%
@@ -310,9 +312,9 @@ export default function ServiceStatus() {
                           sx={{
                             height: 6,
                             borderRadius: 3,
-                            bgcolor: 'rgba(255, 255, 255, 0.06)',
+                            bgcolor: tokens.borderSubtle,
                             '& .MuiLinearProgress-bar': {
-                              bgcolor: svc.slaCompliancePercent >= 95 ? '#10b981' : '#f59e0b',
+                              bgcolor: svc.slaCompliancePercent >= 95 ? tokens.success : tokens.amber,
                             },
                           }}
                         />
@@ -320,14 +322,14 @@ export default function ServiceStatus() {
                     )}
                   </Box>
 
-                  <Box sx={{ pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', gap: 2 }}>
-                    <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-                      Criticality Tier: <strong style={{ color: '#dfe2ef' }}>Tier {svc.criticality}</strong>
+                  <Box sx={{ pt: 1.5, borderTop: `1px solid ${tokens.borderSubtle}`, display: 'flex', gap: 2 }}>
+                    <Typography sx={{ fontSize: '0.78rem', color: tokens.textDisabled }}>
+                      Criticality Tier: <strong style={{ color: tokens.onSurface }}>Tier {svc.criticality}</strong>
                     </Typography>
                     {svc.open && (
-                      <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-                        Active Incidents: <strong style={{ color: '#dfe2ef' }}>{svc.open.total}</strong>
-                        {svc.open.P1 > 0 && <span style={{ color: '#ef4444' }}> ({svc.open.P1} P1)</span>}
+                      <Typography sx={{ fontSize: '0.78rem', color: tokens.textDisabled }}>
+                        Active Incidents: <strong style={{ color: tokens.onSurface }}>{svc.open.total}</strong>
+                        {svc.open.P1 > 0 && <span style={{ color: tokens.red }}> ({svc.open.P1} P1)</span>}
                       </Typography>
                     )}
                   </Box>

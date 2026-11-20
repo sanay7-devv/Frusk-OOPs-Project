@@ -58,6 +58,8 @@ import type { AppNotification } from '../../api/types';
 import { apiErrorMessage } from '../../utils/errors';
 import PushDevicesDialog from './PushDevicesDialog';
 
+import { tokens } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 function formatTimeAgo(isoString: string): string {
   try {
     const d = new Date(isoString);
@@ -254,13 +256,13 @@ export default function Notifications() {
     <Box sx={{ maxWidth: 960, mx: 'auto', pb: 6, pt: 1 }}>
       {/* 1. BREADCRUMB */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, color: '#94a3b8', fontSize: 13, fontWeight: 500 }}>
-          <NavLink to={homePath} style={{ color: '#4cd7f6', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, color: tokens.onSurfaceVariant, fontSize: 13, fontWeight: 500 }}>
+          <NavLink to={homePath} style={{ color: tokens.secondaryLight, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
             <HomeIcon sx={{ fontSize: 16 }} />
             <span>Home</span>
           </NavLink>
-          <ChevronRightIcon sx={{ fontSize: 16, color: '#64748b' }} />
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
+          <ChevronRightIcon sx={{ fontSize: 16, color: tokens.textDisabled }} />
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
             Notification Center
           </Typography>
         </Box>
@@ -273,19 +275,19 @@ export default function Notifications() {
           p: 3,
           mb: 2.5,
           borderRadius: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          bgcolor: '#141824',
+          border: `1px solid ${tokens.outlineVariant}`,
+          bgcolor: tokens.paper,
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
           justifyContent: 'space-between',
           gap: 2,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
+          boxShadow: `0 8px 32px ${alpha(tokens.black, 0.35)}`,
         }}
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+            <Typography variant="h5" component="h1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, letterSpacing: '-0.01em' }}>
               Notification Center
             </Typography>
             {unreadTotal > 0 ? (
@@ -293,9 +295,9 @@ export default function Notifications() {
                 label={`${unreadTotal} Unread`}
                 size="small"
                 sx={{
-                  bgcolor: 'rgba(247, 81, 161, 0.15)',
-                  color: '#ffb0cd',
-                  border: '1px solid rgba(247, 81, 161, 0.35)',
+                  bgcolor: alpha(tokens.tertiary, 0.15),
+                  color: tokens.tertiaryLight,
+                  border: `1px solid ${alpha(tokens.tertiary, 0.35)}`,
                   fontWeight: 800,
                   fontSize: 12,
                   height: 22,
@@ -308,9 +310,9 @@ export default function Notifications() {
                 label="All Caught Up"
                 size="small"
                 sx={{
-                  bgcolor: 'rgba(16, 185, 129, 0.15)',
-                  color: '#6ee7b7',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  bgcolor: alpha(tokens.success, 0.15),
+                  color: tokens.successLight,
+                  border: `1px solid ${alpha(tokens.success, 0.3)}`,
                   fontWeight: 700,
                   fontSize: 12,
                   height: 22,
@@ -320,7 +322,7 @@ export default function Notifications() {
               />
             )}
           </Box>
-          <Typography sx={{ fontSize: 13.5, color: '#94a3b8', maxWidth: 580 }}>
+          <Typography sx={{ fontSize: 13.5, color: tokens.onSurfaceVariant, maxWidth: 580 }}>
             Live notifications on your incident reports, SLA countdown alerts, and technician communications.
           </Typography>
         </Box>
@@ -333,16 +335,16 @@ export default function Notifications() {
             disabled={unreadTotal === 0 || markAllReadMutation.isPending}
             startIcon={<DoneAllIcon sx={{ fontSize: 16 }} />}
             sx={{
-              borderColor: 'rgba(255, 255, 255, 0.12)',
-              bgcolor: 'rgba(255, 255, 255, 0.03)',
-              color: '#dfe2ef',
+              borderColor: tokens.border,
+              bgcolor: alpha(tokens.white, 0.03),
+              color: tokens.onSurface,
               fontWeight: 700,
               fontSize: 12.5,
               textTransform: 'none',
               borderRadius: '8px',
               px: 1.8,
               py: 0.6,
-              '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)', borderColor: '#6366f1', color: '#c0c1ff' },
+              '&:hover': { bgcolor: alpha(tokens.primary, 0.12), borderColor: tokens.primary, color: tokens.primaryLight },
             }}
           >
             Mark All as Read
@@ -353,27 +355,27 @@ export default function Notifications() {
             title="Push devices"
             aria-label="Push devices"
             sx={{
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: `1px solid ${alpha(tokens.white, 0.1)}`,
               borderRadius: '8px',
               p: 0.8,
-              bgcolor: 'rgba(18, 22, 34, 0.7)',
-              color: '#94a3b8',
-              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)', color: '#dfe2ef' },
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+              color: tokens.onSurfaceVariant,
+              '&:hover': { bgcolor: tokens.borderSubtle, color: tokens.onSurface },
             }}
           >
             <PhoneAndroidIcon sx={{ fontSize: 18 }} />
           </IconButton>
-          <IconButton
+          <IconButton aria-label="Notification preferences"
             size="small"
             onClick={() => setPrefsOpen(true)}
             title="Notification Preferences"
             sx={{
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: `1px solid ${alpha(tokens.white, 0.1)}`,
               borderRadius: '8px',
               p: 0.8,
-              bgcolor: 'rgba(18, 22, 34, 0.7)',
-              color: '#94a3b8',
-              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)', color: '#dfe2ef' },
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+              color: tokens.onSurfaceVariant,
+              '&:hover': { bgcolor: tokens.borderSubtle, color: tokens.onSurface },
             }}
           >
             <SettingsIcon sx={{ fontSize: 18 }} />
@@ -388,14 +390,14 @@ export default function Notifications() {
           p: 1.8,
           mb: 3,
           borderRadius: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          bgcolor: '#141824',
+          border: `1px solid ${tokens.outlineVariant}`,
+          bgcolor: tokens.paper,
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
           gap: 1.5,
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+          boxShadow: `0 4px 20px ${alpha(tokens.black, 0.3)}`,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, overflowX: 'auto', pb: { xs: 0.5, md: 0 } }}>
@@ -416,15 +418,15 @@ export default function Notifications() {
                 sx={{
                   fontWeight: isSelected ? 700 : 500,
                   fontSize: 12,
-                  color: isSelected ? '#ffffff' : '#94a3b8',
-                  bgcolor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
-                  border: isSelected ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid transparent',
+                  color: isSelected ? tokens.white : tokens.onSurfaceVariant,
+                  bgcolor: isSelected ? alpha(tokens.primary, 0.25) : 'transparent',
+                  border: isSelected ? `1px solid ${alpha(tokens.primary, 0.4)}` : '1px solid transparent',
                   borderRadius: '8px',
                   px: 1.5,
                   py: 0.5,
                   textTransform: 'none',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: isSelected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.04)', color: '#dfe2ef' },
+                  '&:hover': { bgcolor: isSelected ? alpha(tokens.primary, 0.3) : tokens.hover, color: tokens.onSurface },
                 }}
               >
                 {tab.label}
@@ -441,14 +443,14 @@ export default function Notifications() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#64748b', fontSize: 18 }} />
+                <SearchIcon sx={{ color: tokens.textDisabled, fontSize: 18 }} />
               </InputAdornment>
             ),
           }}
           sx={{
             width: { xs: '100%', md: 240 },
             '& .MuiOutlinedInput-root': {
-              bgcolor: 'rgba(18, 22, 34, 0.7)',
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
               borderRadius: '8px',
               fontSize: 12.5,
             },
@@ -459,7 +461,7 @@ export default function Notifications() {
       {/* 4. CHRONOLOGICAL FEED */}
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress sx={{ color: '#6366f1' }} />
+          <CircularProgress sx={{ color: tokens.primary }} />
         </Box>
       ) : filteredNotifications.length === 0 ? (
         <Paper
@@ -467,8 +469,8 @@ export default function Notifications() {
           sx={{
             p: 6,
             borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            bgcolor: '#141824',
+            border: `1px solid ${tokens.outlineVariant}`,
+            bgcolor: tokens.paper,
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -482,8 +484,8 @@ export default function Notifications() {
               width: 52,
               height: 52,
               borderRadius: '50%',
-              bgcolor: 'rgba(255, 255, 255, 0.04)',
-              color: '#64748b',
+              bgcolor: tokens.hover,
+              color: tokens.textDisabled,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -491,10 +493,10 @@ export default function Notifications() {
           >
             <NotificationsPausedIcon sx={{ fontSize: 28 }} />
           </Box>
-          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff', fontSize: 16 }}>
+          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white, fontSize: 16 }}>
             No notifications found
           </Typography>
-          <Typography sx={{ fontSize: 13, color: '#94a3b8', maxWidth: 360 }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, maxWidth: 360 }}>
             No active items match your selected filter criteria.
           </Typography>
           <Button
@@ -506,12 +508,12 @@ export default function Notifications() {
             }}
             sx={{
               mt: 1,
-              borderColor: 'rgba(255, 255, 255, 0.12)',
-              color: '#4cd7f6',
+              borderColor: tokens.border,
+              color: tokens.secondaryLight,
               textTransform: 'none',
               fontWeight: 700,
               borderRadius: '8px',
-              '&:hover': { borderColor: '#06b6d4', bgcolor: 'rgba(6, 182, 212, 0.1)' },
+              '&:hover': { borderColor: tokens.secondary, bgcolor: alpha(tokens.secondary, 0.1) },
             }}
           >
             Reset Filters
@@ -523,12 +525,12 @@ export default function Notifications() {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, px: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#4cd7f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: tokens.secondaryLight, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Today
                   </Typography>
-                  <Box sx={{ width: 32, height: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+                  <Box sx={{ width: 32, height: 1, bgcolor: alpha(tokens.white, 0.1) }} />
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
                   {todayNotifications.length} items
                 </Typography>
               </Box>
@@ -552,12 +554,12 @@ export default function Notifications() {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, px: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: tokens.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Earlier
                   </Typography>
-                  <Box sx={{ width: 32, height: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+                  <Box sx={{ width: 32, height: 1, bgcolor: alpha(tokens.white, 0.1) }} />
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
                   {earlierNotifications.length} items
                 </Typography>
               </Box>
@@ -587,12 +589,12 @@ export default function Notifications() {
             mt: 3,
             p: 2,
             borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            bgcolor: '#141824',
+            border: `1px solid ${tokens.outlineVariant}`,
+            bgcolor: tokens.paper,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            color: '#94a3b8',
+            color: tokens.onSurfaceVariant,
             fontSize: 12.5,
           }}
         >
@@ -600,22 +602,22 @@ export default function Notifications() {
             Showing page <strong>{page + 1}</strong> of <strong>{pageData.totalPages}</strong> ({pageData.totalItems} total)
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton
+            <IconButton aria-label="Previous page"
               size="small"
               disabled={page === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              sx={{ color: '#64748b' }}
+              sx={{ color: tokens.textDisabled }}
             >
               <ChevronLeftIcon sx={{ fontSize: 18 }} />
             </IconButton>
-            <Box sx={{ px: 1.2, py: 0.2, bgcolor: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '4px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: '#c0c1ff' }}>
+            <Box sx={{ px: 1.2, py: 0.2, bgcolor: alpha(tokens.primary, 0.2), border: `1px solid ${alpha(tokens.primary, 0.35)}`, borderRadius: '4px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: tokens.primaryLight }}>
               {page + 1}
             </Box>
-            <IconButton
+            <IconButton aria-label="Next page"
               size="small"
               disabled={page >= pageData.totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
-              sx={{ color: '#64748b' }}
+              sx={{ color: tokens.textDisabled }}
             >
               <ChevronRightIcon sx={{ fontSize: 18 }} />
             </IconButton>
@@ -632,10 +634,10 @@ export default function Notifications() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.white, 0.1)}`,
             p: 1,
-            color: '#ffffff',
+            color: tokens.white,
           },
         }}
       >
@@ -643,23 +645,23 @@ export default function Notifications() {
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight }}>
                   REPLY TO INCIDENT #{replyItem.incidentId}
                 </Typography>
-                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                   {replyItem.title}
                 </Typography>
               </Box>
-              <IconButton onClick={() => setReplyItem(null)} size="small" sx={{ color: '#94a3b8' }}>
+              <IconButton aria-label="Close reply dialog" onClick={() => setReplyItem(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-              <Paper sx={{ p: 1.8, bgcolor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '10px', mb: 2 }}>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff' }}>
+            <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
+              <Paper sx={{ p: 1.8, bgcolor: alpha(tokens.primary, 0.1), border: `1px solid ${alpha(tokens.primary, 0.3)}`, borderRadius: '10px', mb: 2 }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.primaryLight }}>
                   Technician Request:
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#dfe2ef', mt: 0.3 }}>
+                <Typography sx={{ fontSize: 13, color: tokens.onSurface, mt: 0.3 }}>
                   &ldquo;{replyItem.message}&rdquo;
                 </Typography>
               </Paper>
@@ -671,13 +673,13 @@ export default function Notifications() {
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Type your clarification or additional information here..."
                 sx={{
-                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                   borderRadius: '10px',
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setReplyItem(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+              <Button onClick={() => setReplyItem(null)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
                 Cancel
               </Button>
               <Button
@@ -685,8 +687,8 @@ export default function Notifications() {
                 onClick={handleSendReply}
                 disabled={!replyText.trim()}
                 sx={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                  color: '#ffffff',
+                  background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                  color: tokens.white,
                   textTransform: 'none',
                   fontWeight: 700,
                 }}
@@ -707,36 +709,36 @@ export default function Notifications() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.white, 0.1)}`,
             p: 1,
-            color: '#ffffff',
+            color: tokens.white,
           },
         }}
       >
         {verifyItem && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', fontSize: 16 }}>
+              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                 Verify Resolution
               </Typography>
-              <IconButton onClick={() => setVerifyItem(null)} size="small" sx={{ color: '#94a3b8' }}>
+              <IconButton aria-label="Close verify dialog" onClick={() => setVerifyItem(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ py: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-              <Typography sx={{ fontSize: 13, color: '#dfe2ef', mb: 2 }}>
+            <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
+              <Typography sx={{ fontSize: 13, color: tokens.onSurface, mb: 2 }}>
                 Please confirm that incident #{verifyItem.incidentId} has been resolved to your satisfaction:
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', mb: 1, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, mb: 1, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
                   Rate Support Experience
                 </Typography>
                 <Rating
                   value={ratingVal}
                   onChange={(_, val) => setRatingVal(val)}
                   size="large"
-                  sx={{ color: '#4cd7f6' }}
+                  sx={{ color: tokens.secondaryLight }}
                 />
               </Box>
               <TextField
@@ -747,21 +749,21 @@ export default function Notifications() {
                 onChange={(e) => setRatingComment(e.target.value)}
                 placeholder="Optional feedback for the resolution engineering team..."
                 sx={{
-                  bgcolor: 'rgba(18, 22, 34, 0.7)',
+                  bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                   borderRadius: '10px',
                 }}
               />
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setVerifyItem(null)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+              <Button onClick={() => setVerifyItem(null)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 onClick={handleConfirmVerification}
                 sx={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                  color: '#ffffff',
+                  background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                  color: tokens.white,
                   textTransform: 'none',
                   fontWeight: 700,
                 }}
@@ -784,23 +786,23 @@ export default function Notifications() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.white, 0.1)}`,
             p: 1,
-            color: '#ffffff',
+            color: tokens.white,
           },
         }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff' }}>
+          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white }}>
             Notification Preferences
           </Typography>
-          <IconButton onClick={() => setPrefsOpen(false)} size="small" sx={{ color: '#94a3b8' }}>
+          <IconButton aria-label="Close preferences dialog" onClick={() => setPrefsOpen(false)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <Typography sx={{ fontSize: 13, color: '#94a3b8', mb: 2 }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
             Manage notification preferences across communication channels. Critical alerts and in-app system channels are locked.
           </Typography>
           <Stack spacing={1}>
@@ -813,15 +815,15 @@ export default function Notifications() {
                   justifyContent: 'space-between',
                   p: 1.2,
                   borderRadius: '8px',
-                  bgcolor: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  bgcolor: alpha(tokens.white, 0.02),
+                  border: `1px solid ${tokens.hover}`,
                 }}
               >
                 <Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#dfe2ef' }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>
                     {pref.eventType.replace(/_/g, ' ')}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#64748b' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.textDisabled }}>
                     Channel: {pref.channel} {pref.locked ? '(Locked by Policy)' : ''}
                   </Typography>
                 </Box>
@@ -835,8 +837,8 @@ export default function Notifications() {
                     );
                   }}
                   sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#4cd7f6' },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#06b6d4' },
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: tokens.secondaryLight },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: tokens.secondary },
                   }}
                 />
               </Box>
@@ -844,7 +846,7 @@ export default function Notifications() {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setPrefsOpen(false)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+          <Button onClick={() => setPrefsOpen(false)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
             Cancel
           </Button>
           <Button
@@ -852,8 +854,8 @@ export default function Notifications() {
             disabled={savePrefsMutation.isPending}
             onClick={() => savePrefsMutation.mutate(localPrefs)}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               fontWeight: 700,
               textTransform: 'none',
             }}
@@ -883,49 +885,49 @@ function NotificationCard({
   const isUnread = !notif.read;
 
   let iconComp = <ForumIcon sx={{ fontSize: 20 }} />;
-  let iconBg = 'rgba(99, 102, 241, 0.15)';
-  let iconColor = '#c0c1ff';
+  let iconBg: string = alpha(tokens.primary, 0.15);
+  let iconColor: string = tokens.primaryLight;
   let badgeLabel = '';
-  let badgeColor = '#c0c1ff';
-  let badgeBg = 'rgba(99, 102, 241, 0.15)';
+  let badgeColor: string = tokens.primaryLight;
+  let badgeBg: string = alpha(tokens.primary, 0.15);
 
   if (notif.eventType === 'INFO_REQUESTED') {
     iconComp = <ForumIcon sx={{ fontSize: 20 }} />;
-    iconBg = 'rgba(247, 81, 161, 0.15)';
-    iconColor = '#ffb0cd';
+    iconBg = alpha(tokens.tertiary, 0.15);
+    iconColor = tokens.tertiaryLight;
     badgeLabel = 'Action Required';
-    badgeColor = '#ffb0cd';
-    badgeBg = 'rgba(247, 81, 161, 0.15)';
+    badgeColor = tokens.tertiaryLight;
+    badgeBg = alpha(tokens.tertiary, 0.15);
   } else if (notif.eventType === 'INCIDENT_RESOLVED') {
     iconComp = <TaskAltIcon sx={{ fontSize: 20 }} />;
-    iconBg = 'rgba(16, 185, 129, 0.15)';
-    iconColor = '#6ee7b7';
+    iconBg = alpha(tokens.success, 0.15);
+    iconColor = tokens.successLight;
     badgeLabel = 'Pending Verification';
-    badgeColor = '#6ee7b7';
-    badgeBg = 'rgba(16, 185, 129, 0.15)';
+    badgeColor = tokens.successLight;
+    badgeBg = alpha(tokens.success, 0.15);
   } else if (notif.eventType === 'SLA_WARNING' || notif.eventType === 'SLA_VIOLATED' || notif.eventType === 'INCIDENT_ESCALATED') {
     iconComp = <SaveAsIcon sx={{ fontSize: 20 }} />;
-    iconBg = 'rgba(244, 63, 94, 0.15)';
-    iconColor = '#f43f5e';
+    iconBg = alpha(tokens.danger, 0.15);
+    iconColor = tokens.danger;
     badgeLabel = isExhausted(notif) ? 'Escalation exhausted' : notif.eventType.replace(/_/g, ' ');
-    badgeColor = '#f43f5e';
-    badgeBg = 'rgba(244, 63, 94, 0.15)';
+    badgeColor = tokens.danger;
+    badgeBg = alpha(tokens.danger, 0.15);
   } else if (notif.eventType === 'INCIDENT_ASSIGNED') {
     iconComp = <AssignmentIndIcon sx={{ fontSize: 20 }} />;
-    iconBg = 'rgba(6, 182, 212, 0.15)';
-    iconColor = '#4cd7f6';
+    iconBg = alpha(tokens.secondary, 0.15);
+    iconColor = tokens.secondaryLight;
     badgeLabel = 'Assigned';
-    badgeColor = '#4cd7f6';
-    badgeBg = 'rgba(6, 182, 212, 0.15)';
+    badgeColor = tokens.secondaryLight;
+    badgeBg = alpha(tokens.secondary, 0.15);
   } else if (notif.eventType === 'INCIDENT_CREATED') {
     iconComp = <ConfirmationNumberIcon sx={{ fontSize: 20 }} />;
-    iconBg = 'rgba(99, 102, 241, 0.12)';
-    iconColor = '#c0c1ff';
+    iconBg = alpha(tokens.primary, 0.12);
+    iconColor = tokens.primaryLight;
     badgeLabel = 'Created';
   } else {
     iconComp = <SecurityIcon sx={{ fontSize: 20 }} />;
-    iconBg = 'rgba(255, 255, 255, 0.05)';
-    iconColor = '#94a3b8';
+    iconBg = alpha(tokens.white, 0.05);
+    iconColor = tokens.onSurfaceVariant;
   }
 
   return (
@@ -934,13 +936,13 @@ function NotificationCard({
       sx={{
         p: 2.5,
         borderRadius: '16px',
-        border: isUnread ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(255, 255, 255, 0.06)',
-        bgcolor: isUnread ? 'rgba(99, 102, 241, 0.05)' : '#141824',
+        border: isUnread ? `1px solid ${alpha(tokens.primary, 0.35)}` : `1px solid ${tokens.borderSubtle}`,
+        bgcolor: isUnread ? alpha(tokens.primary, 0.05) : tokens.paper,
         position: 'relative',
         transition: 'all 0.18s ease',
         '&:hover': {
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-          borderColor: isUnread ? 'rgba(99, 102, 241, 0.6)' : 'rgba(255, 255, 255, 0.12)',
+          boxShadow: `0 8px 24px ${alpha(tokens.black, 0.4)}`,
+          borderColor: isUnread ? alpha(tokens.primary, 0.6) : tokens.border,
         },
       }}
     >
@@ -955,8 +957,8 @@ function NotificationCard({
               width: 8,
               height: 8,
               borderRadius: '50%',
-              bgcolor: '#06b6d4',
-              boxShadow: '0 0 8px #06b6d4',
+              bgcolor: tokens.secondary,
+              boxShadow: `0 0 8px ${tokens.secondary}`,
             }}
           />
         )}
@@ -982,7 +984,7 @@ function NotificationCard({
         {/* Content */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
+            <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
               {notif.title}
             </Typography>
 
@@ -1004,18 +1006,18 @@ function NotificationCard({
             )}
           </Box>
 
-          <Typography sx={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5, mb: 1 }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, lineHeight: 1.5, mb: 1 }}>
             {notif.message}
           </Typography>
 
           {/* Metadata & Actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography sx={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontSize: 12, color: tokens.textDisabled, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <ScheduleIcon sx={{ fontSize: 13 }} />
                 {formatTimeAgo(notif.createdAt)}
               </Typography>
-              <Typography sx={{ fontSize: 12, color: '#64748b' }}>
+              <Typography sx={{ fontSize: 12, color: tokens.textDisabled }}>
                 Channel: {notif.channel}
               </Typography>
             </Box>
@@ -1028,8 +1030,8 @@ function NotificationCard({
                   onClick={onReply}
                   startIcon={<ReplyIcon sx={{ fontSize: 14 }} />}
                   sx={{
-                    background: 'linear-gradient(135deg, #f751a1 0%, #6366f1 100%)',
-                    color: '#ffffff',
+                    background: `linear-gradient(135deg, ${tokens.tertiary} 0%, ${tokens.primary} 100%)`,
+                    color: tokens.white,
                     fontSize: 12,
                     fontWeight: 700,
                     textTransform: 'none',
@@ -1048,14 +1050,14 @@ function NotificationCard({
                   onClick={onVerify}
                   startIcon={<TaskAltIcon sx={{ fontSize: 14 }} />}
                   sx={{
-                    bgcolor: '#10b981',
-                    color: '#ffffff',
+                    bgcolor: tokens.success,
+                    color: tokens.white,
                     fontSize: 12,
                     fontWeight: 700,
                     textTransform: 'none',
                     borderRadius: '6px',
                     px: 1.5,
-                    '&:hover': { bgcolor: '#059669' },
+                    '&:hover': { bgcolor: tokens.successDark },
                   }}
                 >
                   Verify Fix
@@ -1068,8 +1070,8 @@ function NotificationCard({
                   variant="outlined"
                   onClick={onClickIncident}
                   sx={{
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
-                    color: '#4cd7f6',
+                    borderColor: tokens.border,
+                    color: tokens.secondaryLight,
                     fontSize: 12,
                     fontWeight: 700,
                     textTransform: 'none',
@@ -1086,10 +1088,10 @@ function NotificationCard({
                   size="small"
                   onClick={onMarkRead}
                   sx={{
-                    color: '#94a3b8',
+                    color: tokens.onSurfaceVariant,
                     fontSize: 12,
                     textTransform: 'none',
-                    '&:hover': { color: '#ffffff' },
+                    '&:hover': { color: tokens.white },
                   }}
                 >
                   Mark Read

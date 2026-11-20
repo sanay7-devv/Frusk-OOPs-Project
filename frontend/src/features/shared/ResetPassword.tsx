@@ -9,6 +9,7 @@ import { apiErrorMessage } from '../../utils/errors';
 import { passwordRule } from '../../utils/validation';
 import AuthCard from './AuthCard';
 
+import { tokens } from '../../theme/theme';
 const schema = z
   .object({
     newPassword: passwordRule.max(72, 'Max 72 characters'),
@@ -73,7 +74,7 @@ export default function ResetPassword() {
       <AuthCard title="Reset link problem">
         <Stack spacing={2}>
           <Alert severity="error">This reset link is invalid or has expired.</Alert>
-          <Link component={RouterLink} to="/forgot-password" sx={{ color: '#4cd7f6', textAlign: 'center' }}>
+          <Link component={RouterLink} to="/forgot-password" sx={{ color: tokens.secondaryLight, textAlign: 'center' }}>
             Ask for a new link
           </Link>
         </Stack>

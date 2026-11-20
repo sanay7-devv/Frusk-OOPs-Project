@@ -7,6 +7,8 @@ import { tokenStore, requestRefresh } from '../api/client';
 import { unreadCount } from '../api/notifications';
 import type { AppNotification } from '../api/types';
 import { apiErrorMessage } from '../utils/errors';
+import { realtimeStore } from './realtimeStore';
+import type { DashboardEvent } from '../api/dashboard';
 
 /** One STOMP client after login. If the socket is down, poll unread-count every 10 s. */
 export function useRealtime() {
@@ -18,11 +20,15 @@ export function useRealtime() {
   const backoffRef = useRef(2000);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      realtimeStore.reset();
+      return;
+    }
     const access = tokenStore.getAccess();
     if (!access) return;
 
     let active = true;
+    realtimeStore.setStatus('connecting');
 
     const createClient = () => {
       const currentToken = tokenStore.getAccess();
@@ -32,9 +38,11 @@ export function useRealtime() {
         reconnectDelay: backoffRef.current,
         onConnect: () => {
           setConnected(true);
+          realtimeStore.setStatus('connected');
           backoffRef.current = 2000; // Reset backoff on successful connect
 
           client.subscribe('/user/queue/notifications', (m) => {
+            realtimeStore.touch();
             try {
               const n: AppNotification = JSON.parse(m.body);
               if (n?.title) {
@@ -57,7 +65,15 @@ export function useRealtime() {
           });
 
           if (workspaces.includes('admin')) {
-            client.subscribe('/topic/dashboard', () => {
+            client.subscribe('/topic/dashboard', (m) => {
+              // Two message shapes: an incident event, or {type:'COUNTERS'} (counters only).
+              try {
+                const body = JSON.parse(m.body) as DashboardEvent | { type: string };
+                if (body.type !== 'COUNTERS') realtimeStore.pushEvent(body as DashboardEvent);
+                else realtimeStore.touch();
+              } catch {
+                realtimeStore.touch(); // unreadable payload: the refetch below still refreshes the screens
+              }
               qc.invalidateQueries({ queryKey: ['dashboard'] });
               qc.invalidateQueries({ queryKey: ['admin-incidents-kpi'] });
               qc.invalidateQueries({ queryKey: ['admin-incidents-list'] });
@@ -72,6 +88,7 @@ export function useRealtime() {
         },
         onWebSocketClose: async (evt) => {
           setConnected(false);
+          if (active) realtimeStore.setStatus('reconnecting');
           const c = clientRef.current;
           if (!active || !c) return;
           // Exponential backoff for the library's own reconnect: 2 s, 3 s, 4.5 s ... up to 30 s.
@@ -100,6 +117,7 @@ export function useRealtime() {
 
     return () => {
       active = false;
+      realtimeStore.setStatus('off');
       if (clientRef.current) {
         clientRef.current.deactivate();
         clientRef.current = null;

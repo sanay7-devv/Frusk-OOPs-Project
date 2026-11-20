@@ -75,6 +75,8 @@ import PriorityBadge from '../../components/PriorityBadge';
 import { useToast } from '../../components/Toast';
 import { errorMessage } from '../../utils/errors';
 
+import { tokens } from '../../theme/theme';
+import { alpha } from '@mui/material/styles';
 // Form validation schema adhering to handbook rules
 const reportSchema = z.object({
   title: z
@@ -188,10 +190,10 @@ export default function ReportIncident() {
   };
 
   const priorityColorMap: Record<Priority, string> = {
-    P1: '#f43f5e',
-    P2: '#fb923c',
-    P3: '#38bdf8',
-    P4: '#4ade80',
+    P1: tokens.danger,
+    P2: tokens.warning,
+    P3: tokens.info,
+    P4: tokens.priority.P4,
   };
 
   const priorityLabelMap: Record<Priority, string> = {
@@ -449,23 +451,23 @@ export default function ReportIncident() {
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 1 }}>
           <Link
             underline="hover"
-            sx={{ display: 'flex', alignItems: 'center', color: '#4cd7f6', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            sx={{ display: 'flex', alignItems: 'center', color: tokens.secondaryLight, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             onClick={() => navigate('/employee/home')}
           >
             <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
             Home
           </Link>
-          <Typography sx={{ color: '#94a3b8', fontSize: 13, fontWeight: 500, fontFamily: 'JetBrains Mono, monospace' }}>
+          <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13, fontWeight: 500, fontFamily: 'JetBrains Mono, monospace' }}>
             Report Incident
           </Typography>
         </Breadcrumbs>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
           <Box>
-            <Typography variant="h4" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+            <Typography variant="h4" component="h1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, letterSpacing: '-0.02em' }}>
               Report an Operational Issue or Outage
             </Typography>
-            <Typography sx={{ color: '#94a3b8', mt: 0.5, maxWidth: 840, fontSize: 14, fontFamily: 'Geist, sans-serif' }}>
+            <Typography sx={{ color: tokens.onSurfaceVariant, mt: 0.5, maxWidth: 840, fontSize: 14, fontFamily: 'Geist, sans-serif' }}>
               Submit downtime, authentication barriers, or service degradation to open a new incident.
             </Typography>
           </Box>
@@ -473,18 +475,18 @@ export default function ReportIncident() {
           <Button
             variant="outlined"
             onClick={() => setChatOpen(true)}
-            startIcon={<SmartToyIcon sx={{ color: '#4cd7f6' }} />}
+            startIcon={<SmartToyIcon sx={{ color: tokens.secondaryLight }} />}
             sx={{
-              borderColor: 'rgba(6, 182, 212, 0.4)',
-              color: '#4cd7f6',
-              bgcolor: 'rgba(6, 182, 212, 0.1)',
+              borderColor: alpha(tokens.secondary, 0.4),
+              color: tokens.secondaryLight,
+              bgcolor: alpha(tokens.secondary, 0.1),
               textTransform: 'none',
               fontWeight: 700,
               fontSize: 13,
               borderRadius: '8px',
               px: 2,
               py: 0.8,
-              '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.18)' },
+              '&:hover': { bgcolor: alpha(tokens.secondary, 0.18) },
             }}
           >
             Guided Chat Assistant
@@ -503,9 +505,9 @@ export default function ReportIncident() {
             sx={{
               p: { xs: 2.5, md: 3.5 },
               borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              bgcolor: '#141824',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              border: `1px solid ${tokens.outlineVariant}`,
+              bgcolor: tokens.paper,
+              boxShadow: `0 8px 32px ${alpha(tokens.black, 0.4)}`,
             }}
           >
             {knownOutages.length > 0 && (
@@ -513,9 +515,9 @@ export default function ReportIncident() {
                 severity="warning"
                 sx={{
                   mb: 3,
-                  bgcolor: 'rgba(251, 146, 60, 0.1)',
-                  border: '1px solid rgba(251, 146, 60, 0.3)',
-                  color: '#fb923c',
+                  bgcolor: alpha(tokens.warning, 0.1),
+                  border: `1px solid ${alpha(tokens.warning, 0.3)}`,
+                  color: tokens.warning,
                   borderRadius: '10px',
                 }}
                 action={
@@ -541,7 +543,7 @@ export default function ReportIncident() {
                 <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
                   Known Outage in Progress: {knownOutages[0].title}
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: '#fed7aa', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 12, color: tokens.orangePale, mt: 0.5 }}>
                   This service has an active outage ({knownOutages[0].leadPriority}) with {knownOutages[0].affectedUsers} affected users reported. Join the existing outage ticket to receive resolution updates.
                 </Typography>
               </Alert>
@@ -551,12 +553,12 @@ export default function ReportIncident() {
             <Box sx={{ mb: 3.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EditNoteIcon sx={{ color: '#4cd7f6', fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
+                  <EditNoteIcon sx={{ color: tokens.secondaryLight, fontSize: 20 }} />
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: tokens.secondaryLight, textTransform: 'uppercase' }}>
                     01. Core Incident Parameters
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
                   * Mandatory for escalation routing
                 </Typography>
               </Box>
@@ -564,10 +566,10 @@ export default function ReportIncident() {
               {/* Title Input */}
               <Box sx={{ mb: 2.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef' }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                     Incident Title
                   </Typography>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
                     {watchTitle?.length || 0} / 200 chars
                   </Typography>
                 </Box>
@@ -579,7 +581,7 @@ export default function ReportIncident() {
                   error={!!errors.title}
                   helperText={errors.title?.message || 'Be concise. Avoid ambiguous titles like "System broken" or "Help urgently".'}
                   sx={{
-                    bgcolor: 'rgba(18, 22, 34, 0.7)',
+                    bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                     borderRadius: '8px',
                   }}
                 />
@@ -588,8 +590,8 @@ export default function ReportIncident() {
               {/* Service & Category Selectors */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef', mb: 0.8 }}>
-                    Affected Service <span style={{ color: '#f43f5e' }}>*</span>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface, mb: 0.8 }}>
+                    Affected Service <span style={{ color: tokens.danger }}>*</span>
                   </Typography>
                   <Controller
                     name="serviceId"
@@ -600,7 +602,7 @@ export default function ReportIncident() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => field.onChange(Number(e.target.value))}
-                          sx={{ bgcolor: 'rgba(18, 22, 34, 0.7)', borderRadius: '8px' }}
+                          sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.7), borderRadius: '8px' }}
                         >
                           {services.map((s) => (
                             <MenuItem key={s.id} value={s.id}>
@@ -611,13 +613,13 @@ export default function ReportIncident() {
                       </FormControl>
                     )}
                   />
-                  <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.textDisabled, mt: 0.5 }}>
                     Select the degraded customer-facing service
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef', mb: 0.8 }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface, mb: 0.8 }}>
                     Problem Category
                   </Typography>
                   <Controller
@@ -629,7 +631,7 @@ export default function ReportIncident() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                          sx={{ bgcolor: 'rgba(18, 22, 34, 0.7)', borderRadius: '8px' }}
+                          sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.7), borderRadius: '8px' }}
                         >
                           <MenuItem value="">
                             <em>Let the system decide (Auto-suggest)</em>
@@ -643,21 +645,21 @@ export default function ReportIncident() {
                       </FormControl>
                     )}
                   />
-                  <Typography sx={{ fontSize: 12, color: '#64748b', mt: 0.5 }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.textDisabled, mt: 0.5 }}>
                     Used to determine initial responder rota
                   </Typography>
                 </Grid>
               </Grid>
             </Box>
 
-            <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.06)' }} />
+            <Divider sx={{ my: 3, borderColor: tokens.borderSubtle }} />
 
             {/* SECTION 2: Severity Metrics & Blast Radius */}
             <Box sx={{ mb: 3.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EqualizerIcon sx={{ color: '#4cd7f6', fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
+                  <EqualizerIcon sx={{ color: tokens.secondaryLight, fontSize: 20 }} />
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: tokens.secondaryLight, textTransform: 'uppercase' }}>
                     02. Severity Metrics &amp; Blast Radius
                   </Typography>
                 </Box>
@@ -678,10 +680,10 @@ export default function ReportIncident() {
               {/* Impact Level Selection (5 Cards) */}
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef' }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                     Impact Level (Scope of Operational Impairment)
                   </Typography>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: '#4cd7f6' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.secondaryLight }}>
                     Current: Level {watchImpact} ({IMPACT_LEVELS.find((i) => i.level === watchImpact)?.title})
                   </Typography>
                 </Box>
@@ -703,36 +705,36 @@ export default function ReportIncident() {
                             transition: 'all 0.18s ease',
                             bgcolor: isSelected
                               ? isCatastrophic
-                                ? 'rgba(244, 63, 94, 0.25)'
-                                : 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(6, 182, 212, 0.2) 100%)'
-                              : 'rgba(18, 22, 34, 0.6)',
-                            color: isSelected ? '#ffffff' : '#94a3b8',
+                                ? alpha(tokens.danger, 0.25)
+                                : `linear-gradient(135deg, ${alpha(tokens.primary, 0.3)} 0%, ${alpha(tokens.secondary, 0.2)} 100%)`
+                              : alpha(tokens.surfaceContainerLow, 0.6),
+                            color: isSelected ? tokens.white : tokens.onSurfaceVariant,
                             border: isSelected
-                              ? `1px solid ${isCatastrophic ? '#f43f5e' : '#06b6d4'}`
-                              : '1px solid rgba(255, 255, 255, 0.08)',
+                              ? `1px solid ${isCatastrophic ? '${tokens.danger}' : '${tokens.secondary}'}`
+                              : `1px solid ${tokens.outlineVariant}`,
                             boxShadow: isSelected
-                              ? `0 0 16px ${isCatastrophic ? 'rgba(244, 63, 94, 0.35)' : 'rgba(6, 182, 212, 0.3)'}`
+                              ? `0 0 16px ${isCatastrophic ? '${alpha(tokens.danger, 0.35)}' : '${alpha(tokens.secondary, 0.3)}'}`
                               : 'none',
                             '&:hover': {
-                              borderColor: isSelected ? undefined : 'rgba(99, 102, 241, 0.4)',
-                              bgcolor: isSelected ? undefined : 'rgba(99, 102, 241, 0.08)',
+                              borderColor: isSelected ? undefined : alpha(tokens.primary, 0.4),
+                              bgcolor: isSelected ? undefined : alpha(tokens.primary, 0.08),
                             },
                           }}
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: isSelected ? '#4cd7f6' : '#64748b' }}>
+                            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: isSelected ? tokens.secondaryLight : tokens.textDisabled }}>
                               LVL {item.level}
                             </Typography>
-                            {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: '#4cd7f6' }} />}
+                            {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: tokens.secondaryLight }} />}
                           </Box>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.5, color: isSelected ? '#ffffff' : '#dfe2ef', fontFamily: 'Sora, sans-serif' }}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.5, color: isSelected ? tokens.white : tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
                             {item.title}
                           </Typography>
                           <Typography
                             sx={{
                               fontSize: 12,
                               lineHeight: 1.3,
-                              color: isSelected ? '#dfe2ef' : '#64748b',
+                              color: isSelected ? tokens.onSurface : tokens.textDisabled,
                               display: '-webkit-box',
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
@@ -754,20 +756,20 @@ export default function ReportIncident() {
                 {/* Urgency segmented pills */}
                 <Grid item xs={12} sm={8}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef' }}>
+                    <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                       Urgency Level (Time Sensitivity)
                     </Typography>
-                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: '#4cd7f6' }}>
+                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.secondaryLight }}>
                       Selected: {watchUrgency} ({URGENCY_LEVELS.find((u) => u.level === watchUrgency)?.label})
                     </Typography>
                   </Box>
                   <Box
                     sx={{
                       display: 'flex',
-                      bgcolor: 'rgba(18, 22, 34, 0.8)',
+                      bgcolor: alpha(tokens.surfaceContainerLow, 0.8),
                       p: 0.5,
                       borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      border: `1px solid ${tokens.outlineVariant}`,
                       gap: 0.5,
                     }}
                   >
@@ -788,13 +790,13 @@ export default function ReportIncident() {
                             fontWeight: isSelected ? 700 : 500,
                             bgcolor: isSelected
                               ? isImmed
-                                ? 'rgba(244, 63, 94, 0.3)'
-                                : 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)'
+                                ? alpha(tokens.danger, 0.3)
+                                : `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`
                               : 'transparent',
-                            color: isSelected ? '#ffffff' : isImmed ? '#f43f5e' : '#94a3b8',
-                            boxShadow: isSelected ? '0 0 12px rgba(99, 102, 241, 0.35)' : 'none',
+                            color: isSelected ? tokens.white : isImmed ? tokens.danger : tokens.onSurfaceVariant,
+                            boxShadow: isSelected ? `0 0 12px ${alpha(tokens.primary, 0.35)}` : 'none',
                             '&:hover': {
-                              bgcolor: isSelected ? undefined : 'rgba(255, 255, 255, 0.04)',
+                              bgcolor: isSelected ? undefined : tokens.hover,
                             },
                           }}
                         >
@@ -807,23 +809,23 @@ export default function ReportIncident() {
 
                 {/* Affected Users Stepper */}
                 <Grid item xs={12} sm={4}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef', mb: 1 }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface, mb: 1 }}>
                     Estimated Affected Users
                   </Typography>
                   <Box
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      bgcolor: 'rgba(18, 22, 34, 0.8)',
+                      bgcolor: alpha(tokens.surfaceContainerLow, 0.8),
                       borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      border: `1px solid ${tokens.outlineVariant}`,
                       p: 0.5,
                     }}
                   >
-                    <IconButton
+                    <IconButton aria-label="Decrease affected users"
                       size="small"
                       onClick={() => setValue('affectedUsers', Math.max(1, (watchAffectedUsers || 1) - 1))}
-                      sx={{ color: '#94a3b8' }}
+                      sx={{ color: tokens.onSurfaceVariant }}
                     >
                       <RemoveIcon fontSize="small" />
                     </IconButton>
@@ -833,13 +835,13 @@ export default function ReportIncident() {
                       value={watchAffectedUsers}
                       onChange={(e) => setValue('affectedUsers', Math.max(1, parseInt(e.target.value) || 1))}
                       InputProps={{ disableUnderline: true }}
-                      inputProps={{ min: 1, style: { textAlign: 'center', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color: '#dfe2ef' } }}
+                      inputProps={{ min: 1, style: { textAlign: 'center', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color: tokens.onSurface } }}
                       sx={{ flexGrow: 1 }}
                     />
-                    <IconButton
+                    <IconButton aria-label="Increase affected users"
                       size="small"
                       onClick={() => setValue('affectedUsers', (watchAffectedUsers || 0) + 1)}
-                      sx={{ color: '#94a3b8' }}
+                      sx={{ color: tokens.onSurfaceVariant }}
                     >
                       <AddIcon fontSize="small" />
                     </IconButton>
@@ -848,14 +850,14 @@ export default function ReportIncident() {
               </Grid>
             </Box>
 
-            <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.06)' }} />
+            <Divider sx={{ my: 3, borderColor: tokens.borderSubtle }} />
 
             {/* SECTION 3: Detailed Telemetry & Narrative */}
             <Box sx={{ mb: 3.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SubjectIcon sx={{ color: '#4cd7f6', fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#4cd7f6', textTransform: 'uppercase' }}>
+                  <SubjectIcon sx={{ color: tokens.secondaryLight, fontSize: 20 }} />
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: tokens.secondaryLight, textTransform: 'uppercase' }}>
                     03. Detailed Telemetry &amp; Narrative
                   </Typography>
                 </Box>
@@ -864,10 +866,10 @@ export default function ReportIncident() {
               {/* Textarea with Formatting Toolbar */}
               <Box sx={{ mb: 2.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef' }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                     Detailed Description
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     Markdown &amp; Stack Traces supported
                   </Typography>
                 </Box>
@@ -875,11 +877,11 @@ export default function ReportIncident() {
                 <Paper
                   elevation={0}
                   sx={{
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    border: `1px solid ${alpha(tokens.white, 0.1)}`,
                     borderRadius: '10px',
                     overflow: 'hidden',
-                    bgcolor: 'rgba(18, 22, 34, 0.8)',
-                    '&:focus-within': { borderColor: '#06b6d4', boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)' },
+                    bgcolor: alpha(tokens.surfaceContainerLow, 0.8),
+                    '&:focus-within': { borderColor: tokens.secondary, boxShadow: `0 0 12px ${alpha(tokens.secondary, 0.2)}` },
                   }}
                 >
                   {/* Textarea */}
@@ -897,7 +899,7 @@ export default function ReportIncident() {
                     variant="standard"
                     sx={{
                       p: 1.5,
-                      '& .MuiInputBase-root': { fontSize: 13, lineHeight: 1.6, color: '#dfe2ef', fontFamily: 'Geist, sans-serif' },
+                      '& .MuiInputBase-root': { fontSize: 13, lineHeight: 1.6, color: tokens.onSurface, fontFamily: 'Geist, sans-serif' },
                     }}
                   />
                 </Paper>
@@ -906,10 +908,10 @@ export default function ReportIncident() {
               {/* Diagnostic Evidence & Logs (Drag and Drop Zone) */}
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: '#dfe2ef' }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                     Diagnostic Evidence &amp; Logs
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     Max file size 5MB each (PNG, JPG, LOG, HAR)
                   </Typography>
                 </Box>
@@ -925,12 +927,12 @@ export default function ReportIncident() {
                   sx={{
                     p: 3,
                     borderRadius: '12px',
-                    border: '1.5px dashed rgba(255, 255, 255, 0.15)',
-                    bgcolor: 'rgba(18, 22, 34, 0.6)',
+                    border: `1.5px dashed ${alpha(tokens.white, 0.15)}`,
+                    bgcolor: alpha(tokens.surfaceContainerLow, 0.6),
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.08)', borderColor: '#6366f1' },
+                    '&:hover': { bgcolor: alpha(tokens.primary, 0.08), borderColor: tokens.primary },
                   }}
                 >
                   <input
@@ -946,22 +948,22 @@ export default function ReportIncident() {
                       width: 48,
                       height: 48,
                       borderRadius: '50%',
-                      bgcolor: 'rgba(6, 182, 212, 0.15)',
-                      color: '#4cd7f6',
+                      bgcolor: alpha(tokens.secondary, 0.15),
+                      color: tokens.secondaryLight,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mx: 'auto',
                       mb: 1.5,
-                      boxShadow: '0 0 16px rgba(6, 182, 212, 0.2)',
+                      boxShadow: `0 0 16px ${alpha(tokens.secondary, 0.2)}`,
                     }}
                   >
                     <UploadFileIcon sx={{ fontSize: 26 }} />
                   </Box>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#ffffff' }}>
-                    <span style={{ color: '#4cd7f6' }}>Click to browse</span> or drag files here
+                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: tokens.white }}>
+                    <span style={{ color: tokens.secondaryLight }}>Click to browse</span> or drag files here
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5 }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 0.5 }}>
                     Supported formats: PNG, JPG, GIF, PDF, TXT, LOG (Max 5 MB per file, max 10 files)
                   </Typography>
 
@@ -974,8 +976,8 @@ export default function ReportIncident() {
                           icon={f.type === 'image' ? <ImageIcon fontSize="small" /> : <DescriptionIcon fontSize="small" />}
                           label={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: '#dfe2ef' }}>{f.name}</Typography>
-                              <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>({f.size})</Typography>
+                              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.onSurface }}>{f.name}</Typography>
+                              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>({f.size})</Typography>
                             </Box>
                           }
                           onDelete={(e) => {
@@ -984,8 +986,8 @@ export default function ReportIncident() {
                           }}
                           deleteIcon={<CloseIcon fontSize="small" />}
                           sx={{
-                            bgcolor: 'rgba(18, 22, 34, 0.9)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            bgcolor: alpha(tokens.surfaceContainerLow, 0.9),
+                            border: `1px solid ${alpha(tokens.white, 0.1)}`,
                             borderRadius: '6px',
                           }}
                         />
@@ -996,12 +998,12 @@ export default function ReportIncident() {
               </Box>
             </Box>
 
-            <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.06)' }} />
+            <Divider sx={{ my: 3, borderColor: tokens.borderSubtle }} />
 
             {/* Form Footer Action Bar */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#94a3b8' }}>
-                <VerifiedUserIcon sx={{ fontSize: 18, color: '#06b6d4' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: tokens.onSurfaceVariant }}>
+                <VerifiedUserIcon sx={{ fontSize: 18, color: tokens.secondary }} />
                 <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
                   Standard ITIL incident intake &amp; routing
                 </Typography>
@@ -1013,11 +1015,11 @@ export default function ReportIncident() {
                   onClick={handleDiscard}
                   sx={{
                     borderRadius: '8px',
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
-                    color: '#94a3b8',
+                    borderColor: tokens.border,
+                    color: tokens.onSurfaceVariant,
                     textTransform: 'none',
                     fontWeight: 600,
-                    '&:hover': { borderColor: 'rgba(255, 255, 255, 0.25)', bgcolor: 'rgba(255, 255, 255, 0.04)', color: '#dfe2ef' },
+                    '&:hover': { borderColor: alpha(tokens.white, 0.25), bgcolor: tokens.hover, color: tokens.onSurface },
                   }}
                 >
                   Cancel &amp; Discard
@@ -1029,16 +1031,16 @@ export default function ReportIncident() {
                   startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
                   sx={{
                     borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                    color: '#ffffff',
+                    background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                    color: tokens.white,
                     px: 3,
                     py: 1,
                     textTransform: 'none',
                     fontWeight: 700,
-                    boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+                    boxShadow: `0 0 20px ${alpha(tokens.primary, 0.4)}`,
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
-                      boxShadow: '0 0 28px rgba(6, 182, 212, 0.55)',
+                      background: `linear-gradient(135deg, ${tokens.primaryStrong} 0%, ${tokens.secondaryStrong} 100%)`,
+                      boxShadow: `0 0 28px ${alpha(tokens.secondary, 0.55)}`,
                     },
                   }}
                 >
@@ -1059,12 +1061,12 @@ export default function ReportIncident() {
               sx={{
                 p: 2,
                 borderRadius: '16px',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)',
+                border: `1px solid ${alpha(tokens.primary, 0.35)}`,
+                background: `linear-gradient(135deg, ${alpha(tokens.primary, 0.15)} 0%, ${alpha(tokens.secondary, 0.1)} 100%)`,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                boxShadow: '0 4px 20px rgba(99, 102, 241, 0.15)',
+                boxShadow: `0 4px 20px ${alpha(tokens.primary, 0.15)}`,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1073,24 +1075,24 @@ export default function ReportIncident() {
                     width: 36,
                     height: 36,
                     borderRadius: '8px',
-                    bgcolor: '#6366f1',
-                    color: '#ffffff',
+                    bgcolor: tokens.primary,
+                    color: tokens.white,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 0 12px rgba(99, 102, 241, 0.5)',
+                    boxShadow: `0 0 12px ${alpha(tokens.primary, 0.5)}`,
                   }}
                 >
                   <SmartToyIcon sx={{ fontSize: 20 }} />
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
+                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
                       AI Intake Assistant
                     </Typography>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#06b6d4', boxShadow: '0 0 6px #06b6d4' }} />
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: tokens.secondary, boxShadow: `0 0 6px ${tokens.secondary}` }} />
                   </Box>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#4cd7f6' }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondaryLight }}>
                     Real-time Suggestions
                   </Typography>
                 </Box>
@@ -1103,18 +1105,18 @@ export default function ReportIncident() {
               sx={{
                 p: 2.5,
                 borderRadius: '16px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                bgcolor: '#141824',
+                border: `1px solid ${tokens.outlineVariant}`,
+                bgcolor: tokens.paper,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                boxShadow: `0 4px 20px ${alpha(tokens.black, 0.3)}`,
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <PsychologyIcon sx={{ color: '#c0c1ff', fontSize: 18 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <PsychologyIcon sx={{ color: tokens.primaryLight, fontSize: 18 }} />
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.primaryLight, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Suggested Classification
                   </Typography>
                 </Box>
@@ -1122,7 +1124,7 @@ export default function ReportIncident() {
                   <Chip
                     label={aiLoading ? 'Analyzing...' : `${Math.round((aiSuggestion.confidence || 0) * 100)}% confidence`}
                     size="small"
-                    sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                    sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, bgcolor: alpha(tokens.success, 0.15), color: tokens.successLight, border: `1px solid ${alpha(tokens.success, 0.3)}` }}
                   />
                 )}
               </Box>
@@ -1130,16 +1132,16 @@ export default function ReportIncident() {
               {aiSuggestion && aiSuggestion.categoryId != null ? (
                 <>
                   {/* Classification Metric Box */}
-                  <Box sx={{ bgcolor: 'rgba(18, 22, 34, 0.7)', p: 2, borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <Box sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.7), p: 2, borderRadius: '10px', border: `1px solid ${tokens.borderSubtle}` }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Category Match:</Typography>
-                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#4cd7f6' }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Category Match:</Typography>
+                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.secondaryLight }}>
                         {aiSuggestion.categoryName}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                      <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Source:</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Source:</Typography>
                       <Chip
                         label={(aiSuggestion as any).source || 'AI'}
                         size="small"
@@ -1148,8 +1150,8 @@ export default function ReportIncident() {
                           fontWeight: 700,
                           fontSize: 12,
                           height: 20,
-                          bgcolor: 'rgba(99, 102, 241, 0.2)',
-                          color: '#c0c1ff',
+                          bgcolor: alpha(tokens.primary, 0.2),
+                          color: tokens.primaryLight,
                         }}
                       />
                     </Box>
@@ -1157,21 +1159,21 @@ export default function ReportIncident() {
                     {/* Confidence Bar */}
                     <Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>Model Alignment</Typography>
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#64748b' }}>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>Model Alignment</Typography>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
                           {(aiSuggestion.confidence || 0).toFixed(2)} / 1.00
                         </Typography>
                       </Box>
                       <LinearProgress
                         variant="determinate"
                         value={(aiSuggestion.confidence || 0) * 100}
-                        sx={{ height: 5, borderRadius: '3px', bgcolor: 'rgba(255,255,255,0.08)', '& .MuiLinearProgress-bar': { bgcolor: '#06b6d4' } }}
+                        sx={{ height: 5, borderRadius: '3px', bgcolor: tokens.outlineVariant, '& .MuiLinearProgress-bar': { bgcolor: tokens.secondary } }}
                       />
                     </Box>
                   </Box>
 
                   {aiSuggestion.reason && (
-                    <Typography sx={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.4, fontFamily: 'Geist, sans-serif' }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, lineHeight: 1.4, fontFamily: 'Geist, sans-serif' }}>
                       {aiSuggestion.reason}
                     </Typography>
                   )}
@@ -1183,12 +1185,12 @@ export default function ReportIncident() {
                     startIcon={<AutoFixHighIcon />}
                     sx={{
                       borderRadius: '8px',
-                      borderColor: 'rgba(99, 102, 241, 0.4)',
-                      bgcolor: 'rgba(99, 102, 241, 0.1)',
-                      color: '#c0c1ff',
+                      borderColor: alpha(tokens.primary, 0.4),
+                      bgcolor: alpha(tokens.primary, 0.1),
+                      color: tokens.primaryLight,
                       fontWeight: 600,
                       textTransform: 'none',
-                      '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.2)', borderColor: '#6366f1', color: '#ffffff' },
+                      '&:hover': { bgcolor: alpha(tokens.primary, 0.2), borderColor: tokens.primary, color: tokens.white },
                     }}
                   >
                     Apply Suggested Category
@@ -1196,7 +1198,7 @@ export default function ReportIncident() {
                 </>
               ) : (
                 <Box sx={{ py: 3, px: 1, textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 12.5, color: '#94a3b8', lineHeight: 1.5 }}>
+                  <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, lineHeight: 1.5 }}>
                     {aiLoading ? 'Analyzing incident description with semantic classifier...' : 'Type an issue title and description to see live AI categorization and similarity detection.'}
                   </Typography>
                 </Box>
@@ -1210,20 +1212,20 @@ export default function ReportIncident() {
                 sx={{
                   p: 2.5,
                   borderRadius: '16px',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
-                  bgcolor: 'rgba(245, 158, 11, 0.08)',
+                  border: `1px solid ${alpha(tokens.amber, 0.4)}`,
+                  bgcolor: alpha(tokens.amber, 0.08),
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 1.5,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#fde68a' }}>
-                  <WarningIcon sx={{ fontSize: 20, color: '#fb923c' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: tokens.warningLight }}>
+                  <WarningIcon sx={{ fontSize: 20, color: tokens.warning }} />
                   <Typography sx={{ fontSize: 13, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
                     Potential Duplicate Outage
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: 12, color: '#fde68a', fontWeight: 500 }}>
+                <Typography sx={{ fontSize: 12, color: tokens.warningLight, fontWeight: 500 }}>
                   {similarIncidents.length} similar active incident{similarIncidents.length > 1 ? 's' : ''} found:
                 </Typography>
 
@@ -1238,20 +1240,20 @@ export default function ReportIncident() {
                       cursor: 'pointer',
                       p: 1.5,
                       borderRadius: '8px',
-                      bgcolor: idx === 0 ? 'rgba(18, 22, 34, 0.8)' : 'rgba(18, 22, 34, 0.5)',
-                      border: '1px solid rgba(245, 158, 11, 0.25)',
-                      '&:hover': { borderColor: '#d97706' },
+                      bgcolor: idx === 0 ? alpha(tokens.surfaceContainerLow, 0.8) : alpha(tokens.surfaceContainerLow, 0.5),
+                      border: `1px solid ${alpha(tokens.amber, 0.25)}`,
+                      '&:hover': { borderColor: tokens.amberDark },
                     }}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
-                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#4cd7f6' }}>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight }}>
                         {item.code}
                       </Typography>
-                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#fb923c' }}>
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.warning }}>
                         {Math.round(item.similarity * 100)}% match
                       </Typography>
                     </Box>
-                    <Typography noWrap sx={{ fontSize: 13, fontWeight: 600, color: '#dfe2ef' }}>
+                    <Typography noWrap sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>
                       &ldquo;{item.title}&rdquo;
                     </Typography>
                   </Paper>
@@ -1265,11 +1267,11 @@ export default function ReportIncident() {
                   sx={{
                     mt: 0.5,
                     borderRadius: '8px',
-                    bgcolor: '#d97706',
-                    color: '#ffffff',
+                    bgcolor: tokens.amberDark,
+                    color: tokens.white,
                     fontWeight: 700,
                     textTransform: 'none',
-                    '&:hover': { bgcolor: '#b45309' },
+                    '&:hover': { bgcolor: tokens.warningDark },
                   }}
                 >
                   View &amp; Join Existing Ticket
@@ -1289,26 +1291,26 @@ export default function ReportIncident() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(245, 158, 11, 0.4)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.amber, 0.4)}`,
             p: 1,
-            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8)',
+            boxShadow: `0 24px 64px ${alpha(tokens.black, 0.8)}`,
           },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, color: '#fde68a', fontFamily: 'Sora, sans-serif' }}>
-          <WarningIcon sx={{ color: '#fb923c' }} />
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, color: tokens.warningLight, fontFamily: 'Sora, sans-serif' }}>
+          <WarningIcon sx={{ color: tokens.warning }} />
           Potential Duplicate Incident Found
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-          <Alert severity="warning" sx={{ mb: 2, borderRadius: '8px', bgcolor: 'rgba(245, 158, 11, 0.12)', color: '#fef3c7', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: '8px', bgcolor: alpha(tokens.amber, 0.12), color: tokens.amberPale, border: `1px solid ${alpha(tokens.amber, 0.3)}` }}>
             A similar active incident is already being resolved by engineers. To avoid duplicated work, you can join the existing ticket to receive status updates.
           </Alert>
 
           {similarIncidents.map((sim) => (
-            <Paper key={sim.incidentId} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: '10px', bgcolor: 'rgba(18, 22, 34, 0.8)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+            <Paper key={sim.incidentId} variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: '10px', bgcolor: alpha(tokens.surfaceContainerLow, 0.8), borderColor: tokens.outlineVariant }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#4cd7f6' }}>
+                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.secondaryLight }}>
                   {sim.code}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1318,16 +1320,16 @@ export default function ReportIncident() {
                       size="small"
                       sx={{
                         fontSize: 12,
-                        bgcolor: sim.match === 'DUPLICATE' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
-                        color: sim.match === 'DUPLICATE' ? '#f43f5e' : '#c0c1ff',
+                        bgcolor: sim.match === 'DUPLICATE' ? alpha(tokens.danger, 0.2) : alpha(tokens.primary, 0.2),
+                        color: sim.match === 'DUPLICATE' ? tokens.danger : tokens.primaryLight,
                       }}
                     />
                   )}
-                  <Chip label={`${Math.round(sim.similarity * 100)}% match`} size="small" sx={{ bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#fde68a' }} />
+                  <Chip label={`${Math.round(sim.similarity * 100)}% match`} size="small" sx={{ bgcolor: alpha(tokens.amber, 0.2), color: tokens.warningLight }} />
                 </Box>
               </Box>
-              <Typography sx={{ fontWeight: 600, mt: 0.5, color: '#dfe2ef' }}>{sim.title}</Typography>
-              <Typography sx={{ fontSize: 12, color: '#94a3b8', mt: 0.5 }}>
+              <Typography sx={{ fontWeight: 600, mt: 0.5, color: tokens.onSurface }}>{sim.title}</Typography>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 0.5 }}>
                 Status: {sim.status} • Active Engineering Remediation
               </Typography>
             </Paper>
@@ -1344,7 +1346,7 @@ export default function ReportIncident() {
               }
             }}
             variant="contained"
-            sx={{ bgcolor: '#d97706', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#b45309' } }}
+            sx={{ bgcolor: tokens.amberDark, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: tokens.warningDark } }}
           >
             View Existing Ticket
           </Button>
@@ -1354,7 +1356,7 @@ export default function ReportIncident() {
               handleSubmit((data) => onSubmit(data, true))();
             }}
             variant="outlined"
-            sx={{ textTransform: 'none', fontWeight: 600, borderColor: 'rgba(255, 255, 255, 0.15)', color: '#dfe2ef' }}
+            sx={{ textTransform: 'none', fontWeight: 600, borderColor: alpha(tokens.white, 0.15), color: tokens.onSurface }}
           >
             Mine is Different, Submit Anyway
           </Button>
@@ -1370,46 +1372,46 @@ export default function ReportIncident() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.white, 0.1)}`,
             p: 1,
-            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8), 0 0 24px rgba(99, 102, 241, 0.2)',
+            boxShadow: `0 24px 64px ${alpha(tokens.black, 0.8)}, 0 0 24px ${alpha(tokens.primary, 0.2)}`,
           },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, color: '#ffffff', fontFamily: 'Sora, sans-serif' }}>
-          <CheckCircleIcon sx={{ color: '#10b981', fontSize: 26 }} />
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
+          <CheckCircleIcon sx={{ color: tokens.success, fontSize: 26 }} />
           Incident Reported Successfully
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           {createdIncident && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Alert severity="success" sx={{ borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              <Alert severity="success" sx={{ borderRadius: '8px', bgcolor: alpha(tokens.success, 0.15), color: tokens.successLight, border: `1px solid ${alpha(tokens.success, 0.3)}` }}>
                 Your incident was categorized, prioritized, and queued for technician triage.
               </Alert>
 
-              <Box sx={{ bgcolor: 'rgba(18, 22, 34, 0.8)', p: 2.5, borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <Box sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.8), p: 2.5, borderRadius: '10px', border: `1px solid ${tokens.outlineVariant}` }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Incident Code:</Typography>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 700, color: '#4cd7f6' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Incident Code:</Typography>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 700, color: tokens.secondaryLight }}>
                     {createdIncident.code}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Assigned Priority:</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Assigned Priority:</Typography>
                   <PriorityBadge priority={createdIncident.priority} />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Assigned Service:</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#dfe2ef' }}>{createdIncident.service.name}</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Assigned Service:</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>{createdIncident.service.name}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Assignee:</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#dfe2ef' }}>{createdIncident.assignee?.name || 'Unassigned (Triage Dispatch Queue)'}</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Assignee:</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>{createdIncident.assignee?.name || 'Unassigned (Triage Dispatch Queue)'}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Target SLA Resolution:</Typography>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#10b981' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Target SLA Resolution:</Typography>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.success }}>
                     {createdIncident.resolutionDue
                       ? new Date(createdIncident.resolutionDue).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                       : 'Scheduled according to SLA policy'}
@@ -1418,11 +1420,11 @@ export default function ReportIncident() {
               </Box>
 
               {createdIncident.priorityBreakdown && (
-                <Box sx={{ p: 2, bgcolor: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: '#c0c1ff', mb: 0.5 }}>
+                <Box sx={{ p: 2, bgcolor: alpha(tokens.white, 0.03), borderRadius: '10px', border: `1px solid ${tokens.borderSubtle}` }}>
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.primaryLight, mb: 0.5 }}>
                     Why this priority?
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                     Impact ({createdIncident.priorityBreakdown.impact}/5) × Urgency ({createdIncident.priorityBreakdown.urgency}/5) with Business Criticality ({createdIncident.priorityBreakdown.criticality}/5) and users multiplier ({createdIncident.priorityBreakdown.usersMultiplier}x) yielded score {createdIncident.priorityBreakdown.score} ({createdIncident.priorityBreakdown.band}).
                   </Typography>
                 </Box>
@@ -1437,7 +1439,7 @@ export default function ReportIncident() {
               navigate('/employee/incidents');
             }}
             variant="outlined"
-            sx={{ textTransform: 'none', fontWeight: 600, borderColor: 'rgba(255, 255, 255, 0.15)', color: '#dfe2ef' }}
+            sx={{ textTransform: 'none', fontWeight: 600, borderColor: alpha(tokens.white, 0.15), color: tokens.onSurface }}
           >
             Go to My Incidents
           </Button>
@@ -1449,8 +1451,8 @@ export default function ReportIncident() {
             }}
             variant="contained"
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-              color: '#ffffff',
+              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+              color: tokens.white,
               textTransform: 'none',
               fontWeight: 700,
             }}
@@ -1469,24 +1471,24 @@ export default function ReportIncident() {
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            bgcolor: '#121622',
-            border: '1px solid rgba(6, 182, 212, 0.4)',
-            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8)',
+            bgcolor: tokens.surfaceContainerLow,
+            border: `1px solid ${alpha(tokens.secondary, 0.4)}`,
+            boxShadow: `0 24px 64px ${alpha(tokens.black, 0.8)}`,
           },
         }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <SmartToyIcon sx={{ color: '#4cd7f6', fontSize: 24 }} />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontFamily: 'Sora, sans-serif', fontSize: 16 }}>
+            <SmartToyIcon sx={{ color: tokens.secondaryLight, fontSize: 24 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.white, fontFamily: 'Sora, sans-serif', fontSize: 16 }}>
               Guided Intake Assistant
             </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setChatOpen(false)} sx={{ color: '#94a3b8' }}>
+          <IconButton aria-label="Close assistant chat" size="small" onClick={() => setChatOpen(false)} sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', p: 2 }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant, p: 2 }}>
           {/* Messages Stream */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 360, overflowY: 'auto', pr: 0.5 }}>
             {chatMessages.map((m, idx) => (
@@ -1501,9 +1503,9 @@ export default function ReportIncident() {
                   sx={{
                     p: 1.5,
                     borderRadius: m.sender === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    bgcolor: m.sender === 'user' ? '#6366f1' : 'rgba(18, 22, 34, 0.9)',
-                    border: m.sender === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
+                    bgcolor: m.sender === 'user' ? tokens.primary : alpha(tokens.surfaceContainerLow, 0.9),
+                    border: m.sender === 'user' ? 'none' : `1px solid ${alpha(tokens.white, 0.1)}`,
+                    color: tokens.white,
                     fontSize: 13,
                     lineHeight: 1.5,
                   }}
@@ -1520,12 +1522,12 @@ export default function ReportIncident() {
                         size="small"
                         onClick={() => handleSendChatMessage(opt.label)}
                         sx={{
-                          bgcolor: 'rgba(6, 182, 212, 0.15)',
-                          color: '#4cd7f6',
-                          border: '1px solid rgba(6, 182, 212, 0.3)',
+                          bgcolor: alpha(tokens.secondary, 0.15),
+                          color: tokens.secondaryLight,
+                          border: `1px solid ${alpha(tokens.secondary, 0.3)}`,
                           cursor: 'pointer',
                           fontSize: 12,
-                          '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.28)' },
+                          '&:hover': { bgcolor: alpha(tokens.secondary, 0.28) },
                         }}
                       />
                     ))}
@@ -1534,9 +1536,9 @@ export default function ReportIncident() {
               </Box>
             ))}
             {chatLoading && (
-              <Box sx={{ alignSelf: 'flex-start', p: 1.5, bgcolor: 'rgba(18, 22, 34, 0.9)', borderRadius: '12px 12px 12px 2px', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CircularProgress size={14} sx={{ color: '#4cd7f6' }} />
-                <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>Analyzing response...</Typography>
+              <Box sx={{ alignSelf: 'flex-start', p: 1.5, bgcolor: alpha(tokens.surfaceContainerLow, 0.9), borderRadius: '12px 12px 12px 2px', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={14} sx={{ color: tokens.secondaryLight }} />
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Analyzing response...</Typography>
               </Box>
             )}
           </Box>
@@ -1557,9 +1559,9 @@ export default function ReportIncident() {
                 }
               }}
               sx={{
-                bgcolor: 'rgba(18, 22, 34, 0.7)',
+                bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                 borderRadius: '8px',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: alpha(tokens.white, 0.15) },
               }}
             />
             <Button
@@ -1567,12 +1569,12 @@ export default function ReportIncident() {
               disabled={!chatInput.trim() || chatLoading}
               onClick={() => handleSendChatMessage(chatInput)}
               sx={{
-                bgcolor: '#06b6d4',
-                color: '#ffffff',
+                bgcolor: tokens.secondary,
+                color: tokens.white,
                 textTransform: 'none',
                 fontWeight: 700,
                 px: 2.5,
-                '&:hover': { bgcolor: '#0891b2' },
+                '&:hover': { bgcolor: tokens.secondaryStrong },
               }}
             >
               Send
@@ -1582,7 +1584,7 @@ export default function ReportIncident() {
           {/* Action to apply draft to form */}
           {chatDraft && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 0.5 }}>
-              <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
+              <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                 {chatReadyToFile ? 'Draft is complete and ready to apply!' : 'Draft partially generated.'}
               </Typography>
               <Button
@@ -1590,8 +1592,8 @@ export default function ReportIncident() {
                 size="small"
                 onClick={handleApplyChatDraft}
                 sx={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                  color: '#ffffff',
+                  background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                  color: tokens.white,
                   fontWeight: 700,
                   fontSize: 12,
                   textTransform: 'none',

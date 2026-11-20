@@ -11,6 +11,8 @@ import {
   CircularProgress,
 } from '@mui/material';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 export interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -68,19 +70,19 @@ export default function ConfirmDialog({
       fullWidth
       PaperProps={{
         sx: {
-          bgcolor: '#121622',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          bgcolor: tokens.surfaceContainerLow,
+          border: `1px solid ${alpha(tokens.white, 0.1)}`,
           borderRadius: '12px',
-          color: '#dfe2ef',
+          color: tokens.onSurface,
         },
       }}
     >
-      <DialogTitle sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: '#ffffff' }}>
+      <DialogTitle sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white }}>
         {title}
       </DialogTitle>
       <DialogContent>
         {description && (
-          <Typography sx={{ color: '#94a3b8', fontSize: '0.9rem', mb: requireReason ? 2 : 0, lineHeight: 1.5 }}>
+          <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.9rem', mb: requireReason ? 2 : 0, lineHeight: 1.5 }}>
             {description}
           </Typography>
         )}
@@ -104,11 +106,11 @@ export default function ConfirmDialog({
               inputProps={{ maxLength: maxReasonLength }}
               sx={{
                 '& .MuiInputBase-root': {
-                  bgcolor: 'rgba(255, 255, 255, 0.03)',
-                  color: '#ffffff',
+                  bgcolor: alpha(tokens.white, 0.03),
+                  color: tokens.white,
                 },
                 '& .MuiFormHelperText-root': {
-                  color: reason.length > 0 && reason.trim().length < minReasonLength ? '#f43f5e' : '#64748b',
+                  color: reason.length > 0 && reason.trim().length < minReasonLength ? tokens.danger : tokens.textDisabled,
                 },
               }}
             />
@@ -116,7 +118,7 @@ export default function ConfirmDialog({
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={handleClose} disabled={isLoading} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+        <Button onClick={handleClose} disabled={isLoading} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
           {cancelLabel}
         </Button>
         <Button

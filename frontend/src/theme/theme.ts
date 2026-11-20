@@ -83,6 +83,29 @@ export const tokens = {
   border: 'rgba(255, 255, 255, 0.12)',
   borderSubtle: 'rgba(255, 255, 255, 0.06)',
   hover: 'rgba(255, 255, 255, 0.04)',
+  // Extra literals found in the screens, named so no screen needs a hex literal.
+  white: '#ffffff',
+  black: '#000000',
+  successLight: '#6ee7b7',
+  successDark: '#059669',
+  amber: '#f59e0b',
+  amberLight: '#fbbf24',
+  amberDark: '#d97706',
+  amberPale: '#fef3c7',
+  warningLight: '#fde68a',
+  warningDark: '#b45309',
+  orangePale: '#fed7aa',
+  yellowLight: '#fef08a',
+  red: '#ef4444',
+  redDark: '#dc2626',
+  roseDark: '#e11d48',
+  errorLight: '#ffb4ab',
+  errorPale: '#ffdad6',
+  primaryStrong: '#4f46e5',
+  secondaryStrong: '#0891b2',
+  surfaceDeep: '#0e121d',
+  slate200: '#e2e8f0',
+  slate300: '#cbd5e1',
   fontBody: 'Geist, sans-serif',
   fontHeading: 'Sora, sans-serif',
   fontMono: 'JetBrains Mono, monospace',
@@ -228,6 +251,11 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        // Visible keyboard focus for every interactive element (WCAG 2.4.7).
+        ':focus-visible': {
+          outline: '2px solid #4cd7f6',
+          outlineOffset: 2,
+        },
         body: {
           backgroundColor: '#090d16',
           color: '#dfe2ef',

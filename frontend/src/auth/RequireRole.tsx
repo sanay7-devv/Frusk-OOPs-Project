@@ -3,6 +3,8 @@ import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { CircularProgress, Box, Typography, Button } from '@mui/material';
 import { useAuth, Workspace, HOME } from './AuthContext';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 /** UI-side route guard. The backend enforces authorization for real. */
 export default function RequireWorkspace({ workspace }: { workspace?: Workspace }) {
   const { user, loading, workspaces } = useAuth();
@@ -28,23 +30,23 @@ export default function RequireWorkspace({ workspace }: { workspace?: Workspace 
           maxWidth: 480,
           mx: 'auto',
           mt: 8,
-          bgcolor: 'rgba(18, 22, 34, 0.7)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
+          border: `1px solid ${tokens.outlineVariant}`,
           borderRadius: '12px',
-          color: '#dfe2ef',
+          color: tokens.onSurface,
         }}
       >
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#f43f5e', fontFamily: 'Sora, sans-serif' }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: tokens.danger, fontFamily: 'Sora, sans-serif' }}>
           No Access
         </Typography>
-        <Typography sx={{ color: '#94a3b8', mb: 3, fontSize: '0.9rem' }}>
+        <Typography sx={{ color: tokens.onSurfaceVariant, mb: 3, fontSize: '0.9rem' }}>
           Your account does not have permission to open the requested workspace.
         </Typography>
         <Button
           variant="contained"
           onClick={() => navigate(homeTarget)}
           sx={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+            background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.primaryStrong} 100%)`,
             textTransform: 'none',
             fontWeight: 600,
           }}

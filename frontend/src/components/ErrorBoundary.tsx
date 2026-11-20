@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Paper, Typography, Button, Alert } from '@mui/material';
 
+import { tokens } from '../theme/theme';
+import { alpha } from '@mui/material/styles';
 interface Props {
   children: ReactNode;
 }
@@ -48,11 +50,11 @@ export class ErrorBoundary extends Component<Props, State> {
           justifyContent="center"
           alignItems="center"
           minHeight="100vh"
-          bgcolor="#090d16"
+          bgcolor={tokens.background}
           p={3}
           sx={{
             backgroundImage:
-              'radial-gradient(circle at 50% 30%, rgba(244, 63, 94, 0.08) 0%, transparent 60%)',
+              `radial-gradient(circle at 50% 30%, ${alpha(tokens.danger, 0.08)} 0%, transparent 60%)`,
           }}
         >
           <Paper
@@ -63,15 +65,15 @@ export class ErrorBoundary extends Component<Props, State> {
               width: '100%',
               borderRadius: '16px',
               textAlign: 'center',
-              bgcolor: '#141824',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
-              boxShadow: '0 16px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(244, 63, 94, 0.15)',
+              bgcolor: tokens.paper,
+              border: `1px solid ${alpha(tokens.danger, 0.3)}`,
+              boxShadow: `0 16px 48px ${alpha(tokens.black, 0.6)}, 0 0 24px ${alpha(tokens.danger, 0.15)}`,
             }}
           >
-            <Typography variant="h5" sx={{ fontFamily: 'Sora, sans-serif', color: '#ffb4ab', fontWeight: 700, mb: 1 }}>
+            <Typography variant="h5" sx={{ fontFamily: 'Sora, sans-serif', color: tokens.errorLight, fontWeight: 700, mb: 1 }}>
               Application Exception Intercepted
             </Typography>
-            <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3 }}>
+            <Typography variant="body2" sx={{ color: tokens.onSurfaceVariant, mb: 3 }}>
               A runtime rendering fault occurred. State snapshot logged for diagnostics.
             </Typography>
 
@@ -83,9 +85,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 wordBreak: 'break-word',
                 fontFamily: 'JetBrains Mono, monospace',
                 fontSize: 12,
-                bgcolor: 'rgba(244, 63, 94, 0.1)',
-                color: '#ffdad6',
-                border: '1px solid rgba(244, 63, 94, 0.25)',
+                bgcolor: alpha(tokens.danger, 0.1),
+                color: tokens.errorPale,
+                border: `1px solid ${alpha(tokens.danger, 0.25)}`,
               }}
             >
               <strong>Error:</strong> {this.state.error?.message || 'Unknown runtime error'}
@@ -96,9 +98,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 variant="outlined"
                 onClick={this.handleReload}
                 sx={{
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  color: '#dfe2ef',
-                  '&:hover': { borderColor: '#6366f1', color: '#c0c1ff' },
+                  borderColor: alpha(tokens.white, 0.15),
+                  color: tokens.onSurface,
+                  '&:hover': { borderColor: tokens.primary, color: tokens.primaryLight },
                 }}
               >
                 Reload Page
@@ -107,9 +109,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 variant="outlined"
                 onClick={this.handleReset}
                 sx={{
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  color: '#4cd7f6',
-                  '&:hover': { borderColor: '#4cd7f6', color: '#ffffff' },
+                  borderColor: alpha(tokens.white, 0.15),
+                  color: tokens.secondaryLight,
+                  '&:hover': { borderColor: tokens.secondaryLight, color: tokens.white },
                 }}
               >
                 Try Again
@@ -118,10 +120,10 @@ export class ErrorBoundary extends Component<Props, State> {
                 variant="contained"
                 onClick={this.handleSignOutAndReset}
                 sx={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                  color: '#ffffff',
+                  background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
+                  color: tokens.white,
                   fontWeight: 600,
-                  boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)',
+                  boxShadow: `0 0 16px ${alpha(tokens.primary, 0.35)}`,
                 }}
               >
                 Return to Login
