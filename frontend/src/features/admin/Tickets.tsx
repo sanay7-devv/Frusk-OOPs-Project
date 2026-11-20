@@ -26,7 +26,7 @@ import { apiErrorMessage } from '../../utils/errors';
 import AssignDialog from './tickets/AssignDialog';
 import IncidentDrawer from './tickets/IncidentDrawer';
 import SavedViewsDialog from './tickets/SavedViewsDialog';
-import { ALL_STATUSES, SLA_STATES, fromSnapshot, snapshot, tabOf, toApiFilters } from './tickets/filters';
+import { ALL_STATUSES, SLA_STATES, dateRange, fromSnapshot, snapshot, tabOf, toApiFilters } from './tickets/filters';
 import type { TabKey } from './tickets/filters';
 
 const PAGE_SIZE = 25;
@@ -97,18 +97,9 @@ export default function Tickets() {
     setExportAnchor(null);
     setExporting(true);
     try {
-      const now = new Date();
-      const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString();
-      const endOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-      const endOfYesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 23, 59, 59, 999)).toISOString();
-      const customFrom = get('from');
-      const customTo = get('to');
-      const range = tab === 'today' ? { from: startOfToday, to: endOfToday }
-        : tab === 'previous' ? { to: endOfYesterday }
-          : {
-              from: customFrom ? new Date(`${customFrom}T00:00:00.000Z`).toISOString() : undefined,
-              to: customTo ? new Date(`${customTo}T23:59:59.999Z`).toISOString() : undefined,
-            };
+      // Same local-day range as the list on screen (tickets/filters.ts dateRange).
+      const { createdFrom, createdTo } = dateRange(params);
+      const range = { from: createdFrom, to: createdTo };
       await downloadReport('incidents', format, range);
     } catch (e) {
       toast(apiErrorMessage(e), 'error');

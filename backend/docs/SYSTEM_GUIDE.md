@@ -390,7 +390,7 @@ flowchart LR
 | Feature | Class | Behavior |
 |---|---|---|
 | Request ID | `RequestIdFilter` | Runs first. Reuses a safe incoming `X-Request-Id` (8 to 64 letters, digits, `.`, `_`, `-`) or generates a UUID. Echoed in the response header and printed on every log line. Unsafe values (for example `<script>`) are replaced, so nobody can inject text into the logs. |
-| CORS | `CorsConfig`, `ApiErrorCorsProcessor` | Only the frontend origin (`CORS_ORIGIN`, default `http://localhost:5173`) may call the API from a browser. A rejected cross-origin request gets **403 `REQUEST_REJECTED` in the standard body** (Spring's default would be plain text). Exposed response headers: `X-Request-Id` and `Retry-After` (so the page can read the wait time on 429 and 503, DEC-119). |
+| CORS | `CorsConfig`, `ApiErrorCorsProcessor` | Only the frontend origins may call the API from a browser: `CORS_ORIGIN` is a comma-separated list (default `localhost` and `127.0.0.1` on ports 5173 and 3000); the WebSocket endpoint `/ws` uses the same list (DEC-120). A rejected cross-origin request gets **403 `REQUEST_REJECTED` in the standard body** (Spring's default would be plain text). Exposed response headers: `X-Request-Id` and `Retry-After` (so the page can read the wait time on 429 and 503, DEC-119). |
 | Security headers | `SecurityConfig` | `X-Frame-Options: DENY` (no click-jacking), `Referrer-Policy: no-referrer`, plus Spring Security's defaults. |
 | OpenAPI | `OpenApiConfig` | Swagger UI at `/swagger-ui.html` with an **Authorize** button for the Bearer token. |
 
@@ -2613,7 +2613,7 @@ New settings (`app_config`, defaults in `ConfigKey`): `report.export.max.rows` 1
 | Database URL | `DB_URL` | `jdbc:postgresql://localhost:5432/iitsm` (this machine: port **5433**) |
 | Database user / password | `DB_USER` / `DB_PASSWORD` | `iitsm` / `iitsm` |
 | JWT secret (32+ bytes) | `JWT_SECRET` | none in production; a throwaway value in `dev` and `demo` |
-| Frontend origin for CORS | `CORS_ORIGIN` | `http://localhost:5173` |
+| Frontend origins for CORS and `/ws` (comma-separated) | `CORS_ORIGIN` | `http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000` |
 | Embedding key (optional; falls back to `LLM_API_KEY` when `LLM_PROVIDER=gemini`) | `EMBEDDING_API_KEY` | empty = embeddings off, TF-IDF answers |
 | Active profiles | `SPRING_PROFILES_ACTIVE` | `dev` |
 | HTTP port | `SERVER_PORT` | `8080` |
@@ -2721,6 +2721,7 @@ Full reasoning, alternatives and likely cross-questions (for the PDF report and 
 | 2026-11-16 | Smoke suites brought up to date (PR #30): `run_all.py` runs every suite on a fresh database and backend; `smoke_setup.py` sets and restores the autocat and rate-limit settings; `demo_timings_check.py` measures demo timings in real time; the endpoint sweep now hits all 129 operations. All 25 suites pass and no backend bug was found; every earlier failure was a stale suite assumption. |
 | 2026-11-16 | Frontend audit fixes on our side (ERROR_LOG E-037): the contract showed the simulator's workload for `GET /technicians/me/workload` and the problem-record shape for the problems of `GET /audit/verify` (records with the same simple name); renamed `SimulatedWorkloadView` and `SealProblemView`, contract regenerated. Audit entries now carry `incidentId` beside `incidentCode`. |
 | 2026-11-18 | CORS now exposes `Retry-After` beside `X-Request-Id` (section 5, DEC-119), so the frontend can show the wait time on 429 and 503. |
+| 2026-11-20 | Sanay's `fronted-version-final` merged with lead fixes (DEC-120): `CORS_ORIGIN` takes a comma-separated list for REST and `/ws` (the WebSocket half was added in review: it still read the whole string as one origin); `StringToInstantConverter` lets `Instant` query parameters (`from`, `to`, `createdFrom`, ...) also take a plain date `YYYY-MM-DD` (start of that day, UTC). The dashboard and ticket export now send full ISO date-times, which removed the 400s on the admin dashboard. |
 
 ---
 

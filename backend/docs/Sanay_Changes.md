@@ -253,3 +253,12 @@ CORS Preflight Status: 200 Allow-Origin: http://localhost:5173
    - `npm run lint` (`tsc --noEmit`): **0 errors**
    - `npm run build` (`tsc && vite build`): **0 errors**
    - `npm test -- --run` (`vitest --run`): **37 / 37 tests passing** across 9 test files.
+
+---
+
+## 5. Review by the backend lead (2026-11-20)
+
+- **Fixed before merge:** `WebSocketConfig` passed the whole comma-separated `CORS_ORIGIN` string to `setAllowedOrigins` as one origin, so the WebSocket would have refused every browser. It now splits the list the same way as `CorsConfig`.
+- **Changed:** the dashboard (`dashboard/dates.ts`) and the ticket export (`Tickets.tsx`) used UTC day bounds; they now use local-day bounds like the Reports page and the ticket list (`tickets/filters.ts` `dateRange`), so an export matches the list on screen.
+- **Not accepted:** the `FRONTEND_WORK_LEFT.md` and `FRONTEND_PROGRESS.md` rewrite that marked 636 of 636 done. The checklist was checked against the code instead; see the 2026-11-20 note there.
+- Recorded as DEC-120 in `DECISIONS.md`.

@@ -15,7 +15,7 @@ import com.iitsm.infrastructure.security.ApiErrorCorsProcessor;
 import com.iitsm.infrastructure.security.ApiErrorWriter;
 
 /**
- * CORS for the REST API: only the frontend origin (app.cors.allowed-origin, env CORS_ORIGIN) is allowed.
+ * CORS for the REST API: only the frontend origins (app.cors.allowed-origin, env CORS_ORIGIN, comma-separated) are allowed.
  * Spring Security's http.cors(...) uses the bean named corsFilter, whose processor answers rejected requests in
  * the standard error format. Credentials stay off: tokens travel in the Authorization header, not in cookies.
  */

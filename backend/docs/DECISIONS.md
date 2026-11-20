@@ -2154,3 +2154,17 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **Trade-off.** None worth noting: the header carries only a number of seconds.
 
 **Cross-question.** *"Why did the header not reach the page before?"* CORS exposes only the "safe-listed" headers by default; any other header must be named in `Access-Control-Expose-Headers`.
+
+### DEC-120: Several frontend origins, and date-only `Instant` parameters
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-20 (Sanay's `fronted-version-final`, reviewed by the backend lead) | M1 | ✅ |
+
+**Decision.** `CORS_ORIGIN` is a comma-separated list; `CorsConfig` (REST) and `WebSocketConfig` (`/ws`) both split it. The default allows `localhost` and `127.0.0.1` on 5173 (Vite) and 3000 (Docker frontend). A `StringToInstantConverter` registered in `WebConfig` accepts an ISO date-time (as the contract says) or a plain date, read as the start of that day in UTC. The frontend sends full date-times with local-day bounds, as the Reports page already did.
+
+**Options.** One origin only (the dev server on 127.0.0.1 or the Docker frontend on 3000 gets blocked); `allowedOriginPatterns("*")` (any site could call the API with a user's token); **an explicit list** ✔. For dates: frontend-only fix; **frontend fix plus a lenient converter** ✔ (an old client or a hand-typed URL with `2026-11-20` gets data instead of a 400).
+
+**Trade-off.** A date-only value means UTC midnight, not the viewer's midnight, so the frontend keeps sending full date-times. The converter is wider than the contract (which says `date-time`); the contract is unchanged because every date-time still works.
+
+**Cross-question.** *"Why did the WebSocket need its own change?"* `setAllowedOrigins` on the STOMP endpoint got the whole comma string as one origin, so no browser origin matched and live updates would have been refused; found in review and fixed before merge.
