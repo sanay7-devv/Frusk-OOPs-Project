@@ -472,3 +472,12 @@ Entry template:
 - Verified: `GET /audit` on the dev seed returns `incidentId` beside `incidentCode`; `check_contract.py` clean; the contract now shows `WorkloadView {load, maxLoad, activeIncidents, resolvedThisWeek, upcomingDeadlines}` and `SealProblemView {recordId, sealId, problem, message}`.
 - Prevention: no two records exposed by the API may share a simple name. Before exporting, run `grep -rhoE "record [A-Z][A-Za-z0-9]*" src/main/java | sort | uniq -d`; the remaining duplicates (`TrendPoint`, `LabelCount`, `AdministratorView`, `TechnicianView`, `Ref`, `Scenario`) are either identical in JSON or not exposed.
 - Status: fixed
+
+### E-038: Report average resolve time negative; unreadable audit texts; Needs attention empty
+- Date: 2026-11-21
+- Area: reports, dashboard, audit descriptions
+- Symptom: "Average time to resolve" showed -13 min; audit lines said "missed by 267574 s" and showed ISO instants with nanoseconds; Needs attention was empty with breached P1 open. Four "SLA violations" numbers (77, 48, 78, 107) disagreed.
+- Cause: leftover smoke-test incidents have `resolved_at` ten days before `created_at` (11 rows), which the average subtracted as is. `atRisk` excluded incidents already violated. The four numbers measure different things (see SYSTEM_GUIDE section on `/dashboard/live`): all-time violated incidents (77), violated incidents created in the window (48), violation events recorded in the window (78), violation events with no window (107).
+- Fix: averages only count rows with `resolved_at >= created_at`; new audit texts use `AuditText` ("3 d 2 h", "2026-11-15 16:29 UTC"); `atRisk` lists breached incidents first (DEC-122). Old audit rows are untouched (sealed, append-only).
+- Prevention: the frontend must label each count by what it counts.
+- Status: fixed

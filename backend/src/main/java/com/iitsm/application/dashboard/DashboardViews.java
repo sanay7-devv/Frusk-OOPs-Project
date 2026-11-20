@@ -47,7 +47,7 @@ public final class DashboardViews {
      *
      * @param byPriority   open incidents per priority, P1 to P4 (zero when none), then UNSET if any
      * @param recentEvents the last 20 events, newest first
-     * @param atRisk       up to 10 open incidents nearest to missing their SLA
+     * @param atRisk       up to 10 open incidents that are breached (listed first) or nearest to missing their SLA
      */
     public record LiveDashboard(Counters counters, List<LabelCount> byPriority, List<DashboardEvent> recentEvents,
                                 List<IncidentSummary> atRisk) {

@@ -2182,3 +2182,13 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **Trade-off.** Two more lookups per detail (the reporter's profile, the SLA policy already cached for the state). The key needs no migration: missing keys take their default.
 
 **Cross-question.** *"Why can a technician see the reporter's department but another employee cannot?"* Staff need it to reach the person; the access rule is the existing `staffSeesPreview`, so no new permission was invented.
+
+### DEC-122: "Needs attention" shows breached incidents too
+
+**Date.** 2026-11-21. **Context.** The admin dashboard said nothing needed attention while 6 P1 incidents were open and many were breached, because `atRisk` (DEC-81 area) deliberately excluded incidents whose SLA was already violated.
+
+**Options.** Keep "at risk" as a warning-only list and add a second card (more frontend work); **include breached open incidents in the same list, breached first** ✔; leave as is.
+
+**Decision.** `GET /dashboard/live` `atRisk` keeps its shape and now returns open incidents that are breached (resolution violated, or response violated before acknowledgement) first, then the ones about to breach, each group by priority then nearest deadline, up to 10. Each item's `slaState` already tells the frontend which is which.
+
+**Trade-off.** The field name `atRisk` is now slightly narrower than its content. **Cross-question.** *"Why is a breached incident 'at risk'?"* It is where the lead must act first; hiding it made the card empty exactly when the desk was in trouble.

@@ -91,7 +91,7 @@ public class NativeReportRepository implements ReportRepository {
                 + " count(*) filter (where i.status in " + OPEN + " and i.priority = 'P1'),"
                 + " count(*) filter (where i.status in " + FINISHED + "),"
                 + " count(*) filter (where " + JUDGED + " and " + VIOLATED + "),"
-                + " coalesce(avg(" + MINUTES_TO_RESOLVE + ") filter (where i.resolved_at is not null), 0)"
+                + " coalesce(avg(" + MINUTES_TO_RESOLVE + ") filter (where i.resolved_at >= i.created_at), 0)"
                 + " from incidents i" + where.sql(), where.params()).getSingleResult();
         Object satisfaction = query("select avg(f.rating) from feedback f join incidents i on i.id = f.incident_id"
                 + where.sql(), where.params()).getSingleResult();
@@ -182,7 +182,7 @@ public class NativeReportRepository implements ReportRepository {
     @Transactional(readOnly = true)
     public List<TechnicianResolution> averageResolutionPerTechnician() {
         List<?> rows = query("select i.assignee_id, avg(" + MINUTES_TO_RESOLVE + ") from incidents i"
-                + " where i.resolved_at is not null and i.assignee_id is not null group by i.assignee_id", Map.of())
+                + " where i.resolved_at >= i.created_at and i.assignee_id is not null group by i.assignee_id", Map.of())
                 .getResultList();
         return rows.stream().map(r -> (Object[]) r)
                 .map(r -> new TechnicianResolution(((Number) r[0]).longValue(), ((Number) r[1]).doubleValue()))

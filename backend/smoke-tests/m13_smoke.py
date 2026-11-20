@@ -320,8 +320,8 @@ check("live: an incident with an SLA warning appears in atRisk (IncidentSummary 
       any(i["id"] == inc["id"] and "slaState" in i and "code" in i for i in b["atRisk"]), b["atRisk"])
 sql(f"update incidents set res_violated = true where id = {inc['id']}")
 b = call("GET", "/dashboard/live", token=A)[1]
-check("live: a violated incident is not at risk any more (already violated)",
-      all(i["id"] != inc["id"] for i in b["atRisk"]))
+check("live: a violated open incident is listed in atRisk as VIOLATED (DEC-122)",
+      any(i["id"] == inc["id"] and i["slaState"] == "VIOLATED" for i in b["atRisk"]), b["atRisk"])
 sql(f"update incidents set res_violated = false where id = {inc['id']}")
 
 # ================================================================ graph

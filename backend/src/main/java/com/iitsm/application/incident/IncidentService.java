@@ -29,6 +29,7 @@ import com.iitsm.application.incident.command.WithdrawCommand;
 import com.iitsm.application.problem.ProblemService;
 import com.iitsm.domain.assignment.EligibilityFilter;
 import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.audit.AuditText;
 import com.iitsm.domain.event.TriageNeeded;
 import com.iitsm.domain.repository.AuditRepository;
 import com.iitsm.domain.assignment.WorkloadTracker;
@@ -455,8 +456,8 @@ public class IncidentService {
         PriorityBreakdown b = incident.getPriorityBreakdown();
         return "Priority " + b.band() + " (score " + b.score() + ")"
                 + (b.overrideRule() == null ? "" : ", rule: " + b.overrideRule())
-                + "; response due " + incident.getSla().getResponseDue()
-                + ", resolution due " + incident.getSla().getResolutionDue();
+                + "; response due " + AuditText.instant(incident.getSla().getResponseDue())
+                + ", resolution due " + AuditText.instant(incident.getSla().getResolutionDue());
     }
 
     private void recalculatePriority(Incident incident) {
