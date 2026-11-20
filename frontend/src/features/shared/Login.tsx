@@ -282,6 +282,7 @@ export default function Login() {
             fullWidth
             margin="normal"
             placeholder="e.g. employee1@iitsm.demo"
+            InputLabelProps={{ shrink: true }}
             {...register('email', {
               onChange: () => {
                 setNeedCode(false);
@@ -300,6 +301,7 @@ export default function Login() {
             fullWidth
             margin="normal"
             placeholder="••••••••"
+            InputLabelProps={{ shrink: true }}
             {...register('password')}
             error={!!errors.password}
             helperText={errors.password?.message}
@@ -325,6 +327,7 @@ export default function Login() {
               label="Authenticator code"
               fullWidth
               margin="normal"
+              InputLabelProps={{ shrink: true }}
               autoFocus
               value={totp}
               onChange={(e) => setTotp(e.target.value.replace(/\D/g, '').slice(0, 6))}
