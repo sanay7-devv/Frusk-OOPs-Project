@@ -17,6 +17,7 @@ import {
   CategoryBars, PriorityDonut, ServiceBars, SlaChart, TrendChart, WorkloadChart, formatMinutes,
 } from './reports/Charts';
 import { CoverageRiskCard, SlaViolationsCard } from './reports/Tables';
+import IncidentHeatmap from '../../components/IncidentHeatmap';
 import IncidentsDrawer, { type DrawerTarget } from './reports/IncidentsDrawer';
 
 const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -74,6 +75,13 @@ export default function Reports() {
 
   const pickPreset = (days: number) => { setPreset(days); setFrom(daysAgo(days)); setTo(toIsoDate(new Date())); };
   const created = range ? { createdFrom: range.from, createdTo: range.to } : {};
+  // A heatmap cell is one local day: from its midnight to the next.
+  const openDay = (day: string) => {
+    const start = new Date(`${day}T00:00:00`);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    setDrawer({ title: `Incidents created on ${day}`, filters: { createdFrom: start.toISOString(), createdTo: end.toISOString() } });
+  };
   const openPriority = (priority: string) =>
     setDrawer({ title: `${priority} incidents in this period`, filters: { priority: [priority], ...created } });
   const openService = (row: { serviceId: number; name: string }) =>
@@ -199,6 +207,12 @@ export default function Reports() {
           <ChartCard title="Technician workload" query={workload} isEmpty={(d) => d.length === 0} emptyMessage="No technicians yet">
             {(d) => <WorkloadChart data={d} onBarClick={openTechnician} />}
           </ChartCard>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2.5, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>
+            <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 600, color: tokens.onSurface, mb: 2 }}>Incidents per day, last 14 weeks</Typography>
+            <IncidentHeatmap onSelectDay={openDay} />
+          </Paper>
         </Grid>
         <Grid item xs={12}><CoverageRiskCard /></Grid>
         <Grid item xs={12}><SlaViolationsCard range={range} /></Grid>

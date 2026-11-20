@@ -32,6 +32,7 @@ export const NAV: Record<Workspace, NavItem[]> = {
     { label: 'Config', to: '/admin/config', group: 'Policy' },
     { label: 'Reports', to: '/admin/reports', group: 'Insight' },
     { label: 'Audit log', to: '/admin/audit', group: 'Insight' },
+    { label: 'Wallboard', to: '/wallboard', permission: 'REPORT_VIEW', group: 'Insight' },
     { label: 'Demo controls', to: '/admin/demo', permission: 'CONFIG_MANAGE', group: 'Tools' },
     { label: 'Account security', to: '/account/security', group: 'Tools' },
   ],
