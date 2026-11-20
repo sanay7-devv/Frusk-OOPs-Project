@@ -2,21 +2,27 @@
 
 ## Handoff update — 2026-11-20
 
-This update is on branch `testing/task3-incident-exception-tests`; it is not on `main`. The backend test files were first added at commit `999ed76`; the current local branch also contains the frontend coverage listed below.
+Merged into `main` through the PR for branch `testing/task3-incident-exception-tests` (Tanisha, commits `999ed76` to `4c4fc9e`). The backend lead ran everything on 2026-11-20 with JDK 21 and Docker.
 
-- **R11: started, not yet complete.** `IncidentStateTest` checks all ten status-to-state mappings and the legal-action sets, plus a few rejected transitions. It still needs the handbook's full state/action transition coverage, including successful next-state assertions and rejection of every invalid move. `ExceptionMappingTest` checks the expected code and HTTP status for all 22 current `ItsmException` subclasses; it still needs to check `GlobalExceptionHandler`'s `ErrorResponse` output.
-- **Backend validation is pending.** The tests could not be run here because this environment has no Java runtime. A teammate with the project JDK should run them, fix any compile or test failures, and run the full backend suite.
-- **R10 frontend tests added on this branch:** `remaining-screens.test.tsx` covers audit verification, MFA setup, forgot/reset password, problem-list tabs/major label, invalid report dates, CSV/PDF export calls and clearing incident filters. `incident-ui.test.tsx` checks all six SLA colours. `npm test -- --run` passes (37 tests in 9 files), `npm run lint` passes, and `npm run build` passes. Deeper coverage could still exercise individual filter selections, report chart/table interactions, audit sealing/failure, and MFA disable/error responses. The build reports a bundle-size warning (main JS chunk is about 1.9 MB before gzip) and Vite/plugin deprecation warnings.
+- **R11: Done, 12 of 12 classes.** `IncidentStateTest` (2 tests) checks that every `IncidentStatus` has a state, the exact legal-action set per status, and that invalid moves (classify on ASSIGNED, verify on CLOSED, close on IN_PROGRESS) throw `InvalidStateTransitionException`. `ExceptionMappingTest` (1 test) checks the code and HTTP status of all 22 `ItsmException` subclasses. Both pass. Optional extension: successful next-state assertions for every move, and the `ErrorResponse` body from `GlobalExceptionHandler`.
+- **Backend count:** 59 `@Test` methods in 15 files (was 56 in 13). `SeedCompatibilityTest` (2) runs only with `VERIFY_DEMO_SEEDS=true`, so a normal run should give 57; confirm from the Surefire XML before the report (R7).
+- **R10: Mostly done.** 37 frontend tests in 9 files, all passing (`tsc` clean, build passes). `remaining-screens.test.tsx` (8) covers audit verify, MFA setup, forgot/reset password, problem tabs and major label, invalid report dates, CSV/PDF export and clearing filters; `incident-ui.test.tsx` now checks all six SLA colours. Deeper coverage is optional: individual filter selections, report chart/table interactions, audit seal failure, MFA disable and error responses. The build warns that the main JS chunk is about 1.9 MB before gzip.
 
-### Remaining handoff items
+### What is left now (2026-11-20), in order
 
-1. Finish and run R11 backend tests as described above; have a teammate with Java validate them and the full backend suite.
-2. R10: coordinate deeper screen tests with the Frontend Developer for individual filter selections, report chart/table interactions, audit sealing/failure, and MFA disable/error responses.
-3. R6: on the recording laptop, time the demo reset and fresh-clone setup; update `deploy/README.md` and re-check the JDK image in `deploy/backend.Dockerfile`.
-4. A7: run the load test and record the measurements in `backend/docs/SCALING.md` or the designated report.
-5. R5: fill the dry-run log, rehearse all five demo segments, and record the demo with the team.
-6. R3/R7: browser-check script-text rendering; capture per-case evidence; rerun the 26 cases against the final commit; reconcile the report's 53-vs-54 backend test count from Surefire output.
-7. R8: create the `severity:*` and `area:*` labels and verify the project board. The repository owner must configure branch protection on `main`.
+This list replaces the 2026-11-19 table below, which is kept as history.
+
+| # | Item | What is left | Who |
+|---|---|---|---|
+| 1 | R6 reset time, fresh clone | Time the demo reset and a fresh-clone setup on the recording laptop; replace "unmeasured" in `deploy/README.md`; re-check the JDK runtime image in `deploy/backend.Dockerfile`. | Testing |
+| 2 | A7 load test | Run it and record the numbers in `backend/docs/SCALING.md`; the index review and scale-out path are already there. | Testing |
+| 3 | R5 demo | Fill the dry-run log in `DEMO_RUN_SHEET.md`, rehearse all five segments, record. | Testing, whole team |
+| 4 | R3 / R7 evidence | Browser check that script text renders safely (check 4); per-case evidence; re-run the 26 cases on the final commit; update the report's test count to the Surefire number (57 expected). | Testing |
+| 5 | R8 repo settings | Create `severity:*` and `area:*` labels; verify the project board; branch protection on `main` needs the repository owner. | Testing; owner for protection |
+| 6 | R10 extras (optional) | The deeper screen tests listed above, with the Frontend Developer. | Testing |
+| 7 | R11 extras (optional) | Successful-transition assertions and `ErrorResponse` checks. | Testing |
+
+Done: R1, R2, R4, R9, R11; R10 mostly.
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
@@ -31,7 +37,7 @@ This update is on branch `testing/task3-incident-exception-tests`; it is not on 
 - **Backend test count, not reconciled.** `backend/src/test` has 56 `@Test` methods in 13 files on `shared/main`. `SeedCompatibilityTest` (2) runs only when `VERIFY_DEMO_SEEDS=true`, so a normal run should give 54. [TEST_REPORT.md](TEST_REPORT.md) says 53 run. Check the Surefire XML before the report is handed over.
 - **Still open, from PR #46:** R6 (reset time and fresh clone on the recording laptop); the visual check that script text renders safely; rehearsing and recording the demo; branch protection (repository owner, R8); the two missing unit-test classes; frontend screen tests (R10).
 
-**What is left now (2026-11-19), in order.** This list replaces the older summary table below, which is kept as history (its R9 and R11 rows are out of date).
+**What was left on 2026-11-19 (history; see the 2026-11-20 list above).** This list replaced the older summary table below, which is kept as history (its R9 and R11 rows are out of date).
 
 | # | Item | What is left | Who |
 |---|---|---|---|
