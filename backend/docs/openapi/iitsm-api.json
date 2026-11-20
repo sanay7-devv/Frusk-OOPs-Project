@@ -18937,6 +18937,16 @@
           "reporter": {
             "$ref": "#/components/schemas/Ref"
           },
+          "reporterContact": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReporterContact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "resolution": {
             "$ref": "#/components/schemas/ResolutionView"
           },
@@ -18954,6 +18964,16 @@
           },
           "service": {
             "$ref": "#/components/schemas/Ref"
+          },
+          "slaCalendar": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SlaCalendarView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "slaState": {
             "type": "string",
@@ -20167,6 +20187,27 @@
           }
         }
       },
+      "ReporterContact": {
+        "description": "The reporter's contact details. Only staff on the incident (assignee, or users who see all incidents) get them; null for everyone else (DEC-121).",
+        "properties": {
+          "department": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "RequestInfoRequest": {
         "type": "object",
         "properties": {
@@ -20922,6 +20963,47 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "SlaCalendarView": {
+        "type": "object",
+        "description": "How the incident's SLA minutes are counted. For BUSINESS_HOURS the company calendar from app_config is included; for ALWAYS the other fields are null (DEC-121).",
+        "properties": {
+          "close": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "18:00"
+          },
+          "days": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "MON,TUE,WED,THU,FRI"
+          },
+          "open": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "09:00"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ALWAYS",
+              "BUSINESS_HOURS"
+            ]
+          },
+          "zone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Asia/Kolkata"
           }
         }
       },
@@ -21754,6 +21836,10 @@
           "activeIncidents": {
             "type": "integer",
             "format": "int32"
+          },
+          "capacityWarnPercent": {
+            "type": "integer",
+            "description": "From this percent of maxLoad the capacity bar warns (app_config workload.capacity.warn.percent, default 80, DEC-121)."
           },
           "load": {
             "type": "integer",
