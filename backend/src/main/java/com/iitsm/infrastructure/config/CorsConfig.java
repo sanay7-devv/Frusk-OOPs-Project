@@ -15,7 +15,7 @@ import com.iitsm.infrastructure.security.ApiErrorCorsProcessor;
 import com.iitsm.infrastructure.security.ApiErrorWriter;
 
 /**
- * CORS for the REST API: only the frontend origin (app.cors.allowed-origin, env CORS_ORIGIN) is allowed.
+ * CORS for the REST API: only the frontend origins (app.cors.allowed-origin, env CORS_ORIGIN, comma-separated) are allowed.
  * Spring Security's http.cors(...) uses the bean named corsFilter, whose processor answers rejected requests in
  * the standard error format. Credentials stay off: tokens travel in the Authorization header, not in cookies.
  */
@@ -40,7 +40,11 @@ public class CorsConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origin}") String allowedOrigin) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(allowedOrigin));
+        List<String> origins = java.util.Arrays.stream(allowedOrigin.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Request-Id"));
         // Retry-After lets the frontend show "try again in N seconds" on 429 and 503 (DEC-119).

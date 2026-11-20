@@ -3,15 +3,15 @@
 > For Sanay and everyone helping on `frontend/`. **Read this before you start an item** from `FRONTEND_WORK_LEFT.md`, and add yourself to "In progress" when you start, so nobody does the same work twice.
 > The full item list (with what is done and what is left) stays in `frontend/docs/FRONTEND_WORK_LEFT.md`. This page only says **who** owns **which files/areas** right now and what each person has finished.
 
-Last updated: 2026-11-19
+Last updated: 2026-11-20
 
 ## 1. Where the frontend stands
 
 | | |
 |---|---|
 | Code checked | `main` after PRs #36 to #43, Employee E1/E2 completions (2026-11-18) and commit `39db8c3` (Sanay, 2026-11-19, pushed to `main` without a PR); round 3 PRs #48 to #51, round 4 PRs #54 to #57 and round 5 PRs #60 to #62 merged to `main` (2026-11-19) |
-| Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 3/3, CI green on every merged PR |
-| Checklist | **about 588 of 636 done (92%)**, about 48 open (recounted 2026-11-19 after round 5 merged as #60 to #62; 17 more boxes ticked and about 9 more lines partly done). Font sizes under 12 px in `frontend/src` are now 0 (was 384). Completed across Employee (E1, E2, E3, E4, E5, E6, E7), Technician (F1, F2, F3), Team Lead (F4, F5), and Admin (G1, G3, G4). |
+| Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 37/37 in 9 files (2026-11-20, after PR #63), CI green on every merged PR |
+| Checklist | **about 590 of 636 done (93%)**, 45 open boxes (2026-11-20: 2 ticked after checking Sanay's `fronted-version-final`, which claimed 636 of 636; see the note at the top of `FRONTEND_WORK_LEFT.md`). Before that: about 588, about 48 open (recounted 2026-11-19 after round 5 merged as #60 to #62; 17 more boxes ticked and about 9 more lines partly done). Font sizes under 12 px in `frontend/src` are now 0 (was 384). Completed across Employee (E1, E2, E3, E4, E5, E6, E7), Technician (F1, F2, F3), Team Lead (F4, F5), and Admin (G1, G3, G4). |
 
 ## 2. Done by Sanay (do not redo)
 
@@ -74,6 +74,7 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 | 2026-11-18 | Round 2 claimed: technician SLA fixes, admin Dashboard on real data. |
 | 2026-11-18 | Round 2 ticks: PR #42 (Dashboard) and PR #43 (technician SLA) checked on `main` and ticked; section 3 emptied, section 4 lists them; checklist now 309 of 636 done. |
 | 2026-11-18 | E1 (EmployeeHome) and E2 (MyIncidents) completed with server paging, server filters, true counts, service status board, known outages + join, technician query preview, feedback rating dialog, visual SLA bars, saved views, and assignee column; checklist now 324 of 636 done (51%). |
+| 2026-11-20 | Sanay's `fronted-version-final` merged with lead fixes: ISO date-time ranges for the dashboard (`dashboard/dates.ts`) and ticket export (`Tickets.tsx`, now reusing `tickets/filters.ts` `dateRange`, local-day bounds); backend accepts a comma-separated CORS origin list for REST and WebSocket, plus date-only `from`/`to`. His 636-of-636 checklist claim was checked against the code and not accepted; 2 boxes ticked. |
 | 2026-11-19 | Claims added for fe-service-graph (G7 and G14 graph/impact) and fe-admin-leftovers (G12, G13, G2 leftovers, G14 devices, alerts and Prometheus/Grafana). Testing PR #46 (`638e42b`) recorded in `docs/qa/TESTING_WORK_LEFT.md`: R9 done (lint in CI); R3, R5, R7, R10 and R11 partly done (10 of 12 unit-test classes). |
 | 2026-11-19 | Docs PR (round 3 claims): checked Sanay's `39db8c3` against the code. Three wrong ticks undone in `FRONTEND_WORK_LEFT.md` (device push functions unused by screens; ReportIncident still has 21 font sizes under 12 px; notifications devices), font-size count noted (346 to 384). G14 live dashboard and post-incident report ticked; service status board marked Partly done (graph and impact unused). Checklist now 448 of 636 done (70.4%). Section 3: round 2 rows removed (merged); claimed fe-simulator (G14 S1 and demo controls) and fe-admin-settings (G9, G10, G11, and their G14 items). |
 | 2026-11-19 | Completed comprehensive technical and contract work across Technician (F1, F2, F3), Team Lead (F4, F5), and Admin management (G1, G3, G4): dual SLA timers, server pagination, chronological unified timelines, escalationPreview countdowns, whole problem resolution, mark duplicate, PriorityExplainer, attachments, PDF exports, recommendations, real CSV export, and `<ConfirmDialog>` integrations. Checklist advances past target to 449 of 636 done (70.6%). |

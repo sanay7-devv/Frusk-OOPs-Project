@@ -2,7 +2,7 @@
 
 > **Read this first.** The five handbook PDFs (dated 2026-10-15) are frozen and are not in this repository. This page lists every point where the project now differs from them, per role. Where this page and a handbook disagree, this page wins. Reasons are in `DECISIONS.md` (DEC numbers); the order of work is in `ROADMAP.md` section 5.
 
-Last updated: 2026-11-16 (contract fixes for the frontend: workload and audit-verify schemas, `incidentId` on audit entries; run profile is Flyway now, `schema-auto` obsolete; S1 simulator, `minEscalationLevel`, A7 review, A12 password reset and TOTP, A4 push, A8 metrics, A13; 129 operations)
+Last updated: 2026-11-20 (several CORS origins and date-only parameters, DEC-120; contract fixes for the frontend: workload and audit-verify schemas, `incidentId` on audit entries; run profile is Flyway now, `schema-auto` obsolete; S1 simulator, `minEscalationLevel`, A7 review, A12 password reset and TOTP, A4 push, A8 metrics, A13; 129 operations)
 
 ---
 
@@ -369,3 +369,11 @@ Description and verified behavior: `SYSTEM_GUIDE.md` sections 12b.1, 12b.3 and 1
   - **Smoke suites (PR #30, 2026-11-16):** `backend/smoke-tests/` now has `run_all.py` (runs every suite on a fresh database and backend) and a README with one line per suite. All 25 suites pass and no backend bug was found; every earlier failure was a stale suite assumption.
 - **Report and content:** similarity now has two engines. Say in the report: "Gemini embeddings when the key and quota allow, TF-IDF cosine otherwise; each answer names its source." Thresholds differ because Gemini vectors are bunched together (calibrated during B3 on the 212 seed incidents, DEC-M12-10: unrelated pairs had a median cosine near 0.85 and same-issue pairs near 0.95 then, not re-measured since); DEC-M12-10 has the reasoning and cross-questions. Report PDF export now exists for all eight report types.
 - **Everyone:** the count to quote for the API is **129 operations** in the contract; do not quote 132 (that includes three demo-only methods).
+
+## Several CORS origins and date-only parameters (2026-11-20, DEC-120)
+
+From Sanay's `fronted-version-final`, merged with review fixes.
+
+- **Everyone / DevOps:** `CORS_ORIGIN` may list several origins, comma-separated (`deploy/.env.example` and `docker-compose.yml` default to `localhost` and `127.0.0.1` on 5173 and 3000). The same list now applies to the WebSocket endpoint `/ws`.
+- **Frontend:** `Instant` query parameters (`from`, `to`, `createdFrom`, `createdTo`, ...) still expect an ISO date-time; a plain `YYYY-MM-DD` is now also accepted and means UTC midnight. Keep sending date-times with local-day bounds (`dashboard/dates.ts`, `tickets/filters.ts`, Reports).
+- **Testing:** no contract change; class names to cover if wanted: `StringToInstantConverter` (`2026-11-20` gives `2026-11-20T00:00:00Z`, garbage gives 400), `CorsConfig` and `WebSocketConfig` with a two-origin list.

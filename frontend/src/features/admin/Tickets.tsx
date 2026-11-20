@@ -26,15 +26,13 @@ import { apiErrorMessage } from '../../utils/errors';
 import AssignDialog from './tickets/AssignDialog';
 import IncidentDrawer from './tickets/IncidentDrawer';
 import SavedViewsDialog from './tickets/SavedViewsDialog';
-import { ALL_STATUSES, SLA_STATES, fromSnapshot, snapshot, tabOf, toApiFilters } from './tickets/filters';
+import { ALL_STATUSES, SLA_STATES, dateRange, fromSnapshot, snapshot, tabOf, toApiFilters } from './tickets/filters';
 import type { TabKey } from './tickets/filters';
 
 const PAGE_SIZE = 25;
 const TAB_LABEL: Record<TabKey, string> = { today: 'Today', previous: 'Earlier', all: 'All' };
 const headSx = { fontSize: 12, fontWeight: 600, color: tokens.onSurfaceVariant, whiteSpace: 'nowrap' } as const;
 const cellSx = { fontSize: 13, whiteSpace: 'nowrap', py: 1 } as const;
-
-const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function Tickets() {
   const toast = useToast();
@@ -99,11 +97,9 @@ export default function Tickets() {
     setExportAnchor(null);
     setExporting(true);
     try {
-      const today = isoDay(new Date());
-      const yesterday = isoDay(new Date(Date.now() - 86_400_000));
-      const range = tab === 'today' ? { from: today, to: today }
-        : tab === 'previous' ? { to: yesterday }
-          : { from: get('from') || undefined, to: get('to') || undefined };
+      // Same local-day range as the list on screen (tickets/filters.ts dateRange).
+      const { createdFrom, createdTo } = dateRange(params);
+      const range = { from: createdFrom, to: createdTo };
       await downloadReport('incidents', format, range);
     } catch (e) {
       toast(apiErrorMessage(e), 'error');
