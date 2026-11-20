@@ -189,7 +189,7 @@ Contract mismatches
 - [x] Debounce effect has no cancellation/stale guard `:182-215`: slow earlier response can overwrite newer.
 - [x] `affectedUsers` input: `Math.max(1, parseInt)` OK, but max 1,000,000 not enforced `:80`.
 - [x] Unused: `suggestIntake`; imports fine otherwise.
-- [ ] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12). **Partly done (2026-11-19):** the word "PORTAL" is gone from `features/employee/ReportIncident.tsx`, but 21 font sizes under 12 px are still there (the 32 count was out of date).
+- [x] Breadcrumb "PORTAL" `:293` etc.: jargon; spacing text under 12 px (32 occurrences of fontSize <12). **Partly done (2026-11-19):** the word "PORTAL" is gone from `features/employee/ReportIncident.tsx`, but 21 font sizes under 12 px are still there (the 32 count was out of date). **Checked 2026-11-20 (`frontend/shared-final`):** no `fontSize` under 12 px in employee, shared, account, components or layouts.
 
 ### E5. `features/shared/Login.tsx` (`/login`)
 - [x] `POST /auth/login` via `login()` `:177-186`; workspace redirect `HOME[ws]`; auto-redirect if already signed in `:101-105`; offline message `api/auth.ts:62-77`.
@@ -272,7 +272,7 @@ notifications.ts
 - [x] Real notifications, preferences, and push device management (`listDevices`, `registerDevice`, `deleteDevice`). **Done (2026-11-19):** preferences in `features/shared/Notifications.tsx`; push devices in `features/shared/PushDevicesDialog.tsx` (list, register, remove), which the device lines were waiting for (#51).
 types.ts
 - [x] `closureReason` enum (`VERIFIED | AUTO_VERIFIED | DUPLICATE | WITHDRAWN`), `availability` enum (`AVAILABLE | BUSY | AWAY | OFF_DUTY`), `escalationLevel` integer (0..3), `ApiError.similar` typed with `source/match`, `AppNotification.eventType` and `channel` typed unions.
-- [ ] No typed client generated from `iitsm-api.json` (guide 12 suggests it).
+- [ ] No typed client generated from `iitsm-api.json` (guide 12 suggests it). **Partly done (2026-11-20):** `src/api/schema.d.ts` generated (`npm run gen:api`) and `src/api/contractCheck.ts` checks four types at compile time; AuthResponse and nullable fields do not conform; API modules not migrated.
 
 ### E10. `auth/*`, `realtime/useRealtime.ts`
 AuthContext
@@ -305,13 +305,13 @@ useRealtime
 
 ### E12. `theme/theme.ts` and styling
 - [x] MUI theme exists with palette/typography/component overrides; `priorityColor`, `priorityLabel`, `statusColor` exported `:416-440` and used by Badge/Chip.
-- [ ] Screens bypass the theme: hex literals per file, use theme tokens where possible. **Partly done (2026-11-19):** theme tokens are exposed (#60) and the COLORS consts in staff and admin screens use them; inline hex and rgba literals remain across employee, shared, technician and lead screens (about 600).
+- [ ] Screens bypass the theme: hex literals per file, use theme tokens where possible. **Partly done (2026-11-19):** theme tokens are exposed (#60) and the COLORS consts in staff and admin screens use them; inline hex and rgba literals remain across employee, shared, technician and lead screens (about 600). **Partly done (2026-11-20):** no hex or rgba literals left in employee, shared, account, components, layouts or auth; `ActionButtons.tsx` and `navConfig.ts` still have literals; other roles not checked.
 - [x] Text smaller than 12 px: minimum 12 px recommended. **Count (2026-11-19):** `frontend/src` has 384 font sizes under 12 px (`fontSize` 9, 10 or 11). It had 346 at `4214195`, before `39db8c3` added more. Counted with `git grep -o -E "fontSize: ?'?(9|10|11)(\.[0-9])?(px)?'?[,} ]"`.
 - [x] Tokens for SLA states (`slaStateColor`, `slaStateLabel`) defined and exported in `theme.ts`.
-- [ ] Clean styles, professional ITIL console readability.
+- [ ] Clean styles, professional ITIL console readability. **Partly done (2026-11-20):** tokens and 12 px minimum applied; no redesign, so readability is a judgement not checked.
 - [x] Fonts configured cleanly.
 - [x] Responsive layout: temporary drawer on `< sm`, permanent drawer on desktop.
-- [ ] Accessibility: semantic headings and aria-labels.
+- [ ] Accessibility: semantic headings and aria-labels. **Partly done (2026-11-20):** aria-labels on IconButtons and one h1 on employee, login, register, account and notifications screens; global focus outline; other roles need `component="h1"` from their owners.
 
 ### E13. Other repo-level items in this slice
 - [x] `auth-flow.test.tsx` updated and passing 3/3.
@@ -587,7 +587,7 @@ useRealtime
 - [x] P1-5 Priority what-if / override: not present.
 - [x] Escalation: lead page reads `escalationPreview` (good) but has no escalate action, no live countdown, wrong reassign call. **Partly done (2026-11-18):** reassign call fixed; no escalate action, no live countdown. **Partly done (2026-11-19):** escalate, live countdown and the /reassign call are in; the escalate action and countdown are on the Escalations screen.
 - [ ] Mark duplicate, link/create problem, resolve whole problem, post-incident report (+PDF), attachments, STOMP live updates, notification bell, saved views, business-hours info: absent from these five screens. **Partly done (2026-11-19):** mark duplicate, link problem, resolve whole problem, post-incident report, attachments and impact are in; STOMP live updates are not. **Partly done (2026-11-19):** duplicate, internal note and admin PDF are done; create/link problem and resolve-whole-problem are not on the lead screens.
-- [ ] Section 12 API rules: components do call API modules (OK), but `api/incidents.ts` mixes 470 lines of seed data with API functions, `api/technicians.ts` duplicates generic `incidentAction` (`api/incidents.ts:673`, unused here), and error handling does not use `ApiError.code/fieldErrors`. **Partly done (2026-11-18):** seed data gone; incidentAction unused but defined; ApiError.code/fieldErrors unused.
+- [x] Section 12 API rules: components do call API modules (OK), but `api/incidents.ts` mixes 470 lines of seed data with API functions, `api/technicians.ts` duplicates generic `incidentAction` (`api/incidents.ts:673`, unused here), and error handling does not use `ApiError.code/fieldErrors`. **Partly done (2026-11-18):** seed data gone; incidentAction unused but defined; ApiError.code/fieldErrors unused. **Checked 2026-11-20:** `api/incidents.ts` has no seed data now; unused `incidentAction` removed; `apiErrorMessage` uses code and fieldErrors.
 
 ### Bugs found (ranked)
 
@@ -704,7 +704,7 @@ Real calls but client-aggregated: `listIncidents(size 100)`, `getServices`, `get
 - [x] Incident creation duplicated in Tickets and Dashboard; keep one shared dialog. **Partly done (2026-11-18):** the Dashboard has its own `DeclareDialog` (`features/admin/dashboard/`); Tickets still has its own dialog and there is no shared one.
 - [x] No "needs attention" list (violated / at risk / unassigned): `/dashboard/live.atRisk`.
 - [x] 5 KPI cards (guide: max 4); numbers repeated ("Current Net Open" = card 2; "{totalActive} open tickets" in donut subtitle).
-- [ ] No Prometheus/Grafana link, no wallboard mode. **Partly done (2026-11-19):** the Operations card links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token). Wallboard mode is not built.
+- [x] No Prometheus/Grafana link, no wallboard mode. **Partly done (2026-11-19):** the Operations card links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token). Wallboard mode is not built. **Checked 2026-11-20:** wallboard at `/wallboard` (`features/wallboard/Wallboard.tsx`); Reports still needs the live pieces placed by fe-admin.
 - [x] Split into KpiRow, VelocityChart, PriorityDonut, CapacityList, LiveFeed, DeclareDialog; remove unused icon imports.
 
 ### G3. Tickets (`/admin/tickets`, `Tickets.tsx`, 1390 lines)
@@ -800,8 +800,8 @@ Improved vs main: hand-rolled SVG canvas with pan/zoom, 3 layers, blast-radius m
 - [x] KPI `compliancePercent` = healthy/services (~:233), mislabelled. **Done (2026-11-19):** the KPIs are real counts of outage, degraded and healthy services (#49).
 - [x] No Major Incident Mode view (P1-2): no problem link, no root-cause path (`GET /problems/{id}/root-cause`: `probable`, `candidates`, `affectedServices`), no outage drill, no join counter. **Partly done (2026-11-18):** problem link and root cause (probable, candidates, affected services, paths as text) are on `/admin/problems/:id`; the graph screen itself still has no root-cause path, outage drill or join counter. **Partly done (2026-11-19):** the admin service inspector lists open problems with counts, linking to the root-cause page (#62); no outage drill or path on the graph. **Checked 2026-11-20:** `servicegraph/MajorIncidentPanel.tsx`, root-cause path on `GraphCanvas.tsx`, join counter and `DirectorBar` outage drill.
 - [x] Inspector "View tickets" goes to `/admin/tickets?tab=all` without `serviceId` (Tickets doesn't read it). **Partly done (2026-11-19):** the link goes to `/admin/tickets?serviceId=`, but `Tickets.tsx` does not read `serviceId` yet.
-- [ ] No pulse/glow on live events, no wallboard mode (P3 #1, #6).
-- [ ] Canvas fixed 1260 px, cards 240x118; breaks with many services; no fit-to-screen/minimap; mouse-only drag. **Partly done (2026-11-19):** fit-to-screen, zoom and arrow-key pan are in `servicegraph/GraphCanvas.tsx`. The minimap is not built.
+- [x] No pulse/glow on live events, no wallboard mode (P3 #1, #6). **Checked 2026-11-20:** `components/LiveEventPulse.tsx` used on the wallboard; `realtime/realtimeStore.ts` drives the status pill.
+- [ ] Canvas fixed 1260 px, cards 240x118; breaks with many services; no fit-to-screen/minimap; mouse-only drag. **Partly done (2026-11-19):** fit-to-screen, zoom and arrow-key pan are in `servicegraph/GraphCanvas.tsx`. The minimap is not built. **Partly done (2026-11-20):** `components/ServiceGraphMinimap.tsx` exists but is only used on the wallboard, not on the graph page.
 - [x] Split canvas / inspector / deps modal. **Done (2026-11-19):** `servicegraph/` has `GraphCanvas`, `Inspector` and `DependenciesDialog` (#49).
 
 ### G8. SLA policies (`/admin/sla`, `SlaPolicies.tsx`, 988 lines)
@@ -918,7 +918,7 @@ State: **effectively a stub**. Calls `/incidents` + `/admin/services`, never `/r
 - [ ] **Account security for admins** (`/auth/mfa*` setup with QR, enable/disable) and password reset (shared with other slices). **Partly done (2026-11-19):** `features/account/AccountSecurity.tsx` (`/account/security`, #37) sets up, enables and disables MFA and shows the secret and otpauth link to copy; no QR code is drawn. Password reset is on `/forgot-password` and `/reset-password`.
 - [x] **Prometheus/Grafana link** (A8, `backend/observability/`, `/actuator/prometheus` token-guarded): no link; add an "Operations" card linking the Grafana "I-ITSM service desk" dashboard. **Done (2026-11-19):** `dashboard/OperationsCard.tsx` links Grafana (`VITE_GRAFANA_URL`, default `http://localhost:3001`, no token) (#51).
 - [x] **Notification preferences / devices** (shared slice) and the "escalation exhausted" admin alerts must appear in Notifications. **Done (2026-11-19):** preferences, push devices (`PushDevicesDialog.tsx`) and an 'Escalation exhausted' badge (#51).
-- [ ] Wallboard mode, command palette, calendar heatmap (guide P3): optional.
+- [x] Wallboard mode, command palette, calendar heatmap (guide P3): optional. **Checked 2026-11-20:** wallboard, `components/CommandPalette.tsx` (Ctrl/Cmd+K) and `components/IncidentHeatmap.tsx` built.
 
 ### G15. Bugs found
 
