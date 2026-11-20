@@ -66,6 +66,8 @@ import { useAuth, Workspace, HOME } from '../auth/AuthContext';
 import { NAV } from './navConfig';
 import { unreadCount } from '../api/notifications';
 import ConnectionBanner from '../components/ConnectionBanner';
+import CommandPalette, { OPEN_PALETTE_EVENT } from '../components/CommandPalette';
+import RealtimeStatusPill from '../components/RealtimeStatusPill';
 import logoIcon from '../assets/logo.png';
 
 import { tokens } from '../theme/theme';
@@ -147,17 +149,6 @@ export default function AppShell() {
   const [workspaceAnchorEl, setWorkspaceAnchorEl] = useState<null | HTMLElement>(null);
   const isWorkspaceMenuOpen = Boolean(workspaceAnchorEl);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -425,12 +416,12 @@ export default function AppShell() {
                 '& input::placeholder': { color: tokens.textDisabled, opacity: 1 },
               }}
             />
-            <Tooltip title="Press Enter to search, or ⌘K / Ctrl+K to focus">
+            <Tooltip title="Open the command palette (Ctrl+K / ⌘K)">
               <Box
                 component="button"
                 type="button"
-                aria-label="Search incidents"
-                onClick={() => handleSearchSubmit()}
+                aria-label="Open command palette"
+                onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
                 sx={{
                   bgcolor: tokens.borderSubtle,
                   borderRadius: '4px',
@@ -588,6 +579,8 @@ export default function AppShell() {
               </Menu>
             </>
           )}
+
+          <RealtimeStatusPill />
 
           {/* Notifications Button */}
           <IconButton
@@ -889,6 +882,7 @@ export default function AppShell() {
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important' }} />
+        <CommandPalette />
         <ConnectionBanner />
         <Outlet />
       </Box>

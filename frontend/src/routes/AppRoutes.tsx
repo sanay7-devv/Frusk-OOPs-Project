@@ -28,6 +28,7 @@ import AuditLog from '../features/admin/AuditLog';
 import Simulator from '../features/admin/Simulator';
 import DemoControls from '../features/admin/DemoControls';
 import Reports from '../features/admin/Reports';
+import Wallboard from '../features/wallboard/Wallboard';
 import Register from '../features/shared/Register';
 import Login from '../features/shared/Login';
 import ProblemsList from '../features/problems/ProblemsList';
@@ -67,6 +68,10 @@ export default function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<RootRedirect />} />
+
+      <Route element={<RequireWorkspace workspace="admin" />}>
+        <Route path="/wallboard" element={<Wallboard />} />
+      </Route>
 
       <Route element={<RequireWorkspace />}>
         <Route element={<AppShell />}>
