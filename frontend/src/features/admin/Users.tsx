@@ -174,7 +174,7 @@ export default function Users() {
         <Stack direction="row" spacing={2} alignItems="center">
           <GroupIcon sx={{ color: tokens.primary, fontSize: 32 }} />
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>Users</Typography>
+            <Typography component="h1" variant="h5" sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>Users</Typography>
             <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Accounts, roles, technician profiles and two-step verification.</Typography>
           </Box>
         </Stack>

@@ -101,7 +101,7 @@ export default function Categories() {
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} mb={3} spacing={2}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>Categories and skills</Typography>
+          <Typography component="h1" variant="h4" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>Categories and skills</Typography>
           <Typography sx={{ color: tokens.onSurfaceVariant, mt: 0.5, fontSize: 14 }}>
             The category tree and the skills each category requires. Assignment only offers incidents to technicians who hold the required skills.
           </Typography>

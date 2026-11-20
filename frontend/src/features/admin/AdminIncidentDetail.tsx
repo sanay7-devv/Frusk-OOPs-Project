@@ -289,7 +289,7 @@ export default function AdminIncidentDetail() {
         >
           All incidents
         </Button>
-        <Typography variant="h5" fontWeight="bold" sx={{ fontFamily: MONO, color: tokens.primary }}>
+        <Typography component="h1" variant="h5" fontWeight="bold" sx={{ fontFamily: MONO, color: tokens.primary }}>
           {incident.code}
         </Typography>
         <PriorityBadge priority={incident.priority} />

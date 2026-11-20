@@ -122,7 +122,7 @@ export default function Tickets() {
     <Box>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2} sx={{ mb: 2 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontSize: 24, fontWeight: 700 }}>Incidents</Typography>
+          <Typography component="h1" variant="h4" sx={{ fontSize: 24, fontWeight: 700 }}>Incidents</Typography>
           <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
             {list.data ? `${totalItems} incident${totalItems === 1 ? '' : 's'} match the filters` : 'Search, filter and assign incidents'}
           </Typography>

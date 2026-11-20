@@ -120,7 +120,7 @@ export default function Reports() {
   const o = overview.data;
   return (
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 0.5 }}>Reports</Typography>
+      <Typography component="h1" variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 0.5 }}>Reports</Typography>
       <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 14, mb: 3 }}>Incident volume, SLA results and team workload for the chosen dates.</Typography>
 
       <Paper sx={{ p: 2, mb: 3, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>

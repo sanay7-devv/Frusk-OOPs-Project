@@ -256,7 +256,7 @@ export default function TeamQueue() {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
               <Typography
-                variant="h4"
+                component="h1" variant="h4"
                 sx={{
                   fontSize: { xs: 22, md: 26 },
                   fontWeight: 700,

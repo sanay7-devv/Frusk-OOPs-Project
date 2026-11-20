@@ -46,23 +46,6 @@ import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { acknowledgeIncident, startIncident } from '../../api/technicians';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA map.
-const COLORS = {
-  surface: tokens.background,
-  surfaceContainerLowest: tokens.surfaceContainerLowest,
-  surfaceContainerLow: tokens.surfaceContainerLow,
-  surfaceContainer: tokens.surfaceContainer,
-  surfaceContainerHigh: tokens.surfaceContainerHigh,
-  surfaceContainerHighest: tokens.surfaceContainerHighest,
-  onSurface: tokens.onSurface,
-  onSurfaceVariant: tokens.onSurfaceVariant,
-  border: tokens.outlineVariant,
-  primary: tokens.primary,
-  primaryContainer: tokens.primaryDark,
-  secondary: tokens.secondary,
-  error: slaStateColor.VIOLATED,
-  errorContainer: alpha(tokens.danger, 0.15),
-  tertiary: tokens.onSurfaceVariant,
-};
 
 export default function TechWorkload() {
   const navigate = useNavigate();
@@ -164,16 +147,16 @@ export default function TechWorkload() {
 
   if (isLoading) {
     return (
-      <Box sx={{ p: 6, textAlign: 'center', bgcolor: COLORS.surface, minHeight: '100vh' }}>
-        <CircularProgress size={40} sx={{ color: COLORS.primary, mb: 2 }} />
-        <Typography variant="h6" sx={{ color: COLORS.onSurface }}>Loading Workload &amp; Capacity metrics...</Typography>
+      <Box sx={{ p: 6, textAlign: 'center', bgcolor: tokens.background, minHeight: '100vh' }}>
+        <CircularProgress size={40} sx={{ color: tokens.primary, mb: 2 }} />
+        <Typography variant="h6" sx={{ color: tokens.onSurface }}>Loading Workload &amp; Capacity metrics...</Typography>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 4, bgcolor: COLORS.surface, minHeight: '100vh', maxWidth: 640, mx: 'auto', mt: 4 }}>
+      <Box sx={{ p: 4, bgcolor: tokens.background, minHeight: '100vh', maxWidth: 640, mx: 'auto', mt: 4 }}>
         <ErrorState
           onRetry={() => refetchWorkload()}
           message={`Failed to load workload metrics from server: ${apiErrorMessage(error)}`}
@@ -183,7 +166,7 @@ export default function TechWorkload() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: tokens.background, minHeight: '100vh' }}>
       {/* Breadcrumb & Header */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
@@ -191,16 +174,16 @@ export default function TechWorkload() {
             sx={{
               fontSize: 12.5,
               fontWeight: 600,
-              color: COLORS.onSurfaceVariant,
+              color: tokens.onSurfaceVariant,
               cursor: 'pointer',
-              '&:hover': { color: COLORS.primary },
+              '&:hover': { color: tokens.primary },
             }}
             onClick={() => navigate('/tech/queue')}
           >
             Technician Portal
           </Typography>
-          <ChevronRightIcon sx={{ fontSize: 15, color: COLORS.onSurfaceVariant }} />
-          <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.primary }}>
+          <ChevronRightIcon sx={{ fontSize: 15, color: tokens.onSurfaceVariant }} />
+          <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: tokens.primary }}>
             Workload &amp; Capacity
           </Typography>
         </Box>
@@ -216,11 +199,11 @@ export default function TechWorkload() {
         >
           <Box>
             <Typography
-              variant="h4"
+              component="h1" variant="h4"
               sx={{
                 fontSize: { xs: 22, md: 28 },
                 fontWeight: 700,
-                color: COLORS.onSurface,
+                color: tokens.onSurface,
                 letterSpacing: '-0.02em',
                 lineHeight: 1.2,
                 mb: 0.5,
@@ -228,7 +211,7 @@ export default function TechWorkload() {
             >
               Technician Workload, Capacity &amp; SLA Performance
             </Typography>
-            <Typography sx={{ fontSize: 13.5, color: COLORS.onSurfaceVariant, maxWidth: 780 }}>
+            <Typography sx={{ fontSize: 13.5, color: tokens.onSurfaceVariant, maxWidth: 780 }}>
               Real-time concurrency quotas, shift throughput velocity, and ITIL SLA delivery compliance.
             </Typography>
           </Box>
@@ -244,8 +227,8 @@ export default function TechWorkload() {
                 gap: 1,
                 px: 1.5,
                 py: 0.75,
-                bgcolor: COLORS.surfaceContainerLowest,
-                border: `1px solid ${COLORS.border}`,
+                bgcolor: tokens.surfaceContainerLowest,
+                border: `1px solid ${tokens.outlineVariant}`,
                 borderRadius: 2,
               }}
             >
@@ -254,7 +237,7 @@ export default function TechWorkload() {
                   width: 26,
                   height: 26,
                   borderRadius: '50%',
-                  bgcolor: COLORS.primaryContainer,
+                  bgcolor: tokens.primaryDark,
                   color: tokens.onSurface,
                   display: 'flex',
                   alignItems: 'center',
@@ -266,10 +249,10 @@ export default function TechWorkload() {
                 {(user?.name || 'T').substring(0, 2).toUpperCase()}
               </Box>
               <Box sx={{ pr: 0.5 }}>
-                <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.1 }}>
+                <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: tokens.onSurface, lineHeight: 1.1 }}>
                   {user?.name || 'Technician'}
                 </Typography>
-                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, lineHeight: 1 }}>
+                <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, lineHeight: 1 }}>
                   {user?.technician?.escalationLevel === 1 ? 'Team Lead (L1)' : 'Technician (L0)'}
                 </Typography>
               </Box>
@@ -284,8 +267,8 @@ export default function TechWorkload() {
                 gap: 1,
                 px: 1.5,
                 py: 0.75,
-                bgcolor: COLORS.surfaceContainerLowest,
-                border: `1px solid ${COLORS.border}`,
+                bgcolor: tokens.surfaceContainerLowest,
+                border: `1px solid ${tokens.outlineVariant}`,
                 borderRadius: 2,
               }}
             >
@@ -294,11 +277,11 @@ export default function TechWorkload() {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  bgcolor: isAvailable ? COLORS.secondary : COLORS.error,
+                  bgcolor: isAvailable ? tokens.secondary : slaStateColor.VIOLATED,
                   boxShadow: isAvailable ? `0 0 8px ${tokens.secondary}` : `0 0 8px ${tokens.danger}`,
                 }}
               />
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
                 {availabilityLabel}
               </Typography>
               <Button
@@ -309,15 +292,15 @@ export default function TechWorkload() {
                   py: 0.2,
                   px: 1,
                   textTransform: 'none',
-                  bgcolor: COLORS.surfaceContainerHigh,
-                  color: COLORS.onSurface,
+                  bgcolor: tokens.surfaceContainerHigh,
+                  color: tokens.onSurface,
                 }}
               >
                 {isAvailable ? 'Set Away' : 'Set Available'}
               </Button>
             </Paper>
 
-            <IconButton size="small" onClick={() => refetchWorkload()} sx={{ color: COLORS.onSurfaceVariant }}>
+            <IconButton aria-label="Refresh workload" size="small" onClick={() => refetchWorkload()} sx={{ color: tokens.onSurfaceVariant }}>
               <RefreshIcon sx={{ fontSize: 18 }} />
             </IconButton>
 
@@ -326,18 +309,18 @@ export default function TechWorkload() {
               variant="outlined"
               size="small"
               onClick={handleExport}
-              startIcon={<DownloadIcon sx={{ fontSize: 16, color: COLORS.primary }} />}
+              startIcon={<DownloadIcon sx={{ fontSize: 16, color: tokens.primary }} />}
               sx={{
                 px: 2,
                 py: 0.8,
-                bgcolor: COLORS.surfaceContainerLowest,
-                borderColor: COLORS.border,
-                color: COLORS.onSurface,
+                bgcolor: tokens.surfaceContainerLowest,
+                borderColor: tokens.outlineVariant,
+                color: tokens.onSurface,
                 borderRadius: 2,
                 fontSize: 12.5,
                 fontWeight: 600,
                 textTransform: 'none',
-                '&:hover': { bgcolor: COLORS.surfaceContainerLow },
+                '&:hover': { bgcolor: tokens.surfaceContainerLow },
               }}
             >
               Export Report
@@ -361,9 +344,9 @@ export default function TechWorkload() {
             sx={{
               p: 2.5,
               height: '100%',
-              bgcolor: COLORS.surfaceContainerLowest,
+              bgcolor: tokens.surfaceContainerLowest,
               borderRadius: 3,
-              border: `1px solid ${COLORS.border}`,
+              border: `1px solid ${tokens.outlineVariant}`,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -377,24 +360,24 @@ export default function TechWorkload() {
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
-                    color: COLORS.onSurfaceVariant,
+                    color: tokens.onSurfaceVariant,
                     mb: 0.5,
                   }}
                 >
                   Current Weighted Load
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-                  <Typography sx={{ fontSize: 28, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.1 }}>
+                  <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.onSurface, lineHeight: 1.1 }}>
                     {activeLoad}
                   </Typography>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500, color: COLORS.onSurfaceVariant }}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 500, color: tokens.onSurfaceVariant }}>
                     / {maxQuota} Max
                   </Typography>
                 </Box>
               </Box>
 
-              <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: COLORS.surfaceContainerLow, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 800, color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : COLORS.primary }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: tokens.surfaceContainerLow, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.primary }}>
                   {capacityPercent}%
                 </Typography>
               </Box>
@@ -405,15 +388,15 @@ export default function TechWorkload() {
                 size="small"
                 label={capacityPercent >= CAPACITY_WARN_PERCENT ? 'Near Capacity' : 'Capacity Available'}
                 sx={{
-                  bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.errorContainer : alpha(tokens.success, 0.15),
-                  color: capacityPercent >= CAPACITY_WARN_PERCENT ? COLORS.error : tokens.success,
+                  bgcolor: capacityPercent >= CAPACITY_WARN_PERCENT ? alpha(tokens.danger, 0.15) : alpha(tokens.success, 0.15),
+                  color: capacityPercent >= CAPACITY_WARN_PERCENT ? slaStateColor.VIOLATED : tokens.success,
                   fontWeight: 700,
                   fontSize: 12,
                   height: 22,
                   mb: 0.5,
                 }}
               />
-              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Active ticket allocation cap: {maxQuota} slots
               </Typography>
             </Box>
@@ -427,9 +410,9 @@ export default function TechWorkload() {
             sx={{
               p: 2.5,
               height: '100%',
-              bgcolor: COLORS.surfaceContainerLowest,
+              bgcolor: tokens.surfaceContainerLowest,
               borderRadius: 3,
-              border: `1px solid ${COLORS.border}`,
+              border: `1px solid ${tokens.outlineVariant}`,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -443,23 +426,23 @@ export default function TechWorkload() {
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
-                    color: COLORS.onSurfaceVariant,
+                    color: tokens.onSurfaceVariant,
                     mb: 0.5,
                   }}
                 >
                   Active Incidents
                 </Typography>
-                <Typography sx={{ fontSize: 28, fontWeight: 700, color: COLORS.onSurface, lineHeight: 1.1 }}>
+                <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.onSurface, lineHeight: 1.1 }}>
                   {workload?.activeIncidents ?? 0}
                 </Typography>
               </Box>
-              <TaskAltIcon sx={{ fontSize: 32, color: COLORS.primary }} />
+              <TaskAltIcon sx={{ fontSize: 32, color: tokens.primary }} />
             </Box>
             <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.primary }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.primary }}>
                 Live Queue Tickets
               </Typography>
-              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Currently assigned to you
               </Typography>
             </Box>
@@ -473,9 +456,9 @@ export default function TechWorkload() {
             sx={{
               p: 2.5,
               height: '100%',
-              bgcolor: COLORS.surfaceContainerLowest,
+              bgcolor: tokens.surfaceContainerLowest,
               borderRadius: 3,
-              border: `1px solid ${COLORS.border}`,
+              border: `1px solid ${tokens.outlineVariant}`,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -489,7 +472,7 @@ export default function TechWorkload() {
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
-                    color: COLORS.onSurfaceVariant,
+                    color: tokens.onSurfaceVariant,
                     mb: 0.5,
                   }}
                 >
@@ -505,7 +488,7 @@ export default function TechWorkload() {
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.success }}>
                 Completed Resolutions
               </Typography>
-              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Resolved tickets this calendar week
               </Typography>
             </Box>
@@ -519,9 +502,9 @@ export default function TechWorkload() {
             sx={{
               p: 2.5,
               height: '100%',
-              bgcolor: COLORS.surfaceContainerLowest,
+              bgcolor: tokens.surfaceContainerLowest,
               borderRadius: 3,
-              border: `1px solid ${COLORS.border}`,
+              border: `1px solid ${tokens.outlineVariant}`,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -535,23 +518,23 @@ export default function TechWorkload() {
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
-                    color: COLORS.onSurfaceVariant,
+                    color: tokens.onSurfaceVariant,
                     mb: 0.5,
                   }}
                 >
                   Upcoming Deadlines
                 </Typography>
-                <Typography sx={{ fontSize: 28, fontWeight: 700, color: COLORS.secondary, lineHeight: 1.1 }}>
+                <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.secondary, lineHeight: 1.1 }}>
                   {deadlines.length}
                 </Typography>
               </Box>
-              <TimerIcon sx={{ fontSize: 32, color: COLORS.secondary }} />
+              <TimerIcon sx={{ fontSize: 32, color: tokens.secondary }} />
             </Box>
             <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.secondary }}>
                 Next Commitments
               </Typography>
-              <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                 Upcoming SLA commitment deadlines
               </Typography>
             </Box>
@@ -567,17 +550,17 @@ export default function TechWorkload() {
         sx={{
           p: 2.5,
           borderRadius: 3,
-          bgcolor: COLORS.surfaceContainerLowest,
-          border: `1px solid ${COLORS.border}`,
+          bgcolor: tokens.surfaceContainerLowest,
+          border: `1px solid ${tokens.outlineVariant}`,
           mb: 3,
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontSize: 16 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16 }}>
               Upcoming SLA Commitment Deadlines
             </Typography>
-            <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+            <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
               Real-time delivery clocks prioritized by target breach urgency.
             </Typography>
           </Box>
@@ -586,19 +569,19 @@ export default function TechWorkload() {
             variant="outlined"
             onClick={() => navigate('/tech/queue')}
             endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
-            sx={{ textTransform: 'none', color: COLORS.primary, borderColor: COLORS.border }}
+            sx={{ textTransform: 'none', color: tokens.primary, borderColor: tokens.outlineVariant }}
           >
             Go to Work Queue
           </Button>
         </Box>
 
         {deadlines.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
+          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: tokens.surfaceContainer, borderRadius: 2 }}>
             <CheckCircleIcon sx={{ fontSize: 36, color: tokens.success, mb: 1 }} />
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: COLORS.onSurface }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.onSurface }}>
               No Imminent Deadlines
             </Typography>
-            <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+            <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
               None of your assigned incidents has an upcoming deadline.
             </Typography>
           </Paper>
@@ -606,19 +589,19 @@ export default function TechWorkload() {
           <Box sx={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: `1px solid ${COLORS.border}` }}>
-                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>INCIDENT CODE</th>
-                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>SLA CLOCK TYPE</th>
-                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>SLA STATE</th>
-                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant }}>TIME REMAINING</th>
-                  <th style={{ padding: '8px 12px', fontSize: 12, color: COLORS.onSurfaceVariant, textAlign: 'right' }}>ACTION</th>
+                <tr style={{ borderBottom: `1px solid ${tokens.outlineVariant}` }}>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: tokens.onSurfaceVariant }}>INCIDENT CODE</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: tokens.onSurfaceVariant }}>SLA CLOCK TYPE</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: tokens.onSurfaceVariant }}>SLA STATE</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: tokens.onSurfaceVariant }}>TIME REMAINING</th>
+                  <th style={{ padding: '8px 12px', fontSize: 12, color: tokens.onSurfaceVariant, textAlign: 'right' }}>ACTION</th>
                 </tr>
               </thead>
               <tbody>
                 {deadlines.map((d: Deadline) => {
                   return (
-                    <tr key={`${d.incidentId}-${d.type}`} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 700, color: COLORS.secondary }}>
+                    <tr key={`${d.incidentId}-${d.type}`} style={{ borderBottom: `1px solid ${tokens.outlineVariant}` }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 700, color: tokens.secondary }}>
                         <span
                           style={{ cursor: 'pointer', textDecoration: 'underline' }}
                           onClick={() => navigate(`/tech/incidents/${d.incidentId}`)}
@@ -626,7 +609,7 @@ export default function TechWorkload() {
                           {d.code}
                         </span>
                       </td>
-                      <td style={{ padding: '12px', fontSize: 13, color: COLORS.onSurface }}>
+                      <td style={{ padding: '12px', fontSize: 13, color: tokens.onSurface }}>
                         {d.type === 'RESPONSE' ? 'Initial Response Target' : 'Resolution Target'}
                       </td>
                       <td style={{ padding: '12px' }}>
@@ -661,7 +644,7 @@ export default function TechWorkload() {
                           sx={{
                             fontSize: 12.5,
                             textTransform: 'none',
-                            bgcolor: COLORS.primary,
+                            bgcolor: tokens.primary,
                             fontWeight: 700,
                             borderRadius: 1.5,
                           }}

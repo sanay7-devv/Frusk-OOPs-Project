@@ -102,23 +102,6 @@ import {
 import { alpha } from './staffStyle';
 
 // Colours come from the shared theme tokens; status colours from the shared SLA/priority maps.
-const COLORS = {
-  surface: tokens.background,
-  surfaceContainerLowest: tokens.surfaceContainerLowest,
-  surfaceContainerLow: tokens.surfaceContainerLow,
-  surfaceContainer: tokens.surfaceContainer,
-  surfaceContainerHigh: tokens.surfaceContainerHigh,
-  surfaceContainerHighest: tokens.surfaceContainerHighest,
-  onSurface: tokens.onSurface,
-  onSurfaceVariant: tokens.onSurfaceVariant,
-  border: tokens.outlineVariant,
-  primary: tokens.primary,
-  primaryContainer: tokens.primaryDark,
-  secondary: tokens.secondary,
-  error: slaStateColor.VIOLATED,
-  success: slaStateColor.MET,
-  tertiary: tokens.tertiary,
-};
 
 /** Actions that belong to someone else or to another part of this screen: the note composer (COMMENT) and the reporter's own actions. */
 const RIBBON_EXCLUDED: IncidentAction[] = ['COMMENT', 'PROVIDE_INFO', 'GIVE_FEEDBACK', 'WITHDRAW'];
@@ -560,9 +543,9 @@ export default function TechWorkbench() {
 
   if (isLoading) {
     return (
-      <Box sx={{ p: 6, textAlign: 'center', bgcolor: COLORS.surface, minHeight: '100vh' }}>
-        <CircularProgress size={40} sx={{ color: COLORS.primary, mb: 2 }} />
-        <Typography variant="h6" sx={{ color: COLORS.onSurface }}>Loading Incident Diagnosis Workbench...</Typography>
+      <Box sx={{ p: 6, textAlign: 'center', bgcolor: tokens.background, minHeight: '100vh' }}>
+        <CircularProgress size={40} sx={{ color: tokens.primary, mb: 2 }} />
+        <Typography variant="h6" sx={{ color: tokens.onSurface }}>Loading Incident Diagnosis Workbench...</Typography>
       </Box>
     );
   }
@@ -576,11 +559,11 @@ export default function TechWorkbench() {
           ? 'This incident does not exist, or it is not visible to you.'
           : apiErrorMessage(error);
     return (
-      <Box sx={{ p: 4, bgcolor: COLORS.surface, minHeight: '100vh' }}>
+      <Box sx={{ p: 4, bgcolor: tokens.background, minHeight: '100vh' }}>
         <Alert severity={status === 403 ? 'warning' : 'error'} sx={{ mb: 3 }}>
           {loadMessage}
         </Alert>
-        <Button variant="outlined" onClick={() => navigate('/tech/queue')} sx={{ color: COLORS.primary }}>
+        <Button variant="outlined" onClick={() => navigate('/tech/queue')} sx={{ color: tokens.primary }}>
           Back to Queue
         </Button>
       </Box>
@@ -591,7 +574,7 @@ export default function TechWorkbench() {
   const isHigh = incident.priority === 'P2';
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: tokens.background, minHeight: '100vh' }}>
       {/* Top Header / Breadcrumb */}
       <Box sx={{ mb: 2.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
@@ -603,20 +586,20 @@ export default function TechWorkbench() {
               sx={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: COLORS.onSurfaceVariant,
+                color: tokens.onSurfaceVariant,
                 textTransform: 'none',
                 px: 1,
                 py: 0.5,
                 borderRadius: 1.5,
-                bgcolor: COLORS.surfaceContainerLowest,
-                border: `1px solid ${COLORS.border}`,
-                '&:hover': { bgcolor: COLORS.surfaceContainerLow },
+                bgcolor: tokens.surfaceContainerLowest,
+                border: `1px solid ${tokens.outlineVariant}`,
+                '&:hover': { bgcolor: tokens.surfaceContainerLow },
               }}
             >
               Back to Queue
             </Button>
-            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>/</Typography>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: COLORS.primary }}>
+            <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>/</Typography>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: tokens.primary }}>
               {incident.code}
             </Typography>
           </Box>
@@ -632,15 +615,15 @@ export default function TechWorkbench() {
                 px: 1.25,
                 py: 0.4,
                 borderRadius: 2,
-                border: `1px solid ${COLORS.border}`,
-                bgcolor: COLORS.surfaceContainerLowest,
+                border: `1px solid ${tokens.outlineVariant}`,
+                bgcolor: tokens.surfaceContainerLowest,
               }}
             >
-              <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: COLORS.primary, animation: 'pulse 1.5s infinite' }} />
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: tokens.primary, animation: 'pulse 1.5s infinite' }} />
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
                 {user?.name || 'Technician'} // Assigned SRE
               </Typography>
-              <IconButton size="small" onClick={handleRefreshAll} sx={{ color: COLORS.onSurfaceVariant, p: 0.2 }}>
+              <IconButton aria-label="Refresh incident" size="small" onClick={handleRefreshAll} sx={{ color: tokens.onSurfaceVariant, p: 0.2 }}>
                 <RefreshIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Paper>
@@ -652,10 +635,10 @@ export default function TechWorkbench() {
           elevation={0}
           sx={{
             p: 2.5,
-            bgcolor: COLORS.surfaceContainerLowest,
+            bgcolor: tokens.surfaceContainerLowest,
             borderRadius: 3,
-            border: `1px solid ${COLORS.border}`,
-            borderLeft: isCritical ? `4px solid ${COLORS.error}` : isHigh ? `4px solid ${COLORS.secondary}` : `1px solid ${COLORS.border}`,
+            border: `1px solid ${tokens.outlineVariant}`,
+            borderLeft: isCritical ? `4px solid ${slaStateColor.VIOLATED}` : isHigh ? `4px solid ${tokens.secondary}` : `1px solid ${tokens.outlineVariant}`,
           }}
         >
           <Box
@@ -676,8 +659,8 @@ export default function TechWorkbench() {
                   size="small"
                   label={incident.status.replace(/_/g, ' ')}
                   sx={{
-                    bgcolor: COLORS.surfaceContainer,
-                    color: COLORS.onSurface,
+                    bgcolor: tokens.surfaceContainer,
+                    color: tokens.onSurface,
                     fontFamily: 'monospace',
                     fontWeight: 700,
                     fontSize: 12,
@@ -689,8 +672,8 @@ export default function TechWorkbench() {
                   size="small"
                   label={incident.service?.name || 'Service'}
                   sx={{
-                    bgcolor: COLORS.surfaceContainerLow,
-                    color: COLORS.primary,
+                    bgcolor: tokens.surfaceContainerLow,
+                    color: tokens.primary,
                     fontWeight: 600,
                     fontSize: 12,
                     height: 24,
@@ -702,8 +685,8 @@ export default function TechWorkbench() {
                     size="small"
                     label={incident.category.name}
                     sx={{
-                      bgcolor: COLORS.surfaceContainerLow,
-                      color: COLORS.onSurfaceVariant,
+                      bgcolor: tokens.surfaceContainerLow,
+                      color: tokens.onSurfaceVariant,
                       fontSize: 12,
                       height: 24,
                     }}
@@ -716,7 +699,7 @@ export default function TechWorkbench() {
                     label={`Escalation L${incident.escalationLevel}`}
                     sx={{
                       bgcolor: alpha(tokens.danger, 0.15),
-                      color: COLORS.error,
+                      color: slaStateColor.VIOLATED,
                       fontWeight: 700,
                       fontSize: 12,
                       height: 24,
@@ -748,7 +731,7 @@ export default function TechWorkbench() {
                     onClick={problemBase ? () => navigate(`${problemBase}/${incident.problemId}`) : undefined}
                     sx={{
                       bgcolor: alpha(tokens.primary, 0.15),
-                      color: COLORS.primary,
+                      color: tokens.primary,
                       border: `1px solid ${alpha(tokens.primary, 0.35)}`,
                       fontWeight: 700,
                       fontSize: 12,
@@ -762,7 +745,7 @@ export default function TechWorkbench() {
                   <Chip
                     size="small"
                     label={`Closed: ${incident.closureReason.replace(/_/g, ' ')}`}
-                    sx={{ bgcolor: COLORS.surfaceContainerLow, color: COLORS.onSurfaceVariant, fontSize: 12, height: 24 }}
+                    sx={{ bgcolor: tokens.surfaceContainerLow, color: tokens.onSurfaceVariant, fontSize: 12, height: 24 }}
                   />
                 )}
 
@@ -770,7 +753,7 @@ export default function TechWorkbench() {
                   <Chip
                     size="small"
                     label={`Reopened ${incident.reopenCount}x`}
-                    sx={{ bgcolor: alpha(tokens.danger, 0.15), color: COLORS.error, fontSize: 12, height: 24 }}
+                    sx={{ bgcolor: alpha(tokens.danger, 0.15), color: slaStateColor.VIOLATED, fontSize: 12, height: 24 }}
                   />
                 )}
 
@@ -779,8 +762,8 @@ export default function TechWorkbench() {
                     size="small"
                     label={`Duplicate of #${incident.duplicateOfId}`}
                     sx={{
-                      bgcolor: COLORS.surfaceContainerLow,
-                      color: COLORS.onSurfaceVariant,
+                      bgcolor: tokens.surfaceContainerLow,
+                      color: tokens.onSurfaceVariant,
                       fontSize: 12,
                       height: 24,
                     }}
@@ -793,7 +776,7 @@ export default function TechWorkbench() {
                 sx={{
                   fontSize: { xs: 18, md: 22 },
                   fontWeight: 700,
-                  color: COLORS.onSurface,
+                  color: tokens.onSurface,
                   letterSpacing: '-0.015em',
                   lineHeight: 1.2,
                   mb: 0.5,
@@ -802,7 +785,7 @@ export default function TechWorkbench() {
                 {incident.code}: {incident.title}
               </Typography>
 
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, fontSize: 12, color: COLORS.onSurfaceVariant }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, fontSize: 12, color: tokens.onSurfaceVariant }}>
                 <span>Reporter: <strong>{incident.reporter?.name || 'Employee'}</strong></span>
                 <span>•</span>
                 <span>Assignee: <strong>{incident.assignee?.name || 'Unassigned'}</strong></span>
@@ -842,8 +825,8 @@ export default function TechWorkbench() {
               sx={{
                 p: 2,
                 borderRadius: 2.5,
-                bgcolor: COLORS.surfaceContainer,
-                border: `1px solid ${incident.slaState === 'VIOLATED' ? COLORS.error : COLORS.border}`,
+                bgcolor: tokens.surfaceContainer,
+                border: `1px solid ${incident.slaState === 'VIOLATED' ? slaStateColor.VIOLATED : tokens.outlineVariant}`,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 1.25,
@@ -863,7 +846,7 @@ export default function TechWorkbench() {
               gap: 1.25,
               mt: 2,
               pt: 2,
-              borderTop: `1px solid ${COLORS.border}`,
+              borderTop: `1px solid ${tokens.outlineVariant}`,
             }}
           >
             <ActionButtons
@@ -879,7 +862,7 @@ export default function TechWorkbench() {
                 variant="outlined"
                 onClick={() => setIsProblemOpen(true)}
                 startIcon={<LinkIcon />}
-                sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: COLORS.surfaceContainerLowest, '&:hover': { bgcolor: COLORS.surfaceContainerLow } }}
+                sx={{ borderColor: tokens.outlineVariant, color: tokens.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2, bgcolor: tokens.surfaceContainerLowest, '&:hover': { bgcolor: tokens.surfaceContainerLow } }}
               >
                 Open problem
               </Button>
@@ -890,15 +873,15 @@ export default function TechWorkbench() {
                 variant="outlined"
                 onClick={handleGenerateSummary}
                 disabled={isSummarizing}
-                startIcon={<PsychologyIcon sx={{ color: COLORS.secondary }} />}
+                startIcon={<PsychologyIcon sx={{ color: tokens.secondary }} />}
                 sx={{
                   borderColor: alpha(tokens.secondary, 0.3),
-                  color: COLORS.secondary,
+                  color: tokens.secondary,
                   fontWeight: 600,
                   fontSize: 12.5,
                   textTransform: 'none',
                   borderRadius: 2,
-                  bgcolor: COLORS.surfaceContainerLowest,
+                  bgcolor: tokens.surfaceContainerLowest,
                   '&:hover': { bgcolor: alpha(tokens.secondary, 0.1) },
                 }}
               >
@@ -911,23 +894,23 @@ export default function TechWorkbench() {
 
       {/* AI handover summary, shown above both columns */}
       {summaryData && (
-        <Paper sx={{ p: 2, mb: 2.5, bgcolor: COLORS.surfaceContainer, border: `1px solid ${alpha(tokens.secondary, 0.3)}`, borderRadius: 2 }}>
+        <Paper sx={{ p: 2, mb: 2.5, bgcolor: tokens.surfaceContainer, border: `1px solid ${alpha(tokens.secondary, 0.3)}`, borderRadius: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <PsychologyIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
-            <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.secondary }}>
+            <PsychologyIcon sx={{ color: tokens.secondary, fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 800, fontSize: 14, color: tokens.secondary }}>
               AI Incident Summary &amp; Handover ({summaryData.source})
             </Typography>
           </Box>
-          <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 1.5, lineHeight: 1.5 }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurface, mb: 1.5, lineHeight: 1.5 }}>
             {summaryData.summary}
           </Typography>
           {summaryData.handoverNotes && summaryData.handoverNotes.length > 0 && (
             <Box sx={{ pl: 2 }}>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, mb: 0.5 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, mb: 0.5 }}>
                 Handover Checkpoints:
               </Typography>
               {summaryData.handoverNotes.map((note, idx) => (
-                <Typography key={idx} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 0.3 }}>
+                <Typography key={idx} sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mb: 0.3 }}>
                   • {note}
                 </Typography>
               ))}
@@ -943,14 +926,14 @@ export default function TechWorkbench() {
           <Paper
             elevation={0}
             sx={{
-              bgcolor: COLORS.surfaceContainerLowest,
+              bgcolor: tokens.surfaceContainerLowest,
               borderRadius: 3,
-              border: `1px solid ${COLORS.border}`,
+              border: `1px solid ${tokens.outlineVariant}`,
               overflow: 'hidden',
             }}
           >
             {/* Tabs Navigation */}
-            <Box sx={{ borderBottom: `1px solid ${COLORS.border}`, bgcolor: COLORS.surfaceContainerLow, px: 2 }}>
+            <Box sx={{ borderBottom: `1px solid ${tokens.outlineVariant}`, bgcolor: tokens.surfaceContainerLow, px: 2 }}>
               <Tabs
                 value={activeTab}
                 onChange={(_, val) => setActiveTab(val)}
@@ -960,8 +943,8 @@ export default function TechWorkbench() {
                     fontSize: 13,
                     fontWeight: 700,
                     minHeight: 48,
-                    color: COLORS.onSurfaceVariant,
-                    '&.Mui-selected': { color: COLORS.primary },
+                    color: tokens.onSurfaceVariant,
+                    '&.Mui-selected': { color: tokens.primary },
                   },
                 }}
               >
@@ -974,18 +957,18 @@ export default function TechWorkbench() {
             {/* TAB 0: Suggested Resolutions & AI Intelligence */}
             {activeTab === 0 && (
               <Box sx={{ p: 2.5 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: 14, color: tokens.onSurface, mb: 1 }}>
                   Proven Fixes from Historical Incidents
                 </Typography>
-                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mb: 2 }}>
+                <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, mb: 2 }}>
                   These resolution strategies were successfully verified on resolved incidents sharing the same service and failure symptoms.
                 </Typography>
 
                 {suggestedError ? (
                   <ErrorState message={`Suggested resolutions did not load: ${apiErrorMessage(suggestedErr)}`} onRetry={() => refetchSuggestions()} />
                 ) : suggestedResolutions.length === 0 ? (
-                  <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
-                    <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                  <Paper sx={{ p: 4, textAlign: 'center', bgcolor: tokens.surfaceContainer, borderRadius: 2 }}>
+                    <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
                       No direct historical duplicates found. Proceed with standard troubleshooting or view AI Summary.
                     </Typography>
                   </Paper>
@@ -998,8 +981,8 @@ export default function TechWorkbench() {
                         sx={{
                           p: 2,
                           borderRadius: 2,
-                          bgcolor: COLORS.surfaceContainer,
-                          border: `1px solid ${COLORS.border}`,
+                          bgcolor: tokens.surfaceContainer,
+                          border: `1px solid ${tokens.outlineVariant}`,
                         }}
                       >
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
@@ -1012,7 +995,7 @@ export default function TechWorkbench() {
                                 fontSize: 12.5,
                                 fontWeight: 800,
                                 bgcolor: alpha(tokens.success, 0.15),
-                                color: COLORS.success,
+                                color: slaStateColor.MET,
                               }}
                             />
                             {res.reusable && (
@@ -1024,14 +1007,14 @@ export default function TechWorkbench() {
                                   fontSize: 12,
                                   fontWeight: 700,
                                   bgcolor: alpha(tokens.primary, 0.15),
-                                  color: COLORS.primary,
+                                  color: tokens.primary,
                                 }}
                               />
                             )}
-                            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
+                            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: tokens.secondary }}>
                               {res.code}
                             </Typography>
-                            <Typography sx={{ fontWeight: 700, fontSize: 13, color: COLORS.onSurface }}>
+                            <Typography sx={{ fontWeight: 700, fontSize: 13, color: tokens.onSurface }}>
                               {res.title}
                             </Typography>
                           </Box>
@@ -1041,8 +1024,8 @@ export default function TechWorkbench() {
                               variant="outlined"
                               onClick={() => applySuggestedResolution(res)}
                               sx={{
-                                borderColor: COLORS.primary,
-                                color: COLORS.primary,
+                                borderColor: tokens.primary,
+                                color: tokens.primary,
                                 textTransform: 'none',
                                 fontSize: 12.5,
                                 fontWeight: 700,
@@ -1052,17 +1035,17 @@ export default function TechWorkbench() {
                             </Button>
                           )}
                         </Box>
-                        <Box sx={{ bgcolor: COLORS.surfaceContainerLowest, p: 1.5, borderRadius: 1.5, mb: 1 }}>
-                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                        <Box sx={{ bgcolor: tokens.surfaceContainerLowest, p: 1.5, borderRadius: 1.5, mb: 1 }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant }}>
                             Root Cause:
                           </Typography>
-                          <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface, mb: 1 }}>
+                          <Typography sx={{ fontSize: 12.5, color: tokens.onSurface, mb: 1 }}>
                             {res.rootCause}
                           </Typography>
-                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant }}>
                             Resolution Steps:
                           </Typography>
-                          <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                             {res.notes || res.steps}
                           </Typography>
                         </Box>
@@ -1078,8 +1061,8 @@ export default function TechWorkbench() {
               <Box sx={{ p: 2.5 }}>
                 {/* Note Composer */}
                 {allowedActions.includes('COMMENT') ? (
-                <Paper sx={{ p: 2, mb: 3, bgcolor: COLORS.surfaceContainer, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mb: 1 }}>
+                <Paper sx={{ p: 2, mb: 3, bgcolor: tokens.surfaceContainer, borderRadius: 2, border: `1px solid ${tokens.outlineVariant}` }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.onSurface, mb: 1 }}>
                     Append Investigation Note
                   </Typography>
                   <TextField
@@ -1092,15 +1075,15 @@ export default function TechWorkbench() {
                     inputProps={{ maxLength: 4000 }}
                     helperText={`${newNoteText.length}/4000`}
                     sx={{
-                      bgcolor: COLORS.surfaceContainerLowest,
+                      bgcolor: tokens.surfaceContainerLowest,
                       borderRadius: 1.5,
                       mb: 1.5,
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.outlineVariant },
                     }}
                   />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Visibility:</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Visibility:</Typography>
                       <Chip
                         label="INTERNAL (Techs & Admins Only)"
                         clickable
@@ -1109,8 +1092,8 @@ export default function TechWorkbench() {
                         sx={{
                           fontSize: 12,
                           fontWeight: 700,
-                          bgcolor: noteVisibility === 'INTERNAL' ? COLORS.primary : COLORS.surfaceContainerHigh,
-                          color: noteVisibility === 'INTERNAL' ? tokens.onSurface : COLORS.onSurfaceVariant,
+                          bgcolor: noteVisibility === 'INTERNAL' ? tokens.primary : tokens.surfaceContainerHigh,
+                          color: noteVisibility === 'INTERNAL' ? tokens.onSurface : tokens.onSurfaceVariant,
                         }}
                       />
                       <Chip
@@ -1121,8 +1104,8 @@ export default function TechWorkbench() {
                         sx={{
                           fontSize: 12,
                           fontWeight: 700,
-                          bgcolor: noteVisibility === 'PUBLIC' ? COLORS.secondary : COLORS.surfaceContainerHigh,
-                          color: noteVisibility === 'PUBLIC' ? tokens.onSurface : COLORS.onSurfaceVariant,
+                          bgcolor: noteVisibility === 'PUBLIC' ? tokens.secondary : tokens.surfaceContainerHigh,
+                          color: noteVisibility === 'PUBLIC' ? tokens.onSurface : tokens.onSurfaceVariant,
                         }}
                       />
                     </Box>
@@ -1132,7 +1115,7 @@ export default function TechWorkbench() {
                       onClick={() => (noteVisibility === 'PUBLIC' ? setConfirmAction('PUBLIC_NOTE') : handleAddNote())}
                       disabled={!newNoteText.trim()}
                       startIcon={<SendIcon sx={{ fontSize: 14 }} />}
-                      sx={{ textTransform: 'none', fontWeight: 700, bgcolor: COLORS.primary }}
+                      sx={{ textTransform: 'none', fontWeight: 700, bgcolor: tokens.primary }}
                     >
                       Post Note
                     </Button>
@@ -1154,12 +1137,12 @@ export default function TechWorkbench() {
                 )}
 
                 {/* Unified Timeline entries */}
-                <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1.5 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: 14, color: tokens.onSurface, mb: 1.5 }}>
                   Unified Audit Trail &amp; Engineering Activity ({timelineEntries.length})
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {timelineEntries.length === 0 ? (
-                    <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                    <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
                       No events or notes recorded on this incident yet.
                     </Typography>
                   ) : (
@@ -1169,13 +1152,13 @@ export default function TechWorkbench() {
                         sx={{
                           p: 1.5,
                           borderRadius: 2,
-                          bgcolor: COLORS.surfaceContainer,
+                          bgcolor: tokens.surfaceContainer,
                           borderLeft: `3px solid ${
                             item.type === 'comment'
                               ? item.visibility === 'INTERNAL'
-                                ? COLORS.tertiary
-                                : COLORS.secondary
-                              : COLORS.primary
+                                ? tokens.tertiary
+                                : tokens.secondary
+                              : tokens.primary
                           }`,
                         }}
                       >
@@ -1197,23 +1180,23 @@ export default function TechWorkbench() {
                                 color:
                                   item.type === 'comment'
                                     ? item.visibility === 'INTERNAL'
-                                      ? COLORS.tertiary
-                                      : COLORS.secondary
-                                    : COLORS.primary,
+                                      ? tokens.tertiary
+                                      : tokens.secondary
+                                    : tokens.primary,
                               }}
                             />
-                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface }}>
+                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
                               {item.actor}
                             </Typography>
                           </Box>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: 12, color: tokens.onSurfaceVariant }}>
                             {formatTimelineDate(item.timestamp)}
                           </Typography>
                         </Box>
                         <Typography
                           sx={{
                             fontSize: 12.5,
-                            color: item.type === 'comment' ? COLORS.onSurface : COLORS.onSurfaceVariant,
+                            color: item.type === 'comment' ? tokens.onSurface : tokens.onSurfaceVariant,
                             whiteSpace: 'pre-wrap',
                           }}
                         >
@@ -1229,18 +1212,18 @@ export default function TechWorkbench() {
             {/* TAB 2: Similar Incidents */}
             {activeTab === 2 && (
               <Box sx={{ p: 2.5 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: 14, color: COLORS.onSurface, mb: 1 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: 14, color: tokens.onSurface, mb: 1 }}>
                   Historical &amp; Correlated Similar Incidents
                 </Typography>
-                <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mb: 2 }}>
+                <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, mb: 2 }}>
                   Candidates for correlation, knowledge extraction, or duplicate linking across services.
                 </Typography>
 
                 {similarError ? (
                   <ErrorState message={`Similar incidents did not load: ${apiErrorMessage(similarErr)}`} onRetry={() => refetchSimilar()} />
                 ) : similarIncidents.length === 0 ? (
-                  <Paper sx={{ p: 4, textAlign: 'center', bgcolor: COLORS.surfaceContainer, borderRadius: 2 }}>
-                    <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+                  <Paper sx={{ p: 4, textAlign: 'center', bgcolor: tokens.surfaceContainer, borderRadius: 2 }}>
+                    <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
                       No similar incidents detected.
                     </Typography>
                   </Paper>
@@ -1251,8 +1234,8 @@ export default function TechWorkbench() {
                         key={s.incidentId}
                         sx={{
                           p: 1.8,
-                          bgcolor: COLORS.surfaceContainer,
-                          border: `1px solid ${COLORS.border}`,
+                          bgcolor: tokens.surfaceContainer,
+                          border: `1px solid ${tokens.outlineVariant}`,
                           borderRadius: 2,
                           display: 'flex',
                           alignItems: 'center',
@@ -1270,7 +1253,7 @@ export default function TechWorkbench() {
                                 fontSize: 12,
                                 fontWeight: 800,
                                 bgcolor: alpha(tokens.primary, 0.15),
-                                color: COLORS.primary,
+                                color: tokens.primary,
                               }}
                             />
                             {s.match && (
@@ -1282,16 +1265,16 @@ export default function TechWorkbench() {
                                   fontSize: 12,
                                   fontWeight: 800,
                                   bgcolor: s.match === 'DUPLICATE' ? alpha(tokens.danger, 0.15) : alpha(tokens.secondary, 0.15),
-                                  color: s.match === 'DUPLICATE' ? COLORS.error : COLORS.secondary,
+                                  color: s.match === 'DUPLICATE' ? slaStateColor.VIOLATED : tokens.secondary,
                                 }}
                               />
                             )}
-                            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: COLORS.secondary }}>
+                            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: tokens.secondary }}>
                               {s.code}
                             </Typography>
                             <Chip label={s.status} size="small" sx={{ height: 22, fontSize: 12 }} />
                           </Box>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.onSurface }}>
                             {s.title}
                           </Typography>
                         </Box>
@@ -1306,7 +1289,7 @@ export default function TechWorkbench() {
                               }}
                               sx={{
                                 textTransform: 'none',
-                                color: COLORS.error,
+                                color: slaStateColor.VIOLATED,
                                 borderColor: alpha(tokens.danger, 0.4),
                                 fontSize: 12.5,
                                 fontWeight: 700,
@@ -1319,7 +1302,7 @@ export default function TechWorkbench() {
                             size="small"
                             onClick={() => navigate(`/tech/incidents/${s.incidentId}`)}
                             endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
-                            sx={{ textTransform: 'none', color: COLORS.primary, fontSize: 12, fontWeight: 700 }}
+                            sx={{ textTransform: 'none', color: tokens.primary, fontSize: 12, fontWeight: 700 }}
                           >
                             View Ticket
                           </Button>
@@ -1337,34 +1320,34 @@ export default function TechWorkbench() {
         <Grid item xs={12} lg={4}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* Description & Incident Details */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
                 Problem Description
               </Typography>
-              <Typography sx={{ fontSize: 13, color: COLORS.onSurface, lineHeight: 1.6, whiteSpace: 'pre-wrap', mb: 2 }}>
+              <Typography sx={{ fontSize: 13, color: tokens.onSurface, lineHeight: 1.6, whiteSpace: 'pre-wrap', mb: 2 }}>
                 {incident.description || 'No detailed description provided.'}
               </Typography>
-              <Divider sx={{ borderColor: COLORS.border, my: 1.5 }} />
+              <Divider sx={{ borderColor: tokens.outlineVariant, my: 1.5 }} />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: 12 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: COLORS.onSurfaceVariant }}>Impact Level:</span>
+                  <span style={{ color: tokens.onSurfaceVariant }}>Impact Level:</span>
                   <strong>{incident.impact}/5</strong>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: COLORS.onSurfaceVariant }}>Urgency Level:</span>
+                  <span style={{ color: tokens.onSurfaceVariant }}>Urgency Level:</span>
                   <strong>{incident.urgency}/5</strong>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: COLORS.onSurfaceVariant }}>Service Criticality:</span>
+                  <span style={{ color: tokens.onSurfaceVariant }}>Service Criticality:</span>
                   <strong>{incident.priorityBreakdown ? `${incident.priorityBreakdown.criticality}/5` : 'Not scored'}</strong>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: COLORS.onSurfaceVariant }}>Reopen Count:</span>
+                  <span style={{ color: tokens.onSurfaceVariant }}>Reopen Count:</span>
                   <strong>{incident.reopenCount}</strong>
                 </Box>
                 {incident.priorityBreakdown?.overrideRule && (
                   <Box sx={{ bgcolor: alpha(tokens.primary, 0.1), p: 1, borderRadius: 1.5, mt: 0.5 }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.primary, fontWeight: 700 }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.primary, fontWeight: 700 }}>
                       Override Rule: {incident.priorityBreakdown.overrideRule}
                     </Typography>
                   </Box>
@@ -1373,27 +1356,27 @@ export default function TechWorkbench() {
             </Paper>
 
             {/* Reporter: name from the incident; email, department and location need USER_MANAGE (GET /admin/users/{id}) */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase', mb: 1.5 }}>
                 Reporter
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, fontSize: 12.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: COLORS.onSurfaceVariant }}>Name:</span>
+                  <span style={{ color: tokens.onSurfaceVariant }}>Name:</span>
                   <strong>{incident.reporter?.name ?? 'Unknown'}</strong>
                 </Box>
                 {reporterContact && (
                   <>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-                      <span style={{ color: COLORS.onSurfaceVariant }}>Email:</span>
-                      <a href={`mailto:${reporterContact.email}`} style={{ color: COLORS.primary, fontWeight: 700 }}>{reporterContact.email}</a>
+                      <span style={{ color: tokens.onSurfaceVariant }}>Email:</span>
+                      <a href={`mailto:${reporterContact.email}`} style={{ color: tokens.primary, fontWeight: 700 }}>{reporterContact.email}</a>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: COLORS.onSurfaceVariant }}>Department:</span>
+                      <span style={{ color: tokens.onSurfaceVariant }}>Department:</span>
                       <strong>{reporterContact.department ?? 'Not set'}</strong>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: COLORS.onSurfaceVariant }}>Location:</span>
+                      <span style={{ color: tokens.onSurfaceVariant }}>Location:</span>
                       <strong>{reporterContact.location ?? 'Not set'}</strong>
                     </Box>
                   </>
@@ -1403,7 +1386,7 @@ export default function TechWorkbench() {
                 <ErrorState message={`Reporter contact did not load: ${apiErrorMessage(contactErr)}`} onRetry={() => refetchContact()} />
               )}
               {!canSeeContacts && (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 1 }}>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 1 }}>
                   Email and department are shown to administrators only: the incident API returns the reporter&apos;s id and name, and GET /admin/users/{'{id}'} needs the USER_MANAGE permission. Use the comment thread to reach them.
                 </Typography>
               )}
@@ -1414,9 +1397,9 @@ export default function TechWorkbench() {
               <ErrorState message={`SLA risk did not load: ${apiErrorMessage(slaRiskErr)}`} onRetry={() => refetchSlaRisk()} />
             )}
             {slaRisk && (
-              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase' }}>
                     SLA Risk Prediction
                   </Typography>
                   <Chip
@@ -1427,16 +1410,16 @@ export default function TechWorkbench() {
                       fontWeight: 800,
                       fontSize: 12.5,
                       bgcolor: slaRisk.atRisk ? alpha(tokens.danger, 0.15) : alpha(tokens.success, 0.15),
-                      color: slaRisk.atRisk ? COLORS.error : COLORS.success,
+                      color: slaRisk.atRisk ? slaStateColor.VIOLATED : slaStateColor.MET,
                     }}
                   />
                 </Box>
                 <Box sx={{ mb: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                       Probability of SLA breach (alert at {Math.round(slaRisk.threshold * 100)}%):
                     </Typography>
-                    <Typography sx={{ fontSize: 12, fontWeight: 800, color: slaRisk.atRisk ? COLORS.error : COLORS.onSurface }}>
+                    <Typography sx={{ fontSize: 12, fontWeight: 800, color: slaRisk.atRisk ? slaStateColor.VIOLATED : tokens.onSurface }}>
                       {Math.round(slaRisk.score * 100)}%
                     </Typography>
                   </Box>
@@ -1446,9 +1429,9 @@ export default function TechWorkbench() {
                     sx={{
                       height: 6,
                       borderRadius: 1,
-                      bgcolor: COLORS.surfaceContainerHigh,
+                      bgcolor: tokens.surfaceContainerHigh,
                       '& .MuiLinearProgress-bar': {
-                        bgcolor: slaRisk.atRisk ? COLORS.error : COLORS.secondary,
+                        bgcolor: slaRisk.atRisk ? slaStateColor.VIOLATED : tokens.secondary,
                       },
                     }}
                   />
@@ -1456,9 +1439,9 @@ export default function TechWorkbench() {
                 {slaRisk.factors && slaRisk.factors.length > 0 && (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                     {slaRisk.factors.map((f, i) => (
-                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
+                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: tokens.onSurfaceVariant }}>
                         <span>{f.name}:</span>
-                        <span style={{ fontWeight: 700, color: COLORS.onSurface }}>{f.detail || `${Math.round(f.contribution * 100)}%`}</span>
+                        <span style={{ fontWeight: 700, color: tokens.onSurface }}>{f.detail || `${Math.round(f.contribution * 100)}%`}</span>
                       </Box>
                     ))}
                   </Box>
@@ -1476,9 +1459,9 @@ export default function TechWorkbench() {
             />
 
             {/* Attachments Section */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase' }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase' }}>
                   Attachments ({attachments.length})
                 </Typography>
                 {allowedActions.includes('COMMENT') && (
@@ -1505,14 +1488,14 @@ export default function TechWorkbench() {
               {attachmentsError ? (
                 <ErrorState message={`Attachments did not load: ${apiErrorMessage(attachmentsErr)}`} onRetry={() => refetchAttachments()} />
               ) : attachments.length === 0 ? (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                   No evidence files or logs attached. Files up to 5 MB.
                 </Typography>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {attachments.map((att) => (
-                    <Box key={att.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, p: 1, bgcolor: COLORS.surfaceContainerLow, borderRadius: 1.5 }}>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurface, wordBreak: 'break-all' }}>
+                    <Box key={att.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, p: 1, bgcolor: tokens.surfaceContainerLow, borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurface, wordBreak: 'break-all' }}>
                         {att.filename} ({Math.max(1, Math.round(att.sizeBytes / 1024))} KB) · {att.uploadedBy?.name}
                       </Typography>
                       <Button size="small" onClick={() => handleDownload(att)} sx={{ textTransform: 'none', fontSize: 12 }}>
@@ -1525,16 +1508,16 @@ export default function TechWorkbench() {
             </Paper>
 
             {/* Affected services (dependency graph) */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase', mb: 1 }}>
                 Services that depend on {incident.service?.name}
               </Typography>
               {impactError ? (
                 <ErrorState message={`Service impact did not load: ${apiErrorMessage(impactErr)}`} onRetry={() => refetchImpact()} />
               ) : !impact ? (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Loading…</Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Loading…</Typography>
               ) : impact.affected.length === 0 ? (
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>No other service depends on this one.</Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>No other service depends on this one.</Typography>
               ) : (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
                   {impact.affected.map((a) => (
@@ -1542,7 +1525,7 @@ export default function TechWorkbench() {
                       key={a.id}
                       size="small"
                       label={`${a.name}${a.distance > 1 ? ` (${a.distance} hops)` : ''}`}
-                      sx={{ fontSize: 12, bgcolor: COLORS.surfaceContainerLow, color: COLORS.onSurface }}
+                      sx={{ fontSize: 12, bgcolor: tokens.surfaceContainerLow, color: tokens.onSurface }}
                     />
                   ))}
                 </Box>
@@ -1551,11 +1534,11 @@ export default function TechWorkbench() {
 
             {/* Post Incident Report (if applicable) */}
             {(incident.status === 'RESOLVED' || incident.status === 'CLOSED' || incident.status === 'VERIFIED' || incident.major) && (
-              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: COLORS.surfaceContainerLowest, border: `1px solid ${COLORS.border}` }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 800, color: COLORS.onSurface, textTransform: 'uppercase', mb: 1 }}>
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: tokens.surfaceContainerLowest, border: `1px solid ${tokens.outlineVariant}` }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 800, color: tokens.onSurface, textTransform: 'uppercase', mb: 1 }}>
                   Post-Incident Audit Dossier
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mb: 1.5 }}>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mb: 1.5 }}>
                   Download signed compliance post-incident report PDF.
                 </Typography>
                 <Button
@@ -1575,7 +1558,7 @@ export default function TechWorkbench() {
                       toast(apiErrorMessage(e), 'error');
                     }
                   }}
-                  sx={{ borderColor: COLORS.secondary, color: COLORS.secondary, textTransform: 'none', fontSize: 12, fontWeight: 700 }}
+                  sx={{ borderColor: tokens.secondary, color: tokens.secondary, textTransform: 'none', fontSize: 12, fontWeight: 700 }}
                 >
                   Download Post-Incident PDF
                 </Button>
@@ -1659,23 +1642,23 @@ export default function TechWorkbench() {
         onClose={() => setIsResolveOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DoneAllIcon sx={{ color: COLORS.success }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface }}>
+            <DoneAllIcon sx={{ color: slaStateColor.MET }} />
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: tokens.onSurface }}>
               Resolve Incident {incident.code}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setIsResolveOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
+          <IconButton aria-label="Close resolve dialog" size="small" onClick={() => setIsResolveOpen(false)} sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
                 Root Cause Analysis (min 10 characters) *
               </Typography>
               <TextField
@@ -1687,12 +1670,12 @@ export default function TechWorkbench() {
                 error={!!fieldErrorFor(resolveErr, 'rootCause')}
                 helperText={fieldErrorFor(resolveErr, 'rootCause') ?? `${resolveRootCause.length}/2000`}
                 placeholder="Identify underlying cause (deadlock, packet loss, config misconfiguration, etc.)"
-                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
 
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
                 Resolution Actions &amp; Fix Notes (min 10 characters) *
               </Typography>
               <TextField
@@ -1706,12 +1689,12 @@ export default function TechWorkbench() {
                 error={!!fieldErrorFor(resolveErr, 'notes')}
                 helperText={fieldErrorFor(resolveErr, 'notes') ?? `${resolveNotes.length}/4000`}
                 placeholder="Describe corrective actions taken to resolve the failure..."
-                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
 
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
                 Steps for Long-Term Prevention (optional)
               </Typography>
               <TextField
@@ -1722,7 +1705,7 @@ export default function TechWorkbench() {
                 inputProps={{ maxLength: 4000 }}
                 helperText={`${resolveSteps.length}/4000`}
                 placeholder="Architectural safeguards, monitoring rule additions, etc."
-                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
 
@@ -1736,7 +1719,7 @@ export default function TechWorkbench() {
                 inputProps={{ min: 1, max: 10080, step: 1 }}
                 helperText={fieldErrorFor(resolveErr, 'timeSpentMinutes') ?? '1 to 10080 minutes'}
                 error={!!fieldErrorFor(resolveErr, 'timeSpentMinutes') || resolveTimeSpent !== '' && !(Number.isInteger(Number(resolveTimeSpent)) && Number(resolveTimeSpent) >= 1 && Number(resolveTimeSpent) <= 10080)}
-                sx={{ width: 200, bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+                sx={{ width: 200, bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
               <FormControlLabel
                 control={
@@ -1746,7 +1729,7 @@ export default function TechWorkbench() {
                     color="primary"
                   />
                 }
-                label={<Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>Mark as Reusable Fix for AI</Typography>}
+                label={<Typography sx={{ fontSize: 12.5, color: tokens.onSurface }}>Mark as Reusable Fix for AI</Typography>}
               />
             </Box>
 
@@ -1760,7 +1743,7 @@ export default function TechWorkbench() {
                   />
                 }
                 label={
-                  <Typography sx={{ fontSize: 12.5, color: COLORS.secondary, fontWeight: 700 }}>
+                  <Typography sx={{ fontSize: 12.5, color: tokens.secondary, fontWeight: 700 }}>
                     Resolve linked Problem Record #{incident.problemId} alongside this incident
                   </Typography>
                 }
@@ -1769,7 +1752,7 @@ export default function TechWorkbench() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsResolveOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+          <Button onClick={() => setIsResolveOpen(false)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
@@ -1778,7 +1761,7 @@ export default function TechWorkbench() {
             disabled={resolveRootCause.trim().length < 10 || resolveNotes.trim().length < 10}
             sx={{
               textTransform: 'none',
-              bgcolor: COLORS.success,
+              bgcolor: slaStateColor.MET,
               fontWeight: 700,
               '&:hover': { bgcolor: tokens.success, filter: 'brightness(0.9)' },
             }}
@@ -1794,36 +1777,36 @@ export default function TechWorkbench() {
         onClose={() => setIsEscalateOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUpIcon sx={{ color: COLORS.primary }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface }}>Escalate Incident</Typography>
+            <TrendingUpIcon sx={{ color: tokens.primary }} />
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: tokens.onSurface }}>Escalate Incident</Typography>
           </Box>
-          <IconButton size="small" onClick={() => setIsEscalateOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
+          <IconButton aria-label="Close escalate dialog" size="small" onClick={() => setIsEscalateOpen(false)} sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
+            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
               Raise the escalation tier of this incident by 1 level. Current level: Level {incident.escalationLevel}.
             </Typography>
 
             {incident.escalationPreview && (
-              <Paper sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
+              <Paper sx={{ p: 1.5, bgcolor: tokens.surfaceContainerLow, borderRadius: 2 }}>
                 {incident.escalationPreview.kind === 'EXHAUSTED' ? (
-                  <Typography sx={{ fontSize: 12, color: COLORS.error, fontWeight: 700 }}>
+                  <Typography sx={{ fontSize: 12, color: slaStateColor.VIOLATED, fontWeight: 700 }}>
                     Top escalation tier reached (Level {incident.escalationLevel}). No higher supervisory tier available.
                   </Typography>
                 ) : (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.secondary, fontWeight: 700 }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.secondary, fontWeight: 700 }}>
                       Target Tier: Level {incident.escalationPreview.toLevel} ({incident.escalationPreview.targetRole || 'Supervisory SRE'})
                     </Typography>
                     {incident.escalationPreview.recipients && incident.escalationPreview.recipients.length > 0 && (
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                         Will notify: {incident.escalationPreview.recipients.join(', ')}
                       </Typography>
                     )}
@@ -1833,7 +1816,7 @@ export default function TechWorkbench() {
             )}
 
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: COLORS.onSurface }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
                 Escalation Justification (min 10, max 1000 characters) *
               </Typography>
               <TextField
@@ -1844,13 +1827,13 @@ export default function TechWorkbench() {
                 value={escalateReason}
                 onChange={(e) => setEscalateReason(e.target.value)}
                 placeholder="Explain the technical impediment, blast radius, or skill requirement..."
-                sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsEscalateOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+          <Button onClick={() => setIsEscalateOpen(false)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
@@ -1863,9 +1846,9 @@ export default function TechWorkbench() {
             }
             sx={{
               textTransform: 'none',
-              bgcolor: COLORS.primary,
+              bgcolor: tokens.primary,
               fontWeight: 700,
-              '&:hover': { bgcolor: COLORS.primaryContainer },
+              '&:hover': { bgcolor: tokens.primaryDark },
             }}
           >
             Confirm Escalation
@@ -1879,23 +1862,23 @@ export default function TechWorkbench() {
         onClose={() => setIsRequestInfoOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { bgcolor: tokens.surfaceContainer, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 3, p: 1 } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PauseCircleIcon sx={{ color: COLORS.secondary }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: COLORS.onSurface }}>
+            <PauseCircleIcon sx={{ color: tokens.secondary }} />
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: tokens.onSurface }}>
               Request Information (Pause SLA)
             </Typography>
           </Box>
-          <IconButton size="small" onClick={() => setIsRequestInfoOpen(false)} sx={{ color: COLORS.onSurfaceVariant }}>
+          <IconButton aria-label="Close request-info dialog" size="small" onClick={() => setIsRequestInfoOpen(false)} sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: COLORS.border }}>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Paper sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
-              <Typography sx={{ fontSize: 12.5, color: COLORS.secondary, fontWeight: 700 }}>
+            <Paper sx={{ p: 1.5, bgcolor: tokens.surfaceContainerLow, borderRadius: 2 }}>
+              <Typography sx={{ fontSize: 12.5, color: tokens.secondary, fontWeight: 700 }}>
                 Dispatches a notification to {incident.reporter?.name || 'the reporter'} and pauses the SLA clock until info is provided.
               </Typography>
             </Paper>
@@ -1908,12 +1891,12 @@ export default function TechWorkbench() {
               onChange={(e) => setRequestInfoText(e.target.value)}
               inputProps={{ maxLength: 2000 }}
               helperText={`${requestInfoText.length}/2000 (at least 10)`}
-              sx={{ bgcolor: COLORS.surfaceContainerLowest, borderRadius: 1.5 }}
+              sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsRequestInfoOpen(false)} sx={{ textTransform: 'none', color: COLORS.onSurfaceVariant }}>
+          <Button onClick={() => setIsRequestInfoOpen(false)} sx={{ textTransform: 'none', color: tokens.onSurfaceVariant }}>
             Cancel
           </Button>
           <Button
@@ -1922,7 +1905,7 @@ export default function TechWorkbench() {
             disabled={requestInfoText.trim().length < 10}
             sx={{
               textTransform: 'none',
-              bgcolor: COLORS.secondary,
+              bgcolor: tokens.secondary,
               color: tokens.background,
               fontWeight: 800,
               '&:hover': { bgcolor: tokens.secondaryLight },

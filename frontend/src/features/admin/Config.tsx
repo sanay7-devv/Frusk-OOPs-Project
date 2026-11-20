@@ -152,7 +152,7 @@ export default function Config() {
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} mb={3} spacing={2}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>Runtime settings</Typography>
+          <Typography component="h1" variant="h4" fontWeight="bold" sx={{ color: tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>Runtime settings</Typography>
           <Typography sx={{ color: tokens.onSurfaceVariant, mt: 0.5, fontSize: 14 }}>
             Thresholds, assignment weights, strategies and lockout rules. Saved values apply immediately, with no restart.
           </Typography>
