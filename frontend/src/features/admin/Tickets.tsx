@@ -128,7 +128,7 @@ export default function Tickets() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <Tooltip title="Refresh"><IconButton aria-label="Refresh" onClick={() => list.refetch()} disabled={list.isFetching}><RefreshIcon /></IconButton></Tooltip>
+          <Tooltip title="Refresh"><span><IconButton aria-label="Refresh" onClick={() => list.refetch()} disabled={list.isFetching}><RefreshIcon /></IconButton></span></Tooltip>
           <Button variant="outlined" startIcon={<BookmarkIcon />} onClick={() => setViewsOpen(true)} sx={{ textTransform: 'none' }}>Saved views</Button>
           <Button variant="outlined" startIcon={<DownloadIcon />} disabled={exporting} onClick={(e) => setExportAnchor(e.currentTarget)} sx={{ textTransform: 'none' }}>Export</Button>
           <Menu anchorEl={exportAnchor} open={!!exportAnchor} onClose={() => setExportAnchor(null)}>

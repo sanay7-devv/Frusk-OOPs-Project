@@ -172,7 +172,7 @@ export default function AuditLog() {
         : (
         <>
         <AuditHistogram items={items} />
-        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: 1, borderColor: 'divider', overflow: 'hidden' }}>
+        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: 1, borderColor: 'divider', overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
               <TableRow>

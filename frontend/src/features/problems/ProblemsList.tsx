@@ -198,7 +198,7 @@ export default function ProblemsList() {
   const [tab, setTab] = useState<TabKey>('OPEN');
   return (
     <Box>
-      <Typography variant="h5" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 0.5 }}>
+      <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: tokens.onSurface, mb: 0.5 }}>
         Problems
       </Typography>
       <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>

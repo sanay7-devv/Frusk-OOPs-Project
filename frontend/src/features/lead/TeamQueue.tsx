@@ -37,7 +37,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 
-import LinkIcon from '@mui/icons-material/Link';
+import { Link as LinkIcon } from '@mui/icons-material';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../auth/AuthContext';
 import { listIncidents, getIncident, getRecommendations, assignIncident, addComment, getSimilarIncidents, listSavedFilters, createSavedFilter, deleteSavedFilter } from '../../api/incidents';
@@ -346,7 +346,7 @@ export default function TeamQueue() {
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <Button
               size="small"
               onClick={() => refetchQueue()}
