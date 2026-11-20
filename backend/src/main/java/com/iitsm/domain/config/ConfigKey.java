@@ -85,6 +85,10 @@ public enum ConfigKey {
     AI_PRIMARY("ai.primary", "LLM", "Primary text analysis engine (falls back to KEYWORD on failure)", Type.CHOICE,
             "LLM", "KEYWORD"),
 
+    // technician capacity bar: from this percent of maxLoad the bar shows a warning (DEC-121)
+    WORKLOAD_CAPACITY_WARN_PERCENT("workload.capacity.warn.percent", "80",
+            "Capacity percent of a technician's max load from which the workload bar warns", Type.INTEGER, "1", "100"),
+
     // notifications (module M9, decisions DEC-40, DEC-42, DEC-54)
     NOTIFICATION_DIGEST_THRESHOLD("notification.digest.threshold", "5",
             "SLA warnings one person may get in one monitor run before they are folded into one digest",

@@ -12,6 +12,7 @@ import com.iitsm.domain.incident.IncidentStatus;
 import com.iitsm.domain.incident.SlaState;
 import com.iitsm.domain.priority.Priority;
 import com.iitsm.domain.priority.PriorityBreakdown;
+import com.iitsm.domain.sla.CalendarType;
 import com.iitsm.domain.service.ItService;
 import com.iitsm.domain.user.User;
 
@@ -59,8 +60,20 @@ public final class IncidentViews {
                                  Instant acknowledgedAt, Instant resolvedAt, Instant closedAt,
                                  ClosureReason closureReason, Long problemId, Long duplicateOfId, int reopenCount,
                                  Instant pausedAt, ResolutionView resolution, Object feedback,
-                                 EscalationPreview escalationPreview, List<IncidentAction> allowedActions,
+                                 EscalationPreview escalationPreview, ReporterContact reporterContact,
+                                 SlaCalendarView slaCalendar, List<IncidentAction> allowedActions,
                                  long version) {
+    }
+
+    /** The reporter's email, department and location; only staff on the incident (or seeing all) get it, else null. */
+    public record ReporterContact(String email, String department, String location) {
+    }
+
+    /**
+     * How the incident's SLA minutes are counted: ALWAYS (24/7) or BUSINESS_HOURS, with the company calendar
+     * (zone, open, close, working days) when it is BUSINESS_HOURS. Null when no SLA policy applies.
+     */
+    public record SlaCalendarView(CalendarType type, String zone, String open, String close, String days) {
     }
 
     public record CommentView(Long id, Long incidentId, Ref author, CommentVisibility visibility, String body,

@@ -10,6 +10,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.iitsm.application.config.ConfigService;
+import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.application.incident.IncidentViewMapper;
 import com.iitsm.domain.assignment.WorkloadTracker;
 import com.iitsm.domain.exception.InputValidationException;
@@ -32,7 +34,7 @@ public class TechnicianWorkService {
     }
 
     public record WorkloadView(int load, int maxLoad, int activeIncidents, long resolvedThisWeek,
-                               List<Deadline> upcomingDeadlines) {
+                               List<Deadline> upcomingDeadlines, int capacityWarnPercent) {
     }
 
     private static final int UPCOMING = 10;
@@ -41,9 +43,11 @@ public class TechnicianWorkService {
     private final IncidentRepository incidents;
     private final IncidentViewMapper views;
     private final Clock clock;
+    private final ConfigService config;
 
     public TechnicianWorkService(UserRepository users, IncidentRepository incidents, IncidentViewMapper views,
-                                 Clock clock) {
+                                 Clock clock, ConfigService config) {
+        this.config = config;
         this.users = users;
         this.incidents = incidents;
         this.views = views;
@@ -76,6 +80,7 @@ public class TechnicianWorkService {
         }
         deadlines.sort(Comparator.comparing(Deadline::due));
         return new WorkloadView(WorkloadTracker.loadOf(active), profile.getMaxLoad(), active.size(),
-                resolvedThisWeek, deadlines.stream().limit(UPCOMING).toList());
+                resolvedThisWeek, deadlines.stream().limit(UPCOMING).toList(),
+                config.current().intValue(ConfigKey.WORKLOAD_CAPACITY_WARN_PERCENT));
     }
 }
