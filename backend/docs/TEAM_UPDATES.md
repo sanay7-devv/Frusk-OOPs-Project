@@ -373,7 +373,7 @@ Description and verified behavior: `SYSTEM_GUIDE.md` sections 12b.1, 12b.3 and 1
 ## Reporter contact, SLA calendar and capacity threshold (2026-11-20, DEC-121)
 
 - **Frontend:** `GET /incidents/{id}` adds `reporterContact` {email, department, location} (null unless you are staff on the incident or see all) and `slaCalendar` {type ALWAYS|BUSINESS_HOURS, zone, open, close, days}. `GET /technicians/me/workload` adds `capacityWarnPercent` (use it instead of the 80 constant).
-- **Testing / DevOps:** new `app_config` key `workload.capacity.warn.percent` (default 80, 1 to 100); no migration needed, and the seed may add a row (`docs/content/config_defaults.json` lists it).
+- **Testing / DevOps:** new `app_config` key `workload.capacity.warn.percent` (default 80, 1 to 100); no migration or seed row needed (a missing key takes its default). Do not add it to `config_defaults.json`: that regenerates `V100__reference_data.sql`, which is already applied, so Flyway would reject the changed checksum; a row would need a new migration.
 
 ## Several CORS origins and date-only parameters (2026-11-20, DEC-120)
 

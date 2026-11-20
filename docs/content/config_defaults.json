@@ -175,11 +175,6 @@
     "description": "Primary text analysis engine (falls back to KEYWORD on failure)"
   },
   {
-    "key": "workload.capacity.warn.percent",
-    "value": "80",
-    "description": "Capacity percent of a technician's max load from which the workload bar warns"
-  },
-  {
     "key": "notification.digest.threshold",
     "value": "5",
     "description": "SLA warnings one person may get in one monitor run before they are folded into one digest"
