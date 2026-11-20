@@ -1,5 +1,23 @@
 # Testing and DevOps: what is left, and the optional full test catalogue
 
+## Handoff update — 2026-11-20
+
+This update is on branch `testing/task3-incident-exception-tests` at commit `999ed76`; it is not on `main`.
+
+- **R11: started, not yet complete.** `IncidentStateTest` checks all ten status-to-state mappings and the legal-action sets, plus a few rejected transitions. It still needs the handbook's full state/action transition coverage, including successful next-state assertions and rejection of every invalid move. `ExceptionMappingTest` checks the expected code and HTTP status for all 22 current `ItsmException` subclasses; it still needs to check `GlobalExceptionHandler`'s `ErrorResponse` output.
+- **Backend validation is pending.** The tests could not be run here because this environment has no Java runtime. A teammate with the project JDK should run them, fix any compile or test failures, and run the full backend suite.
+- **Frontend validation on this checkout:** `npm test -- --run` passed (28 tests in 8 files), `npm run lint` passed, and `npm run build` passed. The build reports a bundle-size warning (main JS chunk is about 1.9 MB before gzip) and Vite/plugin deprecation warnings. These are not test failures.
+
+### Remaining handoff items
+
+1. Finish and run R11 backend tests as described above; have a teammate with Java validate them and the full backend suite.
+2. R10: review coverage for the audit seal, account security, password reset/two-step login, Problems/Major Incident and Reports screens, plus the filter bar and SLA colour states. Coordinate screen-level tests with the Frontend Developer.
+3. R6: on the recording laptop, time the demo reset and fresh-clone setup; update `deploy/README.md` and re-check the JDK image in `deploy/backend.Dockerfile`.
+4. A7: run the load test and record the measurements in `backend/docs/SCALING.md` or the designated report.
+5. R5: fill the dry-run log, rehearse all five demo segments, and record the demo with the team.
+6. R3/R7: browser-check script-text rendering; capture per-case evidence; rerun the 26 cases against the final commit; reconcile the report's 53-vs-54 backend test count from Surefire output.
+7. R8: create the `severity:*` and `area:*` labels and verify the project board. The repository owner must configure branch protection on `main`.
+
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
 **Update on 2026-11-19** (checked on `shared/main` at `638e42b`, the merge of PR #46):
