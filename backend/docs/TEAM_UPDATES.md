@@ -370,6 +370,11 @@ Description and verified behavior: `SYSTEM_GUIDE.md` sections 12b.1, 12b.3 and 1
 - **Report and content:** similarity now has two engines. Say in the report: "Gemini embeddings when the key and quota allow, TF-IDF cosine otherwise; each answer names its source." Thresholds differ because Gemini vectors are bunched together (calibrated during B3 on the 212 seed incidents, DEC-M12-10: unrelated pairs had a median cosine near 0.85 and same-issue pairs near 0.95 then, not re-measured since); DEC-M12-10 has the reasoning and cross-questions. Report PDF export now exists for all eight report types.
 - **Everyone:** the count to quote for the API is **129 operations** in the contract; do not quote 132 (that includes three demo-only methods).
 
+## Reporter contact, SLA calendar and capacity threshold (2026-11-20, DEC-121)
+
+- **Frontend:** `GET /incidents/{id}` adds `reporterContact` {email, department, location} (null unless you are staff on the incident or see all) and `slaCalendar` {type ALWAYS|BUSINESS_HOURS, zone, open, close, days}. `GET /technicians/me/workload` adds `capacityWarnPercent` (use it instead of the 80 constant).
+- **Testing / DevOps:** new `app_config` key `workload.capacity.warn.percent` (default 80, 1 to 100); no migration or seed row needed (a missing key takes its default). Do not add it to `config_defaults.json`: that regenerates `V100__reference_data.sql`, which is already applied, so Flyway would reject the changed checksum; a row would need a new migration.
+
 ## Several CORS origins and date-only parameters (2026-11-20, DEC-120)
 
 From Sanay's `fronted-version-final`, merged with review fixes.

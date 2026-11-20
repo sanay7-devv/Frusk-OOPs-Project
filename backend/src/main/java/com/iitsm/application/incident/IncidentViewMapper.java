@@ -19,7 +19,9 @@ import com.iitsm.application.incident.IncidentViews.CommentView;
 import com.iitsm.application.incident.IncidentViews.IncidentDetail;
 import com.iitsm.application.incident.IncidentViews.IncidentSummary;
 import com.iitsm.application.incident.IncidentViews.Ref;
+import com.iitsm.application.incident.IncidentViews.ReporterContact;
 import com.iitsm.application.incident.IncidentViews.ResolutionView;
+import com.iitsm.application.incident.IncidentViews.SlaCalendarView;
 import com.iitsm.domain.config.AppSettings;
 import com.iitsm.domain.config.ConfigKey;
 import com.iitsm.domain.exception.SlaNotConfiguredException;
@@ -30,6 +32,7 @@ import com.iitsm.domain.incident.IncidentAction;
 import com.iitsm.domain.incident.IncidentComment;
 import com.iitsm.domain.incident.Resolution;
 import com.iitsm.domain.incident.SlaState;
+import com.iitsm.domain.sla.CalendarType;
 import com.iitsm.domain.sla.SlaPolicy;
 import com.iitsm.domain.sla.SlaPolicyResolver;
 import com.iitsm.domain.sla.SlaTargets;
@@ -109,7 +112,30 @@ public class IncidentViewMapper {
                 incident.getDuplicateOf() == null ? null : incident.getDuplicateOf().getId(),
                 incident.getReopenCount(), incident.getSla().getPausedAt(), resolution, feedback,
                 staffSeesPreview(caller, incident) ? escalationPreviews.preview(incident, now) : null,
-                allowed.stream().sorted().toList(), incident.getVersion());
+                staffSeesPreview(caller, incident) ? reporterContact(incident) : null,
+                slaCalendar(incident, settings), allowed.stream().sorted().toList(), incident.getVersion());
+    }
+
+    /** Contact details are personal data, so they follow the same rule as the escalation preview (staff on it). */
+    private static ReporterContact reporterContact(Incident incident) {
+        var reporter = incident.getReporter();
+        if (reporter == null) {
+            return null;
+        }
+        var profile = reporter.employeeRole().map(r -> r.getProfile()).orElse(null);
+        return new ReporterContact(reporter.getEmail(), profile == null ? null : profile.getDepartment(),
+                profile == null ? null : profile.getLocation());
+    }
+
+    private SlaCalendarView slaCalendar(Incident incident, AppSettings settings) {
+        if (incident.getPriority() == null) {
+            return null;
+        }
+        return findPolicy(incident).map(p -> p.getCalendarType() == CalendarType.BUSINESS_HOURS
+                ? new SlaCalendarView(CalendarType.BUSINESS_HOURS, settings.raw(ConfigKey.SLA_BUSINESS_ZONE),
+                        settings.raw(ConfigKey.SLA_BUSINESS_OPEN), settings.raw(ConfigKey.SLA_BUSINESS_CLOSE),
+                        settings.raw(ConfigKey.SLA_BUSINESS_DAYS))
+                : new SlaCalendarView(p.getCalendarType(), null, null, null, null)).orElse(null);
     }
 
     /** The escalation preview names people and timers, so only staff on the incident see it. */

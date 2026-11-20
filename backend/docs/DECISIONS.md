@@ -2168,3 +2168,17 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **Trade-off.** A date-only value means UTC midnight, not the viewer's midnight, so the frontend keeps sending full date-times. The converter is wider than the contract (which says `date-time`); the contract is unchanged because every date-time still works.
 
 **Cross-question.** *"Why did the WebSocket need its own change?"* `setAllowedOrigins` on the STOMP endpoint got the whole comma string as one origin, so no browser origin matched and live updates would have been refused; found in review and fixed before merge.
+
+### DEC-121: Reporter contact, SLA calendar and capacity threshold for staff screens
+
+| When | Module | Status |
+|---|---|---|
+| 2026-11-20 (final frontend round) | M4, M7, M6 | ✅ |
+
+**Decision.** `IncidentDetail.reporterContact` (email, department, location) is filled only for staff on the incident or users who see all incidents, using the same rule as the escalation preview; everyone else gets null. `IncidentDetail.slaCalendar` says whether the SLA counts 24/7 or business hours and, for business hours, gives the company calendar from `app_config`. `WorkloadView.capacityWarnPercent` comes from the new key `workload.capacity.warn.percent` (default 80), so the technician capacity bar no longer hard-codes 80.
+
+**Options.** A new endpoint per piece (three more calls per screen); **additive fields on the existing views** ✔ (no breaking change, one call); give contact details to every reader (personal data to other employees: rejected).
+
+**Trade-off.** Two more lookups per detail (the reporter's profile, the SLA policy already cached for the state). The key needs no migration: missing keys take their default.
+
+**Cross-question.** *"Why can a technician see the reporter's department but another employee cannot?"* Staff need it to reach the person; the access rule is the existing `staffSeesPreview`, so no new permission was invented.
