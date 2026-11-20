@@ -34,8 +34,6 @@ const TAB_LABEL: Record<TabKey, string> = { today: 'Today', previous: 'Earlier',
 const headSx = { fontSize: 12, fontWeight: 600, color: tokens.onSurfaceVariant, whiteSpace: 'nowrap' } as const;
 const cellSx = { fontSize: 13, whiteSpace: 'nowrap', py: 1 } as const;
 
-const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
 export default function Tickets() {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
@@ -99,11 +97,18 @@ export default function Tickets() {
     setExportAnchor(null);
     setExporting(true);
     try {
-      const today = isoDay(new Date());
-      const yesterday = isoDay(new Date(Date.now() - 86_400_000));
-      const range = tab === 'today' ? { from: today, to: today }
-        : tab === 'previous' ? { to: yesterday }
-          : { from: get('from') || undefined, to: get('to') || undefined };
+      const now = new Date();
+      const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString();
+      const endOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+      const endOfYesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 23, 59, 59, 999)).toISOString();
+      const customFrom = get('from');
+      const customTo = get('to');
+      const range = tab === 'today' ? { from: startOfToday, to: endOfToday }
+        : tab === 'previous' ? { to: endOfYesterday }
+          : {
+              from: customFrom ? new Date(`${customFrom}T00:00:00.000Z`).toISOString() : undefined,
+              to: customTo ? new Date(`${customTo}T23:59:59.999Z`).toISOString() : undefined,
+            };
       await downloadReport('incidents', format, range);
     } catch (e) {
       toast(apiErrorMessage(e), 'error');

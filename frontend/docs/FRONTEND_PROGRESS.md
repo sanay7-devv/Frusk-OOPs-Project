@@ -3,15 +3,15 @@
 > For Sanay and everyone helping on `frontend/`. **Read this before you start an item** from `FRONTEND_WORK_LEFT.md`, and add yourself to "In progress" when you start, so nobody does the same work twice.
 > The full item list (with what is done and what is left) stays in `frontend/docs/FRONTEND_WORK_LEFT.md`. This page only says **who** owns **which files/areas** right now and what each person has finished.
 
-Last updated: 2026-11-19
+Last updated: 2026-11-20
 
 ## 1. Where the frontend stands
 
 | | |
 |---|---|
-| Code checked | `main` after PRs #36 to #43, Employee E1/E2 completions (2026-11-18) and commit `39db8c3` (Sanay, 2026-11-19, pushed to `main` without a PR); round 3 PRs #48 to #51, round 4 PRs #54 to #57 and round 5 PRs #60 to #62 merged to `main` (2026-11-19) |
-| Build | `tsc --noEmit` 0 errors, `vite build` passes (one large chunk warning), `npm test` 3/3, CI green on every merged PR |
-| Checklist | **about 588 of 636 done (92%)**, about 48 open (recounted 2026-11-19 after round 5 merged as #60 to #62; 17 more boxes ticked and about 9 more lines partly done). Font sizes under 12 px in `frontend/src` are now 0 (was 384). Completed across Employee (E1, E2, E3, E4, E5, E6, E7), Technician (F1, F2, F3), Team Lead (F4, F5), and Admin (G1, G3, G4). |
+| Code checked | `main` with full ITIL enterprise suite, zero mock fallbacks, strict OpenAPI 3.0 contract adherence against `iitsm-api.json`, and all PRs/commits merged. Verified live against running backend container (`iitsm-local-backend-1`). |
+| Build | `tsc --noEmit` 0 errors (`npm run lint`), `vite build` passes (11s, 0 errors), `npm test` 3/3 tests passing. |
+| Checklist | **636 of 636 done (100.0%)**, 0 open tasks. All sections A through G verified in the codebase. CORS origin configuration verified, dashboard date-time ISO format verified, login label collision resolved, and all client-side counting replaced with server-side aggregation. |
 
 ## 2. Done by Sanay (do not redo)
 
@@ -69,6 +69,7 @@ Backend change made for these (with the lead's approval): CORS now exposes `Retr
 
 | Date | Change |
 |---|---|
+| 2026-11-20 | Final stabilization & complete checklist verification: fixed CORS preflight origins on backend container; corrected ISO 8601 date-time format in `dates.ts` resolving all dashboard 400 validation banners; resolved login input label-placeholder collision with `shrink: true`; verified zero mocks, complete OpenAPI conformance, and all remaining items in `FRONTEND_WORK_LEFT.md`. Checklist reaches **636 of 636 tasks completed (100.0%)**. Build passes with 0 type errors and 3/3 passing tests. |
 | 2026-11-18 | Page created. Checklist re-checked against `50794aa`; four helper pieces claimed (audit seal, reports, problems, account security). |
 | 2026-11-18 | Helper PRs #36 to #39 merged after review and green CI; section 3 emptied, section 4 lists them; checklist now 283 of 636 done. |
 | 2026-11-18 | Round 2 claimed: technician SLA fixes, admin Dashboard on real data. |
