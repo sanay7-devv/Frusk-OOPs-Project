@@ -2,7 +2,9 @@
 
 ## Handoff update — 2026-11-21
 
-The Task 3 follow-up was merged into `main` through [PR #83](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/83) on 2026-11-21 (merge commit `cdaddef`). The latest pre-merge CI run (44917367587) passed all six jobs: 62 backend tests (60 passed and 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62), 45 frontend tests across 9 files, 71 Postman requests / 149 assertions, and 30 security checks. The seven requested severity/area labels are now created. GitHub shows no project board linked and no projects available to link; the branch settings page is unavailable to this collaborator account. Post-merge CI is running.
+The Task 3 follow-up was merged into `main` through [PR #83](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/83) on 2026-11-21 (merge commit `cdaddef`). The latest pre-merge CI run (44917367587) passed all six jobs: 62 backend tests (60 passed and 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62), 45 frontend tests across 9 files, 71 Postman requests / 149 assertions, and 30 security checks. The follow-up documentation correction was merged through [PR #84](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/84); its CI run (44920118833) passed. The seven requested severity/area labels are now created. GitHub shows no project board linked and no projects available to link; the branch settings page is unavailable to this collaborator account.
+
+The Task 3 follow-up and a documentation correction were subsequently merged through PRs #83 and #84. A new, unmerged branch `qa/task3-ci-browser-load` adds a Chromium browser security check and a reproducible A7 load-test workflow. Its CI evidence is pending; do not report either check as passed until the matching workflow runs successfully.
 
 - **R11: Done, 12 of 12 classes.** `IncidentStateTest` covers every status, its legal actions, invalid moves, successful lifecycle moves and alternate actions. `ExceptionMappingTest` checks all 22 `ItsmException` subclasses. `GlobalExceptionHandlerTest` checks the standard field-validation response. The PR CI run passes these checks.
 - **Backend count:** the PR CI run reports 62 tests: 60 passed and 2 demo-only `SeedCompatibilityTest` checks skipped in the normal backend job. Both dev and demo seed jobs run all 62.
@@ -15,12 +17,12 @@ This list replaces the 2026-11-19 table below, which is kept as history.
 | # | Item | What is left | Who |
 |---|---|---|---|
 | 1 | R6 reset time, fresh clone | CI rebuilt the JDK runtime image successfully. Still time the demo reset and a fresh-clone setup on the recording laptop, then replace "unmeasured" in `deploy/README.md`. | Testing |
-| 2 | A7 load test | Run it and record the numbers in `backend/docs/SCALING.md`; the index review and scale-out path are already there. | Testing |
+| 2 | A7 load test | `deploy/task3_load_test.py` and a dedicated disposable-stack workflow now cover 10/25/50 concurrent reporting and reading/report requests plus a five-minute mixed run. After CI finishes, copy its measured stage-0 results into `backend/docs/SCALING.md`. Testing 10k/100k data growth and index changes remains separate. | Testing |
 | 3 | R5 demo | The five-segment checklist and recording-day preflight are ready. Rehearse all five segments, fill the dated dry-run log, and record. | Testing, whole team |
-| 4 | R3 browser check | On the disposable local stack, confirm `<script>` in an incident title, description and comment is displayed as text and does not execute. API checks alone do not prove browser rendering. | Testing |
+| 4 | R3 browser check | `deploy/browser_xss_check.cjs` now signs in through the real UI and checks untrusted title, description and comment markup in Chromium on the disposable CI stack. Wait for the CI result and retain its JSON/screenshot artifact as evidence. | Testing |
 | 5 | R8 repo settings | **Done:** created all seven `severity:*` and `area:*` labels. GitHub shows no project board linked and no projects available to link; the repository owner/team needs to create one if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
 
-Done: R1, R2, R4 and R9 are merged. R8 labels are created; no project is available to link. R10 and R11 follow-up tests are merged via PR #83. R6, A7, R5 rehearsal and R3 browser evidence require a real test environment or team members; branch-protection settings need the repository owner.
+Done: R1, R2, R4 and R9 are merged. R8 labels are created; no project is available to link. R10 and R11 follow-up tests are merged via PR #83. R6 and R5 rehearsal still require the recording laptop and team members. R3 browser evidence and stage-0 A7 numbers are pending the CI workflows on `qa/task3-ci-browser-load`; branch-protection settings need the repository owner.
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 

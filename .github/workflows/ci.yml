@@ -163,7 +163,7 @@ jobs:
   demo-stack:
     name: Demo stack and snapshot round trip
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       APP_SCHEDULING_ENABLED: "false"
     steps:
@@ -181,6 +181,17 @@ jobs:
         run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo exec -T db psql -U iitsm -d iitsm -v ON_ERROR_STOP=1 < db/checks/verify.sql
       - name: Check real API logins and authorization
         run: python3 deploy/api_smoke.py
+      - name: Set up Node.js for the browser security check
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Install Chromium for browser security check
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: /tmp/iitsm-playwright/browsers
+        run: |
+          mkdir -p /tmp/iitsm-playwright
+          npm install --prefix /tmp/iitsm-playwright --no-save --no-package-lock playwright@1.65.0
+          /tmp/iitsm-playwright/node_modules/.bin/playwright install --with-deps chromium
       - name: Snapshot and restore round trip
         run: |
           bash db/tools/snapshot.sh
@@ -197,6 +208,11 @@ jobs:
         run: python3 deploy/security_checks.py
       - name: Verify demo audit tamper detection and restoration
         run: python3 deploy/check_audit_tamper.py
+      - name: Verify incident text and comments render safely in Chromium
+        env:
+          NODE_PATH: /tmp/iitsm-playwright/node_modules
+          PLAYWRIGHT_BROWSERS_PATH: /tmp/iitsm-playwright/browsers
+        run: node deploy/browser_xss_check.cjs
       - name: Save stack logs
         if: always()
         run: |
@@ -214,6 +230,8 @@ jobs:
             /tmp/iitsm-handbook-contracts.json
             /tmp/iitsm-security-checks.json
             /tmp/iitsm-audit-tamper.json
+            /tmp/iitsm-browser-xss.json
+            /tmp/iitsm-browser-xss.png
       - name: Shut down disposable stack
         if: always()
         run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo down --volumes
