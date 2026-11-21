@@ -78,8 +78,8 @@ async function main() {
 
     await page.goto(`${frontendBase}/login`, { waitUntil: 'domcontentloaded' });
     const loginForm = page.locator('form');
-    await loginForm.getByLabel('Email Address').fill('employee1@iitsm.demo');
-    await loginForm.getByLabel('Password').fill('Demo@1234');
+    await loginForm.locator('input[name="email"]').first().fill('employee1@iitsm.demo');
+    await loginForm.locator('input[name="password"]').first().fill('Demo@1234');
     await loginForm.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL('**/employee/home', { timeout: 30000 });
     await page.goto(`${frontendBase}/employee/incidents/${incident.id}`, { waitUntil: 'domcontentloaded' });
