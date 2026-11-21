@@ -19,6 +19,13 @@ import {
   Divider,
   CircularProgress,
   Stack,
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   DoneAll as DoneAllIcon,
@@ -56,6 +63,7 @@ import {
 import { provideInfo, verifyIncident, submitFeedback } from '../../api/incidents';
 import type { AppNotification } from '../../api/types';
 import { apiErrorMessage } from '../../utils/errors';
+import { humanizeEnum } from '../../utils/format';
 import PushDevicesDialog from './PushDevicesDialog';
 
 import { tokens } from '../../theme/theme';
@@ -91,6 +99,12 @@ function isToday(isoString: string): boolean {
   } catch {
     return false;
   }
+}
+
+function extractIncidentCode(n?: AppNotification | null): string {
+  if (!n) return '';
+  const match = (n.title + ' ' + n.message).match(/INC-\d{4}-\d{5}/i);
+  return match ? match[0].toUpperCase() : (n.incidentId ? `INC-${n.incidentId}` : '');
 }
 
 export default function Notifications() {
@@ -403,7 +417,7 @@ export default function Notifications() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, overflowX: 'auto', pb: { xs: 0.5, md: 0 } }}>
           {(
             [
-              { id: 'ALL', label: `All Notifications (${allItems.length})` },
+              { id: 'ALL', label: `All Notifications (${pageData?.totalItems ?? allItems.length})` },
               { id: 'UNREAD', label: `Unread (${unreadTotal})` },
               { id: 'ACTION', label: `Action Required (${actionCount})` },
               { id: 'SLA', label: `SLA Alerts (${slaCount})` },
@@ -646,9 +660,9 @@ export default function Notifications() {
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight }}>
-                  REPLY TO INCIDENT #{replyItem.incidentId}
+                  REPLY TO {extractIncidentCode(replyItem) || 'INCIDENT'}
                 </Typography>
-                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
+                <Typography variant="h6" component="span" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                   {replyItem.title}
                 </Typography>
               </Box>
@@ -719,7 +733,7 @@ export default function Notifications() {
         {verifyItem && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
+              <Typography variant="h6" component="span" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                 Verify Resolution
               </Typography>
               <IconButton aria-label="Close verify dialog" onClick={() => setVerifyItem(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
@@ -728,7 +742,7 @@ export default function Notifications() {
             </DialogTitle>
             <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
               <Typography sx={{ fontSize: 13, color: tokens.onSurface, mb: 2 }}>
-                Please confirm that incident #{verifyItem.incidentId} has been resolved to your satisfaction:
+                Please confirm that {extractIncidentCode(verifyItem) || 'the incident'} has been resolved to your satisfaction:
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, mb: 1, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
@@ -794,56 +808,82 @@ export default function Notifications() {
         }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white }}>
-            Notification Preferences
+          <Typography variant="h6" component="span" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
+            Notification preferences
           </Typography>
           <IconButton aria-label="Close preferences dialog" onClick={() => setPrefsOpen(false)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
-          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
-            Manage notification preferences across communication channels. Critical alerts and in-app system channels are locked.
-          </Typography>
-          <Stack spacing={1}>
-            {localPrefs.map((pref, idx) => (
-              <Box
-                key={`${pref.channel}-${pref.eventType}`}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  p: 1.2,
-                  borderRadius: '8px',
-                  bgcolor: alpha(tokens.white, 0.02),
-                  border: `1px solid ${tokens.hover}`,
-                }}
-              >
-                <Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>
-                    {pref.eventType.replace(/_/g, ' ')}
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: tokens.textDisabled }}>
-                    Channel: {pref.channel} {pref.locked ? '(Locked by Policy)' : ''}
-                  </Typography>
-                </Box>
-                <Switch
-                  checked={pref.enabled}
-                  disabled={pref.locked}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setLocalPrefs((prev) =>
-                      prev.map((p, i) => (i === idx ? { ...p, enabled: checked } : p))
-                    );
-                  }}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': { color: tokens.secondaryLight },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: tokens.secondary },
-                  }}
-                />
-              </Box>
-            ))}
-          </Stack>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant, p: 0 }}>
+          <Box sx={{ p: 2, pb: 1 }}>
+            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
+              Manage notification preferences across communication channels. Critical alerts and in-app system channels are locked.
+            </Typography>
+          </Box>
+          {(() => {
+            const matrixChannels = Array.from(new Set(localPrefs.map((p) => p.channel)));
+            const matrixEvents = Array.from(new Set(localPrefs.map((p) => p.eventType)));
+            return (
+              <TableContainer sx={{ maxHeight: 420 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ bgcolor: tokens.surfaceContainerLow, color: tokens.onSurfaceVariant, fontSize: 12, fontWeight: 700, borderColor: tokens.outlineVariant }}>
+                        Event
+                      </TableCell>
+                      {matrixChannels.map((ch) => (
+                        <TableCell key={ch} align="center" sx={{ bgcolor: tokens.surfaceContainerLow, color: tokens.onSurfaceVariant, fontSize: 12, fontWeight: 700, borderColor: tokens.outlineVariant }}>
+                          {ch === 'IN_APP' ? 'In-app' : ch === 'SMS_SIM' ? 'SMS' : ch === 'WEBSOCKET' ? 'Live feed' : humanizeEnum(ch)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {matrixEvents.map((evt) => (
+                      <TableRow key={evt} hover>
+                        <TableCell sx={{ borderColor: tokens.outlineVariant, fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>
+                          {humanizeEnum(evt)}
+                        </TableCell>
+                        {matrixChannels.map((ch) => {
+                          const prefIdx = localPrefs.findIndex((p) => p.eventType === evt && p.channel === ch);
+                          const pref = prefIdx >= 0 ? localPrefs[prefIdx] : null;
+                          if (!pref) {
+                            return (
+                              <TableCell key={ch} align="center" sx={{ borderColor: tokens.outlineVariant, color: tokens.textDisabled, fontSize: 12 }}>
+                                —
+                              </TableCell>
+                            );
+                          }
+                          return (
+                            <TableCell key={ch} align="center" sx={{ borderColor: tokens.outlineVariant }}>
+                              <Checkbox
+                                size="small"
+                                checked={pref.enabled}
+                                disabled={pref.locked}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setLocalPrefs((prev) =>
+                                    prev.map((p, i) => (i === prefIdx ? { ...p, enabled: checked } : p))
+                                  );
+                                }}
+                                sx={{
+                                  p: 0.5,
+                                  color: tokens.outlineVariant,
+                                  '&.Mui-checked': { color: tokens.secondaryLight },
+                                  '&.Mui-disabled': { opacity: 0.4 },
+                                }}
+                              />
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            );
+          })()}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setPrefsOpen(false)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
@@ -860,7 +900,7 @@ export default function Notifications() {
               textTransform: 'none',
             }}
           >
-            Save Preferences
+            Save preferences
           </Button>
         </DialogActions>
       </Dialog>
@@ -1079,7 +1119,7 @@ function NotificationCard({
                     px: 1.2,
                   }}
                 >
-                  View Ticket #{notif.incidentId}
+                  View {extractIncidentCode(notif) || 'Incident'}
                 </Button>
               )}
 

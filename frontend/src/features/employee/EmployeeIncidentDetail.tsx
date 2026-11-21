@@ -175,31 +175,31 @@ export default function EmployeeIncidentDetail() {
   const { data: comments = [] } = useQuery<CommentView[]>({
     queryKey: ['incidents', numId, 'comments'],
     queryFn: () => getComments(numId),
-    enabled: !isNaN(numId) && numId > 0,
+    enabled: !isNaN(numId) && numId > 0 && !!incident,
   });
 
   const { data: history = [] } = useQuery<AuditEntry[]>({
     queryKey: ['incidents', numId, 'history'],
     queryFn: () => getHistory(numId),
-    enabled: !isNaN(numId) && numId > 0,
+    enabled: !isNaN(numId) && numId > 0 && !!incident,
   });
 
   const { data: attachments = [] } = useQuery<AttachmentView[]>({
     queryKey: ['incidents', numId, 'attachments'],
     queryFn: () => listAttachments(numId),
-    enabled: !isNaN(numId) && numId > 0,
+    enabled: !isNaN(numId) && numId > 0 && !!incident,
   });
 
   const { data: similarIncidents = [] } = useQuery<SimilarIncidentView[]>({
     queryKey: ['incidents', numId, 'similar'],
     queryFn: () => getSimilarIncidents(numId),
-    enabled: !isNaN(numId) && numId > 0 && activeTab === 'similar',
+    enabled: !isNaN(numId) && numId > 0 && !!incident && activeTab === 'similar',
   });
 
   const { data: pirData, isLoading: pirLoading } = useQuery<PostIncidentReport>({
     queryKey: ['incidents', numId, 'pir'],
     queryFn: () => getPostIncidentReport(numId),
-    enabled: !isNaN(numId) && numId > 0 && pirOpen,
+    enabled: !isNaN(numId) && numId > 0 && !!incident && pirOpen,
   });
 
   // Mutations
@@ -1683,7 +1683,7 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
+          <Typography component="span" variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
             Incident report for {incident.code}
           </Typography>
           <Button

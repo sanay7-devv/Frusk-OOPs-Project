@@ -122,6 +122,7 @@ export default function AppRoutes() {
             <Route path="/admin/demo" element={<DemoControls />} />
             <Route path="/admin/problems" element={<ProblemsList />} />
             <Route path="/admin/problems/:id" element={<ProblemDetail />} />
+            <Route path="*" element={<NotFound embedded />} />
           </Route>
         </Route>
       </Route>

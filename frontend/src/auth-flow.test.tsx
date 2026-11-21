@@ -107,7 +107,7 @@ afterEach(() => {
 
 /** Opens the seed-account list, fills the form from the row with this email and signs in. */
 function signInWithSeedAccount(email: string) {
-  fireEvent.click(screen.getByRole('button', { name: /View Default Database Credentials/i }));
+  fireEvent.click(screen.getByRole('button', { name: /(View Default Database Credentials|Show demo accounts)/i }));
   fireEvent.click(screen.getByText(email));
   fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
 }

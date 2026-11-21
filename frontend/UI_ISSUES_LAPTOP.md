@@ -17,15 +17,15 @@ Status: [ ] open, [x] fixed. Fix all at once, then re-check.
 - [ ] SLA page: raw enum "BUSINESS_HOURS" in calendar heading
 - [ ] SLA table: "1 days" (plural for 1)
 - [ ] Audit: action chip "Sla violated" should be "SLA violated" (acronyms in humanised enums: SLA, P1, AI, LLM...)
-- [ ] Audit: description "missed by 267574 s" (raw seconds) and "response due 2026-11-20T19:54..." (raw ISO); backend text, make readable
+- [x] Audit: description "missed by 267574 s" (raw seconds) and "response due 2026-11-20T19:54..." (raw ISO); backend text, make readable
 - [ ] Audit: "To is exclusive" helper text is unclear
 - [ ] Audit: header "Time (your local time)" wraps
 - [ ] Services: "86% of 7" unclear (means 7 judged); "Depends on: Nothing" should be "None"
-- [ ] Users: "10 / 10 · available" for a full technician; should say full
+- [x] Users: "10 / 10 · available" for a full technician; should say full
 - [ ] Dashboard: team capacity "10 of 10 load, 4 active" wording
 - [ ] Dashboard donut: label "3: 55" lost its "P"; "P1: 10" clipped at the right edge
 - [ ] Reports: per-technician "Average time to resolve" is one long run-on line of "X no data · Y 10 min"
-- [ ] Reports workload chart: "Capacity" legend label nearly invisible
+- [x] Reports workload chart: "Capacity" legend label nearly invisible
 
 - [ ] Simulator: strategy shown as raw enum "COMPOSITE" (dropdown and weights hint)
 - [ ] Dates use 4 formats ("11/21/2026, 12:24:15 AM", "21 Nov 2026, 00:24", "11/15/26, 9:54 PM", "11-14"); use one shared formatter
@@ -59,7 +59,7 @@ Status: [ ] open, [x] fixed. Fix all at once, then re-check.
 - [ ] Buttons wrap to 2 lines in page headers (Config Save/Discard, Services "Dependency graph"/"New service", Categories "Add skill"/"Add category", Escalation "Add level"); fix globally (nowrap)
 - [ ] Categories table: row cells shifted one column (Status shows under "Eligible technicians", actions under Status, "Actions" header cut off)
 - [ ] Admin incidents table: last column (Created) cut off at laptop width
-- [ ] SLA "Which policy applies?": Service select label overlaps its value
+- [x] SLA "Which policy applies?": Service select label overlaps its value
 - [ ] Page headers inconsistent (Users/Services/SLA use icon card header; others plain h1)
 
 ## Open: data correctness
@@ -70,20 +70,20 @@ Status: [ ] open, [x] fixed. Fix all at once, then re-check.
 
 ## Design tweaks (polish pass)
 Global (theme / layout, admin worker):
-- [ ] One product name everywhere: login says "IITSM Platform / Enterprise Incident & Service Command System", app bar says "IITSM Enterprise / COMMAND CENTRE"
+- [x] One product name everywhere: login says "IITSM Platform / Enterprise Incident & Service Command System", app bar says "IITSM Enterprise / COMMAND CENTRE"
 - [ ] App bar shows the role twice ("Admin View" switcher plus "ADMIN VIEW" under the name); keep the switcher, show the email or nothing under the name
-- [ ] Notification badge: hot pink and large; use the theme red, cap at "99+", smaller
-- [ ] Sidebar: at 768px height the INSIGHT and TOOLS groups (Reports, Audit, Wallboard, Demo, Account) are below the fold with an inner scrollbar; tighten item height and spacing so everything fits at 1366x768; drop the extra "ADMIN CONSOLE" label above "OPERATIONS"
+- [x] Notification badge: hot pink and large; use the theme red, cap at "99+", smaller
+- [x] Sidebar: at 768px height the INSIGHT and TOOLS groups (Reports, Audit, Wallboard, Demo, Account) are below the fold with an inner scrollbar; tighten item height and spacing so everything fits at 1366x768; drop the extra "ADMIN CONSOLE" label above "OPERATIONS"
 - [ ] Page headers come in 3 styles (plain h1; icon + card; breadcrumb + giant title) with title sizes from ~26px to ~36px; make one `PageHeader` (title, one-line subtitle, actions on the right) and use it on every page
 - [ ] Gradient + glow on primary buttons everywhere looks heavy; keep the gradient for the one main action per page, flat for the rest; disabled primary buttons must look clearly disabled
 - [ ] Monospace uppercase used for ordinary labels, hints and helper text ("0 to 1", "Window: 30d basis", table headers, card labels); keep mono for codes, numbers and keys only
 - [ ] KPI cards differ per page (coloured top border on Dashboard, none on Reports, mono labels on Users/Services); one KpiCard style
 - [ ] Tables: rows ~60px tall; use a denser row height on laptop so more rows fit
 - [ ] Reserve the scrollbar gutter (`scrollbar-gutter: stable`) so the top bar doesn't jump between pages with and without a scrollbar
-- [ ] Login: white Google button clashes with the dark card (use the dark outline style); "View Default Database Credentials (Demo)" becomes "Show demo accounts"; "Sign In" / "Email Address" in sentence case; "enterprise account" becomes "account"
+- [x] Login: white Google button clashes with the dark card (use the dark outline style); "View Default Database Credentials (Demo)" becomes "Show demo accounts"; "Sign In" / "Email Address" in sentence case; "enterprise account" becomes "account"
 Dashboard / charts (admin worker):
 - [ ] Line chart curve overshoots (smoothed spline dips around flat days); use monotone interpolation
-- [ ] Donut centre shows "Avg to resolve / No data"; show the total count instead, or hide the line
+- [x] Donut centre shows "Avg to resolve / No data"; show the total count instead, or hide the line
 - [ ] "Needs attention" empty state is a huge empty box; make it compact
 - [ ] Team capacity and live feed have inner scrollbars inside cards; show the top N with a "view all" link
 Employee home (employee worker):

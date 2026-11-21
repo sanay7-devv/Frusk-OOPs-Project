@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList,
 } from 'recharts';
@@ -119,7 +120,7 @@ export const WorkloadChart = ({ data, onBarClick }: { data: WorkloadReportRow[];
           cursor={onBarClick ? 'pointer' : undefined} onClick={(d) => onBarClick?.(d as unknown as WorkloadReportRow)}>
           <LabelList dataKey="load" position="right" fill={LABEL_FILL} fontSize={12} />
         </Bar>
-        <Bar dataKey="maxLoad" name="Capacity" fill={tokens.outline} fillOpacity={0.55} isAnimationActive={false}>
+        <Bar dataKey="maxLoad" name="Capacity" fill={alpha(tokens.secondary, 0.7)} isAnimationActive={false}>
           <LabelList dataKey="maxLoad" position="right" fill={LABEL_FILL} fontSize={12} />
         </Bar>
       </BarChart>

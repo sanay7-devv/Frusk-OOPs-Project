@@ -24,6 +24,12 @@ import { apiErrorMessage } from '../../utils/errors';
 
 import { alpha } from '@mui/material/styles';
 const PLATFORMS = ['WEB', 'ANDROID', 'IOS'] as const;
+const PLATFORM_LABELS: Record<string, string> = {
+  WEB: 'Web browser',
+  ANDROID: 'Android',
+  IOS: 'iOS',
+};
+const humanizePlatform = (p: string) => PLATFORM_LABELS[p] ?? p;
 const MIN_TOKEN = 8; // RegisterDeviceRequest: @Size(min = 8, max = 255)
 const MAX_TOKEN = 255;
 
@@ -101,7 +107,7 @@ export default function PushDevicesDialog({ open, onClose }: { open: boolean; on
             >
               {PLATFORMS.map((p) => (
                 <MenuItem key={p} value={p}>
-                  {p}
+                  {humanizePlatform(p)}
                 </MenuItem>
               ))}
             </TextField>
@@ -149,7 +155,7 @@ export default function PushDevicesDialog({ open, onClose }: { open: boolean; on
                   <PhoneIcon sx={{ color: tokens.secondaryLight }} />
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>
-                      {d.platform} · token ...{d.tokenHint}
+                      {humanizePlatform(d.platform)} · token ...{d.tokenHint}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                       Added {when(d.createdAt)} · last seen {when(d.lastSeenAt)}

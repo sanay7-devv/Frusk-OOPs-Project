@@ -69,8 +69,11 @@ export function useRealtime() {
               // Two message shapes: an incident event, or {type:'COUNTERS'} (counters only).
               try {
                 const body = JSON.parse(m.body) as DashboardEvent | { type: string };
-                if (body.type !== 'COUNTERS') realtimeStore.pushEvent(body as DashboardEvent);
-                else realtimeStore.touch();
+                if (body && typeof body === 'object' && 'type' in body && body.type !== 'COUNTERS') {
+                  realtimeStore.pushEvent(body as DashboardEvent);
+                } else {
+                  realtimeStore.touch();
+                }
               } catch {
                 realtimeStore.touch(); // unreadable payload: the refetch below still refreshes the screens
               }

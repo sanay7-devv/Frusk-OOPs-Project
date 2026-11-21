@@ -218,7 +218,7 @@ export default function TechQueue() {
   }, [searchQuery, serviceFilter, priorityFilter, slaFilter, sortOrder, filterTab, scope]);
 
   const serverFiltered =
-    scope === 'TEAM' || searchQuery !== '' || serviceFilter !== 'ALL' || priorityFilter !== 'ALL' || slaFilter !== 'ALL' || sortOrder !== 'DEFAULT';
+    filterTab !== 'ALL' || scope === 'TEAM' || searchQuery !== '' || serviceFilter !== 'ALL' || priorityFilter !== 'ALL' || slaFilter !== 'ALL' || sortOrder !== 'DEFAULT';
 
   // 7. Filtered / sorted list from the server: GET /incidents?assignedToMe=true&...
   const {

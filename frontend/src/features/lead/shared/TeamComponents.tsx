@@ -70,11 +70,21 @@ export function CandidatePicker({
 
   const score = new Map((recs.data?.recommendations ?? []).map((r) => [r.technicianId, r]));
   const excluded = new Map((recs.data?.excluded ?? []).map((x) => [x.technicianId, x.reason]));
+  const isBlocked = (t: TechnicianView) =>
+    !!(excluded.get(t.id) ?? (t.availability === 'OFF_DUTY' || t.availability === 'AWAY'));
+
   const list = (techs.data ?? [])
     .filter((t) => t.id !== assigneeId)
-    .sort((a, b) => (score.get(b.id)?.score ?? -1) - (score.get(a.id)?.score ?? -1));
+    .sort((a, b) => {
+      const aBlocked = isBlocked(a);
+      const bBlocked = isBlocked(b);
+      if (aBlocked !== bBlocked) return aBlocked ? 1 : -1;
+      return (score.get(b.id)?.score ?? -1) - (score.get(a.id)?.score ?? -1);
+    });
 
   if (list.length === 0) return <EmptyState message="No other technicians are available to reassign to." />;
+
+  const allIneligible = list.every(isBlocked);
 
   return (
     <Stack spacing={1}>
@@ -83,8 +93,15 @@ export function CandidatePicker({
           Ranking unavailable ({apiErrorMessage(recs.error)}). You can still choose from the technician list.
         </Alert>
       )}
+      {allIneligible && (
+        <Alert severity="warning" sx={{ fontSize: 12.5 }}>
+          All technicians are currently unavailable or ineligible for this incident (skills, capacity, or off duty).
+        </Alert>
+      )}
       {recs.data?.strategy && (
-        <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>Ranked with strategy {recs.data.strategy}</Typography>
+        <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>
+          Ranked with {humanizeEnum(recs.data.strategy).toLowerCase()} strategy
+        </Typography>
       )}
       {list.map((t) => {
         const rec = score.get(t.id);
@@ -125,7 +142,7 @@ export function CandidatePicker({
             {t.skills.length > 0 && (
               <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                 {t.skills.map((s) => (
-                  <Chip key={s.skillId} size="small" label={`${s.name} ${s.proficiency}`} sx={{ height: 20, fontSize: 12 }} />
+                  <Chip key={s.skillId} size="small" label={`${s.name} · Lvl ${s.proficiency}`} sx={{ height: 20, fontSize: 12 }} />
                 ))}
               </Stack>
             )}
@@ -212,7 +229,7 @@ export function TeamWorkloadDialog({
                   />
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                     {t.skills.map((s) => (
-                      <Chip key={s.skillId} size="small" label={`${s.name} ${s.proficiency}`} sx={{ height: 20, fontSize: 12 }} />
+                      <Chip key={s.skillId} size="small" label={`${s.name} · Lvl ${s.proficiency}`} sx={{ height: 20, fontSize: 12 }} />
                     ))}
                   </Stack>
                 </Box>

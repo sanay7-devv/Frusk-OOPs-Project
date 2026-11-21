@@ -14,11 +14,13 @@ export function PriorityCard() {
     : o.resolved > 0 && o.avgResolutionMinutes > 0 ? formatMinutes(o.avgResolutionMinutes) : 'No data';
   return (
     <ChartCard title="Incidents by priority, last 30 days" query={dist} isEmpty={(d) => d.length === 0} emptyMessage="No incidents in the last 30 days.">
-      {(d) => (
-        <>
-          <PriorityDonut data={d} center={{ caption: 'Avg to resolve', value: mttr }} />
-        </>
-      )}
+      {(d) => {
+        const totalCount = d.reduce((acc, curr) => acc + curr.count, 0);
+        const center = mttr !== 'No data'
+          ? { caption: 'Avg to resolve', value: mttr }
+          : { caption: 'Total incidents', value: String(totalCount) };
+        return <PriorityDonut data={d} center={center} />;
+      }}
     </ChartCard>
   );
 }

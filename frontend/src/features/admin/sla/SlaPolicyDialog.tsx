@@ -94,6 +94,7 @@ export default function SlaPolicyDialog({ open, policy, services, onClose, onSav
             {PRIORITIES.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
           </TextField>
           <TextField select size="small" label="Service" value={serviceId} disabled={editing} onChange={(e) => setServiceId(e.target.value)}
+            InputLabelProps={{ shrink: true }}
             SelectProps={{ displayEmpty: true, renderValue: (v) => (v === '' ? 'All services (global default)' : services.find((x) => String(x.id) === v)?.name ?? String(v)) }}
             error={!!errFor(errors, 'serviceId')}
             helperText={errFor(errors, 'serviceId') ?? (editing ? 'Fixed after creation.' : 'A service policy overrides the global default for that priority.')} sx={fieldSx}>

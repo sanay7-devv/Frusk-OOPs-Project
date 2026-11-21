@@ -533,16 +533,19 @@ export const theme = createTheme({
     MuiMenu: {
       defaultProps: {
         elevation: 0,
+        TransitionProps: {
+          timeout: 120,
+        },
       },
       styleOverrides: {
         paper: {
-          backgroundColor: 'rgba(13, 17, 27, 0.94) !important',
-          backdropFilter: 'blur(28px) saturate(190%) !important',
-          WebkitBackdropFilter: 'blur(28px) saturate(190%) !important',
-          border: '1px solid rgba(255, 255, 255, 0.12) !important',
-          borderRadius: '14px !important',
-          boxShadow: '0 24px 64px -8px rgba(0, 0, 0, 0.85), 0 0 24px -2px rgba(99, 102, 241, 0.25) !important',
-          padding: '6px !important',
+          backgroundColor: 'rgba(13, 17, 27, 0.96) !important',
+          backdropFilter: 'blur(12px) !important',
+          WebkitBackdropFilter: 'blur(12px) !important',
+          border: '1px solid rgba(255, 255, 255, 0.1) !important',
+          borderRadius: '10px !important',
+          boxShadow: '0 16px 40px -4px rgba(0, 0, 0, 0.75), 0 0 16px rgba(99, 102, 241, 0.15) !important',
+          padding: '4px !important',
           maxHeight: '320px !important',
           '&::-webkit-scrollbar': {
             width: 6,
@@ -567,12 +570,12 @@ export const theme = createTheme({
     MuiPopover: {
       styleOverrides: {
         paper: {
-          backgroundColor: 'rgba(13, 17, 27, 0.94) !important',
-          backdropFilter: 'blur(28px) saturate(190%) !important',
-          WebkitBackdropFilter: 'blur(28px) saturate(190%) !important',
-          border: '1px solid rgba(255, 255, 255, 0.12) !important',
-          borderRadius: '14px !important',
-          boxShadow: '0 24px 64px -8px rgba(0, 0, 0, 0.85), 0 0 24px -2px rgba(99, 102, 241, 0.25) !important',
+          backgroundColor: 'rgba(13, 17, 27, 0.96) !important',
+          backdropFilter: 'blur(12px) !important',
+          WebkitBackdropFilter: 'blur(12px) !important',
+          border: '1px solid rgba(255, 255, 255, 0.1) !important',
+          borderRadius: '10px !important',
+          boxShadow: '0 16px 40px -4px rgba(0, 0, 0, 0.75), 0 0 16px rgba(99, 102, 241, 0.15) !important',
         },
       },
     },
@@ -580,12 +583,12 @@ export const theme = createTheme({
       styleOverrides: {
         listbox: { maxHeight: 320 },
         paper: {
-          backgroundColor: 'rgba(13, 17, 27, 0.94) !important',
-          backdropFilter: 'blur(28px) saturate(190%) !important',
-          WebkitBackdropFilter: 'blur(28px) saturate(190%) !important',
-          border: '1px solid rgba(255, 255, 255, 0.12) !important',
-          borderRadius: '14px !important',
-          boxShadow: '0 24px 64px -8px rgba(0, 0, 0, 0.85), 0 0 24px -2px rgba(99, 102, 241, 0.25) !important',
+          backgroundColor: 'rgba(13, 17, 27, 0.96) !important',
+          backdropFilter: 'blur(12px) !important',
+          WebkitBackdropFilter: 'blur(12px) !important',
+          border: '1px solid rgba(255, 255, 255, 0.1) !important',
+          borderRadius: '10px !important',
+          boxShadow: '0 16px 40px -4px rgba(0, 0, 0, 0.75), 0 0 16px rgba(99, 102, 241, 0.15) !important',
         },
       },
     },
@@ -597,20 +600,20 @@ export const theme = createTheme({
           color: '#dfe2ef',
           margin: '2px 4px',
           padding: '8px 12px',
-          borderRadius: 8,
-          transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+          borderRadius: 6,
+          transition: 'background-color 0.12s ease, color 0.12s ease',
+          willChange: 'background-color',
           '&:hover': {
             backgroundColor: 'rgba(99, 102, 241, 0.16) !important',
             color: '#ffffff !important',
-            backdropFilter: 'blur(12px)',
           },
           '&.Mui-selected': {
-            backgroundColor: 'rgba(99, 102, 241, 0.26) !important',
+            backgroundColor: 'rgba(99, 102, 241, 0.22) !important',
             color: '#c0c1ff !important',
             fontWeight: 600,
             borderLeft: '3px solid #6366f1',
             '&:hover': {
-              backgroundColor: 'rgba(99, 102, 241, 0.36) !important',
+              backgroundColor: 'rgba(99, 102, 241, 0.32) !important',
             },
           },
         },
