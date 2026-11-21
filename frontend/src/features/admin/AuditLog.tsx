@@ -153,7 +153,7 @@ export default function AuditLog() {
           </TextField>
           <Autocomplete size="small" sx={{ width: 240 }} options={users.data ?? []} loading={users.isLoading}
             value={draft.actor} onChange={(_, v) => setDraft({ ...draft, actor: v })}
-            getOptionLabel={(u) => u.name} isOptionEqualToValue={(a, b) => a.id === b.id}
+            getOptionLabel={(u) => u.name} renderOption={(props, u) => <li {...props} key={u.id}>{u.name}</li>} isOptionEqualToValue={(a, b) => a.id === b.id}
             renderInput={(params) => (
               <TextField {...params} label="Actor" error={users.isError}
                 helperText={users.isError ? apiErrorMessage(users.error) : undefined} />
