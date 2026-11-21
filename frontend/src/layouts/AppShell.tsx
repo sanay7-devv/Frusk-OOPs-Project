@@ -408,6 +408,7 @@ export default function AppShell() {
               inputRef={searchInputRef}
               placeholder="Search incidents, code, title..."
               inputProps={{ 'aria-label': 'Search incidents' }}
+              onFocus={(e) => { window.dispatchEvent(new Event(OPEN_PALETTE_EVENT)); (e.target as HTMLInputElement).blur(); }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
@@ -754,7 +755,9 @@ export default function AppShell() {
                       item.to !== '/employee/home' &&
                       item.to !== '/admin/dashboard' &&
                       location.pathname.startsWith(item.to + '/');
-                    const isActive = isExact || isSubRoute;
+                    // Only the most specific matching item is highlighted (Services vs Dependency graph).
+                    const moreSpecific = navItems.some((o) => o.to !== item.to && o.to.length > item.to.length && (location.pathname === o.to || location.pathname.startsWith(o.to + '/')));
+                    const isActive = (isExact || isSubRoute) && !moreSpecific;
 
                     return (
                       <Fragment key={item.to}>

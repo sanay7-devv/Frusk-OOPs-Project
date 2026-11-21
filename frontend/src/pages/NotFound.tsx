@@ -3,7 +3,7 @@ import { Box, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, HOME } from '../auth/AuthContext';
 
-export default function NotFound() {
+export default function NotFound({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, workspace, workspaces } = useAuth();
 
@@ -19,12 +19,12 @@ export default function NotFound() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: embedded ? '70vh' : '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: '#090d16',
+        bgcolor: embedded ? 'transparent' : '#090d16',
         color: '#dfe2ef',
         textAlign: 'center',
         px: 3,

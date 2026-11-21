@@ -1,3 +1,4 @@
+import DateRangeField from '../../components/DateRangeField';
 import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -702,26 +703,7 @@ export default function Escalations() {
       {activeTab === 'violations' && (
         <Paper elevation={0} sx={{ borderRadius: 3, bgcolor: COLORS.surfaceContainer, border: `1px solid ${COLORS.border}`, overflow: 'hidden' }}>
           <Box sx={{ p: 2, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-            <TextField
-              size="small"
-              type="datetime-local"
-              label="From"
-              value={vFrom}
-              onChange={(e) => setVFrom(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 210, ...fieldSx }}
-            />
-            <TextField
-              size="small"
-              type="datetime-local"
-              label="To"
-              value={vTo}
-              onChange={(e) => setVTo(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              error={!!vFrom && !!vTo && new Date(vTo) < new Date(vFrom)}
-              helperText={!!vFrom && !!vTo && new Date(vTo) < new Date(vFrom) ? 'To is before From' : undefined}
-              sx={{ minWidth: 210, ...fieldSx }}
-            />
+            <DateRangeField mode="datetime" from={vFrom} to={vTo} onChange={(r) => { setVFrom(r.from); setVTo(r.to); }} />
             <TextField select size="small" label="Breach type" value={vType} onChange={(e) => setVType(e.target.value)} sx={{ minWidth: 160, ...fieldSx }}>
               <MenuItem value="">All types</MenuItem>
               {violationTypes.map((t) => (

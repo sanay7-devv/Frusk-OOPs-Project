@@ -22,6 +22,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import StatusChip from '../../components/StatusChip';
 import { useToast } from '../../components/Toast';
 import { tokens } from '../../theme/theme';
+import DateRangeField from '../../components/DateRangeField';
 import { formatDateTime, humanizeEnum } from '../../utils/format';
 import { apiErrorMessage } from '../../utils/errors';
 import AssignDialog from './tickets/AssignDialog';
@@ -102,7 +103,26 @@ export default function Tickets() {
       // Same local-day range as the list on screen (tickets/filters.ts dateRange).
       const { createdFrom, createdTo } = dateRange(params);
       const range = { from: createdFrom, to: createdTo };
-      await downloadReport('incidents', format, range);
+      if (format === 'pdf') {
+        await downloadReport('incidents', format, range);
+      } else {
+        // CSV follows every active filter: fetch the filtered pages (cap 2000 rows) and build the file here.
+        const cell = (v: string | number | null | undefined) => {
+          let t = v == null ? '' : String(v);
+          if (/^[=+@-]/.test(t)) t = `'${t}`;
+          return `"${t.replace(/"/g, '""')}"`;
+        };
+        const lines = [['Code', 'Title', 'Service', 'Priority', 'Status', 'SLA', 'Assignee', 'Created'].join(',')];
+        for (let page = 0; page < 20; page++) {
+          const res = await listIncidents({ ...filters, page, size: 100 });
+          res.items.forEach((i) => lines.push([i.code, i.title, i.service.name, i.priority, humanizeEnum(i.status), humanizeEnum(i.slaState), i.assignee?.name ?? 'Unassigned', formatDateTime(i.createdAt)].map(cell).join(',')));
+          if (page + 1 >= res.totalPages) break;
+        }
+        const url = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = 'incidents.csv'; a.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (e) {
       reportFailure(toast, e);
     } finally {
@@ -136,7 +156,7 @@ export default function Tickets() {
             <MenuItem onClick={() => runExport('csv')}>CSV</MenuItem>
             <MenuItem onClick={() => runExport('pdf')}>PDF</MenuItem>
             <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, px: 2, py: 0.5, maxWidth: 240 }}>
-              The export covers the date range only, not the other filters.
+              CSV follows all filters. PDF covers the date range only.
             </Typography>
           </Menu>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ textTransform: 'none' }}>Declare incident</Button>
@@ -160,8 +180,8 @@ export default function Tickets() {
           {select('categoryId', 'Category', (categories.data ?? []).map((c) => ({ value: String(c.id), label: c.name })), 180)}
           {select('assigneeId', 'Assignee', (technicians.data ?? []).map((t) => ({ value: String(t.id), label: t.name })), 170)}
           {select('reporterId', 'Reporter', (users.data ?? []).map((u) => ({ value: String(u.id), label: u.name })), 170)}
-          <TextField size="small" type="date" label="Created from" value={get('from')} disabled={tab !== 'all'} onChange={(e) => setParam('from', e.target.value)} InputLabelProps={{ shrink: true }} />
-          <TextField size="small" type="date" label="Created to" value={get('to')} disabled={tab !== 'all'} onChange={(e) => setParam('to', e.target.value)} InputLabelProps={{ shrink: true }} />
+<DateRangeField from={get('from')} to={get('to')} disabled={tab !== 'all'}
+            onChange={(r) => { setParam('from', r.from); setParam('to', r.to); }} />
           {hasFilters && <Button startIcon={<FilterAltOffIcon />} onClick={clearFilters} sx={{ textTransform: 'none' }}>Clear filters</Button>}
         </Stack>
         {(services.isError || categories.isError || technicians.isError || users.isError) && (

@@ -77,6 +77,7 @@ export default function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/account/security" element={<AccountSecurity />} />
+          <Route path="*" element={<NotFound embedded />} />
 
           <Route element={<RequireWorkspace workspace="employee" />}>
             <Route path="/employee/home" element={<EmployeeHome />} />

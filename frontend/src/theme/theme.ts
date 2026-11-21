@@ -510,6 +510,9 @@ export const theme = createTheme({
         tooltip: { fontSize: '12px' },
       },
     },
+    MuiDialogTitle: {
+      defaultProps: { component: 'div' },
+    },
     MuiDrawer: {
       styleOverrides: {
         paper: {

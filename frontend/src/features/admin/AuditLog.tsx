@@ -12,6 +12,7 @@ import { AUDIT_ACTIONS, type AuditAction } from '../../api/audit';
 import { listDirectoryUsers, type DirectoryUser } from '../../api/adminDirectory';
 import { listIncidents } from '../../api/incidents';
 import { searchAuditActions, type AuditQuery } from './auditSearch';
+import DateRangeField from '../../components/DateRangeField';
 import { formatDateTime, humanizeEnum } from '../../utils/format';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
@@ -152,16 +153,15 @@ export default function AuditLog() {
           </TextField>
           <Autocomplete size="small" sx={{ width: 240 }} options={users.data ?? []} loading={users.isLoading}
             value={draft.actor} onChange={(_, v) => setDraft({ ...draft, actor: v })}
-            getOptionLabel={(u) => u.name} isOptionEqualToValue={(a, b) => a.id === b.id}
+            getOptionLabel={(u) => u.name} renderOption={(props, u) => <li {...props} key={u.id}>{u.name}</li>} isOptionEqualToValue={(a, b) => a.id === b.id}
             renderInput={(params) => (
               <TextField {...params} label="Actor" error={users.isError}
                 helperText={users.isError ? apiErrorMessage(users.error) : undefined} />
             )} />
           <TextField size="small" label="Incident code" placeholder="INC-2026-00213" value={draft.incidentCode} onChange={field('incidentCode')}
             onKeyDown={onKey} error={!!codeError} helperText={codeError || undefined} sx={{ width: 190 }} />
-          <TextField size="small" label="From" type="datetime-local" value={draft.from} onChange={field('from')} InputLabelProps={{ shrink: true }} />
-          <TextField size="small" label="To" type="datetime-local" value={draft.to} onChange={field('to')} InputLabelProps={{ shrink: true }}
-            error={rangeBad} helperText={rangeBad ? 'To must be after From' : 'Shows records before this time'} />
+          <DateRangeField mode="datetime" from={draft.from} to={draft.to} toTip="Shows records before this time"
+            onChange={(r) => setDraft({ ...draft, from: r.from, to: r.to })} />
           <Button variant="contained" onClick={() => void apply()} disabled={rangeBad || resolving}>Apply</Button>
           <Button onClick={reset}>Clear</Button>
         </Stack>
