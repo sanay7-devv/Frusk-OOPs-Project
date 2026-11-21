@@ -68,7 +68,17 @@ The reproducible CI harness is `deploy/task3_load_test.py`, run by `.github/work
 
 The baseline run covers 10, 25 and 50 simultaneous create requests and reading/report requests, with three synchronized waves at each level under the default create limit. It also runs a five-minute, ten-worker mixed workload: 70% read/report transactions, 20% creates, and 10% lifecycle transactions (create then reporter withdrawal). For that isolated run, the harness temporarily raises `ratelimit.incident.create.per.minute` from 20 to 1,000 and restores it to 20 afterward so rate-limit responses do not obscure service capacity; the JSON records whether restoration succeeded. The recorded HTTP request mix therefore includes the lifecycle transaction's additional create and withdrawal requests.
 
-**Evidence status:** the harness and workflow are on the unmerged `qa/task3-ci-browser-load` branch. Record measured values and the workflow link after its CI run succeeds. This runner measures the stage-0 seeded dataset only; it does not replace the separate 10,000/100,000-incident growth run or `EXPLAIN (ANALYZE)` index review below.
+**Measured stage-0 result:** [run 44924395273](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44924395273) passed on 2026-11-21 at commit `b14d229`. The disposable GitHub Linux x64 stack had 212 incidents before the run and 1,543 after. Every request succeeded. The table reports p50/p95 latency in milliseconds; create counts are 30/75/150 and read/report counts are 30/75/150 for 10/25/50 concurrency.
+
+| Concurrent requests | Create p50 / p95 (ms) | Read/report p50 / p95 (ms) | HTTP errors |
+|---:|---:|---:|---:|
+| 10 | 460.45 / 571.47 | 57.76 / 86.97 | 0 |
+| 25 | 546.86 / 670.08 | 78.86 / 109.66 | 0 |
+| 50 | 842.92 / 1,020.09 | 114.17 / 164.81 | 0 |
+
+The 300.8-second mixed profile completed 3,683 transactions: 2,607 reads/reports, 708 creates, and 368 create-and-withdraw lifecycles. All 4,051 HTTP requests succeeded. The configured mix was 70.78% reads/reports, 19.22% creates and 9.99% lifecycle transactions (rounding accounts for the 0.01% difference). The demo create limit was raised from 20 to 1,000 per minute only for this profile and restored to 20 afterward. Docker sampled the backend 43 times: CPU peaked at 316.54% (multi-core) and memory at 754.5 MiB, with no memory parse errors.
+
+These results measure only the seeded stage-0 dataset on a GitHub runner. They do not replace the separate 10,000/100,000-incident growth run or `EXPLAIN (ANALYZE)` index review below.
 
 | Scenario | Request mix | Record |
 |---|---|---|

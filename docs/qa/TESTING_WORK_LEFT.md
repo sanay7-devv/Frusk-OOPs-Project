@@ -1,14 +1,17 @@
+Warning: truncated output (original token count: 14420)
+Total output lines: 466
+
 # Testing and DevOps: what is left, and the optional full test catalogue
 
 ## Handoff update — 2026-11-21
 
 The Task 3 follow-up was merged into `main` through [PR #83](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/83) on 2026-11-21 (merge commit `cdaddef`). The latest pre-merge CI run (44917367587) passed all six jobs: 62 backend tests (60 passed and 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62), 45 frontend tests across 9 files, 71 Postman requests / 149 assertions, and 30 security checks. The follow-up documentation correction was merged through [PR #84](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/84); its CI run (44920118833) passed. The seven requested severity/area labels are now created. GitHub shows no project board linked and no projects available to link; the branch settings page is unavailable to this collaborator account.
 
-The Task 3 follow-up and a documentation correction were subsequently merged through PRs #83 and #84. A new, unmerged branch `qa/task3-ci-browser-load` adds a Chromium browser security check and a reproducible A7 load-test workflow. Its CI evidence is pending; do not report either check as passed until the matching workflow runs successfully.
+PRs #83 and #84 merged the earlier Task 3 tests and documentation. PR #85 was merged on 2026-11-21. Its follow-up CI run [44924395271](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44924395271) passed all six jobs, including Chromium verification of script text. The dedicated A7 load run [44924395273](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44924395273) also passed; its stage-0 measurements are recorded in `TEST_REPORT.md` and `backend/docs/SCALING.md`. An incremental memory-sampling and report update is being prepared on `qa/task3-handoff-evidence` for team review.
 
 - **R11: Done, 12 of 12 classes.** `IncidentStateTest` covers every status, its legal actions, invalid moves, successful lifecycle moves and alternate actions. `ExceptionMappingTest` checks all 22 `ItsmException` subclasses. `GlobalExceptionHandlerTest` checks the standard field-validation response. The PR CI run passes these checks.
 - **Backend count:** the PR CI run reports 62 tests: 60 passed and 2 demo-only `SeedCompatibilityTest` checks skipped in the normal backend job. Both dev and demo seed jobs run all 62.
-- **R10: Done on PR #83.** 45 frontend tests in 9 files pass; the production build and type check pass. Coverage includes audit verification errors, MFA enable/disable and field errors, password reset, problem tabs, report charts, priority/filter interactions, SLA violations and existing SLA colors. The build warns that the main JS chunk is about 1.9 MB before gzip.
+- **R10 review and inventory: Done on PR #83.** 45 frontend tests in 9 files pass; the production build and type check pass. Coverage includes audit verification errors, MFA enable/disable and field errors, password reset, problem tabs, report charts, priority/filter interactions, SLA violations and SLA colors. The handbook's login-form validation and rendered filter-bar component checks are still missing and belong to the Frontend Developer. The build warns that the main JS chunk is about 1.9 MB before gzip.
 
 ### What is left now (2026-11-21), in order
 
@@ -16,13 +19,13 @@ This list replaces the 2026-11-19 table below, which is kept as history.
 
 | # | Item | What is left | Who |
 |---|---|---|---|
-| 1 | R6 reset time, fresh clone | CI rebuilt the JDK runtime image successfully. Still time the demo reset and a fresh-clone setup on the recording laptop, then replace "unmeasured" in `deploy/README.md`. | Testing |
-| 2 | A7 load test | `deploy/task3_load_test.py` and a dedicated disposable-stack workflow now cover 10/25/50 concurrent reporting and reading/report requests plus a five-minute mixed run. After CI finishes, copy its measured stage-0 results into `backend/docs/SCALING.md`. Testing 10k/100k data growth and index changes remains separate. | Testing |
-| 3 | R5 demo | The five-segment checklist and recording-day preflight are ready. Rehearse all five segments, fill the dated dry-run log, and record. | Testing, whole team |
-| 4 | R3 browser check | `deploy/browser_xss_check.cjs` now signs in through the real UI and checks untrusted title, description and comment markup in Chromium on the disposable CI stack. Wait for the CI result and retain its JSON/screenshot artifact as evidence. | Testing |
-| 5 | R8 repo settings | **Done:** created all seven `severity:*` and `area:*` labels. GitHub shows no project board linked and no projects available to link; the repository owner/team needs to create one if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
+| 1 | R6 reset time, fresh clone | Time the demo reset on the recording laptop and record a fresh-clone setup on a second machine; then replace "unmeasured" in `deploy/README.md`. | Testing; second-machine owner |
+| 2 | A7 data growth | Stage-0 load results are recorded. Still measure at 10,000 and 100,000 incidents and compare the proposed indexes with `EXPLAIN (ANALYZE)` on a disposable database. | Testing with Backend Lead |
+| 3 | R5 demo rehearsal | The five-segment checklist and recording-day preflight are ready. Rehearse all five segments, fill the dated dry-run log, and record the final demo. | Testing, whole team |
+| 4 | R10 frontend component gaps | The current nine-file, 45-test inventory is in `TEST_REPORT.md`. The handbook's login-form validation and rendered filter-bar component checks are still absent; the Frontend Developer owns those tests. | Frontend Developer |
+| 5 | R8 repo settings | **Labels done:** all seven `severity:*` and `area:*` labels exist. The project board is not linked; the repository owner/team needs to create or link it if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
 
-Done: R1, R2, R4 and R9 are merged. R8 labels are created; no project is available to link. R10 and R11 follow-up tests are merged via PR #83. R6 and R5 rehearsal still require the recording laptop and team members. R3 browser evidence and stage-0 A7 numbers are pending the CI workflows on `qa/task3-ci-browser-load`; branch-protection settings need the repository owner.
+Done: R1–R4 and R9 are complete; R10 review/inventory and all R11 unit-test classes are in PR #83; R3 browser evidence and stage-0 A7 measurements are recorded. R5 rehearsal and R6 laptop measurements still need people and hardware. R10's remaining component tests belong to the Frontend Developer. A7's 10k/100k growth comparison and R8's board/branch-protection settings remain with the team or repository owner.
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
@@ -195,85 +198,7 @@ Every endpoint listed in the earlier version of this section is called. Newman r
 **Not covered by Postman** (backend operations added after this list was written): password reset and TOTP (A12), simulated push (A4), Google sign-in, attachments, audit seal and verify (these are in the run sheet and `check_audit_tamper.py`), feedback and the status board. Optional.
 
 ### R5. Dry-run checklist for all three workflows, and the tamper helper — Partly done (merged, PR #21)
-- **Tamper helper — Done.** `db/tools/tamper-demo-audit.sh tamper|restore` disables the trigger, adds ` [DEMO_TAMPER]` to the first sealed record, re-enables the trigger, and restores it; it refuses a database without the demo-only migration V200. `deploy/check_audit_tamper.py` runs the whole sequence in CI against the disposable stack (the log shows altered then restored). Not yet rehearsed by hand on the recording laptop.
-- **Run sheet — Partly.** `docs/qa/DEMO_RUN_SHEET.md` has a preflight, the three workflows with accounts and values (employee1, tech1, asha.rao, password `Demo@1234`, score 187, P1, 3 and 20 minutes), the audit-seal steps and an evidence table. Missing against the handbook and the five segments of DEC-45:
-  - **no separate administrator segment and no security segment** with exact input and "what must appear" (a paragraph points at the Python script instead);
-  - **recording-day checks** are not there: mail catcher is mentioned only as a URL in preflight; the demo timers (SLA monitor 30 s, escalation 15 s with 1 minute per level, auto-verify about 2 minutes) and the LLM key or `KEYWORD` fallback are not mentioned at all;
-  - no record of the twice-a-week dry runs.
-- **Done when:** a teammate who has never seen the system can follow the checklist and get the same result, and the five segments plus recording-day checks are in it.
-
-### R6. Verify the demo reset on real hardware (handbook 2.12) — Not done
-- `bash db/tools/reset-demo.sh` runs in CI and the whole demo job takes about 2 minutes on a runner, but nobody has timed it on the recording laptop (the table in `DEMO_RUN_SHEET.md` is blank; `deploy/README.md` lines 21, 41 and 46 say "unmeasured").
-- No fresh-clone run on a different laptop is recorded anywhere.
-- **Done when:** both results (first build, warm reset, fresh clone on a second machine) are written in `deploy/README.md`.
-
-### R7. The test report (handbook 2.11) — Partly done (merged, PR #21)
-1. **Date and commit columns — Done.** `test_cases.csv` columns: `id, category, scenario, expected, status, actual, date, commit_id, evidence`; 26 rows, all `PASS`, date `2026-11-14`, commit `86096c49aea8ec71cebe4317bbb38af9eb870809`.
-2. **Evidence per case — Partly.** The `evidence` column is one CI run link (run 43624315622) for every case. The handbook asks for a screenshot or the Newman output for each case. T05 to T07 are unit tests, T10 and T16 run in `handbook_contract_checks.py`; none of them has its own output attached.
-3. **Summary — Done.** `docs/qa/TEST_REPORT.md` has the totals (26 passed, 0 failed, 40 backend, 3 frontend, 7 generator, 40 smoke, 71 requests and 149 assertions, 30 security checks), coverage notes and lessons.
-4. **T16 note — Done.** The 0.80/0.65 versus 0.55/0.35 difference is explained.
-5. **Security table — Partly** (see R3).
-- **Corrections needed in `TEST_REPORT.md`:** it says "The six follow-up jobs also uploaded backend test reports". That is wrong: the backend job and the two seed jobs upload surefire reports, the demo job uploads evidence, and the two frontend jobs upload nothing. Its "Backend tests: 40 run; 38 passed, 2 skipped in the schema-only job" is right. Its "all six jobs" run is `43736234225` on `3bc8ab6`; the report should also say which commit the follow-up numbers belong to.
-- **Left:** per-case evidence (or a clear statement that the CI log is the evidence), a re-run of the 26 cases tied to the final commit after PR #21 and the Backend Lead's later merges, the corrected security table, the R10 frontend list.
-- **Done when:** the Report teammate has one document to paste from.
-
-### R8. Bug tracking and repository settings (handbook 2.11, 2.2, 2.10) — Partly done
-- **Labels — Not done.** The repository has only `accessibility, bug, documentation, duplicate, enhancement, good first issue, help wanted, invalid, question, wontfix`. Create `severity:blocker`, `severity:major`, `severity:minor`, `area:backend`, `area:frontend`, `area:db`, `area:docs`.
-- **Issue template — Done (merged, PR #21).** `.github/ISSUE_TEMPLATE/bug_report.md` has what happened, steps, expected, actual, screenshot or log, build or commit, found by, severity and area. It only labels `bug`; the severity and area labels have to exist first.
-- **Project board — Could not verify.** The GitHub token used here lacks the `read:project` scope. Ask Tanisha for a link or screenshot (columns To do, Doing, In review, Done).
-- **Branch protection on `main` — Not done / could not verify.** API returns 404 and `rulesets` is empty. Needs the repository owner (`sanay7-devv`): pull request required, one review, the CI jobs required.
-- **CI badge — Done (merged, PR #21).** Line 14 of the root `README.md` (one line added).
-- **Done when:** a new bug can be filed with a severity and an area, and a red CI blocks a merge.
-
-### R9. Small CI gaps (handbook 2.10) — Partly done
-- **Backend test reports as artifacts — Done (merged, PR #21).** `backend-test-reports` is uploaded with `if: always()`.
-- **Frontend lint step — Not done.** `frontend/package.json` still has only `dev`, `build`, `preview` and `test`; no lint script and no CI step. Ask the Frontend Developer for a `lint` script, then add the step.
-- **Time budget — Done, recorded here.** Run 43736234225: 2 min 9 s end to end; demo-stack job 2 min 6 s (limit 15 minutes); backend job 1 min 29 s. Well under the handbook's 10 minutes.
-- **Note:** the backend job runs `mvnw test`, not `verify` as the handbook says; harmless today because there are no integration-phase plugins.
-- **Done when:** a failed test leaves a downloadable report (true now) and lint runs (not yet).
-
-### R10. Frontend tests: review, run and list (handbook 2.7) — Not done
-- Only `frontend/src/auth-flow.test.tsx` exists, with 3 navigation tests (all pass in CI). None of the handbook's four component tests exist (SLA countdown colours, status chip mapping, login form validation, filter bar).
-- **Your part:** ask the Frontend Developer for the component tests, review them, and list all frontend tests in the test report. Do not write them yourself.
-
-### R11. Unit tests from the handbook's own list (handbook 2.4) — Not done (8 of 12 classes missing)
-Test classes on the branch, counted from `@Test` methods in `backend/src/test`: `HandbookIntegrationTest` 21, `PriorityEngineTest` 4, `EligibilityFilterTest` 6, `WorkloadTrackerTest` 3, `SlaTrackerTest` 3, `IitsmBackendApplicationTests` 1, `SeedCompatibilityTest` 2 (disabled unless a seeded database is present). Total 40, matching CI. Package `domain` has only `assignment`, `incident` and `priority` test folders.
-
-| Handbook class | State | What to cover |
-|---|---|---|
-| `PriorityStrategyTest` | **Done** (`PriorityEngineTest`, 4 tests) | |
-| `EligibilityFilterTest` | **Done** (6 tests) | |
-| `WorkloadTrackerTest` | **Done** (3 tests) | |
-| `SlaTrackerTest` | **Done** (3 tests) | |
-| `IncidentStateTest` | **Missing** | For every state and every action: the allowed ones succeed with the right next state; every other combination throws `InvalidStateTransitionException`. Use a parameterized table test. Classes: `Incident`, `StateFactory`, `IncidentState`, `OpenState` and the state classes in `com.iitsm.domain.incident`. |
-| `AssignmentStrategyTests` | **Missing** | Skill, Load, RoundRobin, ExperiencePriority and Composite weights, and tie-break rotation. Weights in `ConfigKey` are skill 0.35, load 0.25, experience 0.15, priority fit 0.10, service familiarity 0.15 (sum 1.0; checked). Skill score is 0.7 times best proficiency plus 0.3 times the share of required skills held. A worked example with numbers is in `backend/docs/SYSTEM_GUIDE.md` section 10. Classes in `com.iitsm.domain.assignment`. |
-| `EscalationChainTest` | **Missing** | Expected values are in section 4, M11. |
-| `SimilarityTest` and `KeywordCategorizerTest` | **Missing** | Use `Tokenizer`, `TfIdfModel` and `KeywordTextAnalysisService` (section 4, M12). Thresholds are **0.55 and 0.35** (`ConfigKey`), not the handbook's 0.80 and 0.65. |
-| `SlaRiskScorerTest` | **Missing** | Section 4, M12. |
-| `ExceptionMappingTest` | **Missing** | `ItsmException` and its subclasses in `com.iitsm.domain.exception` (22 classes extend it directly today): each exception maps to its code and HTTP status from Appendix B.2; `GlobalExceptionHandler` renders `ErrorResponse`. |
-| `PermissionTest` | **Missing** | Union of permissions for a multi-role user; team lead is a technician with escalation level 1 (section 4, M2). |
-
-- **Done when:** every class in the handbook's table has a test class.
-
----
-
-## 3. What exists today (so you do not duplicate it)
-
-**Backend tests: 40 run, 0 failures** (CI run 43736234225). 2 of them skip when no seeded database is present (`SeedCompatibilityTest`); the two seed jobs run all 40.
-
-| Test class | Tests |
-|---|---|
-| `HandbookIntegrationTest` (real HTTP, Testcontainers PostgreSQL) | 21: T01 to T04, T08, T09, T11 to T15, T17 to T26 |
-| `PriorityEngineTest` | 4 (T05, T06) |
-| `EligibilityFilterTest` | 6 (T07) |
-| `WorkloadTrackerTest` | 3 |
-| `SlaTrackerTest` | 3 |
-| `IitsmBackendApplicationTests` | 1 (context loads on Testcontainers; UTC) |
-| `SeedCompatibilityTest` | 2 (run only with a seeded database) |
-
-**Other automated checks:** 3 frontend tests; 7 Python seed-generator tests (`db/tools/test_seed_generator.py`); `db/checks/verify.sql`; `deploy/api_smoke.py` (40 checks); the Postman collection (71 requests, 149 assertions); `deploy/handbook_contract_checks.py` (T10 and T16); `deploy/security_checks.py` (30 checks); `deploy/check_audit_tamper.py`.
-
-**CI:** six jobs (backend tests, frontend tests, frontend build, seed integrity for dev and demo, demo stack with snapshot round trip and all API checks).
+- **Tamper helper — Done.** `db/tools/tamper-demo-audit.sh tampe…2420 tokens truncated…ip and all API checks).
 
 **Gap in numbers:** the backend has about 130 mapped operations (129 per the project docs) and 466 Java files; the unit tests above cover a handful of the rule classes. The optional catalogue in section 4 fills this. None of the catalogue classes below exists as a test yet, except the four listed in the R11 table and the integration cases T01 to T26.
 
