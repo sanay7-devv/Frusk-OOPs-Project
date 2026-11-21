@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.iitsm.domain.audit.AuditAction;
+import com.iitsm.domain.audit.AuditText;
 import com.iitsm.domain.audit.AuditRecord;
 import com.iitsm.domain.event.IncidentChanged;
 import com.iitsm.domain.event.SecurityAuditEvent;
@@ -55,14 +56,14 @@ public class AuditListener {
     @EventListener
     public void on(SlaWarning e) {
         String text = (e.warning() == 1 ? "First" : "Second") + " SLA warning: " + clockName(e.clock().name())
-                + " clock at " + e.percent() + "% (due " + e.due() + ")";
+                + " clock at " + e.percent() + "% (due " + AuditText.instant(e.due()) + ")";
         record(e.incidentId(), null, AuditAction.SLA_WARNING, null, null, text, e.occurredAt());
     }
 
     @EventListener
     public void on(SlaViolated e) {
         String text = "SLA violated: " + clockName(e.clock().name()) + " deadline missed by "
-                + e.overdueSeconds() + " s";
+                + AuditText.duration(e.overdueSeconds());
         record(e.incidentId(), null, AuditAction.SLA_VIOLATED, null, null, text, e.occurredAt());
     }
 

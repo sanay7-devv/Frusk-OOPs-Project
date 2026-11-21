@@ -173,18 +173,27 @@ public class ChatIntakeService {
         return first.substring(0, cut > 20 ? cut : 80).strip();
     }
 
+    private static final int WHOLE_NAME = 1000;
+
     /**
      * The service whose name (or a distinctive word of it, four letters or more) appears in the text; the longest
      * match wins; null when nothing or several equally long names match.
      */
     static ItService matchService(List<ItService> active, String text) {
         String lower = text.toLowerCase(Locale.ROOT);
+        String typed = lower.trim();
+        for (ItService service : active) {
+            if (service.getName().toLowerCase(Locale.ROOT).equals(typed)) {
+                return service; // an exact name wins outright
+            }
+        }
         ItService best = null;
         int bestLength = 0;
         boolean tie = false;
         for (ItService service : active) {
             String name = service.getName().toLowerCase(Locale.ROOT);
-            int score = lower.contains(name) ? name.length() : 0;
+            // a whole-name match always beats a word-only match
+            int score = lower.contains(name) ? WHOLE_NAME + name.length() : 0;
             if (score == 0) {
                 for (String word : name.split("[^a-z0-9]+")) {
                     if (word.length() >= 4 && lower.matches("(?s).*\\b" + Pattern.quote(word) + "\\b.*")) {

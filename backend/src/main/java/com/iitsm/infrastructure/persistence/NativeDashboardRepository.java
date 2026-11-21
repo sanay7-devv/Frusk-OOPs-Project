@@ -91,11 +91,15 @@ public class NativeDashboardRepository implements DashboardRepository {
         List<Long> flagged = flaggedIds.isEmpty() ? List.of(-1L) : List.copyOf(flaggedIds);
         return em.createQuery("select i from Incident i join fetch i.service join fetch i.reporter"
                         + " left join fetch i.category left join fetch i.assignee"
-                        + " where i.status in :open and i.sla.responseViolated = false"
-                        + " and i.sla.resolutionViolated = false"
-                        + " and (i.sla.resolutionFirstWarningSent = true or i.id in :flagged"
-                        + "      or (i.sla.responseFirstWarningSent = true and i.status in :beforeAck))"
-                        + " order by i.sla.resolutionDue asc nulls last, i.id asc", Incident.class)
+                        + " where i.status in :open and ("
+                        + "   i.sla.resolutionViolated = true"
+                        + "   or (i.sla.responseViolated = true and i.status in :beforeAck)"
+                        + "   or i.sla.resolutionFirstWarningSent = true or i.id in :flagged"
+                        + "   or (i.sla.responseFirstWarningSent = true and i.status in :beforeAck))"
+                        + " order by case when i.sla.resolutionViolated = true"
+                        + "   or (i.sla.responseViolated = true and i.status in :beforeAck) then 0 else 1 end,"
+                        + "   i.priority asc nulls last, i.sla.resolutionDue asc nulls last, i.id asc",
+                Incident.class)
                 .setParameter("open", IncidentStatus.OPEN)
                 .setParameter("flagged", flagged)
                 .setParameter("beforeAck", BEFORE_ACKNOWLEDGED)
