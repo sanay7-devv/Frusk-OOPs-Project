@@ -12,6 +12,7 @@ import { AUDIT_ACTIONS, type AuditAction } from '../../api/audit';
 import { listDirectoryUsers, type DirectoryUser } from '../../api/adminDirectory';
 import { listIncidents } from '../../api/incidents';
 import { searchAuditActions, type AuditQuery } from './auditSearch';
+import DateRangeField from '../../components/DateRangeField';
 import { formatDateTime, humanizeEnum } from '../../utils/format';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
@@ -159,9 +160,8 @@ export default function AuditLog() {
             )} />
           <TextField size="small" label="Incident code" placeholder="INC-2026-00213" value={draft.incidentCode} onChange={field('incidentCode')}
             onKeyDown={onKey} error={!!codeError} helperText={codeError || undefined} sx={{ width: 190 }} />
-          <TextField size="small" label="From" type="datetime-local" value={draft.from} onChange={field('from')} InputLabelProps={{ shrink: true }} />
-          <TextField size="small" label="To" type="datetime-local" value={draft.to} onChange={field('to')} InputLabelProps={{ shrink: true }}
-            error={rangeBad} helperText={rangeBad ? 'To must be after From' : 'Shows records before this time'} />
+          <DateRangeField mode="datetime" from={draft.from} to={draft.to} toTip="Shows records before this time"
+            onChange={(r) => setDraft({ ...draft, from: r.from, to: r.to })} />
           <Button variant="contained" onClick={() => void apply()} disabled={rangeBad || resolving}>Apply</Button>
           <Button onClick={reset}>Clear</Button>
         </Stack>
