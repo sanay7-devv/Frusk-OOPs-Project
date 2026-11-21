@@ -40,8 +40,8 @@ export interface Draft {
 }
 
 export interface ChatOption {
-  label: string;
-  value: string;
+  id: number;
+  name: string;
 }
 
 export interface ChatRequest {

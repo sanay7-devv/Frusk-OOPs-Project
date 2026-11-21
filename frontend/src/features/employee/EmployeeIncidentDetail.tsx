@@ -103,21 +103,21 @@ const COLORS = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  INCIDENT_CREATED: 'Incident Reported',
-  STATUS_CHANGED: 'Status Updated',
-  PRIORITY_CHANGED: 'Priority Re-evaluated',
-  ASSIGNED: 'Technician Assigned',
-  ACKNOWLEDGED: 'Work Acknowledged',
-  WORK_STARTED: 'Remediation Started',
-  INFO_REQUESTED: 'Clarification Requested',
-  INFO_PROVIDED: 'Information Provided',
-  RESOLVED: 'Resolution Committed',
-  VERIFIED: 'Resolution Verified',
-  CLOSED: 'Incident Closed',
-  REOPENED: 'Incident Reopened',
-  WITHDRAWN: 'Incident Withdrawn',
-  COMMENT_ADDED: 'Note Added',
-  ATTACHMENT_ADDED: 'Attachment Uploaded',
+  INCIDENT_CREATED: 'Problem reported',
+  STATUS_CHANGED: 'Status changed',
+  PRIORITY_CHANGED: 'Priority changed',
+  ASSIGNED: 'Technician assigned',
+  ACKNOWLEDGED: 'Technician accepted the work',
+  WORK_STARTED: 'Work started',
+  INFO_REQUESTED: 'Question from technician',
+  INFO_PROVIDED: 'You replied',
+  RESOLVED: 'Marked as fixed',
+  VERIFIED: 'Fix confirmed',
+  CLOSED: 'Closed',
+  REOPENED: 'Reopened',
+  WITHDRAWN: 'Withdrawn',
+  COMMENT_ADDED: 'Comment added',
+  ATTACHMENT_ADDED: 'File added',
 };
 
 export default function EmployeeIncidentDetail() {
@@ -169,6 +169,7 @@ export default function EmployeeIncidentDetail() {
     queryKey: ['incidents', numId],
     queryFn: () => getIncident(numId),
     enabled: !isNaN(numId) && numId > 0,
+    retry: (count, err) => err?.response?.status !== 404 && err?.response?.status !== 403 && count < 2,
   });
 
   const { data: comments = [] } = useQuery<CommentView[]>({
@@ -208,7 +209,7 @@ export default function EmployeeIncidentDetail() {
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'comments'] });
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
       setCommentText('');
-      toast('Your update has been sent to the assigned technician.', 'success');
+      toast(incident?.assignee ? 'Sent to the technician.' : 'Update added.', 'success');
     },
     onError: (err) => {
       toast(errorMessage(err), 'error');
@@ -224,8 +225,8 @@ export default function EmployeeIncidentDetail() {
       const resumed = data.slaState !== 'PAUSED';
       toast(
         resumed
-          ? 'Information delivered to technician. SLA clock resumed.'
-          : `Information delivered. SLA status: ${data.slaState}.`,
+          ? 'Reply sent to the technician.'
+          : 'Reply sent to the technician.',
         'success'
       );
       setProvideInfoOpen(false);
@@ -242,7 +243,7 @@ export default function EmployeeIncidentDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
-      toast('Fix verified. Thank you for confirming!', 'success');
+      toast('Thanks for confirming the fix.', 'success');
       setVerifyConfirmOpen(false);
       setFeedbackOpen(true);
     },
@@ -256,7 +257,7 @@ export default function EmployeeIncidentDetail() {
     mutationFn: ({ rating, comment }: { rating: number; comment?: string }) => submitFeedback(numId, rating, comment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
-      toast('Feedback recorded. Thank you for rating the resolution quality!', 'success');
+      toast('Thanks for your feedback.', 'success');
       setFeedbackOpen(false);
       setFeedbackRating(null);
       setFeedbackComment('');
@@ -286,7 +287,7 @@ export default function EmployeeIncidentDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
-      toast('Incident withdrawn and marked as closed.', 'info');
+      toast('Incident withdrawn.', 'info');
       setWithdrawOpen(false);
       setWithdrawReason('');
     },
@@ -305,7 +306,7 @@ export default function EmployeeIncidentDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents', numId] });
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
-      toast('Incident description updated.', 'success');
+      toast('Description updated.', 'success');
       setEditOpen(false);
     },
     onError: (err) => {
@@ -319,7 +320,7 @@ export default function EmployeeIncidentDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'attachments'] });
       queryClient.invalidateQueries({ queryKey: ['incidents', numId, 'history'] });
-      toast('Attachment uploaded successfully.', 'success');
+      toast('File added.', 'success');
       setSelectedFile(null);
     },
     onError: (err) => {
@@ -374,15 +375,15 @@ export default function EmployeeIncidentDetail() {
       return (
         <Box sx={{ maxWidth: 800, mx: 'auto', p: 4, textAlign: 'center' }}>
           <Typography variant="h6" sx={{ color: COLORS.onSurface, mb: 1 }}>
-            {status === 404 ? 'Incident Record Not Found' : 'Access Restricted'}
+            {status === 404 ? 'Incident not found' : 'No access'}
           </Typography>
           <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 13, mb: 2 }}>
             {status === 404
-              ? `No incident record was found for ID #${numId}. It may have been removed or you may not have permission to view it.`
-              : 'You do not have permission to inspect this incident record.'}
+              ? 'This incident does not exist, or you do not have access to it.'
+              : 'You do not have access to this incident.'}
           </Typography>
           <Button onClick={() => navigate('/employee/incidents')} startIcon={<ArrowBackIcon />} sx={{ color: COLORS.secondary }}>
-            Return to My Incidents
+            Back to my incidents
           </Button>
         </Box>
       );
@@ -405,6 +406,7 @@ export default function EmployeeIncidentDetail() {
   const canWithdraw = allowed.includes('WITHDRAW');
   const canComment = allowed.includes('COMMENT');
   const canEdit = allowed.includes('EDIT');
+  const isWithdrawn = incident.status === 'CLOSED' && incident.closureReason === 'WITHDRAWN';
 
   // Find last question asked by technician for highlight
   const lastQuestion = comments
@@ -413,7 +415,7 @@ export default function EmployeeIncidentDetail() {
     .find((c) => c.visibility === 'PUBLIC');
 
   // Parcel-style progress tracker steps
-  const steps = ['Reported', 'Assigned', 'In Progress', 'Remediated', 'Verified'];
+  const steps = ['Reported', 'Assigned', 'Being worked on', 'Fixed', 'Confirmed'];
   const getActiveStep = () => {
     switch (incident.status) {
       case 'NEW':
@@ -424,6 +426,7 @@ export default function EmployeeIncidentDetail() {
         return 1;
       case 'IN_PROGRESS':
       case 'PENDING_USER_INFO':
+      case 'REOPENED':
         return 2;
       case 'RESOLVED':
         return 3;
@@ -472,20 +475,6 @@ export default function EmployeeIncidentDetail() {
                   }}
                 />
               )}
-              {incident.problemId && (
-                <Chip
-                  label={`Problem Record #${incident.problemId}`}
-                  size="small"
-                  sx={{
-                    bgcolor: alpha(tokens.secondary, 0.15),
-                    color: COLORS.secondary,
-                    border: `1px solid ${alpha(tokens.secondary, 0.35)}`,
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                />
-              )}
               {incident.duplicateOfId && (
                 <Chip
                   label={`Duplicate of #${incident.duplicateOfId}`}
@@ -527,7 +516,7 @@ export default function EmployeeIncidentDetail() {
                 textTransform: 'none',
               }}
             >
-              Edit Details
+              Edit
             </Button>
           )}
 
@@ -568,11 +557,11 @@ export default function EmployeeIncidentDetail() {
                 '&:hover': { bgcolor: tokens.successDark },
               }}
             >
-              Verify Fix
+              Confirm the fix
             </Button>
           )}
 
-          {canGiveFeedback && (
+          {canGiveFeedback && !isWithdrawn && (
             <Button
               variant="outlined"
               onClick={() => setFeedbackOpen(true)}
@@ -589,11 +578,11 @@ export default function EmployeeIncidentDetail() {
                 '&:hover': { bgcolor: alpha(tokens.amberLight, 0.2), borderColor: tokens.amberLight },
               }}
             >
-              Rate Resolution
+              Rate the fix
             </Button>
           )}
 
-          {(incident.status === 'CLOSED' || incident.status === 'VERIFIED') && (
+          {(incident.status === 'CLOSED' || incident.status === 'VERIFIED') && !isWithdrawn && (
             <Button
               variant="outlined"
               onClick={() => setPirOpen(true)}
@@ -606,7 +595,7 @@ export default function EmployeeIncidentDetail() {
                 textTransform: 'none',
               }}
             >
-              Post-Incident Report
+              Incident report
             </Button>
           )}
 
@@ -664,9 +653,14 @@ export default function EmployeeIncidentDetail() {
           border: `1px solid ${COLORS.border}`,
         }}
       >
+        {isWithdrawn ? (
+          <Typography sx={{ textAlign: 'center', fontWeight: 700, color: COLORS.onSurfaceVariant, fontSize: 14 }}>
+            You withdrew this report
+          </Typography>
+        ) : (
         <Stepper activeStep={getActiveStep()} alternativeLabel>
           {steps.map((label, idx) => (
-            <Step key={label} completed={getActiveStep() > idx || (getActiveStep() === idx && (incident.status === 'VERIFIED' || incident.status === 'CLOSED'))}>
+            <Step key={label} completed={getActiveStep() > idx || (getActiveStep() === idx && ['RESOLVED', 'VERIFIED', 'CLOSED'].includes(incident.status))}>
               <StepLabel
                 StepIconProps={{
                   sx: {
@@ -682,6 +676,7 @@ export default function EmployeeIncidentDetail() {
             </Step>
           ))}
         </Stepper>
+        )}
       </Paper>
 
       {/* Action-Required Question Highlight (Shown when pending clarification) */}
@@ -704,7 +699,7 @@ export default function EmployeeIncidentDetail() {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
             <WarningIcon sx={{ color: tokens.tertiary, fontSize: 24, mt: 0.2 }} />
             <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: tokens.tertiary, textTransform: 'uppercase' }}>
+              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 800, color: tokens.tertiary, textTransform: 'none' }}>
                 Technician Inquiry (SLA Paused)
               </Typography>
               <Typography sx={{ fontSize: 13.5, color: tokens.white, fontWeight: 600, mt: 0.3 }}>
@@ -756,11 +751,11 @@ export default function EmployeeIncidentDetail() {
                   color: COLORS.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: 700,
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   mb: 1.5,
                 }}
               >
-                Incident Diagnostics &amp; Impact Description
+                Description
               </Typography>
               <Typography sx={{ color: COLORS.onSurface, fontSize: 14, lineHeight: 1.6, mb: 3 }}>
                 {incident.description}
@@ -769,8 +764,8 @@ export default function EmployeeIncidentDetail() {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                      Impacted Service
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'none' }}>
+                      Service
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mt: 0.5 }}>
                       {incident.service?.name || 'General Enterprise'}
@@ -779,21 +774,21 @@ export default function EmployeeIncidentDetail() {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                      Category Scope
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'none' }}>
+                      Type of problem
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mt: 0.5 }}>
-                      {incident.category?.name || 'Unclassified Triage'}
+                      {incident.category?.name || 'Not sorted yet'}
                     </Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                      Estimated Affected Users
+                    <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'none' }}>
+                      People affected
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.secondary, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
-                      {incident.affectedUsers ?? 0} User(s)
+                      {incident.affectedUsers ?? 0} {(incident.affectedUsers ?? 0) === 1 ? 'person' : 'people'}
                     </Typography>
                   </Box>
                 </Grid>
@@ -805,11 +800,11 @@ export default function EmployeeIncidentDetail() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <HelpIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
                     <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurface, fontFamily: 'JetBrains Mono, monospace' }}>
-                      PRIORITY DETERMINATION FORMULA
+                      How the priority was set
                     </Typography>
                   </Box>
                   <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                    Impact ({incident.priorityBreakdown.impact}) × Urgency ({incident.priorityBreakdown.urgency}) × Criticality ({incident.priorityBreakdown.criticality}) × Users Multiplier ({incident.priorityBreakdown.usersMultiplier}) = Score {incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})
+                    Impact ({incident.priorityBreakdown.impact}) × Urgency ({incident.priorityBreakdown.urgency}) × Criticality ({incident.priorityBreakdown.criticality}) × Number of people ({incident.priorityBreakdown.usersMultiplier}) = Score {incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})
                     {incident.priorityBreakdown.overrideRule && ` • Rule: ${incident.priorityBreakdown.overrideRule}`}
                   </Typography>
                 </Box>
@@ -818,13 +813,13 @@ export default function EmployeeIncidentDetail() {
               {/* Closure Information (when closed/verified) */}
               {(incident.closureReason || incident.closedAt || incident.reopenCount > 0) && (
                 <Box sx={{ mt: 2.5, p: 2, bgcolor: alpha(tokens.white, 0.03), borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', mb: 0.5 }}>
-                    Lifecycle &amp; Closure Information
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', textTransform: 'none', mb: 0.5 }}>
+                    Closing details
                   </Typography>
                   <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
-                    Closure Reason: <strong>{incident.closureReason || 'N/A'}</strong>
-                    {incident.reopenCount > 0 && ` • Reopened: ${incident.reopenCount} time(s)`}
-                    {incident.closedAt && ` • Closed At: ${new Date(incident.closedAt).toLocaleString()}`}
+                    Reason: <strong>{incident.closureReason || 'N/A'}</strong>
+                    {incident.reopenCount > 0 && ` • Reopened ${incident.reopenCount} time(s)`}
+                    {incident.closedAt && ` • Closed on: ${new Date(incident.closedAt).toLocaleString()}`}
                   </Typography>
                 </Box>
               )}
@@ -839,7 +834,7 @@ export default function EmployeeIncidentDetail() {
                     </Typography>
                   </Box>
                   <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 0.5 }}>
-                    <strong>Root Cause:</strong> {incident.resolution.rootCause}
+                    <strong>Cause:</strong> {incident.resolution.rootCause}
                   </Typography>
                   <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
                     <strong>Remediation Steps:</strong> {incident.resolution.steps || incident.resolution.notes}
@@ -896,10 +891,10 @@ export default function EmployeeIncidentDetail() {
                     '& .MuiTabs-indicator': { bgcolor: COLORS.secondary },
                   }}
                 >
-                  <Tab icon={<ChatIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Communications (${comments.length})`} value="comments" />
-                  <Tab icon={<HistoryIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Audit Trail (${history.length})`} value="history" />
+                  <Tab icon={<ChatIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Messages (${comments.length})`} value="comments" />
+                  <Tab icon={<HistoryIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`History (${history.length})`} value="history" />
                   <Tab icon={<AttachFileIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Attachments (${attachments.length})`} value="attachments" />
-                  <Tab icon={<TimelineIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Similar Incidents" value="similar" />
+                  <Tab icon={<TimelineIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Similar reports" value="similar" />
                 </Tabs>
               </Box>
 
@@ -909,7 +904,7 @@ export default function EmployeeIncidentDetail() {
                     {comments.length === 0 ? (
                       <Box sx={{ p: 3, textAlign: 'center', bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}` }}>
                         <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
-                          No messages logged yet. The assigned technician will post diagnostic updates here.
+                          No messages yet. Your technician will post updates here.
                         </Typography>
                       </Box>
                     ) : (
@@ -958,7 +953,7 @@ export default function EmployeeIncidentDetail() {
                         fullWidth
                         multiline
                         rows={2}
-                        placeholder="Post a diagnostic note or additional details for the assigned technician..."
+                        placeholder="Write a message to your technician..."
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         sx={{
@@ -1218,8 +1213,8 @@ export default function EmployeeIncidentDetail() {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                  Target Resolution SLA
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'none', fontFamily: 'JetBrains Mono, monospace' }}>
+                  Expected fix time
                 </Typography>
                 <HourglassEmptyIcon sx={{ fontSize: 18, color: COLORS.secondary }} />
               </Box>
@@ -1229,7 +1224,7 @@ export default function EmployeeIncidentDetail() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CheckCircleIcon sx={{ color: COLORS.success, fontSize: 24 }} />
                     <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.success, fontFamily: 'Sora, sans-serif' }}>
-                      Incident Remediated
+                      This problem is fixed
                     </Typography>
                   </Box>
                 ) : (
@@ -1254,7 +1249,7 @@ export default function EmployeeIncidentDetail() {
                 </Typography>
               )}
               <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
-                SLA targets are governed by enterprise service policies and tracked against response and resolution windows.
+                The target time depends on how urgent the problem is.
               </Typography>
             </Paper>
 
@@ -1268,8 +1263,8 @@ export default function EmployeeIncidentDetail() {
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', mb: 2 }}>
-                Assigned Technician
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'none', fontFamily: 'JetBrains Mono, monospace', mb: 2 }}>
+                Your technician
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -1290,7 +1285,7 @@ export default function EmployeeIncidentDetail() {
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: 14, fontWeight: 800, color: COLORS.onSurface }}>
-                    {incident.assignee?.name || 'Triage Dispatch Queue'}
+                    {incident.assignee?.name || 'Not yet assigned'}
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
                     {incident.assignee ? 'Assigned Engineering Lead' : 'Awaiting assignment'}
@@ -1303,7 +1298,7 @@ export default function EmployeeIncidentDetail() {
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                 <InfoOutlinedIcon sx={{ fontSize: 16, color: COLORS.secondary, mt: 0.2 }} />
                 <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
-                  Questions regarding this ticket can be posted in the communications tab above.
+                  You can ask questions in the Messages tab.
                 </Typography>
               </Box>
             </Paper>
@@ -1327,13 +1322,13 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
-          Provide Requested Information
+          Reply to the technician
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           {lastQuestion && (
             <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}`, mb: 2 }}>
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
-                Technician's Question:
+                Question from the technician:
               </Typography>
               <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mt: 0.5 }}>
                 "{lastQuestion.body}"
@@ -1341,7 +1336,7 @@ export default function EmployeeIncidentDetail() {
             </Box>
           )}
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            Answering will deliver your response to the technician and resume the SLA clock if user input was the pause condition.
+            Your reply goes to the technician and the work continues.
           </Typography>
           <TextField
             fullWidth
@@ -1349,7 +1344,7 @@ export default function EmployeeIncidentDetail() {
             rows={4}
             value={provideInfoText}
             onChange={(e) => setProvideInfoText(e.target.value)}
-            placeholder="Type your response, clarification, or requested reproduction steps..."
+            placeholder="Type your reply..."
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -1374,7 +1369,7 @@ export default function EmployeeIncidentDetail() {
               borderRadius: 2,
             }}
           >
-            Submit Response
+            Send reply
           </Button>
         </DialogActions>
       </Dialog>
@@ -1395,14 +1390,15 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif', textAlign: 'center' }}>
-          Rate the Resolution
+          Rate the fix
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', py: 2 }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            Please select a rating from 1 to 5 stars to evaluate this fix:
+            How well was your problem fixed?
           </Typography>
           <Rating
             value={feedbackRating}
+            emptyLabelText=""
             onChange={(_, val) => setFeedbackRating(val)}
             size="large"
             sx={{
@@ -1417,7 +1413,7 @@ export default function EmployeeIncidentDetail() {
             rows={3}
             value={feedbackComment}
             onChange={(e) => setFeedbackComment(e.target.value)}
-            placeholder="Optional feedback on resolution quality or timeliness..."
+            placeholder="Anything else you would like to add? (optional)"
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -1443,7 +1439,7 @@ export default function EmployeeIncidentDetail() {
               '&:hover': { bgcolor: tokens.successDark },
             }}
           >
-            Submit Feedback
+            Send feedback
           </Button>
         </DialogActions>
       </Dialog>
@@ -1464,11 +1460,11 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
-          Reopen Incident
+          Reopen this incident
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            If the problem recurred or the fix was incomplete, please explain why the ticket needs to be reopened (minimum 10 characters).
+            Tell us why the problem is not fixed.
           </Typography>
           <TextField
             fullWidth
@@ -1476,7 +1472,8 @@ export default function EmployeeIncidentDetail() {
             rows={3}
             value={reopenReason}
             onChange={(e) => setReopenReason(e.target.value)}
-            placeholder="Reason for reopening (min 10 characters)..."
+            placeholder="Reason for reopening"
+            helperText={`${reopenReason.trim().length} / 10 characters minimum`}
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -1502,7 +1499,7 @@ export default function EmployeeIncidentDetail() {
               '&:hover': { bgcolor: tokens.amberDark },
             }}
           >
-            Reopen Ticket {reopenReason.trim().length < 10 ? `(${10 - reopenReason.trim().length} more chars)` : ''}
+            Reopen
           </Button>
         </DialogActions>
       </Dialog>
@@ -1523,11 +1520,11 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
-          Withdraw Incident Report
+          Withdraw this report
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            Are you sure you want to withdraw this incident? The report will transition to WITHDRAWN status (minimum 10 characters reason required).
+            Withdrawing closes this report. Tell us why.
           </Typography>
           <TextField
             fullWidth
@@ -1535,7 +1532,8 @@ export default function EmployeeIncidentDetail() {
             rows={2}
             value={withdrawReason}
             onChange={(e) => setWithdrawReason(e.target.value)}
-            placeholder="Reason for withdrawal (min 10 characters)..."
+            placeholder="Reason for withdrawing"
+            helperText={`${withdrawReason.trim().length} / 10 characters minimum`}
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -1561,7 +1559,7 @@ export default function EmployeeIncidentDetail() {
               '&:hover': { bgcolor: tokens.redDark },
             }}
           >
-            Withdraw Report {withdrawReason.trim().length < 10 ? `(${10 - withdrawReason.trim().length} more chars)` : ''}
+            Withdraw report
           </Button>
         </DialogActions>
       </Dialog>
@@ -1582,12 +1580,12 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
-          Confirm Incident Resolution
+          Confirm the fix
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ fontSize: 13.5, color: COLORS.onSurfaceVariant, lineHeight: 1.6 }}>
-            Are you sure the reported issue for <strong style={{ color: COLORS.secondary }}>{incident.code}</strong> is resolved to your satisfaction?
-            Once verified, the ticket will transition to Verified and you will be invited to rate the resolution.
+            Is the problem in <strong style={{ color: COLORS.secondary }}>{incident.code}</strong> fixed?
+            After you confirm, you can rate the fix.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
@@ -1607,7 +1605,7 @@ export default function EmployeeIncidentDetail() {
               '&:hover': { bgcolor: tokens.successDark },
             }}
           >
-            Confirm &amp; Verify
+            Yes, it is fixed
           </Button>
         </DialogActions>
       </Dialog>
@@ -1628,11 +1626,11 @@ export default function EmployeeIncidentDetail() {
         }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontFamily: 'Sora, sans-serif' }}>
-          Edit Incident Details
+          Edit description
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, mb: 2 }}>
-            Update the incident description and diagnostic details:
+            Update what you reported.
           </Typography>
           <TextField
             fullWidth
@@ -1640,6 +1638,7 @@ export default function EmployeeIncidentDetail() {
             rows={5}
             value={editDescription}
             onChange={(e) => setEditDescription(e.target.value)}
+            helperText={`${editDescription.trim().length} / 20 characters minimum`}
             sx={{
               bgcolor: COLORS.surfaceContainerLowest,
               borderRadius: 2,
@@ -1653,7 +1652,7 @@ export default function EmployeeIncidentDetail() {
           </Button>
           <Button
             variant="contained"
-            disabled={!editDescription.trim() || editMutation.isPending}
+            disabled={editDescription.trim().length < 20 || editDescription.trim() === incident.description.trim() || editMutation.isPending}
             onClick={() => editMutation.mutate()}
             startIcon={editMutation.isPending ? <CircularProgress size={16} /> : <EditIcon />}
             sx={{
@@ -1663,7 +1662,7 @@ export default function EmployeeIncidentDetail() {
               textTransform: 'none',
             }}
           >
-            Save Changes
+            Save
           </Button>
         </DialogActions>
       </Dialog>
@@ -1685,7 +1684,7 @@ export default function EmployeeIncidentDetail() {
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
-            Post-Incident Report // {incident.code}
+            Incident report for {incident.code}
           </Typography>
           <Button
             variant="outlined"
@@ -1709,27 +1708,27 @@ export default function EmployeeIncidentDetail() {
                   {pirData.title}
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                  Generated on {new Date(pirData.generatedAt).toLocaleString()} • Duration: {pirData.totalSeconds ? `${Math.round(pirData.totalSeconds / 60)} minutes` : 'N/A'}
+                  Created {new Date(pirData.generatedAt).toLocaleString()} • Took {pirData.totalSeconds ? `${Math.floor(pirData.totalSeconds / 3600)}h ${Math.round((pirData.totalSeconds % 3600) / 60)}m` : 'unknown time'}
                 </Typography>
               </Box>
 
               {pirData.resolution && (
                 <Box sx={{ p: 2, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2 }}>
                   <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.success, fontFamily: 'JetBrains Mono, monospace', mb: 1 }}>
-                    RESOLUTION SUMMARY
+                    How it was fixed
                   </Typography>
                   <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 0.5 }}>
-                    <strong>Root Cause:</strong> {pirData.resolution.rootCause}
+                    <strong>Cause:</strong> {pirData.resolution.rootCause}
                   </Typography>
                   <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-                    <strong>Remediation:</strong> {pirData.resolution.steps || pirData.resolution.notes}
+                    <strong>What was done:</strong> {pirData.resolution.steps || pirData.resolution.notes}
                   </Typography>
                 </Box>
               )}
             </Box>
           ) : (
             <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-              Report details currently being generated by the system.
+              The report is not ready yet.
             </Typography>
           )}
         </DialogContent>

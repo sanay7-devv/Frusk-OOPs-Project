@@ -181,7 +181,7 @@ export default function MyIncidents() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved-filters'] });
-      toast('Saved view created successfully.', 'success');
+      toast('View saved.', 'success');
       setSaveViewOpen(false);
       setViewName('');
     },
@@ -248,10 +248,10 @@ export default function MyIncidents() {
                 letterSpacing: '-0.02em',
               }}
             >
-              My Reported Incidents
+              My incidents
             </Typography>
             <Chip
-              label={`${totalItems} TICKETS`}
+              label={`${totalItems} ${totalItems === 1 ? 'report' : 'reports'}`}
               size="small"
               sx={{
                 bgcolor: alpha(tokens.primary, 0.15),
@@ -265,7 +265,7 @@ export default function MyIncidents() {
             />
           </Box>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant }}>
-            Track and view the status of your reported incidents and requests
+            See the problems you have reported and where they stand
           </Typography>
         </Box>
 
@@ -284,10 +284,11 @@ export default function MyIncidents() {
               fontSize: 12.5,
               fontWeight: 600,
               textTransform: 'none',
+              whiteSpace: 'nowrap',
               '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
             }}
           >
-            Save Current View
+            Save this view
           </Button>
 
           <Button
@@ -304,10 +305,11 @@ export default function MyIncidents() {
               fontSize: 12.5,
               fontWeight: 600,
               textTransform: 'none',
+              whiteSpace: 'nowrap',
               '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
             }}
           >
-            Refresh Feed
+            Refresh
           </Button>
 
           <Button
@@ -323,11 +325,12 @@ export default function MyIncidents() {
               fontSize: 12.5,
               fontWeight: 700,
               textTransform: 'none',
+              whiteSpace: 'nowrap',
               boxShadow: `0 4px 14px ${alpha(tokens.primary, 0.35)}`,
               '&:hover': { opacity: 0.9 },
             }}
           >
-            Report Incident
+            Report a problem
           </Button>
         </Box>
       </Box>
@@ -338,7 +341,7 @@ export default function MyIncidents() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, color: COLORS.onSurfaceVariant }}>
             <BookmarkIcon sx={{ fontSize: 16, color: COLORS.secondary }} />
             <Typography sx={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>
-              SAVED VIEWS:
+              Saved views:
             </Typography>
           </Box>
           {savedViews.map((sv) => (
@@ -375,7 +378,7 @@ export default function MyIncidents() {
               }}
               sx={{ fontSize: 12, textTransform: 'none', color: COLORS.onSurfaceVariant }}
             >
-              Reset to Defaults
+              Reset filters
             </Button>
           )}
         </Box>
@@ -401,9 +404,9 @@ export default function MyIncidents() {
         {/* Status Tabs */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: COLORS.surfaceContainerLow, p: 0.5, borderRadius: 2, border: `1px solid ${COLORS.border}`, flexWrap: 'wrap' }}>
           {[
-            { id: 'ALL', label: 'All Incidents', count: totalCount },
+            { id: 'ALL', label: 'All', count: totalCount },
             { id: 'ACTIVE', label: 'Active', count: activeCount },
-            { id: 'RESOLVED', label: 'Resolved / Closed', count: resolvedCount },
+            { id: 'RESOLVED', label: 'Resolved', count: resolvedCount },
           ].map((tab) => {
             const isSelected = statusFilter === tab.id;
             return (
@@ -522,17 +525,17 @@ export default function MyIncidents() {
                 '& fieldset': { borderColor: COLORS.border },
               }}
             >
-              <MenuItem value="createdAt,desc">Newest First</MenuItem>
-              <MenuItem value="createdAt,asc">Oldest First</MenuItem>
-              <MenuItem value="resolutionDue,asc">SLA Urgency</MenuItem>
-              <MenuItem value="priority,asc">Highest Priority</MenuItem>
+              <MenuItem value="createdAt,desc">Newest first</MenuItem>
+              <MenuItem value="createdAt,asc">Oldest first</MenuItem>
+              <MenuItem value="resolutionDue,asc">Closest to deadline</MenuItem>
+              <MenuItem value="priority,asc">Highest priority first</MenuItem>
             </Select>
           </FormControl>
 
           {/* Search Field */}
           <TextField
             size="small"
-            placeholder="Search code, title..."
+            placeholder="Search by code or title"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
@@ -572,51 +575,48 @@ export default function MyIncidents() {
           <Box sx={{ p: 6, textAlign: 'center' }}>
             <CircularProgress size={32} sx={{ color: COLORS.primary, mb: 1.5 }} />
             <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 13 }}>
-              Loading your incidents from server...
+              Loading your incidents...
             </Typography>
           </Box>
         ) : isError ? (
           <Box sx={{ p: 3 }}>
-            <ErrorState onRetry={() => refetch()} message="Failed to load incidents. Please check your network and retry." />
+            <ErrorState onRetry={() => refetch()} message="Could not load your incidents. Check your connection and try again." />
           </Box>
         ) : incidents.length === 0 ? (
           <Box sx={{ p: 6, textAlign: 'center' }}>
             <CheckCircleIcon sx={{ fontSize: 44, color: COLORS.secondary, mb: 1 }} />
             <Typography variant="h6" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
-              No Incidents Found
+              No incidents found
             </Typography>
             <Typography sx={{ fontSize: 13, color: COLORS.onSurfaceVariant, maxWidth: 440, mx: 'auto', mt: 0.5 }}>
-              {searchQuery ? 'No tickets matched your query filter on the server.' : 'You have not reported any open or past service disruptions.'}
+              {searchQuery ? 'Nothing matches your search.' : 'You have not reported any problems yet.'}
             </Typography>
           </Box>
         ) : (
           <TableContainer>
-            <Table>
+            <Table sx={{ minWidth: 900, '& th, & td': { px: 1.25 }, '& th:first-of-type, & td:first-of-type': { pl: 2 } }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: COLORS.surfaceContainerLow }}>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                    Incident Code
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap', width: 130 }}>
+                    Code
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                    Incident Summary
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    Problem
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                    Service
-                  </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
                     Priority
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
                     Status
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                    Assignee
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    Handled by
                   </TableCell>
-                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                    SLA Clock &amp; Bar
+                  <TableCell sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    Time left
                   </TableCell>
-                  <TableCell align="right" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                    Action
+                  <TableCell align="right" sx={{ color: COLORS.onSurfaceVariant, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -632,12 +632,12 @@ export default function MyIncidents() {
                       '&:hover': { bgcolor: alpha(tokens.primary, 0.04) },
                     }}
                   >
-                    <TableCell sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: COLORS.secondary }}>
+                    <TableCell sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                         {inc.code}
                         {inc.major && (
                           <Chip
-                            label="MAJOR"
+                            label="Major"
                             size="small"
                             sx={{
                               bgcolor: alpha(tokens.danger, 0.2),
@@ -652,14 +652,14 @@ export default function MyIncidents() {
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ minWidth: 240 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface }}>
                           {inc.title}
                         </Typography>
                         {inc.status === 'PENDING_USER_INFO' && (
                           <Chip
-                            label="Action Required"
+                            label="Needs your reply"
                             size="small"
                             sx={{
                               bgcolor: alpha(tokens.tertiary, 0.2),
@@ -672,23 +672,9 @@ export default function MyIncidents() {
                           />
                         )}
                       </Box>
-                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.25 }}>
-                        Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.25 }}>
+                        {inc.service?.name || 'General'} · Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'medium' })}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={inc.service?.name || 'General Enterprise'}
-                        size="small"
-                        sx={{
-                          bgcolor: COLORS.surfaceContainerHigh,
-                          color: COLORS.onSurfaceVariant,
-                          border: `1px solid ${COLORS.border}`,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          height: 22,
-                        }}
-                      />
                     </TableCell>
                     <TableCell>
                       <PriorityBadge priority={inc.priority} />
@@ -707,15 +693,15 @@ export default function MyIncidents() {
                         </Box>
                       ) : (
                         <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic' }}>
-                          Unassigned
+                          Not yet assigned
                         </Typography>
                       )}
                     </TableCell>
                     {/* SLA Clock & Bar Column */}
-                    <TableCell sx={{ minWidth: 160 }}>
+                    <TableCell sx={{ minWidth: 135 }}>
                       {isResolvedOrClosed(inc.status) ? (
                         <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: COLORS.success, fontWeight: 700 }}>
-                          Remediated
+                          Done
                         </Typography>
                       ) : (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
@@ -733,7 +719,7 @@ export default function MyIncidents() {
                         </Box>
                       )}
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ whiteSpace: 'nowrap', width: 110 }}>
                       <Button
                         size="small"
                         onClick={(e) => {
@@ -746,6 +732,7 @@ export default function MyIncidents() {
                           fontSize: 12,
                           fontWeight: 700,
                           textTransform: 'none',
+                          whiteSpace: 'nowrap',
                           borderRadius: 1.5,
                           px: 1.5,
                           '&:hover': { bgcolor: alpha(tokens.secondary, 0.1) },
@@ -777,7 +764,7 @@ export default function MyIncidents() {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-                Showing page {page + 1} of {totalPages} ({totalItems} total incidents)
+                Page {page + 1} of {totalPages} ({totalItems} incidents)
               </Typography>
               <FormControl size="small">
                 <Select
@@ -854,20 +841,20 @@ export default function MyIncidents() {
         }}
       >
         <DialogTitle sx={{ color: COLORS.onSurface, fontWeight: 700, fontSize: 16 }}>
-          Save Filter View
+          Save this view
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: COLORS.border }}>
           <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 12.5, mb: 2 }}>
-            Save the current search and filter configuration under a custom name for quick access.
+            Give your current search and filters a name so you can use them again.
           </Typography>
           <TextField
             fullWidth
             autoFocus
             size="small"
-            label="View Name"
+            label="Name"
             value={viewName}
             onChange={(e) => setViewName(e.target.value)}
-            placeholder="e.g. Critical Open Incidents"
+            placeholder="For example: Open urgent problems"
             inputProps={{ maxLength: 60 }}
             sx={{
               '& .MuiOutlinedInput-root': {
@@ -894,7 +881,7 @@ export default function MyIncidents() {
               textTransform: 'none',
             }}
           >
-            Save View
+            Save
           </Button>
         </DialogActions>
       </Dialog>
