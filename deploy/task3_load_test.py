@@ -49,7 +49,8 @@ RESULT = {
     },
     "levels": {},
     "mixed": {},
-    "resource_samples": {"available": False, "samples": 0, "backend_cpu_peak_percent": None, "backend_memory_peak_bytes": None},
+    "resource_samples": {"available": False, "samples": 0, "memory_samples": 0, "memory_parse_errors": 0,
+                         "backend_cpu_peak_percent": None, "backend_memory_peak_bytes": None},
 }
 
 
@@ -162,10 +163,15 @@ def run_waves(concurrency, waves, action):
 
 
 def parse_memory_bytes(value):
-    number, unit = value.strip().split(maxsplit=1)
     factor = {"B": 1, "kB": 1000, "KB": 1000, "KiB": 1024, "MB": 1000**2,
               "MiB": 1024**2, "GB": 1000**3, "GiB": 1024**3, "TB": 1000**4, "TiB": 1024**4}
-    return int(float(number) * factor[unit])
+    normalized = value.strip()
+    for unit in sorted(factor, key=len, reverse=True):
+        if normalized.endswith(unit):
+            number = normalized[:-len(unit)].strip()
+            if number:
+                return int(float(number) * factor[unit])
+    raise ValueError(f"Unsupported Docker memory value: {value!r}")
 
 
 class ResourceSampler:
@@ -196,7 +202,13 @@ class ResourceSampler:
                     data["available"] = True
                     data["samples"] += 1
                     data["backend_cpu_peak_percent"] = max(data["backend_cpu_peak_percent"] or 0, float(cpu.rstrip("%")))
-                    data["backend_memory_peak_bytes"] = max(data["backend_memory_peak_bytes"] or 0, parse_memory_bytes(used))
+                    try:
+                        memory_bytes = parse_memory_bytes(used)
+                    except ValueError:
+                        data["memory_parse_errors"] += 1
+                    else:
+                        data["memory_samples"] += 1
+                        data["backend_memory_peak_bytes"] = max(data["backend_memory_peak_bytes"] or 0, memory_bytes)
             except (OSError, subprocess.SubprocessError, ValueError):
                 pass
             self.stop_event.wait(5)
