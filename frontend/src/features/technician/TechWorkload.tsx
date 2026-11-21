@@ -42,6 +42,7 @@ import {
 import { alpha } from './staffStyle';
 import QueueRowActions from './QueueRowActions';
 import { useProblemBasePath } from '../problems/problemAccess';
+import InfoTip from './InfoTip';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { acknowledgeIncident, startIncident } from '../../api/technicians';
 
@@ -211,9 +212,6 @@ export default function TechWorkload() {
               }}
             >
               My workload
-            </Typography>
-            <Typography sx={{ fontSize: 13.5, color: tokens.onSurfaceVariant, maxWidth: 780 }}>
-              Your capacity, resolved work and SLA results.
             </Typography>
           </Box>
 
@@ -433,18 +431,13 @@ export default function TechWorkload() {
                     mb: 0.5,
                   }}
                 >
-                  Active Incidents
+                  <InfoTip label="Active Incidents" tip="Incidents currently assigned to you." />
                 </Typography>
                 <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.onSurface, lineHeight: 1.1 }}>
                   {workload?.activeIncidents ?? 0}
                 </Typography>
               </Box>
               <TaskAltIcon sx={{ fontSize: 32, color: tokens.primary }} />
-            </Box>
-            <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
-                Currently assigned to you
-              </Typography>
             </Box>
           </Paper>
         </Grid>
@@ -476,18 +469,13 @@ export default function TechWorkload() {
                     mb: 0.5,
                   }}
                 >
-                  Resolved This Week
+                  <InfoTip label="Resolved This Week" tip="Tickets you resolved this calendar week." />
                 </Typography>
                 <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.success, lineHeight: 1.1 }}>
                   {workload?.resolvedThisWeek ?? 0}
                 </Typography>
               </Box>
               <VerifiedIcon sx={{ fontSize: 32, color: tokens.success }} />
-            </Box>
-            <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
-                Resolved tickets this calendar week
-              </Typography>
             </Box>
           </Paper>
         </Grid>
@@ -519,18 +507,13 @@ export default function TechWorkload() {
                     mb: 0.5,
                   }}
                 >
-                  Upcoming Deadlines
+                  <InfoTip label="Upcoming Deadlines" tip="SLA deadlines coming up on your open incidents." />
                 </Typography>
                 <Typography sx={{ fontSize: 28, fontWeight: 700, color: tokens.secondary, lineHeight: 1.1 }}>
                   {deadlines.length}
                 </Typography>
               </Box>
               <TimerIcon sx={{ fontSize: 32, color: tokens.secondary }} />
-            </Box>
-            <Box sx={{ pt: 2 }}>
-              <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
-                Upcoming SLA commitment deadlines
-              </Typography>
             </Box>
           </Paper>
         </Grid>
@@ -552,7 +535,7 @@ export default function TechWorkload() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16 }}>
-              Upcoming SLA Commitment Deadlines
+              Upcoming SLA deadlines
             </Typography>
             <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant }}>
               Real-time delivery clocks prioritized by target breach urgency.
