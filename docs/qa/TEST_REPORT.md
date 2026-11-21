@@ -52,9 +52,9 @@ The handbook's R11 unit-test classes are present and passed in PR #83 CI. Remain
 
 The 45 frontend tests span nine files and passed in the PR #83 CI run:
 
-- `auth-flow.test.tsx` — sign-in routing and authentication flow.
+- `auth-flow.test.tsx` — sign-in routing, authentication flow, and rejection of empty or malformed credentials before an API call.
 - `incident-ui.test.tsx` — status labels, SLA countdown states and colors.
-- `remaining-screens.test.tsx` — report, audit, account-security and problem-screen interactions.
+- `remaining-screens.test.tsx` — report, audit, account-security and problem-screen interactions, plus a rendered incident-priority filter check that verifies the URL and server request.
 - `features/admin/config/configMeta.test.ts` — configuration values and grouping.
 - `features/admin/servicegraph/layout.test.ts` — service-graph layout.
 - `features/admin/simulator/validation.test.ts` — simulator input validation and request conversion.
