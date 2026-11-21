@@ -1,11 +1,11 @@
 # Testing and DevOps: what is left, and the optional full test catalogue
 
-## Handoff update — 2026-11-20
+## Handoff update — 2026-11-21
 
-Merged into `main` through the PR for branch `testing/task3-incident-exception-tests` (Tanisha, commits `999ed76` to `4c4fc9e`). The backend lead ran everything on 2026-11-20 with JDK 21 and Docker.
+The Task 3 test work is merged into `main`. The latest main CI run on 2026-11-21 (commit `e762349`) passed all six jobs. It reran the handbook cases and recorded 59 backend tests (57 passed, 2 demo-only tests skipped) and 37 frontend tests across 9 files. `TEST_REPORT.md` and `test_cases.csv` now point to that run.
 
 - **R11: Done, 12 of 12 classes.** `IncidentStateTest` (2 tests) checks that every `IncidentStatus` has a state, the exact legal-action set per status, and that invalid moves (classify on ASSIGNED, verify on CLOSED, close on IN_PROGRESS) throw `InvalidStateTransitionException`. `ExceptionMappingTest` (1 test) checks the code and HTTP status of all 22 `ItsmException` subclasses. Both pass. Optional extension: successful next-state assertions for every move, and the `ErrorResponse` body from `GlobalExceptionHandler`.
-- **Backend count:** 59 `@Test` methods in 15 files (was 56 in 13). `SeedCompatibilityTest` (2) runs only with `VERIFY_DEMO_SEEDS=true`, so a normal run should give 57; confirm from the Surefire XML before the report (R7).
+- **Backend count:** the latest Surefire output reports 59 tests, 57 passed and 2 skipped in the normal backend job. The two skipped `SeedCompatibilityTest` checks run only with `VERIFY_DEMO_SEEDS=true`; the separate dev and demo seed jobs run them.
 - **R10: Mostly done.** 37 frontend tests in 9 files, all passing (`tsc` clean, build passes). `remaining-screens.test.tsx` (8) covers audit verify, MFA setup, forgot/reset password, problem tabs and major label, invalid report dates, CSV/PDF export and clearing filters; `incident-ui.test.tsx` now checks all six SLA colours. Deeper coverage is optional: individual filter selections, report chart/table interactions, audit seal failure, MFA disable and error responses. The build warns that the main JS chunk is about 1.9 MB before gzip.
 
 ### What is left now (2026-11-20), in order
@@ -17,7 +17,7 @@ This list replaces the 2026-11-19 table below, which is kept as history.
 | 1 | R6 reset time, fresh clone | Time the demo reset and a fresh-clone setup on the recording laptop; replace "unmeasured" in `deploy/README.md`; re-check the JDK runtime image in `deploy/backend.Dockerfile`. | Testing |
 | 2 | A7 load test | Run it and record the numbers in `backend/docs/SCALING.md`; the index review and scale-out path are already there. | Testing |
 | 3 | R5 demo | Fill the dry-run log in `DEMO_RUN_SHEET.md`, rehearse all five segments, record. | Testing, whole team |
-| 4 | R3 / R7 evidence | Browser check that script text renders safely (check 4); per-case evidence; re-run the 26 cases on the final commit; update the report's test count to the Surefire number (57 expected). | Testing |
+| 4 | R3 / R7 evidence | R7 rerun and report count are updated from the 2026-11-21 main CI run; the 26 case rows link to its CI evidence. R3 still needs a browser check that script text renders safely (check 4). | Testing |
 | 5 | R8 repo settings | Create `severity:*` and `area:*` labels; verify the project board; branch protection on `main` needs the repository owner. | Testing; owner for protection |
 | 6 | R10 extras (optional) | The deeper screen tests listed above, with the Frontend Developer. | Testing |
 | 7 | R11 extras (optional) | Successful-transition assertions and `ErrorResponse` checks. | Testing |
