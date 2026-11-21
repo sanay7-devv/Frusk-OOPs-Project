@@ -15,6 +15,7 @@ Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af
 | Security dry run | PR #83: 30 checks passed |
 | Browser script-text check | Chromium: title, description and comment stayed literal; no script executed; [CI run and JSON/PNG evidence](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44924395271) |
 | A7 stage-0 load | 10/25/50 concurrency and five-minute mixed profile passed with 0 HTTP errors; [measurements and artifact](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44924395273) |
+| A7 10k/100k growth | Exactly 10,000 and 100,000 incidents reached; five read/report endpoints had 0 HTTP errors; [CI run 44932459781](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44932459781), detailed results in [SCALING.md](../../backend/docs/SCALING.md) |
 | Open blocker bugs at this snapshot | 0 recorded |
 
 The exact expected and observed result for each handbook case is in [test_cases.csv](test_cases.csv). Each row points to the latest successful 2026-11-21 PR #83 run and tested commit. The backend test job and both seed jobs uploaded Surefire reports; the demo job uploaded API, Postman and security evidence. A bug about stale frontend login selectors, issue #11, was fixed by PR #16 and has since been closed.
@@ -52,9 +53,9 @@ The handbook's R11 unit-test classes are present and passed in PR #83 CI. Remain
 
 The 45 frontend tests span nine files and passed in the PR #83 CI run:
 
-- `auth-flow.test.tsx` — sign-in routing and authentication flow.
+- `auth-flow.test.tsx` — sign-in routing, authentication flow, and rejection of empty or malformed credentials before an API call.
 - `incident-ui.test.tsx` — status labels, SLA countdown states and colors.
-- `remaining-screens.test.tsx` — report, audit, account-security and problem-screen interactions.
+- `remaining-screens.test.tsx` — report, audit, account-security and problem-screen interactions, plus a rendered incident-priority filter check that verifies the URL and server request.
 - `features/admin/config/configMeta.test.ts` — configuration values and grouping.
 - `features/admin/servicegraph/layout.test.ts` — service-graph layout.
 - `features/admin/simulator/validation.test.ts` — simulator input validation and request conversion.
@@ -72,7 +73,21 @@ The [successful disposable-runner job](https://github.com/sanay7-devv/Frusk-OOPs
 | 25 | 546.86 / 670.08 | 78.86 / 109.66 |
 | 50 | 842.92 / 1,020.09 | 114.17 / 164.81 |
 
-The five-minute mixed profile completed 3,683 transactions with no HTTP errors. It sampled backend CPU at 316.54% peak and memory at 754.5 MiB peak; the disposable create limit was restored successfully. These stage-0 measurements do not cover a 10,000- or 100,000-incident database. See [SCALING.md](../../backend/docs/SCALING.md) for the mix and limitations.
+The five-minute mixed profile completed 3,683 transactions with no HTTP errors. It sampled backend CPU at 316.54% peak and memory at 754.5 MiB peak; the disposable create limit was restored successfully. The A7 follow-up below adds 10,000- and 100,000-incident measurements; detailed endpoint p50/p95 and query-plan data are recorded in the next section and [SCALING.md](../../backend/docs/SCALING.md). See [SCALING.md](../../backend/docs/SCALING.md) for the mix and limitations.
+
+### A7 data-growth evidence
+
+The [successful disposable-stack run 44932459781](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44932459781) passed at commit `553306d` on 2026-11-21. Starting from 212 seeded incidents, the profile added 9,788 synthetic rows to reach 10,000, then 90,000 to reach 100,000. It made 10 requests per endpoint per stage with no HTTP errors. At 100k, p95 API latency before/after the temporary index experiment was:
+
+| Endpoint | 100k before indexes p95 (ms) | 100k after indexes p95 (ms) |
+|---|---:|---:|
+| Incident list | 89.47 | 71.98 |
+| Reports overview | 352.01 | 347.25 |
+| Report trends | 72.88 | 16.91 |
+| SLA compliance | 372.62 | 300.32 |
+| Audit search | 162.85 | 83.09 |
+
+The disposable database also captured five `EXPLAIN (ANALYZE, BUFFERS)` plans before and after temporary candidate indexes. Full 10k and 100k p50/p95 results and the plan comparison are in [SCALING.md](../../backend/docs/SCALING.md). No permanent index migration was created.
 
 ## Lessons and next checks
 
