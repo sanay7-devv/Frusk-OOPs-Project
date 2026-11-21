@@ -57,7 +57,7 @@ export default function ServiceStatus() {
   const joinMutation = useMutation({
     mutationFn: (problemId: number) => joinProblem(problemId),
     onSuccess: (data) => {
-      setJoinedMsg(`Successfully joined outage incident ${data.code}. You will receive status notifications.`);
+      setJoinedMsg(`You have joined report ${data.code}. You will get updates on it.`);
       queryClient.invalidateQueries({ queryKey: ['problems', 'known-outages'] });
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
     },
@@ -116,10 +116,10 @@ export default function ServiceStatus() {
                 fontSize: { xs: '1.4rem', sm: '1.8rem' },
               }}
             >
-              Enterprise Service Health
+              Service status
             </Typography>
             <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
-              Real-time operational status, SLA compliance, and ongoing service alerts
+              See which services are working and which have problems
             </Typography>
           </Box>
         </Box>
@@ -154,15 +154,15 @@ export default function ServiceStatus() {
               fontSize: '0.8rem',
               fontWeight: 700,
               color: tokens.red,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              textTransform: 'none',
+              letterSpacing: 0,
               mb: 1.5,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
             }}
           >
-            <HubIcon sx={{ fontSize: 16 }} /> Active Outage Alerts ({outages.length})
+            <HubIcon sx={{ fontSize: 16 }} /> Known problems ({outages.length})
           </Typography>
           <Grid container spacing={2}>
             {outages.map((outage) => (
@@ -193,8 +193,8 @@ export default function ServiceStatus() {
                         </Typography>
                       </Box>
                       <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
-                        Service: <strong>{outage.service?.name}</strong> • Affected users:{' '}
-                        <strong>{outage.affectedUsers}</strong> • Ongoing since{' '}
+                        Service: <strong>{outage.service?.name}</strong> • People affected:{' '}
+                        <strong>{outage.affectedUsers}</strong> • Since{' '}
                         {new Date(outage.since).toLocaleTimeString()}
                       </Typography>
                     </Box>
@@ -208,10 +208,12 @@ export default function ServiceStatus() {
                         color: tokens.white,
                         textTransform: 'none',
                         fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                         '&:hover': { bgcolor: tokens.redDark },
                       }}
                     >
-                      {outage.alreadyJoined ? 'Joined Outage' : 'I am affected (Join)'}
+                      {outage.alreadyJoined ? 'You have joined' : 'This affects me too'}
                     </Button>
                   </Box>
                 </Card>
@@ -228,7 +230,7 @@ export default function ServiceStatus() {
         </Box>
       ) : boardError ? (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to load live service status board. Please try again later.
+          Could not load service status. Please try again later.
         </Alert>
       ) : statusBoard ? (
         <Box>
@@ -245,10 +247,10 @@ export default function ServiceStatus() {
             }}
           >
             <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
-              Window: <strong>{statusBoard.windowDays} days</strong> • Basis: <strong>{statusBoard.basis}</strong>
+              Based on the last <strong>{statusBoard.windowDays} days</strong> of reports
             </Typography>
             <Typography sx={{ color: tokens.textDisabled, fontSize: '0.75rem', fontFamily: 'JetBrains Mono, monospace' }}>
-              Generated: {new Date(statusBoard.generatedAt).toLocaleString()}
+              Updated: {new Date(statusBoard.generatedAt).toLocaleString()}
             </Typography>
           </Box>
 
@@ -276,7 +278,7 @@ export default function ServiceStatus() {
                         </Typography>
                       </Box>
                       <Chip
-                        label={svc.status}
+                        label={({ HEALTHY: 'Working', DEGRADED: 'Slow or partly down', OUTAGE: 'Down' } as Record<string, string>)[svc.status] ?? svc.status}
                         color={getStatusColor(svc.status)}
                         size="small"
                         sx={{ fontWeight: 700, fontSize: '0.75rem' }}
@@ -294,7 +296,7 @@ export default function ServiceStatus() {
                       <Box sx={{ mb: 2, mt: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                           <Typography sx={{ fontSize: '0.78rem', color: tokens.onSurfaceVariant }}>
-                            SLA Compliance ({svc.slaJudged ?? 0} incidents judged)
+                            Fixed on time ({svc.slaJudged ?? 0} incidents checked)
                           </Typography>
                           <Typography
                             sx={{
@@ -325,12 +327,12 @@ export default function ServiceStatus() {
 
                   <Box sx={{ pt: 1.5, borderTop: `1px solid ${tokens.borderSubtle}`, display: 'flex', gap: 2 }}>
                     <Typography sx={{ fontSize: '0.78rem', color: tokens.textDisabled }}>
-                      Criticality Tier: <strong style={{ color: tokens.onSurface }}>Tier {svc.criticality}</strong>
+                      Importance: <strong style={{ color: tokens.onSurface }}>{svc.criticality} of 5</strong>
                     </Typography>
                     {svc.open && (
                       <Typography sx={{ fontSize: '0.78rem', color: tokens.textDisabled }}>
-                        Active Incidents: <strong style={{ color: tokens.onSurface }}>{svc.open.total}</strong>
-                        {svc.open.P1 > 0 && <span style={{ color: tokens.red }}> ({svc.open.P1} P1)</span>}
+                        Open incidents: <strong style={{ color: tokens.onSurface }}>{svc.open.total}</strong>
+                        {svc.open.P1 > 0 && <span style={{ color: tokens.red }}> ({svc.open.P1} urgent)</span>}
                       </Typography>
                     )}
                   </Box>
