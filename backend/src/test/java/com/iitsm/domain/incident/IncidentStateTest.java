@@ -111,8 +111,11 @@ class IncidentStateTest {
         assertMovesTo(IncidentStatus.RESOLVED,
                 incident -> StateFactory.of(IncidentStatus.ASSIGNED).resolveWithProblem(incident, resolution(), NOW));
         assertMovesTo(IncidentStatus.CLOSED,
-                incident -> StateFactory.of(IncidentStatus.IN_PROGRESS).markDuplicate(
-                        incident, mock(Incident.class), NOW));
+                incident -> {
+                    Incident original = mock(Incident.class);
+                    when(original.getId()).thenReturn(2L);
+                    StateFactory.of(IncidentStatus.IN_PROGRESS).markDuplicate(incident, original, NOW);
+                });
 
         Incident incident = mock(Incident.class);
         StateFactory.of(IncidentStatus.IN_PROGRESS).escalate(incident, NOW);
@@ -121,6 +124,7 @@ class IncidentStateTest {
 
     private static void assertMovesTo(IncidentStatus next, Consumer<Incident> action) {
         Incident incident = mock(Incident.class);
+        when(incident.getId()).thenReturn(1L);
         when(incident.getPriority()).thenReturn(Priority.P2);
         when(incident.isReportedBy(any())).thenReturn(false);
 
