@@ -1,28 +1,27 @@
 # Testing and DevOps: what is left, and the optional full test catalogue
 
-## Handoff update — 2026-11-20
+## Handoff update — 2026-11-21
 
-Merged into `main` through the PR for branch `testing/task3-incident-exception-tests` (Tanisha, commits `999ed76` to `4c4fc9e`). The backend lead ran everything on 2026-11-20 with JDK 21 and Docker.
+The Task 3 baseline is merged into `main`. Its latest CI run on 2026-11-21 (commit `e762349`) passed all six jobs with 59 backend tests (57 passed, 2 demo-only tests skipped) and 37 frontend tests across 9 files. The follow-up work in draft [PR #83](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/83) passed all six jobs on its code commit `2f7b4e9` (run 44915764035) and again on the latest docs commit `afafedc` (run 44917367587). The latest run recorded 62 backend tests (60 passed and 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62), 45 frontend tests across 9 files, 71 Postman requests / 149 assertions, and 30 security checks. `TEST_REPORT.md` and `test_cases.csv` point to the latest run. The seven requested severity/area labels are now created. GitHub shows no project board linked and no projects available to link; the branch settings page is unavailable to this collaborator account. PR #83 still needs teammate review and merge.
 
-- **R11: Done, 12 of 12 classes.** `IncidentStateTest` (2 tests) checks that every `IncidentStatus` has a state, the exact legal-action set per status, and that invalid moves (classify on ASSIGNED, verify on CLOSED, close on IN_PROGRESS) throw `InvalidStateTransitionException`. `ExceptionMappingTest` (1 test) checks the code and HTTP status of all 22 `ItsmException` subclasses. Both pass. Optional extension: successful next-state assertions for every move, and the `ErrorResponse` body from `GlobalExceptionHandler`.
-- **Backend count:** 59 `@Test` methods in 15 files (was 56 in 13). `SeedCompatibilityTest` (2) runs only with `VERIFY_DEMO_SEEDS=true`, so a normal run should give 57; confirm from the Surefire XML before the report (R7).
-- **R10: Mostly done.** 37 frontend tests in 9 files, all passing (`tsc` clean, build passes). `remaining-screens.test.tsx` (8) covers audit verify, MFA setup, forgot/reset password, problem tabs and major label, invalid report dates, CSV/PDF export and clearing filters; `incident-ui.test.tsx` now checks all six SLA colours. Deeper coverage is optional: individual filter selections, report chart/table interactions, audit seal failure, MFA disable and error responses. The build warns that the main JS chunk is about 1.9 MB before gzip.
+- **R11: Done, 12 of 12 classes.** `IncidentStateTest` covers every status, its legal actions, invalid moves, successful lifecycle moves and alternate actions. `ExceptionMappingTest` checks all 22 `ItsmException` subclasses. `GlobalExceptionHandlerTest` checks the standard field-validation response. The PR CI run passes these checks.
+- **Backend count:** the PR CI run reports 62 tests: 60 passed and 2 demo-only `SeedCompatibilityTest` checks skipped in the normal backend job. Both dev and demo seed jobs run all 62.
+- **R10: Done on PR #83.** 45 frontend tests in 9 files pass; the production build and type check pass. Coverage includes audit verification errors, MFA enable/disable and field errors, password reset, problem tabs, report charts, priority/filter interactions, SLA violations and existing SLA colors. The build warns that the main JS chunk is about 1.9 MB before gzip.
 
-### What is left now (2026-11-20), in order
+### What is left now (2026-11-21), in order
 
 This list replaces the 2026-11-19 table below, which is kept as history.
 
 | # | Item | What is left | Who |
 |---|---|---|---|
-| 1 | R6 reset time, fresh clone | Time the demo reset and a fresh-clone setup on the recording laptop; replace "unmeasured" in `deploy/README.md`; re-check the JDK runtime image in `deploy/backend.Dockerfile`. | Testing |
+| 1 | R6 reset time, fresh clone | CI rebuilt the JDK runtime image successfully. Still time the demo reset and a fresh-clone setup on the recording laptop, then replace "unmeasured" in `deploy/README.md`. | Testing |
 | 2 | A7 load test | Run it and record the numbers in `backend/docs/SCALING.md`; the index review and scale-out path are already there. | Testing |
-| 3 | R5 demo | Fill the dry-run log in `DEMO_RUN_SHEET.md`, rehearse all five segments, record. | Testing, whole team |
-| 4 | R3 / R7 evidence | Browser check that script text renders safely (check 4); per-case evidence; re-run the 26 cases on the final commit; update the report's test count to the Surefire number (57 expected). | Testing |
-| 5 | R8 repo settings | Create `severity:*` and `area:*` labels; verify the project board; branch protection on `main` needs the repository owner. | Testing; owner for protection |
-| 6 | R10 extras (optional) | The deeper screen tests listed above, with the Frontend Developer. | Testing |
-| 7 | R11 extras (optional) | Successful-transition assertions and `ErrorResponse` checks. | Testing |
+| 3 | R5 demo | The five-segment checklist and recording-day preflight are ready. Rehearse all five segments, fill the dated dry-run log, and record. | Testing, whole team |
+| 4 | R3 browser check | On the disposable local stack, confirm `<script>` in an incident title, description and comment is displayed as text and does not execute. API checks alone do not prove browser rendering. | Testing |
+| 5 | R8 repo settings | **Done:** created all seven `severity:*` and `area:*` labels. GitHub shows no project board linked and no projects available to link; the repository owner/team needs to create one if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
+| 6 | PR #83 review | Teammate review and merge. Its six CI jobs are green; it remains a draft as requested. | Team |
 
-Done: R1, R2, R4, R9, R11; R10 mostly.
+Done: R1, R2, R4 and R9 are merged. R8 labels are created; no project is available to link. R10 and R11 follow-up tests are complete on PR #83 and await review. R6, A7, R5 rehearsal and R3 browser evidence require a real test environment or team members; branch-protection settings need the repository owner.
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
