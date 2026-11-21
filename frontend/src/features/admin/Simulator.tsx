@@ -85,7 +85,7 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
       weights: Object.fromEntries(WEIGHT_NAMES.map((w) => [w, Number(c.weights[w])])),
     }),
     onSuccess: (_d, c) => {
-      toast(`"${c.name}" is now the live assignment setting`, 'success');
+      toast(`Assignment settings from “${c.name}” are now active for new incidents.`, 'success');
       setApplyTarget(null);
       qc.invalidateQueries({ queryKey: ['admin-config-settings'] });
     },

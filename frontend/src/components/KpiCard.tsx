@@ -4,6 +4,7 @@ import { Card, CardContent, Typography, Box } from '@mui/material';
 
 import { tokens } from '../theme/theme';
 import { alpha } from '@mui/material/styles';
+import InfoTip from './InfoTip';
 export interface KpiCardProps {
   title: string;
   value: string | number;
@@ -12,6 +13,7 @@ export interface KpiCardProps {
   color?: string;
   badge?: ReactNode;
   onClick?: () => void;
+  titleTip?: ReactNode;
 }
 
 export default function KpiCard({
@@ -22,21 +24,30 @@ export default function KpiCard({
   color = tokens.primary,
   badge,
   onClick,
+  titleTip,
 }: KpiCardProps) {
   return (
     <Card
+      component={onClick ? 'button' : 'div'}
+      type={onClick ? 'button' : undefined}
       onClick={onClick}
+      aria-label={onClick ? `${title}: ${value}` : undefined}
       sx={{
         bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
         border: `1px solid ${tokens.outlineVariant}`,
+        borderTop: `3px solid ${alpha(color, 0.75)}`,
         borderRadius: '12px',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.2s ease',
+        color: 'inherit',
+        font: 'inherit',
+        textAlign: 'left',
+        width: '100%',
+        p: 0,
+        transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
         '&:hover': onClick
           ? {
-              transform: 'translateY(-2px)',
-              borderColor: alpha(tokens.white, 0.2),
-              boxShadow: `0 8px 24px ${alpha(tokens.black, 0.4)}`,
+              borderColor: alpha(tokens.white, 0.25),
+              bgcolor: alpha(tokens.surfaceContainerLow, 0.95),
             }
           : undefined,
       }}
@@ -45,14 +56,12 @@ export default function KpiCard({
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
           <Typography
             sx={{
-              fontSize: '0.8rem',
+              fontSize: '0.875rem',
               fontWeight: 600,
               color: tokens.onSurfaceVariant,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
             }}
           >
-            {title}
+            <InfoTip tip={titleTip}>{title}</InfoTip>
           </Typography>
           {Icon && (
             <Box

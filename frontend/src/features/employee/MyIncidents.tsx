@@ -57,6 +57,7 @@ import { ErrorState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
 import { tokens, slaStateColor } from '../../theme/theme';
 import { alpha } from '@mui/material/styles';
+import { formatDateTime } from '../../utils/format';
 
 const COLORS = {
   surface: tokens.background,
@@ -625,11 +626,19 @@ export default function MyIncidents() {
                   <TableRow
                     key={inc.id}
                     hover
+                    tabIndex={0}
+                    aria-label={`Open ${inc.code}: ${inc.title}`}
                     onClick={() => navigate(`/employee/incidents/${inc.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+                      e.preventDefault();
+                      navigate(`/employee/incidents/${inc.id}`);
+                    }}
                     sx={{
                       cursor: 'pointer',
                       borderBottom: `1px solid ${COLORS.border}`,
                       '&:hover': { bgcolor: alpha(tokens.primary, 0.04) },
+                      '&:focus-visible': { outline: `2px solid ${COLORS.secondary}`, outlineOffset: -2 },
                     }}
                   >
                     <TableCell sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>
@@ -673,7 +682,7 @@ export default function MyIncidents() {
                         )}
                       </Box>
                       <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.25 }}>
-                        {inc.service?.name || 'General'} · Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'medium' })}
+                        {inc.service?.name || 'General'} · Reported {formatDateTime(inc.createdAt)}
                       </Typography>
                     </TableCell>
                     <TableCell>

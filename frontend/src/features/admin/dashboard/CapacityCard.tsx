@@ -14,11 +14,11 @@ export function CapacityCard() {
       query={query}
       isEmpty={(d) => d.length === 0}
       emptyMessage="No technicians yet."
-      action={<Typography component={RouterLink} to="/admin/reports" sx={{ fontSize: 12, color: tokens.secondaryLight }}>Workload report</Typography>}
+      action={<Typography component={RouterLink} to="/admin/reports" sx={{ fontSize: 12, color: tokens.secondaryLight }}>View all</Typography>}
     >
       {(rows) => (
-        <Stack spacing={1.5} sx={{ maxHeight: 360, overflowY: 'auto' }}>
-          {[...rows].sort((a, b) => (b.maxLoad ? b.load / b.maxLoad : 0) - (a.maxLoad ? a.load / a.maxLoad : 0)).map((t) => {
+        <Stack spacing={1.5}>
+          {[...rows].sort((a, b) => (b.maxLoad ? b.load / b.maxLoad : 0) - (a.maxLoad ? a.load / a.maxLoad : 0)).slice(0, 5).map((t) => {
             const pct = t.maxLoad > 0 ? Math.min(100, (t.load / t.maxLoad) * 100) : 0;
             const full = t.maxLoad > 0 && t.load >= t.maxLoad;
             return (
@@ -26,7 +26,7 @@ export function CapacityCard() {
                 <Stack direction="row" justifyContent="space-between" spacing={1}>
                   <Typography sx={{ fontSize: 13, color: tokens.onSurface }}>{t.name}</Typography>
                   <Typography sx={{ fontSize: 12, color: full ? tone.danger : tokens.onSurfaceVariant }}>
-                    {t.load} of {t.maxLoad} slots used{full ? ' (full)' : ''}
+                    {full ? 'Full' : `${t.load} / ${t.maxLoad} load`} · {t.activeIncidents} active
                   </Typography>
                 </Stack>
                 <LinearProgress

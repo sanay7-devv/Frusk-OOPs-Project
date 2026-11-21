@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import { statusColor, tokens } from '../theme/theme';
 import type { IncidentStatus } from '../api/types';
+import { humanizeEnum } from '../utils/format';
 
 import { alpha } from '@mui/material/styles';
 const FRIENDLY_LABELS: Record<string, string> = {
@@ -8,8 +9,8 @@ const FRIENDLY_LABELS: Record<string, string> = {
   CLASSIFIED: 'Triaged',
   ASSIGNED: 'Assigned',
   ACKNOWLEDGED: 'Acknowledged',
-  IN_PROGRESS: 'In Progress',
-  PENDING_USER_INFO: 'Waiting for Details',
+  IN_PROGRESS: 'In progress',
+  PENDING_USER_INFO: 'Waiting for details',
   RESOLVED: 'Resolved',
   VERIFIED: 'Verified',
   CLOSED: 'Closed',
@@ -28,9 +29,8 @@ export default function StatusChip({
 }) {
   const isWithdrawn = status === 'CLOSED' && closureReason === 'WITHDRAWN';
   const color = isWithdrawn ? tokens.textDisabled : (statusColor[status] || tokens.onSurfaceVariant);
-  const reopened = status === 'REOPENED';
   const rawKey = isWithdrawn ? 'WITHDRAWN' : status;
-  const label = friendly ? (FRIENDLY_LABELS[rawKey] || status.replace(/_/g, ' ')) : (isWithdrawn ? 'WITHDRAWN' : status.replace(/_/g, ' '));
+  const label = friendly ? (FRIENDLY_LABELS[rawKey] || humanizeEnum(rawKey)) : humanizeEnum(rawKey);
 
   return (
     <Box
@@ -42,9 +42,8 @@ export default function StatusChip({
         px: 1.2,
         py: 0.3,
         borderRadius: '9999px',
-        bgcolor: reopened ? alpha(tokens.danger, 0.15) : `${color}18`,
-        border: `1px solid ${reopened ? '${tokens.danger}' : `${color}40`}`,
-        boxShadow: `0 0 8px ${color}15`,
+        bgcolor: alpha(color, 0.12),
+        border: `1px solid ${alpha(color, 0.42)}`,
         verticalAlign: 'middle',
       }}
     >
@@ -60,11 +59,10 @@ export default function StatusChip({
       <Box
         component="span"
         sx={{
-          fontFamily: 'JetBrains Mono, monospace',
+          fontFamily: 'Geist, sans-serif',
           fontSize: 12,
           fontWeight: 600,
           color: color,
-          letterSpacing: '0.03em',
           lineHeight: 1.2,
         }}
       >

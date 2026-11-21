@@ -363,7 +363,7 @@ function ScenarioBox({ title, s }: { title: string; s?: WhatIfView['current'] })
       </Box>
       <Typography sx={{ fontSize: 12, color: tokens.onSurface }}>Score {s.score}</Typography>
       <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
-        Impact {s.impact}, urgency {s.urgency}, {s.affectedUsers} users
+        Impact {s.impact}, urgency {s.urgency}, {s.affectedUsers} {s.affectedUsers === 1 ? 'user' : 'users'}
       </Typography>
       {s.overrideRule && <Typography sx={{ fontSize: 12, color: tokens.primaryLight }}>Rule: {s.overrideRule}</Typography>}
     </Paper>

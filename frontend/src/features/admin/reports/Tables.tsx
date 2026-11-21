@@ -1,4 +1,4 @@
-import { formatDateTime } from '../../../utils/format';
+import { formatDateTime, formatDurationSeconds } from '../../../utils/format';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -66,9 +66,7 @@ export function CoverageRiskCard() {
 }
 
 function overdue(seconds: number): string {
-  const m = Math.round(seconds / 60);
-  if (m < 60) return `${m} min`;
-  return `${Math.floor(m / 60)} h ${m % 60} min`;
+  return formatDurationSeconds(Math.max(0, seconds));
 }
 
 export function SlaViolationsCard({ range }: { range: DateRange | null }) {

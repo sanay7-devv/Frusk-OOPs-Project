@@ -3,6 +3,7 @@ import SlaCountdown from '../../../components/SlaCountdown';
 import type { IncidentDetail } from '../../../api/types';
 import { COLORS } from './ui';
 import { formatSpan } from './formatSpan';
+import { formatDateTime } from '../../../utils/format';
 
 type ClockFields = Pick<IncidentDetail, 'responseDue' | 'resolutionDue' | 'acknowledgedAt' | 'resolvedAt' | 'slaState' | 'pausedAt' | 'createdAt'>;
 
@@ -31,17 +32,17 @@ export default function SlaClockPair({ incident, fontSize = 18 }: { incident: Cl
             </Box>
           ) : c.doneAt ? (
             <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
-              {c.doneText} {new Date(c.doneAt).toLocaleString()}
+              {c.doneText} {formatDateTime(c.doneAt)}
             </Typography>
           ) : (
-            <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>{c.due ? (new Date(c.due).getTime() < Date.now() ? `Overdue ${formatSpan(Date.now() - new Date(c.due).getTime())}` : `Due ${new Date(c.due).toLocaleString()}`) : 'No target'}</Typography>
+            <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>{c.due ? (new Date(c.due).getTime() < Date.now() ? `Overdue ${formatSpan(Date.now() - new Date(c.due).getTime())}` : `Due ${formatDateTime(c.due)}`) : 'No target'}</Typography>
           )}
         </Box>
       ))}
       {incident.slaState === 'PAUSED' && (
         <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
           {incident.pausedAt
-            ? `Paused since ${new Date(incident.pausedAt).toLocaleString()} while the reporter provides information. It resumes, with the time left kept, when they reply.`
+            ? `Paused since ${formatDateTime(incident.pausedAt)} while the reporter provides information. It resumes, with the time left kept, when they reply.`
             : 'Paused while waiting for the reporter. It resumes when they reply.'}
         </Typography>
       )}

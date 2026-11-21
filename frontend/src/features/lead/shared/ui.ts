@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { tokens } from '../../../theme/theme';
+import { formatDateTime } from '../../../utils/format';
 
 /** Colour names the lead and admin-detail screens use, all taken from the shared theme tokens. */
 export const COLORS = {
@@ -44,7 +45,7 @@ export const MAX_REASON = 1000;
 
 /** Date and time, so a ticket from yesterday is not shown as just a clock time. */
 export const fmtDateTime = (iso: string | null | undefined): string =>
-  iso ? new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-';
+  formatDateTime(iso, '-');
 
 /**
  * After any change to one incident, refresh every list and detail that can show it:

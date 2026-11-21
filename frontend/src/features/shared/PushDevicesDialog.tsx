@@ -21,6 +21,7 @@ import { useToast } from '../../components/Toast';
 import { deleteDevice, listDevices, registerDevice, type DeviceView } from '../../api/notifications';
 import { tokens } from '../../theme/theme';
 import { apiErrorMessage } from '../../utils/errors';
+import { formatDateTime, humanizeEnum } from '../../utils/format';
 
 import { alpha } from '@mui/material/styles';
 const PLATFORMS = ['WEB', 'ANDROID', 'IOS'] as const;
@@ -28,7 +29,7 @@ const MIN_TOKEN = 8; // RegisterDeviceRequest: @Size(min = 8, max = 255)
 const MAX_TOKEN = 255;
 
 function when(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return formatDateTime(iso);
 }
 
 export default function PushDevicesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -149,7 +150,7 @@ export default function PushDevicesDialog({ open, onClose }: { open: boolean; on
                   <PhoneIcon sx={{ color: tokens.secondaryLight }} />
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>
-                      {d.platform} · token ...{d.tokenHint}
+                      {humanizeEnum(d.platform)} · token ...{d.tokenHint}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                       Added {when(d.createdAt)} · last seen {when(d.lastSeenAt)}

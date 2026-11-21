@@ -7,6 +7,7 @@ import type { IncidentSummary } from '../../../api/types';
 import { ChartCard } from '../reports/common';
 import { EmptyState } from '../../../components/StateViews';
 import { tone } from '../palette';
+import { formatTime } from '../../../utils/format';
 
 const EVENT_TEXT: Record<DashboardEventType, string> = {
   INCIDENT_CREATED: 'Reported', INCIDENT_ASSIGNED: 'Assigned', INCIDENT_ACKNOWLEDGED: 'Acknowledged',
@@ -24,8 +25,8 @@ const SLA_TEXT: Record<string, string> = { VIOLATED: 'SLA violated', AT_RISK: 'S
 
 function AttentionList({ items }: { items: IncidentSummary[] }) {
   return (
-    <Stack spacing={1} sx={{ maxHeight: 360, overflowY: 'auto' }}>
-      {items.map((i) => (
+    <Stack spacing={1}>
+      {items.slice(0, 4).map((i) => (
         <Box
           key={i.id}
           component={RouterLink}
@@ -51,12 +52,12 @@ function AttentionList({ items }: { items: IncidentSummary[] }) {
 
 function FeedList({ events }: { events: DashboardEvent[] }) {
   return (
-    <Stack spacing={0.5} sx={{ maxHeight: 360, overflowY: 'auto' }}>
-      {events.map((e, idx) => {
+    <Stack spacing={0.5}>
+      {events.slice(0, 6).map((e, idx) => {
         const body = (
           <Stack direction="row" spacing={1.5} alignItems="baseline" sx={{ p: 1, borderRadius: '8px', '&:hover': e.incidentId ? { bgcolor: tokens.surfaceContainerHigh } : undefined }}>
             <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, minWidth: 64 }}>
-              {new Date(e.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {formatTime(e.at)}
             </Typography>
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: 13, color: EVENT_COLOR[e.type] ?? tokens.onSurface, fontWeight: 600 }}>{EVENT_TEXT[e.type] ?? e.type}</Typography>
@@ -78,8 +79,14 @@ function FeedList({ events }: { events: DashboardEvent[] }) {
 export function AttentionCard() {
   const query = useQuery({ queryKey: ['dashboard', 'live'], queryFn: getLiveDashboard, refetchInterval: 30_000 });
   return (
-    <ChartCard title="Needs attention" query={query} isEmpty={() => false} emptyMessage="">
-      {(d) => (d.atRisk.length === 0 ? <EmptyState message="Nothing needs attention right now." /> : <AttentionList items={d.atRisk} />)}
+    <ChartCard
+      title="Needs attention"
+      query={query}
+      isEmpty={() => false}
+      emptyMessage=""
+      action={<Typography component={RouterLink} to="/admin/tickets?tab=all&status=ACTIVE" sx={{ fontSize: 12, color: tokens.secondaryLight }}>View incidents</Typography>}
+    >
+      {(d) => (d.atRisk.length === 0 ? <EmptyState compact message="Nothing needs attention right now." /> : <AttentionList items={d.atRisk} />)}
     </ChartCard>
   );
 }

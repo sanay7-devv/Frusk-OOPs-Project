@@ -8,6 +8,7 @@ import { useAuth, type Workspace } from '../auth/AuthContext';
 import { NAV } from '../layouts/navConfig';
 import { tokens } from '../theme/theme';
 import { apiErrorMessage } from '../utils/errors';
+import { humanizeEnum } from '../utils/format';
 
 /** Window event other components dispatch to open the palette (the shell button does). */
 export const OPEN_PALETTE_EVENT = 'app:open-palette';
@@ -98,7 +99,7 @@ export default function CommandPalette() {
       ? (lookup.data?.items ?? []).map((i) => ({
           key: `inc:${i.id}`,
           label: `${i.code}  ${i.title}`,
-          hint: `Incident, ${i.status}`,
+          hint: `Incident · ${humanizeEnum(i.status)}`,
           to: incidentPath(workspaces, i.id),
         }))
       : []),

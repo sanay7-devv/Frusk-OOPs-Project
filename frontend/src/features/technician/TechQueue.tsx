@@ -653,12 +653,12 @@ export default function TechQueue() {
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.secondary, fontWeight: 700, fontSize: 12 }}>
                     {capacityPercent >= capacityWarnAt && <WarningIcon sx={{ fontSize: 15 }} />}
-                    <span>{activeLoad} of {maxQuota} weighted load ({capacityPercent}%)</span>
+                    <span>Weighted load: {activeLoad} / {maxQuota} ({capacityPercent}%)</span>
                   </Box>
                 </Box>
               </Box>
               <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant, fontWeight: 600 }}>
-                Limit: {maxQuota}
+                Capacity limit: {maxQuota}
               </Typography>
             </Box>
 
@@ -811,7 +811,7 @@ export default function TechQueue() {
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: tokens.onSurfaceVariant, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
-                    Pending Info
+                    Waiting on reporter
                   </Typography>
                   <PauseCircleIcon sx={{ fontSize: 18, color: tokens.secondary }} />
                 </Box>
@@ -1128,8 +1128,15 @@ export default function TechQueue() {
                         />
                       )}
                       <Typography
+                        component="button"
+                        type="button"
+                        aria-label={`Open ${inc.code}`}
                         onClick={() => navigate(`/tech/incidents/${inc.id}`)}
                         sx={{
+                          p: 0,
+                          border: 0,
+                          bgcolor: 'transparent',
+                          textAlign: 'left',
                           fontFamily: 'JetBrains Mono, monospace',
                           fontSize: 13,
                           fontWeight: 800,
@@ -1137,6 +1144,7 @@ export default function TechQueue() {
                           color: tokens.secondary,
                           cursor: 'pointer',
                           '&:hover': { textDecoration: 'underline' },
+                          '&:focus-visible': { outline: `2px solid ${tokens.secondary}`, outlineOffset: 2 },
                         }}
                       >
                         {inc.code}

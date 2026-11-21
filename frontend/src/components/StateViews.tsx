@@ -24,14 +24,14 @@ export const LoadingState = () => (
   </Stack>
 );
 
-export const EmptyState = ({ message, action }: { message: string; action?: ReactNode }) => (
+export const EmptyState = ({ message, action, compact = false }: { message: string; action?: ReactNode; compact?: boolean }) => (
   <Stack
     alignItems="center"
     justifyContent="center"
-    spacing={2}
+    spacing={compact ? 1 : 2}
     sx={{
-      py: 8,
-      px: 3,
+      py: compact ? 2.5 : 8,
+      px: compact ? 2 : 3,
       borderRadius: '12px',
       border: `1px dashed ${alpha(tokens.white, 0.1)}`,
       bgcolor: alpha(tokens.surfaceContainerLow, 0.4),
@@ -40,8 +40,8 @@ export const EmptyState = ({ message, action }: { message: string; action?: Reac
   >
     <Box
       sx={{
-        width: 48,
-        height: 48,
+        width: compact ? 32 : 48,
+        height: compact ? 32 : 48,
         borderRadius: '50%',
         bgcolor: tokens.hover,
         display: 'flex',
@@ -50,7 +50,7 @@ export const EmptyState = ({ message, action }: { message: string; action?: Reac
         color: tokens.textDisabled,
       }}
     >
-      <InboxIcon sx={{ fontSize: 24 }} />
+      <InboxIcon sx={{ fontSize: compact ? 18 : 24 }} />
     </Box>
     <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 14, fontFamily: 'Geist, sans-serif' }}>
       {message}

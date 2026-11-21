@@ -65,6 +65,7 @@ import SlaBar from '../../components/SlaBar';
 import { ErrorState } from '../../components/StateViews';
 
 import { tokens } from '../../theme/theme';
+import { formatDateTime } from '../../utils/format';
 import { alpha } from '@mui/material/styles';
 const ACTIVE_STATUSES = ['NEW', 'CLASSIFIED', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_USER_INFO', 'REOPENED'];
 const RESOLVED_STATUSES = ['RESOLVED', 'VERIFIED', 'CLOSED'];
@@ -1066,7 +1067,7 @@ export default function EmployeeHome() {
                         {inc.title}
                       </Typography>
                       <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.2 }}>
-                        Reported {new Date(inc.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                        Reported {formatDateTime(inc.createdAt)}
                       </Typography>
                     </Box>
                     <Box component="td" sx={{ py: 1.8, px: 1.5 }}>
@@ -1257,7 +1258,7 @@ export default function EmployeeHome() {
                       "{technicianQuestion.body}"
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
-                      Asked by {technicianQuestion.author?.name || 'Your technician'} • {new Date(technicianQuestion.createdAt).toLocaleString()}
+                      Asked by {technicianQuestion.author?.name || 'Your technician'} • {formatDateTime(technicianQuestion.createdAt)}
                     </Typography>
                   </Box>
                 ) : (

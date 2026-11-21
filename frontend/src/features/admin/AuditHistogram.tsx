@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { AuditEntryView } from '../../api/audit';
 import { tokens } from '../../theme/theme';
+import { formatDateHour } from '../../utils/format';
 
 const HOUR = 3600_000;
 
@@ -29,7 +30,7 @@ export function bucketByHour(items: AuditEntryView[]): Bucket[] {
     const d = new Date(t);
     out.push({
       start: t,
-      label: `${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} ${String(d.getHours()).padStart(2, '0')}:00`,
+      label: formatDateHour(d),
       count: counts.get(t) ?? 0,
     });
   }

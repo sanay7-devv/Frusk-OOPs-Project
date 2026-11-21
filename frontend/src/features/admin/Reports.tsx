@@ -12,6 +12,7 @@ import {
 import { getCategories } from '../../api/services';
 import { apiErrorMessage } from '../../utils/errors';
 import { ErrorState, LoadingState } from '../../components/StateViews';
+import KpiCard from '../../components/KpiCard';
 import { ChartCard, type DateRange } from './reports/common';
 import {
   CategoryBars, PriorityDonut, ServiceBars, SlaChart, TrendChart, WorkloadChart, formatMinutes,
@@ -21,7 +22,8 @@ import IncidentHeatmap from '../../components/IncidentHeatmap';
 import IncidentsDrawer, { type DrawerTarget } from './reports/IncidentsDrawer';
 
 const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return toIsoDate(d); };
+// A range labelled "Last N days" includes today, so its first day is N - 1 days ago.
+const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - (n - 1)); return toIsoDate(d); };
 
 const EXPORT_TYPES: { value: ExportType; label: string }[] = [
   { value: 'incidents', label: 'All incidents' },
@@ -35,13 +37,7 @@ const EXPORT_TYPES: { value: ExportType; label: string }[] = [
 ];
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <Paper sx={{ p: 2.5, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px', height: '100%' }}>
-      <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13 }}>{label}</Typography>
-      <Typography sx={{ color: tokens.onSurface, fontSize: 32, fontWeight: 700, lineHeight: 1.3 }}>{value}</Typography>
-      {hint && <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>{hint}</Typography>}
-    </Paper>
-  );
+  return <KpiCard title={label} value={value} titleTip={hint} />;
 }
 
 export default function Reports() {

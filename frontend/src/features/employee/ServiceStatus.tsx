@@ -27,6 +27,7 @@ import { getServicesStatus, getKnownOutages, joinProblem } from '../../api/incid
 import type { KnownOutageView, ServiceStatus as IServiceStatus } from '../../api/types';
 
 import { tokens } from '../../theme/theme';
+import { formatDateTime, formatTime } from '../../utils/format';
 import { alpha } from '@mui/material/styles';
 export default function ServiceStatus() {
   const navigate = useNavigate();
@@ -195,7 +196,7 @@ export default function ServiceStatus() {
                       <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: '0.85rem' }}>
                         Service: <strong>{outage.service?.name}</strong> • People affected:{' '}
                         <strong>{outage.affectedUsers}</strong> • Since{' '}
-                        {new Date(outage.since).toLocaleTimeString()}
+                        {formatTime(outage.since)}
                       </Typography>
                     </Box>
                     <Button
@@ -250,7 +251,7 @@ export default function ServiceStatus() {
               Based on the last <strong>{statusBoard.windowDays} days</strong> of reports
             </Typography>
             <Typography sx={{ color: tokens.textDisabled, fontSize: '0.75rem', fontFamily: 'JetBrains Mono, monospace' }}>
-              Updated: {new Date(statusBoard.generatedAt).toLocaleString()}
+              Updated: {formatDateTime(statusBoard.generatedAt)}
             </Typography>
           </Box>
 

@@ -1,4 +1,4 @@
-import { Grid, Paper, Typography } from '@mui/material';
+import { Grid } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { tokens } from '../../../theme/theme';
@@ -8,26 +8,11 @@ import { ErrorState, LoadingState } from '../../../components/StateViews';
 import { apiErrorMessage } from '../../../utils/errors';
 import { lastDays } from './dates';
 import { tone } from '../palette';
+import KpiCard from '../../../components/KpiCard';
 
 function Kpi({ label, value, hint, color, to }: { label: string; value: string | number; hint: string; color: string; to: string }) {
   const navigate = useNavigate();
-  return (
-    <Paper
-      role="link"
-      tabIndex={0}
-      onClick={() => navigate(to)}
-      onKeyDown={(e) => { if (e.key === 'Enter') navigate(to); }}
-      sx={{
-        p: 2.5, height: '100%', cursor: 'pointer', bgcolor: tokens.surfaceContainerLow,
-        border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px', borderTop: `3px solid ${color}`,
-        '&:hover, &:focus-visible': { borderColor: color, outline: 'none' },
-      }}
-    >
-      <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13 }}>{label}</Typography>
-      <Typography sx={{ color: tokens.onSurface, fontSize: 32, fontWeight: 700, lineHeight: 1.3 }}>{value}</Typography>
-      <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>{hint}</Typography>
-    </Paper>
-  );
+  return <KpiCard title={label} value={value} color={color} titleTip={hint} onClick={() => navigate(to)} />;
 }
 
 export function KpiRow() {
@@ -35,6 +20,7 @@ export function KpiRow() {
   const period = lastDays(30);
   const live = useQuery({ queryKey: ['dashboard', 'live'], queryFn: getLiveDashboard, refetchInterval: 30_000 });
   const todayOverview = useQuery({ queryKey: ['dashboard', 'overview-today', today.from], queryFn: () => getOverview(today), refetchInterval: 30_000 });
+  const periodOverview = useQuery({ queryKey: ['dashboard', 'overview-period', period.from], queryFn: () => getOverview(period), refetchInterval: 30_000 });
   const compliance = useQuery({ queryKey: ['dashboard', 'sla-compliance', period.from], queryFn: () => getSlaCompliance(period, 'priority') });
 
   if (live.isLoading || todayOverview.isLoading) return <LoadingState />;
@@ -66,7 +52,7 @@ export function KpiRow() {
         <Kpi label="Critical (P1)" value={c.critical} hint="Open P1 incidents" color={tone.danger} to="/admin/tickets?tab=all&priority=P1" />
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
-        <Kpi label="SLA violations" value={c.slaViolations} hint={complianceHint} color={tone.caution} to="/admin/reports" />
+        <Kpi label="SLA violations · 30 days" value={periodOverview.data?.slaViolations ?? '—'} hint={complianceHint} color={tone.caution} to="/admin/reports" />
       </Grid>
     </Grid>
   );

@@ -16,8 +16,8 @@ export const dialogPaperSx = {
 };
 
 export const monoLabelSx = {
-  fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'uppercase' as const,
-  fontFamily: 'JetBrains Mono, monospace',
+  fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, textTransform: 'none' as const,
+  fontFamily: 'Geist, sans-serif',
 };
 
 export const cardSx = {

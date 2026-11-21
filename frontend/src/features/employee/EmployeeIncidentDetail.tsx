@@ -81,6 +81,7 @@ import SlaBar from '../../components/SlaBar';
 import { ErrorState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
 import { errorMessage } from '../../utils/errors';
+import { formatDateTime, formatDurationSeconds, humanizeEnum } from '../../utils/format';
 import { reasonRule } from '../../utils/validation';
 import { tokens, slaStateColor } from '../../theme/theme';
 
@@ -706,7 +707,7 @@ export default function EmployeeIncidentDetail() {
                 "{lastQuestion.body}"
               </Typography>
               <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
-                Asked by {lastQuestion.author?.name || 'Technician'} • {new Date(lastQuestion.createdAt).toLocaleString()}
+                Asked by {lastQuestion.author?.name || 'Technician'} • {formatDateTime(lastQuestion.createdAt)}
               </Typography>
             </Box>
           </Box>
@@ -804,8 +805,7 @@ export default function EmployeeIncidentDetail() {
                     </Typography>
                   </Box>
                   <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                    Impact ({incident.priorityBreakdown.impact}) × Urgency ({incident.priorityBreakdown.urgency}) × Criticality ({incident.priorityBreakdown.criticality}) × Number of people ({incident.priorityBreakdown.usersMultiplier}) = Score {incident.priorityBreakdown.score} ({incident.priorityBreakdown.band})
-                    {incident.priorityBreakdown.overrideRule && ` • Rule: ${incident.priorityBreakdown.overrideRule}`}
+                    Priority is based on the reported impact, urgency, and number of people affected.
                   </Typography>
                 </Box>
               )}
@@ -819,7 +819,7 @@ export default function EmployeeIncidentDetail() {
                   <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
                     Reason: <strong>{incident.closureReason || 'N/A'}</strong>
                     {incident.reopenCount > 0 && ` • Reopened ${incident.reopenCount} time(s)`}
-                    {incident.closedAt && ` • Closed on: ${new Date(incident.closedAt).toLocaleString()}`}
+                    {incident.closedAt && ` • Closed on: ${formatDateTime(incident.closedAt)}`}
                   </Typography>
                 </Box>
               )}
@@ -830,7 +830,7 @@ export default function EmployeeIncidentDetail() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <CheckCircleIcon sx={{ fontSize: 18, color: COLORS.success }} />
                     <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: COLORS.success, fontFamily: 'JetBrains Mono, monospace' }}>
-                      ENGINEERING RESOLUTION LOG
+                      Resolution details
                     </Typography>
                   </Box>
                   <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mb: 0.5 }}>
@@ -936,7 +936,7 @@ export default function EmployeeIncidentDetail() {
                               />
                             </Box>
                             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-                              {new Date(c.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                              {formatDateTime(c.createdAt)}
                             </Typography>
                           </Box>
                           <Typography sx={{ fontSize: 13, color: COLORS.onSurface, lineHeight: 1.5 }}>
@@ -1021,7 +1021,7 @@ export default function EmployeeIncidentDetail() {
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Typography sx={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary, fontFamily: 'JetBrains Mono, monospace' }}>
-                                {ACTION_LABELS[h.action] || h.action}
+                              {ACTION_LABELS[h.action] || humanizeEnum(h.action)}
                               </Typography>
                               {h.actor && (
                                 <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
@@ -1030,7 +1030,7 @@ export default function EmployeeIncidentDetail() {
                               )}
                             </Box>
                             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-                              {new Date(h.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                              {formatDateTime(h.timestamp)}
                             </Typography>
                           </Box>
                           <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>
@@ -1038,7 +1038,7 @@ export default function EmployeeIncidentDetail() {
                           </Typography>
                           {(h.previousState || h.newState) && (
                             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', mt: 0.5 }}>
-                              {h.previousState ? `${h.previousState} ➔ ` : ''}{h.newState}
+                              {h.previousState ? `${humanizeEnum(h.previousState)} ➔ ` : ''}{humanizeEnum(h.newState)}
                             </Typography>
                           )}
                         </Box>
@@ -1121,7 +1121,7 @@ export default function EmployeeIncidentDetail() {
                               {att.filename}
                             </Typography>
                             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-                              {(att.sizeBytes / 1024).toFixed(1)} KB • {att.uploadedBy?.name || 'User'} • {new Date(att.createdAt).toLocaleString()}
+                              {(att.sizeBytes / 1024).toFixed(1)} KB • {att.uploadedBy?.name || 'User'} • {formatDateTime(att.createdAt)}
                             </Typography>
                           </Box>
                         </Box>
@@ -1171,7 +1171,7 @@ export default function EmployeeIncidentDetail() {
                             </Typography>
                             {s.match && (
                               <Chip
-                                label={s.match}
+                                label={humanizeEnum(s.match)}
                                 size="small"
                                 sx={{
                                   fontSize: 12,
@@ -1182,7 +1182,7 @@ export default function EmployeeIncidentDetail() {
                               />
                             )}
                             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace' }}>
-                              Similarity: {(s.similarity * 100).toFixed(0)}% ({s.source || 'EMBEDDING'})
+                              Similarity: {(s.similarity * 100).toFixed(0)}% ({humanizeEnum(s.source || 'EMBEDDING')})
                             </Typography>
                           </Box>
                           <Typography sx={{ fontSize: 13, fontWeight: 600, color: COLORS.onSurface }}>
@@ -1245,7 +1245,7 @@ export default function EmployeeIncidentDetail() {
               </Box>
               {incident.pausedAt && incident.slaState === 'PAUSED' && (
                 <Typography sx={{ fontSize: 12, color: COLORS.warning, fontFamily: 'JetBrains Mono, monospace', mb: 1 }}>
-                  Paused at: {new Date(incident.pausedAt).toLocaleTimeString()}
+                  Paused at: {formatDateTime(incident.pausedAt)}
                 </Typography>
               )}
               <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, lineHeight: 1.5 }}>
@@ -1708,7 +1708,7 @@ export default function EmployeeIncidentDetail() {
                   {pirData.title}
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>
-                  Created {new Date(pirData.generatedAt).toLocaleString()} • Took {pirData.totalSeconds ? `${Math.floor(pirData.totalSeconds / 3600)}h ${Math.round((pirData.totalSeconds % 3600) / 60)}m` : 'unknown time'}
+                  Created {formatDateTime(pirData.generatedAt)} • Took {formatDurationSeconds(pirData.totalSeconds, 'Unknown duration')}
                 </Typography>
               </Box>
 
