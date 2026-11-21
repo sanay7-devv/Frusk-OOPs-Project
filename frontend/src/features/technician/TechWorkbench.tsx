@@ -1065,7 +1065,7 @@ export default function TechWorkbench() {
                 {allowedActions.includes('COMMENT') ? (
                 <Paper sx={{ p: 2, mb: 3, bgcolor: tokens.surfaceContainer, borderRadius: 2, border: `1px solid ${tokens.outlineVariant}` }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.onSurface, mb: 1 }}>
-                    Append Investigation Note
+                    Add note
                   </Typography>
                   <TextField
                     fullWidth

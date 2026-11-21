@@ -88,8 +88,8 @@ export function OverridePriorityDialog({ open, incident, onClose }: { open: bool
       <DialogContent dividers sx={{ borderColor: COLORS.border }}>
         <Stack spacing={2} mt={1}>
           <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
-            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO, textTransform: 'uppercase', mb: 0.5 }}>
-              What the priority engine says
+            <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO, mb: 0.5 }}>
+              Engine result
             </Typography>
             {whatIf.isLoading ? (
               <CircularProgress size={16} />

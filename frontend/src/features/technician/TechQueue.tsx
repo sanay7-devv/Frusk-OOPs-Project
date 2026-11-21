@@ -1390,10 +1390,10 @@ export default function TechQueue() {
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: tokens.secondary }}>
-                  Internal note on {noteModalIncident.code}
+                  {noteModalIncident.code}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
-                  Append Investigation Note
+                  Add note
                 </Typography>
               </Box>
               <IconButton aria-label="Close note dialog" onClick={() => setNoteModalIncident(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
@@ -1428,7 +1428,7 @@ export default function TechQueue() {
                 disabled={!noteText.trim()}
                 sx={{ background: BRAND_GRADIENT, textTransform: 'none', fontWeight: 700 }}
               >
-                Save to Incident Timeline
+                Save note
               </Button>
             </DialogActions>
           </>

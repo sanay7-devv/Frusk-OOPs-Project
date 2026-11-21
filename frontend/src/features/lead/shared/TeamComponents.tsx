@@ -1,3 +1,4 @@
+import { humanizeEnum } from '../../../utils/format';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -36,7 +37,7 @@ function AvailabilityChip({ value }: { value: string }) {
   return (
     <Chip
       size="small"
-      label={value}
+      label={humanizeEnum(value)}
       sx={{ height: 20, fontSize: 12, fontWeight: 700, color: c, bgcolor: alpha(tokens.onSurface, 0.05), border: `1px solid ${c}` }}
     />
   );
@@ -202,7 +203,7 @@ export function TeamWorkloadDialog({
                     <AvailabilityChip value={t.availability} />
                   </Stack>
                   <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: MONO }}>
-                    Weighted load {t.currentLoad} / {t.maxLoad} | {t.activeIncidents} active | experience {t.experienceLevel}
+                    {t.currentLoad >= t.maxLoad && t.maxLoad > 0 ? 'Full' : `Load ${t.currentLoad} of ${t.maxLoad}`} · {t.activeIncidents} active · {humanizeEnum(String(t.experienceLevel))}
                   </Typography>
                   <LinearProgress
                     variant="determinate"
@@ -244,7 +245,7 @@ export function EscalationTimeline({ incidentId }: { incidentId: number }) {
       {rows.map((e) => (
         <Box key={e.id} sx={{ p: 1.25, borderRadius: 2, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}` }}>
           <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>
-            {fmtDateTime(e.timestamp)} | {e.actor?.name ?? 'System'}
+            {fmtDateTime(e.timestamp)} · {e.actor?.name ?? 'System'}
           </Typography>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurface }}>{e.description}</Typography>
         </Box>
