@@ -63,10 +63,10 @@ public class ProblemController {
 
     @GetMapping("/known-outages")
     @PreAuthorize("hasAuthority('INCIDENT_CREATE')")
-    @Operation(summary = "Open outages on a service or on a service it depends on, for the report form banner (any user)")
+    @Operation(summary = "Open outages on a service or on a service it depends on (all services when serviceId is omitted), for the banner (any user)")
     @ApiErrors({ErrorCode.SERVICE_NOT_FOUND})
     public List<KnownOutageView> knownOutages(@AuthenticationPrincipal AuthenticatedUser caller,
-                                              @RequestParam Long serviceId) {
+                                              @RequestParam(required = false) Long serviceId) {
         return problems.knownOutages(caller, serviceId);
     }
 

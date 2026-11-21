@@ -13760,7 +13760,7 @@
           {
             "in": "query",
             "name": "serviceId",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -13895,7 +13895,7 @@
             "description": "- `SERVICE_UNAVAILABLE`: The database or the AI service is down; try again shortly (M14, DEC-42)"
           }
         },
-        "summary": "Open outages on a service or on a service it depends on, for the report form banner (any user)",
+        "summary": "Open outages on a service or on a service it depends on (all services when serviceId is omitted), for the banner (any user)",
         "tags": [
           "Problems"
         ]

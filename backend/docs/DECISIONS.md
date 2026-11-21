@@ -2192,3 +2192,11 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **Decision.** `GET /dashboard/live` `atRisk` keeps its shape and now returns open incidents that are breached (resolution violated, or response violated before acknowledgement) first, then the ones about to breach, each group by priority then nearest deadline, up to 10. Each item's `slaState` already tells the frontend which is which.
 
 **Trade-off.** The field name `atRisk` is now slightly narrower than its content. **Cross-question.** *"Why is a breached incident 'at risk'?"* It is where the lead must act first; hiding it made the card empty exactly when the desk was in trouble.
+
+### DEC-123: A lead taking over at full load (OPEN, needs the user's choice)
+
+**Date.** 2026-11-21. **Context.** `POST /incidents/{id}/reassign` to oneself fails 409 when the lead is at full load, like for any technician. The rule is unchanged; only the message now names whose capacity is full ("You are at full capacity (10/10)." or "<name> is at full capacity (n/max).").
+
+**Options.** (a) keep the rule: a lead at full load cannot take over ✔ (current); (b) let leads and administrators exceed their load when they take over on purpose, audited as such; (c) let them exceed it only above a setting (for example +2).
+
+**Trade-off.** (a) keeps one workload rule for everyone but blocks a lead in an emergency; (b) is flexible but makes load numbers less trustworthy; (c) needs a new setting. **Status.** Not implemented; waiting for the user to choose.

@@ -48,6 +48,10 @@ public class FeedbackService {
             throw new InvalidStateTransitionException(status, IncidentAction.GIVE_FEEDBACK.name(),
                     "feedback is possible once the incident is resolved");
         }
+        if (incident.getClosureReason() == com.iitsm.domain.incident.ClosureReason.WITHDRAWN) {
+            throw new InvalidStateTransitionException(status, IncidentAction.GIVE_FEEDBACK.name(),
+                    "this incident was withdrawn, so there is nothing to rate");
+        }
         if (feedback.findByIncidentId(incidentId).isPresent()) {
             throw alreadyRated(status);
         }

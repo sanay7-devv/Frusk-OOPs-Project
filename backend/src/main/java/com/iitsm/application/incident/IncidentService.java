@@ -304,10 +304,8 @@ public class IncidentService {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.ASSIGN);
         User technician = technicianId != null
-                ? loadEligibleTechnician(technicianId, incident)
-                : assignment.recommend(incident).best()
-                        .map(choice -> choice.candidate().technician())
-                        .orElseThrow(TechnicianUnavailableException::noneEligible);
+                ? loadEligibleTechnician(technicianId, incident, caller.id())
+                : bestTechnician(incident);
         assignment.assign(incident, technician);
         User actor = loadUser(caller.id());
         publishFact(incident, actor,
@@ -317,12 +315,25 @@ public class IncidentService {
         return views.detail(incident, caller);
     }
 
+    /** The strategy's pick among eligible technicians (full ones are skipped); a clear 409 when nobody can. */
+    private User bestTechnician(Incident incident) {
+        var recommendation = assignment.recommend(incident);
+        return recommendation.best().map(choice -> choice.candidate().technician()).orElseThrow(() -> {
+            boolean onlyCapacity = !recommendation.excluded().isEmpty() && recommendation.excluded().stream()
+                    .anyMatch(e -> e.reason().startsWith("at max load"))
+                    && recommendation.excluded().stream().allMatch(e -> e.reason().startsWith("at max load")
+                    || e.reason().contains("reported this incident"));
+            return onlyCapacity ? TechnicianUnavailableException.noFreeCapacity()
+                    : TechnicianUnavailableException.noneEligible();
+        });
+    }
+
     @Transactional
     public IncidentDetail reassign(AuthenticatedUser caller, Long id, Long technicianId, String reason) {
         Incident incident = load(id);
         access.require(caller, incident, IncidentAction.REASSIGN);
         requireReason(reason);
-        User technician = loadEligibleTechnician(technicianId, incident);
+        User technician = loadEligibleTechnician(technicianId, incident, caller.id());
         Instant now = clock.instant();
         String previous = incident.getAssignee() == null ? "nobody" : incident.getAssignee().getName();
         incident.reassign(technician, now);
@@ -464,13 +475,19 @@ public class IncidentService {
         priorities.recalculate(incident);
     }
 
-    private User loadEligibleTechnician(Long technicianId, Incident incident) {
+    private User loadEligibleTechnician(Long technicianId, Incident incident, Long callerId) {
         if (technicianId == null) {
             throw new InputValidationException("technicianId", "is required");
         }
         User technician = loadUser(technicianId);
         int load = WorkloadTracker.loadOf(
                 incidents.findByAssignee_IdAndStatusIn(technicianId, IncidentStatus.ACTIVE_WORK));
+        var problem = EligibilityFilter.check(technician, incident, load);
+        if (problem.isPresent() && problem.get().kind() == EligibilityFilter.Ineligibility.Kind.OVERLOADED) {
+            int max = technician.technicianRole().orElseThrow().getProfile().getMaxLoad();
+            throw new com.iitsm.domain.exception.WorkloadExceededException(technician.getName(), load, max,
+                    technician.getId().equals(callerId));
+        }
         EligibilityFilter.requireEligible(technician, incident, load);
         return technician;
     }
