@@ -66,7 +66,7 @@ export default function NotFound() {
           lineHeight: 1.6,
         }}
       >
-        The requested resource or console view could not be located. It may have been moved, decommissioned, or the route was mistyped.
+        We could not find this page. It may have been moved or removed, or the address may be mistyped.
       </Typography>
       <Button
         variant="contained"
@@ -87,7 +87,7 @@ export default function NotFound() {
           },
         }}
       >
-        {user ? 'Return to Console' : 'Go to Login'}
+        {user ? 'Back to my home page' : 'Go to sign in'}
       </Button>
     </Box>
   );

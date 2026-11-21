@@ -118,7 +118,7 @@ export default function Config() {
     return (
       <TableRow key={cfg.key} sx={{ '& td': { borderBottom: `1px solid ${tokens.outlineVariant}`, verticalAlign: 'top' }, bgcolor: modified ? alpha(tone.warning, 0.07) : undefined, boxShadow: modified ? `inset 3px 0 0 ${tone.warning}` : undefined }}>
         <TableCell sx={{ width: '26%' }}>
-          <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.primaryLight, fontSize: 13, wordBreak: 'break-all' }}>{cfg.key}</Typography>
+          <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: tokens.primaryLight, fontSize: 13 }}>{cfg.key.split('.').map((part, i, a) => <span key={i}>{part}{i < a.length - 1 && <>.<wbr /></>}</span>)}</Typography>
           {modified && <Chip size="small" label="modified" sx={{ mt: 0.5, fontSize: 12, height: 20, color: tone.warning, bgcolor: alpha(tone.warning, 0.15) }} />}
         </TableCell>
         <TableCell>
@@ -134,8 +134,8 @@ export default function Config() {
           <ConfigField item={cfg} value={v} error={errors[cfg.key]} onChange={(nv) => setValue(cfg.key, nv)} />
         </TableCell>
         <TableCell sx={{ width: 150 }}>
-          <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', wordBreak: 'break-all' }}>
-            default: {cfg.defaultValue === '' ? '(empty)' : cfg.defaultValue}
+          <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontFamily: 'JetBrains Mono, monospace', overflowWrap: 'anywhere' }}>
+            {cfg.defaultValue === '' ? '(empty)' : cfg.defaultValue}
           </Typography>
           <Button size="small" startIcon={<RestartAltIcon />} disabled={v.trim() === cfg.defaultValue.trim()} onClick={() => setValue(cfg.key, cfg.defaultValue)}
             aria-label={`Reset ${cfg.key} to its default`} sx={{ textTransform: 'none', fontSize: 12, px: 0.5 }}>

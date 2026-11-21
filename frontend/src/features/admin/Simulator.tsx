@@ -12,6 +12,8 @@ import {
 } from '../../api/simulations';
 import { useAuth } from '../../auth/AuthContext';
 import { apiErrorMessage } from '../../utils/errors';
+import { formatDateTime } from '../../utils/format';
+import { strategyLabel } from './config/configMeta';
 import { tokens } from '../../theme/theme';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -102,7 +104,7 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
 
   return (
     <Box>
-      <Typography component="h1" variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface }}>Service Desk Simulator</Typography>
+      <Typography component="h1" variant="h4" sx={{ fontWeight: 700, color: tokens.onSurface }}>Service desk simulator</Typography>
       <Typography sx={{ color: tokens.onSurfaceVariant, mb: 2, fontSize: 14 }}>
         Replay recent incidents in memory under up to {SIM_LIMITS.maxConfigurations} assignment setups and compare them.
         Nothing is written until you apply a winner. Each setup starts from the live settings.
@@ -142,14 +144,14 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
                     error={showErrors && !!ce.name} helperText={showErrors ? ce.name : undefined} />
                   <TextField select label="Strategy" size="small" value={c.strategy}
                     onChange={(e) => patch(c.key, { strategy: e.target.value as SimStrategy })}>
-                    {SIM_STRATEGIES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                    {SIM_STRATEGIES.map((s) => <MenuItem key={s} value={s}>{strategyLabel(s)}</MenuItem>)}
                   </TextField>
                   <TextField label="Technicians (first N, empty = all)" size="small" value={c.technicians}
                     onChange={(e) => patch(c.key, { technicians: e.target.value })}
                     error={showErrors && !!ce.technicians}
                     helperText={showErrors && ce.technicians ? ce.technicians : `${SIM_LIMITS.techniciansMin} to ${SIM_LIMITS.techniciansMax}`} />
                   <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
-                    Weights (used by COMPOSITE; must add up to 1.0)
+                    Weights (used by the weighted mix; must add up to 1.0)
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
                     {WEIGHT_NAMES.map((w) => (
@@ -183,7 +185,7 @@ function SimulatorForm({ live }: { live: ConfigItem[] }) {
         open={!!applyTarget}
         title="Apply to live settings?"
         description={applyTarget
-          ? `"${applyTarget.name}": strategy ${applyTarget.strategy} and its five weights become the live assignment settings for all new incidents. This is audited as CONFIG_CHANGED.`
+          ? `"${applyTarget.name}": strategy "${strategyLabel(applyTarget.strategy)}" and its five weights become the live assignment settings for all new incidents. This change is recorded in the audit trail.`
           : undefined}
         confirmLabel="Apply"
         isLoading={apply.isPending}
@@ -206,7 +208,7 @@ function Results({ result, onApply }: { result: SimulationView; onApply: (c: Con
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Replayed workload</Typography>
         <Typography sx={{ fontSize: 14, color: tokens.onSurfaceVariant }}>
           {workload.incidents} incidents
-          {workload.from && workload.to ? `, ${new Date(workload.from).toLocaleString()} to ${new Date(workload.to).toLocaleString()}` : ''}
+          {workload.from && workload.to ? `, ${formatDateTime(workload.from)} to ${formatDateTime(workload.to)}` : ''}
           , arrivals compressed ×{workload.speedUp}.
           {excluded.length > 0 && ` Left out: ${excluded.map(([k, n]) => `${n} ${k}`).join('; ')}.`}
         </Typography>
@@ -236,7 +238,7 @@ function Results({ result, onApply }: { result: SimulationView; onApply: (c: Con
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: SERIES[i % SERIES.length] }} />
                     <span>{r.name}</span>
-                    <Chip size="small" label={r.strategy} sx={{ ...mono }} />
+                    <Chip size="small" label={strategyLabel(r.strategy)} />
                     {r.name === best && <Chip size="small" color="success" label="best" />}
                   </Stack>
                 </TableCell>

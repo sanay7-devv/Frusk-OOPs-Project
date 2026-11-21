@@ -22,6 +22,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import StatusChip from '../../components/StatusChip';
 import { useToast } from '../../components/Toast';
 import { tokens } from '../../theme/theme';
+import { formatDateTime, humanizeEnum } from '../../utils/format';
 import { apiErrorMessage } from '../../utils/errors';
 import AssignDialog from './tickets/AssignDialog';
 import IncidentDrawer from './tickets/IncidentDrawer';
@@ -33,7 +34,7 @@ import { reportFailure } from './adminErrors';
 const PAGE_SIZE = 25;
 const TAB_LABEL: Record<TabKey, string> = { today: 'Today', previous: 'Earlier', all: 'All' };
 const headSx = { fontSize: 12, fontWeight: 600, color: tokens.onSurfaceVariant, whiteSpace: 'nowrap' } as const;
-const cellSx = { fontSize: 13, whiteSpace: 'nowrap', py: 1 } as const;
+const cellSx = { fontSize: 13, whiteSpace: 'nowrap', py: 1, px: 1 } as const;
 
 export default function Tickets() {
   const toast = useToast();
@@ -151,9 +152,9 @@ export default function Tickets() {
           <TextField size="small" label="Search" placeholder="Title, description or code" value={qText} onChange={(e) => setQText(e.target.value)} sx={{ minWidth: 240 }}
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
           <TextField size="small" label="Code" placeholder="INC-2026-00001" value={codeText} onChange={(e) => setCodeText(e.target.value)} sx={{ minWidth: 160 }} />
-          {select('status', 'Status', [{ value: 'ACTIVE', label: 'Active (not resolved)' }, ...ALL_STATUSES.map((s) => ({ value: s, label: s.replace(/_/g, ' ') }))], 190)}
+          {select('status', 'Status', [{ value: 'ACTIVE', label: 'Active (not resolved)' }, ...ALL_STATUSES.map((s) => ({ value: s, label: humanizeEnum(s) }))], 190)}
           {select('priority', 'Priority', ['P1', 'P2', 'P3', 'P4'].map((p) => ({ value: p, label: p })), 110)}
-          {select('slaState', 'SLA', SLA_STATES.map((s) => ({ value: s, label: s.replace(/_/g, ' ') })), 130)}
+          {select('slaState', 'SLA', SLA_STATES.map((s) => ({ value: s, label: humanizeEnum(s) })), 130)}
           {select('level', 'Escalation', [0, 1, 2, 3].map((l) => ({ value: String(l), label: `Level ${l} or higher` })), 170)}
           {select('serviceId', 'Service', (services.data ?? []).map((s) => ({ value: String(s.id), label: s.name })), 180)}
           {select('categoryId', 'Category', (categories.data ?? []).map((c) => ({ value: String(c.id), label: c.name })), 180)}
@@ -184,7 +185,7 @@ export default function Tickets() {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {['Code', 'Title', 'Service', 'Priority', 'Status', 'SLA', 'Assignee', 'Created', ''].map((h) => <TableCell key={h || 'actions'} sx={headSx}>{h}</TableCell>)}
+                  {['Code', 'Title', 'Service', 'Priority', 'Status', 'SLA', 'Assignee', 'Created', ''].map((h) => <TableCell key={h || 'actions'} sx={{ ...headSx, px: 1 }}>{h}</TableCell>)}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -192,15 +193,15 @@ export default function Tickets() {
                   <TableRow key={i.id} hover sx={{ cursor: 'pointer' }} onClick={() => setParam('open', String(i.id))}>
                     <TableCell sx={cellSx}>
                       {i.code}
-                      {i.major && <Chip size="small" label="MAJOR" color="error" sx={{ ml: 1, height: 20, fontSize: 12 }} />}
+                      {i.major && <Chip size="small" label="Major" color="error" sx={{ ml: 1, height: 20, fontSize: 12 }} />}
                     </TableCell>
-                    <TableCell sx={{ ...cellSx, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.title}</TableCell>
-                    <TableCell sx={cellSx}>{i.service.name}</TableCell>
+                    <TableCell sx={{ ...cellSx, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }} title={i.title}>{i.title}</TableCell>
+                    <TableCell sx={{ ...cellSx, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.service.name}</TableCell>
                     <TableCell sx={cellSx}><PriorityBadge priority={i.priority} /></TableCell>
                     <TableCell sx={cellSx}><StatusChip status={i.status} /></TableCell>
                     <TableCell sx={{ ...cellSx, minWidth: 110 }}><SlaBar createdAt={i.createdAt} due={i.resolutionDue} slaState={i.slaState} /></TableCell>
-                    <TableCell sx={cellSx}>{i.assignee?.name ?? <Box component="span" sx={{ color: tokens.onSurfaceVariant }}>Unassigned</Box>}</TableCell>
-                    <TableCell sx={cellSx}>{new Date(i.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</TableCell>
+                    <TableCell sx={{ ...cellSx, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.assignee?.name ?? <Box component="span" sx={{ color: tokens.onSurfaceVariant }}>Unassigned</Box>}</TableCell>
+                    <TableCell sx={cellSx}>{formatDateTime(i.createdAt)}</TableCell>
                     <TableCell sx={cellSx} align="right">
                       <Tooltip title={i.assignee ? 'Reassign' : 'Assign'}>
                         <IconButton size="small" aria-label={i.assignee ? `Reassign ${i.code}` : `Assign ${i.code}`}

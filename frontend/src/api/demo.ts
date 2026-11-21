@@ -16,3 +16,18 @@ export const advanceDemoClock = async (minutes: number) =>
   (await api.post<ClockView>('/admin/demo/clock/advance', { minutes })).data;
 export const runOutageDrill = async (rootServiceId: number) =>
   (await api.post<DrillResult>('/admin/demo/outage-drill', { rootServiceId })).data;
+
+let demoProbed404 = false;
+/**
+ * For the always-mounted director's bar: asks once per page load and returns null when the server is not on the demo
+ * profile (404), so non-demo servers are not hit again on every page.
+ */
+export const probeDemoClock = async (): Promise<ClockView | null> => {
+  if (demoProbed404) return null;
+  try {
+    return await getDemoClock();
+  } catch (e) {
+    if (isDemoUnavailable(e)) { demoProbed404 = true; return null; }
+    throw e;
+  }
+};

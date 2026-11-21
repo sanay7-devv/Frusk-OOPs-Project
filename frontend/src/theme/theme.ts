@@ -261,6 +261,8 @@ export const theme = createTheme({
           color: '#dfe2ef',
           fontFamily: 'Geist, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
           overscrollBehavior: 'none',
+          fontVariantNumeric: 'tabular-nums',
+          scrollbarGutter: 'stable',
           '& ::selection': {
             backgroundColor: '#06b6d4',
             color: '#001f26',
@@ -334,6 +336,7 @@ export const theme = createTheme({
           borderRadius: 8,
           fontWeight: 600,
           textTransform: 'none',
+          whiteSpace: 'nowrap',
           transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         },
         containedPrimary: {
@@ -407,8 +410,11 @@ export const theme = createTheme({
     MuiSelect: {
       defaultProps: {
         MenuProps: {
+          anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+          transformOrigin: { vertical: 'top', horizontal: 'left' },
           PaperProps: {
             sx: {
+              maxHeight: 320,
               bgcolor: 'rgba(13, 17, 27, 0.94) !important',
               backdropFilter: 'blur(28px) saturate(190%) !important',
               WebkitBackdropFilter: 'blur(28px) saturate(190%) !important',
@@ -534,6 +540,7 @@ export const theme = createTheme({
           borderRadius: '14px !important',
           boxShadow: '0 24px 64px -8px rgba(0, 0, 0, 0.85), 0 0 24px -2px rgba(99, 102, 241, 0.25) !important',
           padding: '6px !important',
+          maxHeight: '320px !important',
           '&::-webkit-scrollbar': {
             width: 6,
             height: 6,
@@ -568,6 +575,7 @@ export const theme = createTheme({
     },
     MuiAutocomplete: {
       styleOverrides: {
+        listbox: { maxHeight: 320 },
         paper: {
           backgroundColor: 'rgba(13, 17, 27, 0.94) !important',
           backdropFilter: 'blur(28px) saturate(190%) !important',

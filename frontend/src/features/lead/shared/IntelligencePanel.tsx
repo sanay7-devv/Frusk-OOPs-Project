@@ -18,6 +18,7 @@ import { apiErrorMessage } from '../../../utils/errors';
 import { COLORS, MONO } from './ui';
 import { alpha } from '../../technician/staffStyle';
 import { tokens } from '../../../theme/theme';
+import { humanizeCamel, humanizeEnum } from '../../../utils/format';
 
 const riskColor = { LOW: COLORS.success, MEDIUM: COLORS.warning, HIGH: COLORS.error } as const;
 
@@ -47,7 +48,7 @@ export function SlaRiskCard({ incidentId }: { incidentId: number }) {
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
         <Chip
           size="small"
-          label={`${data.level} RISK`}
+          label={`${humanizeEnum(data.level)} risk`}
           sx={{ fontFamily: MONO, fontWeight: 800, fontSize: 12, color: riskColor[data.level], bgcolor: alpha(tokens.onSurface, 0.05) }}
         />
         <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>
@@ -63,7 +64,7 @@ export function SlaRiskCard({ incidentId }: { incidentId: number }) {
       {data.factors.map((f) => (
         <Typography key={f.name} sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.75 }}>
           <Box component="span" sx={{ color: COLORS.onSurface, fontWeight: 700 }}>
-            {f.name}
+            {humanizeCamel(f.name)}
           </Box>{' '}
           ({Math.round(f.contribution * 100) / 100}): {f.detail}
         </Typography>

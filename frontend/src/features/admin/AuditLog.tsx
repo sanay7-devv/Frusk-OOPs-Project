@@ -12,6 +12,7 @@ import { AUDIT_ACTIONS, type AuditAction } from '../../api/audit';
 import { listDirectoryUsers, type DirectoryUser } from '../../api/adminDirectory';
 import { listIncidents } from '../../api/incidents';
 import { searchAuditActions, type AuditQuery } from './auditSearch';
+import { formatDateTime, humanizeEnum } from '../../utils/format';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import AuditSealPanel from './AuditSealPanel';
@@ -30,7 +31,7 @@ const ACTION_TONE: Record<AuditAction, Tone> = {
   CONFIG_CHANGED: 'warning', ATTACHMENT_ADDED: 'primary', PASSWORD_RESET_REQUESTED: 'warning',
   PASSWORD_CHANGED: 'info', MFA_ENABLED: 'success', MFA_DISABLED: 'warning',
 };
-const label = (a: string) => a.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+const label = humanizeEnum;
 const head = { fontWeight: 600, fontSize: 12, color: 'text.secondary' } as const;
 
 /** `incidentId` is what the API filters by; `incidentCode` is what the admin typed. */
@@ -160,7 +161,7 @@ export default function AuditLog() {
             onKeyDown={onKey} error={!!codeError} helperText={codeError || undefined} sx={{ width: 190 }} />
           <TextField size="small" label="From" type="datetime-local" value={draft.from} onChange={field('from')} InputLabelProps={{ shrink: true }} />
           <TextField size="small" label="To" type="datetime-local" value={draft.to} onChange={field('to')} InputLabelProps={{ shrink: true }}
-            error={rangeBad} helperText={rangeBad ? 'To must be after From' : 'To is exclusive'} />
+            error={rangeBad} helperText={rangeBad ? 'To must be after From' : 'Shows records before this time'} />
           <Button variant="contained" onClick={() => void apply()} disabled={rangeBad || resolving}>Apply</Button>
           <Button onClick={reset}>Clear</Button>
         </Stack>
@@ -177,7 +178,7 @@ export default function AuditLog() {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ width: 48 }} />
-                <TableCell sx={head}>Time (your local time)</TableCell>
+                <TableCell sx={{ ...head, whiteSpace: 'nowrap' }}>Time (local)</TableCell>
                 <TableCell sx={head}>Action</TableCell>
                 <TableCell sx={head}>Actor</TableCell>
                 <TableCell sx={head}>Incident</TableCell>
@@ -195,7 +196,7 @@ export default function AuditLog() {
                           {expanded ? <UpIcon fontSize="small" /> : <DownIcon fontSize="small" />}
                         </IconButton>
                       </TableCell>
-                      <TableCell sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>{new Date(e.timestamp).toLocaleString()}</TableCell>
+                      <TableCell sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>{formatDateTime(e.timestamp)}</TableCell>
                       <TableCell>
                         <Chip size="small" label={label(e.action)} color={ACTION_TONE[e.action] ?? 'primary'} variant="outlined" sx={{ fontSize: 12, fontWeight: 600 }} />
                       </TableCell>
@@ -205,7 +206,7 @@ export default function AuditLog() {
                       <TableCell onClick={(ev) => ev.stopPropagation()}>
                         {e.incidentId ? (
                           <Chip component={Link} to={`/admin/incidents/${e.incidentId}`} clickable size="small"
-                            label={e.incidentCode || `Incident ${e.incidentId}`} sx={{ fontSize: 12, fontWeight: 600 }} />
+                            label={e.incidentCode || `Incident ${e.incidentId}`} sx={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }} />
                         ) : <Typography component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>—</Typography>}
                       </TableCell>
                       <TableCell sx={{ fontSize: 13, color: 'text.primary', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

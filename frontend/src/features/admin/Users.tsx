@@ -14,6 +14,7 @@ import { listIncidents } from '../../api/incidents';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
+import { humanizeEnum } from '../../utils/format';
 import { tokens } from '../../theme/theme';
 import { apiErrorMessage } from '../../utils/errors';
 import { cardSx, monoLabelSx } from './adminForm';

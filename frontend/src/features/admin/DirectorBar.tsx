@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { FastForward as AdvanceIcon, Warning as DrillIcon } from '@mui/icons-material';
-import { advanceDemoClock, getDemoClock, runOutageDrill, type DrillResult } from '../../api/demo';
+import { advanceDemoClock, probeDemoClock, runOutageDrill, type DrillResult } from '../../api/demo';
 import { requestRefresh } from '../../api/client';
 import { getServices } from '../../api/services';
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
+import { formatDateTime } from '../../utils/format';
 import { tokens } from '../../theme/theme';
 import { failureMessage, reportFailure } from './adminErrors';
 
@@ -18,7 +19,7 @@ import { failureMessage, reportFailure } from './adminErrors';
 export default function DirectorBar({ defaultServiceId }: { defaultServiceId?: number | null }) {
   const { user } = useAuth();
   const allowed = !!user?.permissions?.includes('CONFIG_MANAGE');
-  const clock = useQuery({ queryKey: ['demo-clock'], queryFn: getDemoClock, retry: false, enabled: allowed });
+  const clock = useQuery({ queryKey: ['demo-clock-probe'], queryFn: probeDemoClock, retry: false, enabled: allowed, staleTime: Infinity, refetchOnWindowFocus: false, refetchOnMount: false });
   if (!allowed || !clock.data) return null;
   return <Bar now={clock.data.now} defaultServiceId={defaultServiceId ?? null} />;
 }
@@ -34,7 +35,7 @@ function Bar({ now, defaultServiceId }: { now: string; defaultServiceId: number 
   const advance = useMutation({
     mutationFn: () => advanceDemoClock(10),
     onSuccess: (view) => {
-      qc.setQueryData(['demo-clock'], view);
+      qc.setQueryData(['demo-clock-probe'], view);
       toast('Clock moved forward 10 min', 'success');
       requestRefresh().catch((e) => toast(`Clock moved, but renewing the session failed: ${failureMessage(e)}`, 'error'));
       qc.invalidateQueries({ queryKey: ['dashboard'] });
@@ -57,7 +58,7 @@ function Bar({ now, defaultServiceId }: { now: string; defaultServiceId: number 
     <Box sx={{ mb: 2, p: 1.5, borderRadius: '10px', border: `1px dashed ${tokens.outlineVariant}`, bgcolor: tokens.surfaceContainerLow }}>
       <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: tokens.onSurfaceVariant }}>Demo</Typography>
-        <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Clock {new Date(now).toLocaleTimeString()}</Typography>
+        <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Clock {formatDateTime(now)}</Typography>
         <Button size="small" variant="outlined" disabled={advance.isPending} onClick={() => advance.mutate()}
           startIcon={advance.isPending ? <CircularProgress size={14} /> : <AdvanceIcon />} sx={{ textTransform: 'none' }}>
           +10 min

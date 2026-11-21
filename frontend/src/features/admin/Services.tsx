@@ -169,11 +169,11 @@ export default function Services() {
                       {h ? `${h.open.total}${h.open.P1 ? ` (${h.open.P1} P1)` : ''}` : '–'}
                     </TableCell>
                     <TableCell sx={{ borderColor: tokens.outlineVariant }}>
-                      {h && h.slaCompliancePercent != null ? `${h.slaCompliancePercent.toFixed(0)}% of ${h.slaJudged}` : '–'}
+                      {h && h.slaCompliancePercent != null ? `${h.slaCompliancePercent.toFixed(0)}% (${h.slaJudged} judged)` : '–'}
                     </TableCell>
                     <TableCell sx={{ borderColor: tokens.outlineVariant, maxWidth: 220 }}>
                       <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }} noWrap>
-                        {s.dependencyIds.length === 0 ? 'Nothing' : s.dependencyIds.map((id) => nameById.get(id) ?? `#${id}`).join(', ')}
+                        {s.dependencyIds.length === 0 ? 'None' : s.dependencyIds.map((id) => nameById.get(id) ?? `#${id}`).join(', ')}
                       </Typography>
                     </TableCell>
                     <TableCell align="right" sx={{ borderColor: tokens.outlineVariant }}>
