@@ -64,7 +64,11 @@ Honest limit for the report: the system is built and demonstrated at stage 0, an
 
 ## 5. What the load test should measure (the Testing teammate's half of A7)
 
-Run against the Compose stack with the `demo` or `dev` profile and the seeded database, with a tool such as k6, JMeter or Gatling. Record the tool, the date, the commit and the machine in `docs/qa/`.
+The reproducible CI harness is `deploy/task3_load_test.py`, run by `.github/workflows/task3-load-test.yml` against a disposable `demo` Compose stack. It uses synthetic demo accounts and records the UTC date, commit, concurrency, HTTP status counts, p50/p95 latency, throughput, incident counts and sampled backend CPU/memory in the `task3-load-test-evidence` artifact. Do not use this harness against a hosted or shared deployment. Copy successful run values into `docs/qa/TEST_REPORT.md` and this section.
+
+The baseline run covers 10, 25 and 50 simultaneous create requests and reading/report requests, with three synchronized waves at each level. It also runs a five-minute, ten-worker mixed workload: 70% read/report transactions, 20% creates, and 10% lifecycle transactions (create then reporter withdrawal). The workload pauses between transactions to keep synthetic accounts under the application's create rate limit. The recorded HTTP request mix therefore includes the lifecycle transaction's additional create and withdrawal requests.
+
+**Evidence status:** the harness and workflow are on the unmerged `qa/task3-ci-browser-load` branch. Record measured values and the workflow link after its CI run succeeds. This runner measures the stage-0 seeded dataset only; it does not replace the separate 10,000/100,000-incident growth run or `EXPLAIN (ANALYZE)` index review below.
 
 | Scenario | Request mix | Record |
 |---|---|---|
