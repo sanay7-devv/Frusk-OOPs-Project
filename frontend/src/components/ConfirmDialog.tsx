@@ -39,7 +39,7 @@ export default function ConfirmDialog({
   confirmColor = 'primary',
   requireReason = false,
   reasonLabel = 'Reason',
-  reasonPlaceholder = 'Please describe the reason (min 10 characters)...',
+  reasonPlaceholder = '',
   minReasonLength = 10,
   maxReasonLength = 1000,
   isLoading = false,
@@ -100,7 +100,7 @@ export default function ConfirmDialog({
               helperText={
                 reason.length > 0 && reason.trim().length < minReasonLength
                   ? `At least ${minReasonLength} characters required (${reason.trim().length}/${minReasonLength})`
-                  : `${reason.length}/${maxReasonLength} characters`
+                  : `At least ${minReasonLength} characters (${reason.length}/${maxReasonLength})`
               }
               error={reason.length > 0 && reason.trim().length < minReasonLength}
               inputProps={{ maxLength: maxReasonLength }}

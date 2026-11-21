@@ -518,15 +518,15 @@ export default function TechWorkbench() {
         type: 'audit' as const,
         timestamp: h.timestamp || '',
         actor: h.actor?.name || 'System',
-        badge: h.action || 'AUDIT',
-        text: h.description || (h.previousState && h.newState ? `${h.previousState} → ${h.newState}` : h.action?.replace(/_/g, ' ') || 'Event recorded'),
+        badge: humanizeEnum(h.action || 'Event'),
+        text: h.description || (h.previousState && h.newState ? `${h.previousState} → ${h.newState}` : humanizeEnum(h.action) || 'Event recorded'),
       })),
     ...comments.map((c) => ({
       key: `c-${c.id}`,
       type: 'comment' as const,
       timestamp: c.createdAt || '',
       actor: c.author?.name || 'User',
-      badge: c.visibility || 'PUBLIC',
+      badge: c.visibility === 'INTERNAL' ? 'Internal' : 'Public',
       text: c.body,
       visibility: c.visibility,
     })),
@@ -1087,7 +1087,7 @@ export default function TechWorkbench() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Visibility:</Typography>
                       <Chip
-                        label="INTERNAL (Techs & Admins Only)"
+                        label="Internal (staff only)"
                         clickable
                         onClick={() => setNoteVisibility('INTERNAL')}
                         size="small"
@@ -1099,7 +1099,7 @@ export default function TechWorkbench() {
                         }}
                       />
                       <Chip
-                        label="PUBLIC (Visible to Reporter)"
+                        label="Public (reporter sees it)"
                         clickable
                         onClick={() => setNoteVisibility('PUBLIC')}
                         size="small"
@@ -1119,7 +1119,7 @@ export default function TechWorkbench() {
                       startIcon={<SendIcon sx={{ fontSize: 14 }} />}
                       sx={{ textTransform: 'none', fontWeight: 700, bgcolor: tokens.primary }}
                     >
-                      Post Note
+                      Post note
                     </Button>
                   </Box>
                 </Paper>
@@ -1647,7 +1647,7 @@ export default function TechWorkbench() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <DoneAllIcon sx={{ color: slaStateColor.MET }} />
             <Typography sx={{ fontSize: 16, fontWeight: 700, color: tokens.onSurface }}>
-              Resolve Incident {incident.code}
+              Resolve incident {incident.code}
             </Typography>
           </Box>
           <IconButton aria-label="Close resolve dialog" size="small" onClick={() => setIsResolveOpen(false)} sx={{ color: tokens.onSurfaceVariant }}>
@@ -1657,27 +1657,26 @@ export default function TechWorkbench() {
         <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
-                Root Cause Analysis (min 10 characters) *
-              </Typography>
               <TextField
+                label="Root cause"
+                required
+                multiline
+                minRows={3}
                 fullWidth
                 size="small"
                 value={resolveRootCause}
                 onChange={(e) => setResolveRootCause(e.target.value)}
                 inputProps={{ maxLength: 2000 }}
                 error={!!fieldErrorFor(resolveErr, 'rootCause')}
-                helperText={fieldErrorFor(resolveErr, 'rootCause') ?? `${resolveRootCause.length}/2000`}
-                placeholder="Identify underlying cause (deadlock, packet loss, config misconfiguration, etc.)"
-                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
+                helperText={fieldErrorFor(resolveErr, 'rootCause') ?? `At least 10 characters (${resolveRootCause.length}/2000)`}
+                                sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
 
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
-                Resolution Actions &amp; Fix Notes (min 10 characters) *
-              </Typography>
               <TextField
+                label="What fixed it"
+                required
                 fullWidth
                 multiline
                 rows={3}
@@ -1686,24 +1685,22 @@ export default function TechWorkbench() {
                 onChange={(e) => setResolveNotes(e.target.value)}
                 inputProps={{ maxLength: 4000 }}
                 error={!!fieldErrorFor(resolveErr, 'notes')}
-                helperText={fieldErrorFor(resolveErr, 'notes') ?? `${resolveNotes.length}/4000`}
-                placeholder="Describe corrective actions taken to resolve the failure..."
+                helperText={fieldErrorFor(resolveErr, 'notes') ?? `At least 10 characters (${resolveNotes.length}/4000)`}
                 sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
 
             <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5, color: tokens.onSurface }}>
-                Steps for Long-Term Prevention (optional)
-              </Typography>
               <TextField
+                label="Prevention steps (optional)"
+                multiline
+                minRows={2}
                 fullWidth
                 size="small"
                 value={resolveSteps}
                 onChange={(e) => setResolveSteps(e.target.value)}
                 inputProps={{ maxLength: 4000 }}
                 helperText={`${resolveSteps.length}/4000`}
-                placeholder="Architectural safeguards, monitoring rule additions, etc."
                 sx={{ bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
             </Box>
@@ -1712,11 +1709,11 @@ export default function TechWorkbench() {
               <TextField
                 type="number"
                 size="small"
-                label="Time Spent (minutes)"
+                label="Time spent (minutes)"
                 value={resolveTimeSpent}
                 onChange={(e) => setResolveTimeSpent(e.target.value)}
                 inputProps={{ min: 1, max: 10080, step: 1 }}
-                helperText={fieldErrorFor(resolveErr, 'timeSpentMinutes') ?? '1 to 10080 minutes'}
+                helperText={fieldErrorFor(resolveErr, 'timeSpentMinutes') ?? 'Whole minutes, 1 to 10080'}
                 error={!!fieldErrorFor(resolveErr, 'timeSpentMinutes') || resolveTimeSpent !== '' && !(Number.isInteger(Number(resolveTimeSpent)) && Number(resolveTimeSpent) >= 1 && Number(resolveTimeSpent) <= 10080)}
                 sx={{ width: 200, bgcolor: tokens.surfaceContainerLowest, borderRadius: 1.5 }}
               />
@@ -1728,7 +1725,7 @@ export default function TechWorkbench() {
                     color="primary"
                   />
                 }
-                label={<Typography sx={{ fontSize: 12.5, color: tokens.onSurface }}>Mark as Reusable Fix for AI</Typography>}
+                label={<Typography sx={{ fontSize: 12.5, color: tokens.onSurface }}>Save as a reusable fix</Typography>}
               />
             </Box>
 
@@ -1743,7 +1740,7 @@ export default function TechWorkbench() {
                 }
                 label={
                   <Typography sx={{ fontSize: 12.5, color: tokens.secondary, fontWeight: 700 }}>
-                    Resolve linked Problem Record #{incident.problemId} alongside this incident
+                    Also resolve linked problem #{incident.problemId}
                   </Typography>
                 }
               />

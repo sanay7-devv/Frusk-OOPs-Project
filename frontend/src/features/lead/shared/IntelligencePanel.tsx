@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Box, Button, Chip, CircularProgress, LinearProgress, Paper, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, LinearProgress, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import { AutoAwesome as AutoAwesomeIcon, Psychology as PsychologyIcon } from '@mui/icons-material';
 import {
   getSimilarIncidents,
@@ -87,10 +87,11 @@ function SimilarList({ incidentId, onOpen }: { incidentId: number; onOpen?: (id:
         <Paper key={s.incidentId} elevation={0} sx={{ p: 1.25, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, borderRadius: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
             <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, color: COLORS.secondary }}>{s.code}</Typography>
-            <Chip size="small" label={s.match} sx={{ fontSize: 12, height: 20, color: s.match === 'DUPLICATE' ? COLORS.warning : COLORS.onSurfaceVariant }} />
-            <Chip size="small" label={`${Math.round(s.similarity * 100)}% match`} sx={{ fontSize: 12, height: 20 }} />
-            {s.source && <Chip size="small" label={s.source} sx={{ fontSize: 12, height: 20 }} />}
-            <Chip size="small" label={s.status} sx={{ fontSize: 12, height: 20 }} />
+            <Chip size="small" label={humanizeEnum(s.match)} sx={{ fontSize: 12, height: 20, color: s.match === 'DUPLICATE' ? COLORS.warning : COLORS.onSurfaceVariant }} />
+            <Tooltip title={s.source ? `Found by ${humanizeEnum(s.source).toLowerCase()} matching` : ''} arrow>
+              <Chip size="small" label={`${Math.round(s.similarity * 100)}% match`} sx={{ fontSize: 12, height: 20 }} />
+            </Tooltip>
+            <Chip size="small" label={humanizeEnum(s.status)} sx={{ fontSize: 12, height: 20 }} />
           </Stack>
           <Typography sx={{ fontSize: 13, color: COLORS.onSurface, mt: 0.5 }}>{s.title}</Typography>
           {onOpen && (
@@ -119,7 +120,7 @@ function SuggestedList({ incidentId }: { incidentId: number }) {
           <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
             <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, color: COLORS.secondary }}>{r.code}</Typography>
             <Chip size="small" label={`${Math.round(r.similarity * 100)}% match`} sx={{ fontSize: 12, height: 20 }} />
-            {r.reusable && <Chip size="small" label="REUSABLE" sx={{ fontSize: 12, height: 20, color: COLORS.success }} />}
+            {r.reusable && <Chip size="small" label="Reusable" sx={{ fontSize: 12, height: 20, color: COLORS.success }} />}
           </Stack>
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.onSurface, mt: 0.5 }}>{r.title}</Typography>
           <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant, mt: 0.5 }}>Root cause: {r.rootCause}</Typography>
@@ -152,8 +153,9 @@ function SummaryBlock({ incidentId }: { incidentId: number }) {
       {m.isError && <ErrorState onRetry={() => m.mutate()} message={apiErrorMessage(m.error)} />}
       {summary && (
         <Paper elevation={0} sx={{ mt: 1.5, p: 1.5, bgcolor: COLORS.surfaceContainerLow, border: `1px solid ${COLORS.border}`, borderRadius: 2 }}>
-          <Chip size="small" label={`source: ${summary.source}`} sx={{ fontSize: 12, height: 20, mb: 1 }} />
-          <Typography sx={{ fontSize: 13, color: COLORS.onSurface, whiteSpace: 'pre-wrap' }}>{summary.summary}</Typography>
+          <Tooltip title={`Written by ${humanizeEnum(summary.source)}`} arrow>
+            <Typography sx={{ fontSize: 13, color: COLORS.onSurface, whiteSpace: 'pre-wrap' }}>{summary.summary}</Typography>
+          </Tooltip>
           {summary.handoverNotes.length > 0 && (
             <Box component="ul" sx={{ m: 0, mt: 1, pl: 2.5, color: COLORS.onSurfaceVariant, fontSize: 12.5 }}>
               {summary.handoverNotes.map((n, i) => (
