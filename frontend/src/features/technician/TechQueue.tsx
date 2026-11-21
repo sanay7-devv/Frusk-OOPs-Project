@@ -314,7 +314,7 @@ export default function TechQueue() {
     setActionInProgressId(id);
     try {
       const res = await startIncident(id);
-      toast(`Work started on ${res?.code || `#${id}`}. Status moved to IN_PROGRESS.`, 'success');
+      toast(`Work started on ${res?.code || `#${id}`}. Now in progress.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
       queryClient.invalidateQueries({ queryKey: ['incidents'] });

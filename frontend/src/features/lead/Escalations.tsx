@@ -46,6 +46,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { listIncidents, getIncident, getSlaViolations } from '../../api/incidents';
 import { reassignIncident } from '../../api/technicians';
 import type { IncidentSummary, IncidentDetail, IncidentStatus, IncidentAction, SlaViolationView } from '../../api/types';
+import { formatSpan } from './shared/formatSpan';
 import ActionButtons from '../../components/ActionButtons';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { LinkProblemDialog } from '../technician/WorkbenchDialogs';
@@ -774,7 +775,7 @@ export default function Escalations() {
                   <TableRow sx={{ bgcolor: COLORS.surfaceContainerLow }}>
                     <TableCell sx={headCell}>Ticket Code</TableCell>
                     <TableCell sx={headCell}>Breach Type</TableCell>
-                    <TableCell sx={headCell}>Overdue Duration</TableCell>
+                    <TableCell sx={headCell}>Overdue by</TableCell>
                     <TableCell sx={headCell}>Technician Assigned</TableCell>
                     <TableCell sx={headCell}>Timestamp</TableCell>
                     <TableCell align="right" sx={headCell}>
@@ -801,12 +802,7 @@ export default function Escalations() {
                         />
                       </TableCell>
                       <TableCell sx={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 700, color: COLORS.warning }}>
-                        {(() => {
-                          const totalMinutes = Math.round(v.overdueSeconds / 60);
-                          const h = Math.floor(totalMinutes / 60);
-                          const m = totalMinutes % 60;
-                          return h > 0 ? `${h}h ${m}m overdue` : `${m}m overdue`;
-                        })()}
+                        {v.overdueSeconds < 60 ? 'Just overdue' : `${formatSpan(v.overdueSeconds * 1000)} overdue`}
                       </TableCell>
                       <TableCell sx={{ fontSize: 13, color: COLORS.onSurface }}>{v.technician?.name ?? 'Unassigned'}</TableCell>
                       <TableCell sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>{fmtDateTime(v.createdAt)}</TableCell>

@@ -2,6 +2,7 @@ import { Box, Typography } from '@mui/material';
 import SlaCountdown from '../../../components/SlaCountdown';
 import type { IncidentDetail } from '../../../api/types';
 import { COLORS } from './ui';
+import { formatSpan } from './formatSpan';
 
 type ClockFields = Pick<IncidentDetail, 'responseDue' | 'resolutionDue' | 'acknowledgedAt' | 'resolvedAt' | 'slaState' | 'pausedAt' | 'createdAt'>;
 
@@ -33,7 +34,7 @@ export default function SlaClockPair({ incident, fontSize = 18 }: { incident: Cl
               {c.doneText} {new Date(c.doneAt).toLocaleString()}
             </Typography>
           ) : (
-            <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>{c.due ? `Due ${new Date(c.due).toLocaleString()}` : 'No target'}</Typography>
+            <Typography sx={{ fontSize: 12.5, color: COLORS.onSurface }}>{c.due ? (new Date(c.due).getTime() < Date.now() ? `Overdue ${formatSpan(Date.now() - new Date(c.due).getTime())}` : `Due ${new Date(c.due).toLocaleString()}`) : 'No target'}</Typography>
           )}
         </Box>
       ))}

@@ -61,6 +61,7 @@ import { EditIncidentDialog } from '../lead/shared/IncidentActionDialogs';
 import ActionButtons from '../../components/ActionButtons';
 import { isStaleDataError, fieldErrorFor } from './apiErrors';
 import WhyAssignee from '../lead/shared/WhyAssignee';
+import { humanizeEnum } from '../../utils/format';
 import SlaClockPair from '../lead/shared/SlaClockPair';
 import SlaCountdown from '../../components/SlaCountdown';
 import PriorityExplainer from '../../components/PriorityExplainer';
@@ -293,7 +294,7 @@ export default function TechWorkbench() {
   const handleStartWork = async () => {
     try {
       await startIncident(incidentId);
-      toast('Work started on incident. Status moved to IN_PROGRESS.', 'success');
+      toast('Work started on incident. Now in progress.', 'success');
       handleRefreshAll();
     } catch (err: any) {
       toast(apiErrorMessage(err), 'error');
@@ -341,7 +342,7 @@ export default function TechWorkbench() {
         timeSpentMinutes: minutes,
         reusableSolution: resolveReusable,
       });
-      toast(`${incident?.code ?? 'Incident'} is now ${updated.status.replace(/_/g, ' ')}.`, 'success');
+      toast(`${incident?.code ?? 'Incident'} is now ${humanizeEnum(updated.status).toLowerCase()}.`, 'success');
 
       if (resolveWholeProblem && incident?.problemId) {
         try {
@@ -621,7 +622,7 @@ export default function TechWorkbench() {
             >
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: tokens.primary, animation: 'pulse 1.5s infinite' }} />
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
-                {user?.name || 'Technician'}
+                {incident.assignee?.name ? `Assigned to ${incident.assignee.name}` : 'Not assigned'}
               </Typography>
               <IconButton aria-label="Refresh incident" size="small" onClick={handleRefreshAll} sx={{ color: tokens.onSurfaceVariant, p: 0.2 }}>
                 <RefreshIcon sx={{ fontSize: 14 }} />
