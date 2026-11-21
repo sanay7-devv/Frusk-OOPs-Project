@@ -90,7 +90,7 @@ const reportSchema = z.object({
   affectedUsers: z.number().int().min(1, 'At least 1 user must be affected').max(1000000, 'Cannot exceed 1,000,000 users'),
   description: z
     .string()
-    .min(20, 'Please provide at least 20 characters describing the outage')
+    .min(20, 'Please write at least 20 characters describing the problem')
     .max(5000, 'Description cannot exceed 5000 characters'),
 });
 
@@ -105,11 +105,11 @@ interface AttachedFile {
 }
 
 const IMPACT_LEVELS = [
-  { level: 1, title: 'Minor', desc: 'Isolated single-seat inconvenience.' },
-  { level: 2, title: 'Moderate', desc: 'Small team workaround exists.' },
-  { level: 3, title: 'Significant', desc: 'Entire office or core department slowed.' },
-  { level: 4, title: 'Major', desc: 'Primary core revenue or payment loop degraded.' },
-  { level: 5, title: 'Catastrophic', desc: 'Complete enterprise-wide total stoppage.' },
+  { level: 1, title: 'Minor', desc: 'Only affects me.' },
+  { level: 2, title: 'Moderate', desc: 'A few people, and there is a workaround.' },
+  { level: 3, title: 'Significant', desc: 'A whole team or department.' },
+  { level: 4, title: 'Major', desc: 'Many people, or work that brings in money.' },
+  { level: 5, title: 'Catastrophic', desc: 'Everyone, or work has stopped.' },
 ];
 
 const URGENCY_LEVELS = [
@@ -409,7 +409,7 @@ export default function ReportIncident() {
         {
           sender: 'bot',
           text: res.message,
-          options: res.options,
+          options: res.options?.map((o) => ({ label: o.name, value: String(o.id) })),
         },
       ]);
     } catch (err) {
@@ -458,17 +458,17 @@ export default function ReportIncident() {
             Home
           </Link>
           <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 13, fontWeight: 500, fontFamily: 'JetBrains Mono, monospace' }}>
-            Report Incident
+            Report a problem
           </Typography>
         </Breadcrumbs>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
           <Box>
             <Typography variant="h4" component="h1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, letterSpacing: '-0.02em' }}>
-              Report an Operational Issue or Outage
+              Report a problem
             </Typography>
             <Typography sx={{ color: tokens.onSurfaceVariant, mt: 0.5, maxWidth: 840, fontSize: 14, fontFamily: 'Geist, sans-serif' }}>
-              Submit downtime, authentication barriers, or service degradation to open a new incident.
+              Tell us what is wrong and we will send it to the right team.
             </Typography>
           </Box>
 
@@ -489,7 +489,7 @@ export default function ReportIncident() {
               '&:hover': { bgcolor: alpha(tokens.secondary, 0.18) },
             }}
           >
-            Guided Chat Assistant
+            Report by chat
           </Button>
         </Box>
       </Box>
@@ -528,7 +528,7 @@ export default function ReportIncident() {
                     onClick={async () => {
                       try {
                         const joined = await joinProblem(knownOutages[0].problemId);
-                        toast('Successfully joined known outage ticket.', 'success');
+                        toast('You have joined the existing report.', 'success');
                         navigate(`/employee/incidents/${joined.id}`);
                       } catch (err) {
                         toast(apiErrorMessage(err), 'error');
@@ -536,15 +536,15 @@ export default function ReportIncident() {
                     }}
                     sx={{ textTransform: 'none', fontWeight: 600 }}
                   >
-                    Join Outage ({knownOutages[0].leadCode})
+                    Join existing report ({knownOutages[0].leadCode})
                   </Button>
                 }
               >
                 <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                  Known Outage in Progress: {knownOutages[0].title}
+                  Already reported: {knownOutages[0].title}
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: tokens.orangePale, mt: 0.5 }}>
-                  This service has an active outage ({knownOutages[0].leadPriority}) with {knownOutages[0].affectedUsers} affected users reported. Join the existing outage ticket to receive resolution updates.
+                  This service already has an open problem ({knownOutages[0].leadPriority}) affecting {knownOutages[0].affectedUsers} people. Join it to get updates.
                 </Typography>
               </Alert>
             )}
@@ -554,12 +554,12 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <EditNoteIcon sx={{ color: tokens.secondaryLight, fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: tokens.secondaryLight, textTransform: 'uppercase' }}>
-                    01. Core Incident Parameters
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: 0, color: tokens.secondaryLight, textTransform: 'none' }}>
+                    1. What happened?
                   </Typography>
                 </Box>
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
-                  * Mandatory for escalation routing
+                  * Required
                 </Typography>
               </Box>
 
@@ -567,19 +567,19 @@ export default function ReportIncident() {
               <Box sx={{ mb: 2.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
-                    Incident Title
+                    Short summary
                   </Typography>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
-                    {watchTitle?.length || 0} / 200 chars
+                    {watchTitle?.length || 0} / 200
                   </Typography>
                 </Box>
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder="Brief summary of the outage or symptom"
+                  placeholder="For example: Cannot log in to email"
                   {...register('title')}
                   error={!!errors.title}
-                  helperText={errors.title?.message || 'Be concise. Avoid ambiguous titles like "System broken" or "Help urgently".'}
+                  helperText={errors.title?.message || 'Keep it short and specific, for example "Cannot print from the 3rd floor".'}
                   sx={{
                     bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
                     borderRadius: '8px',
@@ -591,7 +591,7 @@ export default function ReportIncident() {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface, mb: 0.8 }}>
-                    Affected Service <span style={{ color: tokens.danger }}>*</span>
+                    Which service is affected? <span style={{ color: tokens.danger }}>*</span>
                   </Typography>
                   <Controller
                     name="serviceId"
@@ -614,13 +614,13 @@ export default function ReportIncident() {
                     )}
                   />
                   <Typography sx={{ fontSize: 12, color: tokens.textDisabled, mt: 0.5 }}>
-                    Select the degraded customer-facing service
+                    Pick the service that is not working properly
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface, mb: 0.8 }}>
-                    Problem Category
+                    Type of problem
                   </Typography>
                   <Controller
                     name="categoryId"
@@ -634,7 +634,7 @@ export default function ReportIncident() {
                           sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.7), borderRadius: '8px' }}
                         >
                           <MenuItem value="">
-                            <em>Let the system decide (Auto-suggest)</em>
+                            <em>Not sure, choose for me</em>
                           </MenuItem>
                           {categories.map((c) => (
                             <MenuItem key={c.id} value={c.id}>
@@ -646,7 +646,7 @@ export default function ReportIncident() {
                     )}
                   />
                   <Typography sx={{ fontSize: 12, color: tokens.textDisabled, mt: 0.5 }}>
-                    Used to determine initial responder rota
+                    Helps us pick the right technician
                   </Typography>
                 </Grid>
               </Grid>
@@ -659,12 +659,12 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <EqualizerIcon sx={{ color: tokens.secondaryLight, fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: tokens.secondaryLight, textTransform: 'uppercase' }}>
-                    02. Severity Metrics &amp; Blast Radius
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: 0, color: tokens.secondaryLight, textTransform: 'none' }}>
+                    2. How serious is it?
                   </Typography>
                 </Box>
                 <Chip
-                  label={`SLA Matrix: ${priorityLabelMap[calculatedPriority]}`}
+                  label={`Priority: ${priorityLabelMap[calculatedPriority]}`}
                   size="small"
                   sx={{
                     fontFamily: 'JetBrains Mono, monospace',
@@ -681,10 +681,10 @@ export default function ReportIncident() {
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
-                    Impact Level (Scope of Operational Impairment)
+                    How much is affected?
                   </Typography>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.secondaryLight }}>
-                    Current: Level {watchImpact} ({IMPACT_LEVELS.find((i) => i.level === watchImpact)?.title})
+                    Selected: {IMPACT_LEVELS.find((i) => i.level === watchImpact)?.title}
                   </Typography>
                 </Box>
 
@@ -723,7 +723,7 @@ export default function ReportIncident() {
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                             <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: isSelected ? tokens.secondaryLight : tokens.textDisabled }}>
-                              LVL {item.level}
+                              Level {item.level}
                             </Typography>
                             {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: tokens.secondaryLight }} />}
                           </Box>
@@ -735,10 +735,6 @@ export default function ReportIncident() {
                               fontSize: 12,
                               lineHeight: 1.3,
                               color: isSelected ? tokens.onSurface : tokens.textDisabled,
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
                               fontFamily: 'Geist, sans-serif',
                             }}
                           >
@@ -757,10 +753,10 @@ export default function ReportIncident() {
                 <Grid item xs={12} sm={8}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
-                      Urgency Level (Time Sensitivity)
+                      How urgent is it?
                     </Typography>
                     <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.secondaryLight }}>
-                      Selected: {watchUrgency} ({URGENCY_LEVELS.find((u) => u.level === watchUrgency)?.label})
+                      Selected: {URGENCY_LEVELS.find((u) => u.level === watchUrgency)?.label}
                     </Typography>
                   </Box>
                   <Box
@@ -810,7 +806,7 @@ export default function ReportIncident() {
                 {/* Affected Users Stepper */}
                 <Grid item xs={12} sm={4}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface, mb: 1 }}>
-                    Estimated Affected Users
+                    How many people are affected?
                   </Typography>
                   <Box
                     sx={{
@@ -857,8 +853,8 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SubjectIcon sx={{ color: tokens.secondaryLight, fontSize: 20 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: tokens.secondaryLight, textTransform: 'uppercase' }}>
-                    03. Detailed Telemetry &amp; Narrative
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, letterSpacing: 0, color: tokens.secondaryLight, textTransform: 'none' }}>
+                    3. Details
                   </Typography>
                 </Box>
               </Box>
@@ -867,10 +863,10 @@ export default function ReportIncident() {
               <Box sx={{ mb: 2.5 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
-                    Detailed Description
+                    What is going on?
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
-                    Markdown &amp; Stack Traces supported
+                    Plain text is fine
                   </Typography>
                 </Box>
 
@@ -889,7 +885,7 @@ export default function ReportIncident() {
                     fullWidth
                     multiline
                     rows={6}
-                    placeholder="Describe exact error messages, timeline, steps to reproduce, and impact on operations..."
+                    placeholder="Tell us what you were doing, what you saw, and any error message..."
                     {...register('description', {
                       onBlur: handleDescriptionBlur,
                     })}
@@ -909,10 +905,10 @@ export default function ReportIncident() {
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
-                    Diagnostic Evidence &amp; Logs
+                    Screenshots or files (optional)
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
-                    Max file size 5MB each (PNG, JPG, LOG, HAR)
+                    Up to 5 MB each
                   </Typography>
                 </Box>
 
@@ -964,7 +960,7 @@ export default function ReportIncident() {
                     <span style={{ color: tokens.secondaryLight }}>Click to browse</span> or drag files here
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 0.5 }}>
-                    Supported formats: PNG, JPG, GIF, PDF, TXT, LOG (Max 5 MB per file, max 10 files)
+                    PNG, JPG, GIF, PDF, TXT or LOG, up to 5 MB each and 10 files
                   </Typography>
 
                   {/* Attached File Pills */}
@@ -1005,7 +1001,7 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: tokens.onSurfaceVariant }}>
                 <VerifiedUserIcon sx={{ fontSize: 18, color: tokens.secondary }} />
                 <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
-                  Standard ITIL incident intake &amp; routing
+                  We will route your report to the right team
                 </Typography>
               </Box>
 
@@ -1022,7 +1018,7 @@ export default function ReportIncident() {
                     '&:hover': { borderColor: alpha(tokens.white, 0.25), bgcolor: tokens.hover, color: tokens.onSurface },
                   }}
                 >
-                  Cancel &amp; Discard
+                  Discard
                 </Button>
                 <Button
                   type="submit"
@@ -1044,7 +1040,7 @@ export default function ReportIncident() {
                     },
                   }}
                 >
-                  {isSubmitting ? 'Submitting...' : '+ Submit Incident Ticket'}
+                  {isSubmitting ? 'Submitting...' : 'Submit report'}
                 </Button>
               </Stack>
             </Box>
@@ -1088,18 +1084,18 @@ export default function ReportIncident() {
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
-                      AI Intake Assistant
+                      Suggestions as you type
                     </Typography>
                     <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: tokens.secondary, boxShadow: `0 0 6px ${tokens.secondary}` }} />
                   </Box>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondaryLight }}>
-                    Real-time Suggestions
+                    Updates while you fill in the form
                   </Typography>
                 </Box>
               </Box>
             </Paper>
 
-            {/* AI Suggested Classification Card */}
+            {/* AI Suggested type of problem Card */}
             <Paper
               elevation={0}
               sx={{
@@ -1116,8 +1112,8 @@ export default function ReportIncident() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                   <PsychologyIcon sx={{ color: tokens.primaryLight, fontSize: 18 }} />
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.primaryLight, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Suggested Classification
+                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.primaryLight, textTransform: 'none', letterSpacing: 0 }}>
+                    Suggested type of problem
                   </Typography>
                 </Box>
                 {aiSuggestion?.categoryId != null && (
@@ -1134,14 +1130,14 @@ export default function ReportIncident() {
                   {/* Classification Metric Box */}
                   <Box sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.7), p: 2, borderRadius: '10px', border: `1px solid ${tokens.borderSubtle}` }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Category Match:</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Suggested type:</Typography>
                       <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.secondaryLight }}>
                         {aiSuggestion.categoryName}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Source:</Typography>
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Suggested by:</Typography>
                       <Chip
                         label={(aiSuggestion as any).source || 'AI'}
                         size="small"
@@ -1159,7 +1155,7 @@ export default function ReportIncident() {
                     {/* Confidence Bar */}
                     <Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>Model Alignment</Typography>
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>Confidence</Typography>
                         <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
                           {(aiSuggestion.confidence || 0).toFixed(2)} / 1.00
                         </Typography>
@@ -1193,13 +1189,13 @@ export default function ReportIncident() {
                       '&:hover': { bgcolor: alpha(tokens.primary, 0.2), borderColor: tokens.primary, color: tokens.white },
                     }}
                   >
-                    Apply Suggested Category
+                    Use this suggestion
                   </Button>
                 </>
               ) : (
                 <Box sx={{ py: 3, px: 1, textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 12.5, color: tokens.onSurfaceVariant, lineHeight: 1.5 }}>
-                    {aiLoading ? 'Analyzing incident description with semantic classifier...' : 'Type an issue title and description to see live AI categorization and similarity detection.'}
+                    {aiLoading ? 'Looking at your description...' : 'Type a summary and description and we will suggest a type of problem and check for similar reports.'}
                   </Typography>
                 </Box>
               )}
@@ -1222,11 +1218,11 @@ export default function ReportIncident() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: tokens.warningLight }}>
                   <WarningIcon sx={{ fontSize: 20, color: tokens.warning }} />
                   <Typography sx={{ fontSize: 13, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
-                    Potential Duplicate Outage
+                    Someone may already have reported this
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: 12, color: tokens.warningLight, fontWeight: 500 }}>
-                  {similarIncidents.length} similar active incident{similarIncidents.length > 1 ? 's' : ''} found:
+                  {similarIncidents.length} similar open report{similarIncidents.length > 1 ? 's' : ''} found:
                 </Typography>
 
                 {similarIncidents.slice(0, 2).map((item, idx) => (
@@ -1274,7 +1270,7 @@ export default function ReportIncident() {
                     '&:hover': { bgcolor: tokens.warningDark },
                   }}
                 >
-                  View &amp; Join Existing Ticket
+                  See and join existing report
                 </Button>
               </Paper>
             )}
@@ -1300,11 +1296,11 @@ export default function ReportIncident() {
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, color: tokens.warningLight, fontFamily: 'Sora, sans-serif' }}>
           <WarningIcon sx={{ color: tokens.warning }} />
-          Potential Duplicate Incident Found
+          This may already be reported
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Alert severity="warning" sx={{ mb: 2, borderRadius: '8px', bgcolor: alpha(tokens.amber, 0.12), color: tokens.amberPale, border: `1px solid ${alpha(tokens.amber, 0.3)}` }}>
-            A similar active incident is already being resolved by engineers. To avoid duplicated work, you can join the existing ticket to receive status updates.
+            A similar problem is already being fixed. You can join the existing report to get updates instead of sending a new one.
           </Alert>
 
           {similarIncidents.map((sim) => (
@@ -1330,7 +1326,7 @@ export default function ReportIncident() {
               </Box>
               <Typography sx={{ fontWeight: 600, mt: 0.5, color: tokens.onSurface }}>{sim.title}</Typography>
               <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, mt: 0.5 }}>
-                Status: {sim.status} • Active Engineering Remediation
+                Status: {sim.status}
               </Typography>
             </Paper>
           ))}
@@ -1348,7 +1344,7 @@ export default function ReportIncident() {
             variant="contained"
             sx={{ bgcolor: tokens.amberDark, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: tokens.warningDark } }}
           >
-            View Existing Ticket
+            View existing report
           </Button>
           <Button
             onClick={() => {
@@ -1358,7 +1354,7 @@ export default function ReportIncident() {
             variant="outlined"
             sx={{ textTransform: 'none', fontWeight: 600, borderColor: alpha(tokens.white, 0.15), color: tokens.onSurface }}
           >
-            Mine is Different, Submit Anyway
+            Mine is different, submit anyway
           </Button>
         </DialogActions>
       </Dialog>
@@ -1381,40 +1377,40 @@ export default function ReportIncident() {
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
           <CheckCircleIcon sx={{ color: tokens.success, fontSize: 26 }} />
-          Incident Reported Successfully
+          Problem reported
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           {createdIncident && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Alert severity="success" sx={{ borderRadius: '8px', bgcolor: alpha(tokens.success, 0.15), color: tokens.successLight, border: `1px solid ${alpha(tokens.success, 0.3)}` }}>
-                Your incident was categorized, prioritized, and queued for technician triage.
+                Thanks. Your report has been sorted and sent to the support team.
               </Alert>
 
               <Box sx={{ bgcolor: alpha(tokens.surfaceContainerLow, 0.8), p: 2.5, borderRadius: '10px', border: `1px solid ${tokens.outlineVariant}` }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Incident Code:</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Reference code:</Typography>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 700, color: tokens.secondaryLight }}>
                     {createdIncident.code}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Assigned Priority:</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Priority:</Typography>
                   <PriorityBadge priority={createdIncident.priority} />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Assigned Service:</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Service:</Typography>
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>{createdIncident.service.name}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Assignee:</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>{createdIncident.assignee?.name || 'Unassigned (Triage Dispatch Queue)'}</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Handled by:</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>{createdIncident.assignee?.name || 'Not yet assigned'}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Target SLA Resolution:</Typography>
+                  <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Target fix time:</Typography>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.success }}>
                     {createdIncident.resolutionDue
                       ? new Date(createdIncident.resolutionDue).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : 'Scheduled according to SLA policy'}
+                      : 'Set by the service level'}
                   </Typography>
                 </Box>
               </Box>
@@ -1441,7 +1437,7 @@ export default function ReportIncident() {
             variant="outlined"
             sx={{ textTransform: 'none', fontWeight: 600, borderColor: alpha(tokens.white, 0.15), color: tokens.onSurface }}
           >
-            Go to My Incidents
+            Go to my incidents
           </Button>
           <Button
             onClick={() => {
@@ -1457,7 +1453,7 @@ export default function ReportIncident() {
               fontWeight: 700,
             }}
           >
-            View Incident Detail
+            View details
           </Button>
         </DialogActions>
       </Dialog>
@@ -1481,7 +1477,7 @@ export default function ReportIncident() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SmartToyIcon sx={{ color: tokens.secondaryLight, fontSize: 24 }} />
             <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.white, fontFamily: 'Sora, sans-serif', fontSize: 16 }}>
-              Guided Intake Assistant
+              Report by chat
             </Typography>
           </Box>
           <IconButton aria-label="Close assistant chat" size="small" onClick={() => setChatOpen(false)} sx={{ color: tokens.onSurfaceVariant }}>
@@ -1538,7 +1534,7 @@ export default function ReportIncident() {
             {chatLoading && (
               <Box sx={{ alignSelf: 'flex-start', p: 1.5, bgcolor: alpha(tokens.surfaceContainerLow, 0.9), borderRadius: '12px 12px 12px 2px', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CircularProgress size={14} sx={{ color: tokens.secondaryLight }} />
-                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Analyzing response...</Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Thinking...</Typography>
               </Box>
             )}
           </Box>
@@ -1585,7 +1581,7 @@ export default function ReportIncident() {
           {chatDraft && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 0.5 }}>
               <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
-                {chatReadyToFile ? 'Draft is complete and ready to apply!' : 'Draft partially generated.'}
+                {chatReadyToFile ? 'Your report is ready to add to the form.' : 'Part of your report is ready.'}
               </Typography>
               <Button
                 variant="contained"
@@ -1599,7 +1595,7 @@ export default function ReportIncident() {
                   textTransform: 'none',
                 }}
               >
-                Apply Draft to Form
+                Add to form
               </Button>
             </Box>
           )}
