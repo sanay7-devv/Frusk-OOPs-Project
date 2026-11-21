@@ -167,7 +167,7 @@ export default function Register() {
               mb: 0.5,
             }}
           >
-            Create Enterprise Account
+            Create account
           </Typography>
           <Typography
             variant="body2"
@@ -193,7 +193,7 @@ export default function Register() {
             />
 
             <TextField
-              label="Enterprise Email"
+              label="Email"
               fullWidth
               type="email"
               placeholder="alice@company.com"
@@ -212,12 +212,12 @@ export default function Register() {
             />
 
             <TextField
-              label="Password (min 8 chars, letter + number)"
+              label="Password"
               type={showPassword ? 'text' : 'password'}
               fullWidth
               {...register('password')}
               error={!!errors.password}
-              helperText={errors.password?.message}
+              helperText={errors.password?.message ?? '8 to 72 characters, with a letter and a number; not your name or email'}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -300,13 +300,6 @@ export default function Register() {
               Sign In
             </Link>
           </Typography>
-          <Link
-            component={RouterLink}
-            to="/forgot-password"
-            sx={{ display: 'inline-block', mt: 1, fontSize: 13, color: tokens.secondaryLight, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-          >
-            Forgot password?
-          </Link>
         </Box>
       </Paper>
     </Box>

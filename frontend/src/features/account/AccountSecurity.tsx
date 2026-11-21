@@ -99,13 +99,7 @@ export default function AccountSecurity() {
                 <Button size="small" onClick={() => copy(setup.secret)}>{copied ? 'Copied' : 'Copy'}</Button>
               </Stack>
             </Box>
-            <Box>
-              <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>Setup link (otpauth)</Typography>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.slate300, wordBreak: 'break-all' }}>
-                {setup.otpauthUri}
-              </Typography>
-              <Button size="small" onClick={() => copy(setup.otpauthUri)}>Copy link</Button>
-            </Box>
+            <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => copy(setup.otpauthUri)}>Copy setup link</Button>
             <Stack direction="row" spacing={2} alignItems="flex-start">
               {codeInput}
               <Button variant="contained" sx={{ mt: 1 }} onClick={() => enable.mutate()} disabled={code.length !== 6 || enable.isPending}>

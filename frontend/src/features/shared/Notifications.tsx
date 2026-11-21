@@ -15,6 +15,8 @@ import {
   DialogActions,
   Rating,
   Switch,
+  Checkbox,
+  Tooltip,
   FormControlLabel,
   Divider,
   CircularProgress,
@@ -368,7 +370,7 @@ export default function Notifications() {
           <IconButton aria-label="Notification preferences"
             size="small"
             onClick={() => setPrefsOpen(true)}
-            title="Notification Preferences"
+            title="Notification preferences"
             sx={{
               border: `1px solid ${alpha(tokens.white, 0.1)}`,
               borderRadius: '8px',
@@ -403,7 +405,7 @@ export default function Notifications() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, overflowX: 'auto', pb: { xs: 0.5, md: 0 } }}>
           {(
             [
-              { id: 'ALL', label: `All Notifications (${allItems.length})` },
+              { id: 'ALL', label: `All (${pageData?.totalItems ?? allItems.length})` },
               { id: 'UNREAD', label: `Unread (${unreadTotal})` },
               { id: 'ACTION', label: `Action Required (${actionCount})` },
               { id: 'SLA', label: `SLA Alerts (${slaCount})` },
@@ -795,7 +797,7 @@ export default function Notifications() {
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white }}>
-            Notification Preferences
+            Notification preferences
           </Typography>
           <IconButton aria-label="Close preferences dialog" onClick={() => setPrefsOpen(false)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
             <CloseIcon />
@@ -803,47 +805,50 @@ export default function Notifications() {
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
           <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
-            Manage notification preferences across communication channels. Critical alerts and in-app system channels are locked.
+            Choose how you are notified. Greyed-out boxes are set by your administrator.
           </Typography>
-          <Stack spacing={1}>
-            {localPrefs.map((pref, idx) => (
-              <Box
-                key={`${pref.channel}-${pref.eventType}`}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  p: 1.2,
-                  borderRadius: '8px',
-                  bgcolor: alpha(tokens.white, 0.02),
-                  border: `1px solid ${tokens.hover}`,
-                }}
-              >
-                <Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>
-                    {pref.eventType.replace(/_/g, ' ')}
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: tokens.textDisabled }}>
-                    Channel: {pref.channel} {pref.locked ? '(Locked by Policy)' : ''}
-                  </Typography>
+          {(() => {
+            const channels = [...new Set(localPrefs.map((p) => p.channel))];
+            const events = [...new Set(localPrefs.map((p) => p.eventType))];
+            const sentence = (v: string) => { const t = v.replace(/_/g, ' ').toLowerCase(); return t.charAt(0).toUpperCase() + t.slice(1); };
+            const channelName = (c: string) => ({ IN_APP: 'In app', EMAIL: 'Email', SMS_SIM: 'SMS', PUSH: 'Push', WEBSOCKET: 'Live' } as Record<string, string>)[c] ?? sentence(c);
+            return (
+              <Box sx={{ overflowX: 'auto' }}>
+                <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      <Box component="th" sx={{ textAlign: 'left', py: 1, color: tokens.onSurfaceVariant, fontWeight: 600 }}>Event</Box>
+                      {channels.map((c) => <Box component="th" key={c} sx={{ py: 1, px: 1, color: tokens.onSurfaceVariant, fontWeight: 600, textAlign: 'center' }}>{channelName(c)}</Box>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.map((ev) => (
+                      <Box component="tr" key={ev} sx={{ borderTop: `1px solid ${tokens.hover}` }}>
+                        <Box component="td" sx={{ py: 0.75, color: tokens.onSurface }}>{sentence(ev)}</Box>
+                        {channels.map((c) => {
+                          const idx = localPrefs.findIndex((p) => p.channel === c && p.eventType === ev);
+                          const pref = localPrefs[idx];
+                          return (
+                            <Box component="td" key={c} sx={{ textAlign: 'center' }}>
+                              {pref ? (
+                                <Tooltip title={pref.locked ? 'Set by your administrator' : ''}>
+                                  <span>
+                                    <Checkbox size="small" checked={pref.enabled} disabled={pref.locked}
+                                      inputProps={{ 'aria-label': `${sentence(ev)} by ${channelName(c)}` }}
+                                      onChange={(e) => { const checked = e.target.checked; setLocalPrefs((prev) => prev.map((p, i) => (i === idx ? { ...p, enabled: checked } : p))); }} />
+                                  </span>
+                                </Tooltip>
+                              ) : null}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    ))}
+                  </tbody>
                 </Box>
-                <Switch
-                  checked={pref.enabled}
-                  disabled={pref.locked}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setLocalPrefs((prev) =>
-                      prev.map((p, i) => (i === idx ? { ...p, enabled: checked } : p))
-                    );
-                  }}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': { color: tokens.secondaryLight },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: tokens.secondary },
-                  }}
-                />
               </Box>
-            ))}
-          </Stack>
+            );
+          })()}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setPrefsOpen(false)} sx={{ color: tokens.onSurfaceVariant, textTransform: 'none' }}>
@@ -860,7 +865,7 @@ export default function Notifications() {
               textTransform: 'none',
             }}
           >
-            Save Preferences
+            Save preferences
           </Button>
         </DialogActions>
       </Dialog>
