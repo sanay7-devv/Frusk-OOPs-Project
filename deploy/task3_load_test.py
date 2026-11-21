@@ -288,7 +288,6 @@ def main():
     observations = {"reads_and_reports": [], "creates": [], "lifecycle_create": [], "lifecycle_withdraw": []}
     observation_lock = threading.Lock()
     sampler = ResourceSampler()
-    sampler.start()
     mixed_started = time.perf_counter()
 
     def mixed_worker(worker_id):
