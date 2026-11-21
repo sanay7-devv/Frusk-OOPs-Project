@@ -222,7 +222,7 @@ def explain_queries() -> dict:
     for name, query in PLAN_QUERIES.items():
         raw = compose_psql(f"EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) {query}", timeout=180)
         parsed = json.loads(raw)
-        plans[name] = parsed[0][0]
+        plans[name] = parsed[0]
     return plans
 
 
