@@ -38,6 +38,8 @@ RESULT = {
         "target": "disposable demo Compose stack",
         "incident_count_before": None,
         "incident_count_after": None,
+        "create_rate_limit_override": {"setting": "ratelimit.incident.create.per.minute", "default": 20,
+                                       "mixed_test_value": 1000, "restored": False},
     },
     "profile": {
         "waves_per_concurrency": WAVES_PER_LEVEL,
@@ -266,6 +268,12 @@ def main():
         }
         RESULT["levels"][str(concurrency)] = level
 
+    limit_change = api("/admin/config", token=admin_token, method="PUT", body=[
+        {"key": "ratelimit.incident.create.per.minute", "value": "1000"},
+    ])
+    if limit_change["status"] != 200:
+        raise RuntimeError(f"Unable to raise the disposable create limit for mixed load: {limit_change['status']}")
+
     read_paths = [
         "/incidents?page=0&size=20",
         f"/incidents/{existing_incident_id}",
@@ -316,12 +324,17 @@ def main():
                 observations[key].extend(items)
 
     try:
+        sampler.start()
         with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
             futures = [pool.submit(mixed_worker, worker_id) for worker_id in range(concurrency)]
             for future in concurrent.futures.as_completed(futures):
                 future.result()
     finally:
         sampler.stop()
+        restored = api("/admin/config", token=admin_token, method="PUT", body=[
+            {"key": "ratelimit.incident.create.per.minute", "value": "20"},
+        ])
+        RESULT["environment"]["create_rate_limit_override"]["restored"] = restored["status"] == 200
 
     mixed_elapsed = time.perf_counter() - mixed_started
     RESULT["mixed"]["elapsed_seconds"] = round(mixed_elapsed, 2)
@@ -346,11 +359,13 @@ def main():
     failures = []
     for concurrency, level in RESULT["levels"].items():
         for scenario, metrics in level.items():
-            if metrics["errors"]:
+            if "errors" in metrics and metrics["errors"]:
                 failures.append(f"{concurrency} concurrency {scenario}: {metrics['errors']} errors")
     for scenario, metrics in RESULT["mixed"]["request_results"].items():
         if metrics["errors"]:
             failures.append(f"mixed {scenario}: {metrics['errors']} errors")
+    if not RESULT["environment"]["create_rate_limit_override"]["restored"]:
+        failures.append("could not restore the disposable demo create limit to its default")
     if failures:
         raise SystemExit("Load run completed with HTTP errors: " + "; ".join(failures))
 
