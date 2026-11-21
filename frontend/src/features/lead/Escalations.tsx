@@ -289,36 +289,13 @@ export default function Escalations() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>{inc.code}</Typography>
             <PriorityBadge priority={inc.priority} />
-            {inc.major && (
-              <Chip
-                label="MAJOR"
-                size="small"
-                sx={{
-                  height: 20,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  fontFamily: MONO,
-                  bgcolor: alpha(tokens.danger, 0.25),
-                  color: tokens.tertiaryLight,
-                  border: `1px solid ${alpha(tokens.danger, 0.5)}`,
-                }}
-              />
-            )}
-            <Chip
-              label={`LEVEL ${inc.escalationLevel}`}
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: 12,
-                fontWeight: 800,
-                fontFamily: MONO,
-                bgcolor: alpha(tokens.danger, 0.2),
-                color: COLORS.error,
-                border: `1px solid ${alpha(tokens.danger, 0.4)}`,
-              }}
-            />
           </Box>
-          <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
+          <Box sx={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
+            <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+              {inc.major ? 'Major · ' : ''}Level {inc.escalationLevel}
+            </Typography>
+          </Box>
         </Box>
         <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: COLORS.onSurface, mb: 0.75 }}>{inc.title}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -338,9 +315,6 @@ export default function Escalations() {
           <Box>
             <Typography component="h1" variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
               Escalations and SLA breaches
-            </Typography>
-            <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 13.5, mt: 0.5 }}>
-              Incidents that are overdue, escalated, or have breached their SLA.
             </Typography>
           </Box>
 

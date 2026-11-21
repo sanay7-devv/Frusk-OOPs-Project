@@ -721,9 +721,6 @@ export default function TechQueue() {
                     {needsAckCount > 0 ? 'Acknowledge' : 'Clear'}
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant }}>
-                  Assigned to you
-                </Typography>
               </Paper>
             </Grid>
 
@@ -826,9 +823,6 @@ export default function TechQueue() {
                     Paused
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondary, fontWeight: 600 }}>
-                  SLA clock frozen
-                </Typography>
               </Paper>
             </Grid>
           </Grid>
