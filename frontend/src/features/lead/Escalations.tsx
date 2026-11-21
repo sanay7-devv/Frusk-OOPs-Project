@@ -46,6 +46,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { listIncidents, getIncident, getSlaViolations } from '../../api/incidents';
 import { reassignIncident } from '../../api/technicians';
 import type { IncidentSummary, IncidentDetail, IncidentStatus, IncidentAction, SlaViolationView } from '../../api/types';
+import { formatSpan } from './shared/formatSpan';
 import ActionButtons from '../../components/ActionButtons';
 import { useLiveRefresh } from '../shared/useLiveRefresh';
 import { LinkProblemDialog } from '../technician/WorkbenchDialogs';
@@ -287,42 +288,19 @@ export default function Escalations() {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, color: COLORS.secondary }}>{inc.code}</Typography>
+            <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>{inc.code}</Typography>
             <PriorityBadge priority={inc.priority} />
-            {inc.major && (
-              <Chip
-                label="MAJOR"
-                size="small"
-                sx={{
-                  height: 20,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  fontFamily: MONO,
-                  bgcolor: alpha(tokens.danger, 0.25),
-                  color: tokens.tertiaryLight,
-                  border: `1px solid ${alpha(tokens.danger, 0.5)}`,
-                }}
-              />
-            )}
-            <Chip
-              label={`LEVEL ${inc.escalationLevel}`}
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: 12,
-                fontWeight: 800,
-                fontFamily: MONO,
-                bgcolor: alpha(tokens.danger, 0.2),
-                color: COLORS.error,
-                border: `1px solid ${alpha(tokens.danger, 0.4)}`,
-              }}
-            />
           </Box>
-          <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
+          <Box sx={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <SlaCountdown due={inc.resolutionDue} createdAt={inc.createdAt} slaState={inc.slaState} />
+            <Typography sx={{ fontSize: 11.5, color: COLORS.onSurfaceVariant }}>
+              {inc.major ? 'Major · ' : ''}Level {inc.escalationLevel}
+            </Typography>
+          </Box>
         </Box>
         <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: COLORS.onSurface, mb: 0.75 }}>{inc.title}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Assigned: {inc.assignee?.name ?? 'Unassigned (Triage)'}</Typography>
+          <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Assignee: {inc.assignee?.name ?? 'Not assigned'}</Typography>
           <StatusChip status={inc.status} />
         </Box>
       </Paper>
@@ -333,21 +311,11 @@ export default function Escalations() {
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: COLORS.surface, minHeight: '100vh' }}>
       {/* Top Header Bar */}
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-          <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: COLORS.onSurfaceVariant, textTransform: 'uppercase' }}>
-            SUPERVISORY CONSOLE // ESCALATIONS &amp; BREACHES
-          </Typography>
-          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: COLORS.error }} />
-          <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: COLORS.error }}>TIER 1 &amp; 2 SUPERVISION</Typography>
-        </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography component="h1" variant="h4" sx={{ fontWeight: 800, color: COLORS.onSurface, fontFamily: 'Sora, sans-serif' }}>
-              Escalation Command &amp; SLA Violations
-            </Typography>
-            <Typography sx={{ color: COLORS.onSurfaceVariant, fontSize: 13.5, mt: 0.5 }}>
-              Monitor tickets that exceeded response thresholds, reached Level 1+ supervision, or breached contracted SLAs.
+              Escalations and SLA breaches
             </Typography>
           </Box>
 
@@ -498,7 +466,7 @@ export default function Escalations() {
 
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontFamily: MONO, fontSize: 14, fontWeight: 800, color: COLORS.secondary }}>{incidentDetail.code}</Typography>
+                      <Typography sx={{ fontFamily: MONO, fontSize: 14, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>{incidentDetail.code}</Typography>
                       <Chip
                         label={`ESCALATION LEVEL ${incidentDetail.escalationLevel}`}
                         size="small"
@@ -590,13 +558,13 @@ export default function Escalations() {
                   ) : (
                     <Box sx={{ p: 1.5, bgcolor: COLORS.surfaceContainerLow, borderRadius: 2, border: `1px solid ${COLORS.border}`, mb: 2 }}>
                       <Typography sx={{ fontSize: 12.5, color: COLORS.onSurfaceVariant }}>
-                        No subsequent escalation step scheduled. Ticket is at top supervisory tier.
+                        No further escalation step is scheduled. This incident is already at the top level.
                       </Typography>
                     </Box>
                   )}
 
                   {/* Supervisory Actions, driven by allowedActions */}
-                  <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap', '& .MuiButton-root': { whiteSpace: 'nowrap' } }}>
                     <ActionButtons
                       allowed={allowed}
                       exclude={ESC_EXCLUDED}
@@ -627,7 +595,7 @@ export default function Escalations() {
                           onClick={() => navigate(`${problemBase}/${incidentDetail.problemId}`)}
                           sx={{ borderColor: COLORS.border, color: COLORS.onSurface, fontWeight: 600, fontSize: 12.5, textTransform: 'none', borderRadius: 2 }}
                         >
-                          Problem #{incidentDetail.problemId}: resolve the whole problem
+                          Problem #{incidentDetail.problemId}
                         </Button>
                       )
                     ) : (
@@ -701,7 +669,7 @@ export default function Escalations() {
                 <TableBody>
                   {atRisk.map((inc) => (
                     <TableRow key={inc.id} hover>
-                      <TableCell sx={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 800, color: COLORS.secondary }}>{inc.code}</TableCell>
+                      <TableCell sx={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 800, color: COLORS.secondary, whiteSpace: 'nowrap' }}>{inc.code}</TableCell>
                       <TableCell>
                         <PriorityBadge priority={inc.priority} />
                       </TableCell>
@@ -807,7 +775,7 @@ export default function Escalations() {
                   <TableRow sx={{ bgcolor: COLORS.surfaceContainerLow }}>
                     <TableCell sx={headCell}>Ticket Code</TableCell>
                     <TableCell sx={headCell}>Breach Type</TableCell>
-                    <TableCell sx={headCell}>Overdue Duration</TableCell>
+                    <TableCell sx={headCell}>Overdue by</TableCell>
                     <TableCell sx={headCell}>Technician Assigned</TableCell>
                     <TableCell sx={headCell}>Timestamp</TableCell>
                     <TableCell align="right" sx={headCell}>
@@ -834,12 +802,7 @@ export default function Escalations() {
                         />
                       </TableCell>
                       <TableCell sx={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 700, color: COLORS.warning }}>
-                        {(() => {
-                          const totalMinutes = Math.round(v.overdueSeconds / 60);
-                          const h = Math.floor(totalMinutes / 60);
-                          const m = totalMinutes % 60;
-                          return h > 0 ? `${h}h ${m}m overdue` : `${m}m overdue`;
-                        })()}
+                        {v.overdueSeconds < 60 ? 'Just overdue' : `${formatSpan(v.overdueSeconds * 1000)} overdue`}
                       </TableCell>
                       <TableCell sx={{ fontSize: 13, color: COLORS.onSurface }}>{v.technician?.name ?? 'Unassigned'}</TableCell>
                       <TableCell sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>{fmtDateTime(v.createdAt)}</TableCell>

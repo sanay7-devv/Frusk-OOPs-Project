@@ -31,6 +31,7 @@ const getSnapshot = () => tick;
 function fmt(ms: number) {
   const s = Math.floor(Math.abs(ms) / 1000);
   const m = Math.floor(s / 60);
+  if (m >= 1440) return `${Math.floor(m / 1440)}d ${Math.floor((m % 1440) / 60)}h`;
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m ${s % 60}s`;
 }
 

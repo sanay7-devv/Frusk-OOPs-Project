@@ -1,3 +1,4 @@
+import { humanizeEnum } from '../../utils/format';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -311,7 +312,16 @@ export function MarkDuplicateDialog({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <Alert severity="warning">This closes {incident.code} as a duplicate of the incident you pick. It cannot be undone from here.</Alert>
           {similar.length === 0 ? (
-            <Alert severity="info">No similar incident was found, so there is nothing to link to.</Alert>
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              label="Original incident ID"
+              helperText="No similar incident was found. Enter the ID of the original."
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              sx={fieldSx}
+            />
           ) : (
             <TextField
               select
@@ -324,7 +334,7 @@ export function MarkDuplicateDialog({
             >
               {similar.map((s) => (
                 <MenuItem key={s.incidentId} value={String(s.incidentId)}>
-                  {s.code} · {Math.round(s.similarity * 100)}% · {s.match} · {s.title}
+                  {s.code} · {Math.round(s.similarity * 100)}% · {humanizeEnum(s.match)} · {s.title}
                 </MenuItem>
               ))}
             </TextField>

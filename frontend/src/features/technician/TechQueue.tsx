@@ -314,7 +314,7 @@ export default function TechQueue() {
     setActionInProgressId(id);
     try {
       const res = await startIncident(id);
-      toast(`Work started on ${res?.code || `#${id}`}. Status moved to IN_PROGRESS.`, 'success');
+      toast(`Work started on ${res?.code || `#${id}`}. Now in progress.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['tech-my-queue'] });
       queryClient.invalidateQueries({ queryKey: ['tech-my-workload'] });
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
@@ -485,7 +485,7 @@ export default function TechQueue() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap', mb: 0.5 }}>
             <Typography component="h1" variant="h5" sx={{ fontWeight: 800, color: tokens.onSurface, letterSpacing: '-0.01em', fontFamily: 'Sora, sans-serif' }}>
-              Technician Operational Work Queue
+              My queue
             </Typography>
             <Box
               sx={{
@@ -497,7 +497,7 @@ export default function TechQueue() {
                 borderRadius: 3,
                 bgcolor: queueError ? alpha(tokens.danger, 0.15) : alpha(tokens.primary, 0.15),
                 color: queueError ? slaStateColor.VIOLATED : tokens.primary,
-                border: `1px solid ${queueError ? '${alpha(tokens.danger, 0.3)}' : '${alpha(tokens.primary, 0.3)}'}`,
+                border: `1px solid ${queueError ? alpha(tokens.danger, 0.3) : alpha(tokens.primary, 0.3)}`,
                 fontSize: 12.5,
                 fontWeight: 700,
                 fontFamily: 'JetBrains Mono, monospace',
@@ -513,7 +513,7 @@ export default function TechQueue() {
                   animation: 'pulse 1.5s infinite',
                 }}
               />
-              {queueError ? 'Offline / Sync error' : 'Live backend · 10s sync'}
+              {queueError ? 'Offline, retrying' : 'Live'}
             </Box>
             <Chip
               label="⌘K Filter"
@@ -535,7 +535,7 @@ export default function TechQueue() {
             </IconButton>
           </Box>
           <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
-            Live SRE incident triage cockpit · Logged in as {user?.name || 'Technician'} ({user?.email})
+            Signed in as {user?.name || 'Technician'}
           </Typography>
         </Box>
 
@@ -581,6 +581,8 @@ export default function TechQueue() {
               border: `1px solid ${tokens.outlineVariant}`,
               fontSize: 12.5,
               fontWeight: 700,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
               textTransform: 'none',
               borderRadius: 1.5,
               px: 1.5,
@@ -651,12 +653,12 @@ export default function TechQueue() {
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: capacityPercent >= capacityWarnAt ? slaStateColor.VIOLATED : tokens.secondary, fontWeight: 700, fontSize: 12 }}>
                     {capacityPercent >= capacityWarnAt && <WarningIcon sx={{ fontSize: 15 }} />}
-                    <span>{activeLoad} of {maxQuota} weighted load ({capacityPercent}% Capacity)</span>
+                    <span>{activeLoad} of {maxQuota} weighted load ({capacityPercent}%)</span>
                   </Box>
                 </Box>
               </Box>
               <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant, fontWeight: 600 }}>
-                Quota: {maxQuota} Max
+                Limit: {maxQuota}
               </Typography>
             </Box>
 
@@ -719,9 +721,6 @@ export default function TechQueue() {
                     {needsAckCount > 0 ? 'Acknowledge' : 'Clear'}
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.onSurfaceVariant }}>
-                  Assigned to you
-                </Typography>
               </Paper>
             </Grid>
 
@@ -824,9 +823,6 @@ export default function TechQueue() {
                     Paused
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.secondary, fontWeight: 600 }}>
-                  SLA clock frozen
-                </Typography>
               </Paper>
             </Grid>
           </Grid>
@@ -854,7 +850,7 @@ export default function TechQueue() {
                 { id: 'NEEDS_ACK', label: 'Needs Acknowledgment', count: needsAckCount, bg: slaStateColor.VIOLATED, text: tokens.onSurface },
                 { id: 'AT_RISK', label: 'At-Risk SLAs', count: atRiskCount, bg: alpha(tokens.danger, 0.2), text: slaStateColor.VIOLATED },
                 { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, bg: alpha(tokens.primary, 0.2), text: tokens.primary },
-                { id: 'PENDING_INFO', label: 'Pending Info (Paused)', count: pendingInfoCount, bg: alpha(tokens.secondary, 0.2), text: tokens.secondary },
+                { id: 'PENDING_INFO', label: 'Waiting for requester', count: pendingInfoCount, bg: alpha(tokens.secondary, 0.2), text: tokens.secondary },
               ] as const
             ).map((tab) => {
               const isSelected = filterTab === tab.id;
@@ -1137,6 +1133,7 @@ export default function TechQueue() {
                           fontFamily: 'JetBrains Mono, monospace',
                           fontSize: 13,
                           fontWeight: 800,
+                          whiteSpace: 'nowrap',
                           color: tokens.secondary,
                           cursor: 'pointer',
                           '&:hover': { textDecoration: 'underline' },
@@ -1393,10 +1390,10 @@ export default function TechQueue() {
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: tokens.secondary }}>
-                  SRE INTERNAL WORKBENCH // {noteModalIncident.code}
+                  {noteModalIncident.code}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
-                  Append Investigation Note
+                  Add note
                 </Typography>
               </Box>
               <IconButton aria-label="Close note dialog" onClick={() => setNoteModalIncident(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
@@ -1431,7 +1428,7 @@ export default function TechQueue() {
                 disabled={!noteText.trim()}
                 sx={{ background: BRAND_GRADIENT, textTransform: 'none', fontWeight: 700 }}
               >
-                Save to Incident Timeline
+                Save note
               </Button>
             </DialogActions>
           </>
@@ -1451,7 +1448,7 @@ export default function TechQueue() {
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5, fontWeight: 700, color: tokens.secondary }}>
-                  CLARIFICATION REQUEST // {requestInfoIncident.code}
+                  Ask the requester about {requestInfoIncident.code}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: tokens.onSurface, fontSize: 16, fontFamily: 'Sora, sans-serif' }}>
                   Request Information from Reporter
