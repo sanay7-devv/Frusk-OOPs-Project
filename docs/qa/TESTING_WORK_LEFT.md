@@ -2,7 +2,7 @@
 
 ## Handoff update — 2026-11-21
 
-The Task 3 baseline is merged into `main`. Its latest CI run on 2026-11-21 (commit `e762349`) passed all six jobs with 59 backend tests (57 passed, 2 demo-only tests skipped) and 37 frontend tests across 9 files. The follow-up work in draft [PR #83](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/83) passed all six jobs on its code commit `2f7b4e9` (run 44915764035) and again on the latest docs commit `afafedc` (run 44917367587). The latest run recorded 62 backend tests (60 passed and 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62), 45 frontend tests across 9 files, 71 Postman requests / 149 assertions, and 30 security checks. `TEST_REPORT.md` and `test_cases.csv` point to the latest run. The seven requested severity/area labels are now created. GitHub shows no project board linked and no projects available to link; the branch settings page is unavailable to this collaborator account. PR #83 still needs teammate review and merge.
+The Task 3 follow-up was merged into `main` through [PR #83](https://github.com/sanay7-devv/Frusk-OOPs-Project/pull/83) on 2026-11-21 (merge commit `cdaddef`). The latest pre-merge CI run (44917367587) passed all six jobs: 62 backend tests (60 passed and 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62), 45 frontend tests across 9 files, 71 Postman requests / 149 assertions, and 30 security checks. The seven requested severity/area labels are now created. GitHub shows no project board linked and no projects available to link; the branch settings page is unavailable to this collaborator account. Post-merge CI is running.
 
 - **R11: Done, 12 of 12 classes.** `IncidentStateTest` covers every status, its legal actions, invalid moves, successful lifecycle moves and alternate actions. `ExceptionMappingTest` checks all 22 `ItsmException` subclasses. `GlobalExceptionHandlerTest` checks the standard field-validation response. The PR CI run passes these checks.
 - **Backend count:** the PR CI run reports 62 tests: 60 passed and 2 demo-only `SeedCompatibilityTest` checks skipped in the normal backend job. Both dev and demo seed jobs run all 62.
@@ -19,9 +19,8 @@ This list replaces the 2026-11-19 table below, which is kept as history.
 | 3 | R5 demo | The five-segment checklist and recording-day preflight are ready. Rehearse all five segments, fill the dated dry-run log, and record. | Testing, whole team |
 | 4 | R3 browser check | On the disposable local stack, confirm `<script>` in an incident title, description and comment is displayed as text and does not execute. API checks alone do not prove browser rendering. | Testing |
 | 5 | R8 repo settings | **Done:** created all seven `severity:*` and `area:*` labels. GitHub shows no project board linked and no projects available to link; the repository owner/team needs to create one if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
-| 6 | PR #83 review | Teammate review and merge. Its six CI jobs are green; it remains a draft as requested. | Team |
 
-Done: R1, R2, R4 and R9 are merged. R8 labels are created; no project is available to link. R10 and R11 follow-up tests are complete on PR #83 and await review. R6, A7, R5 rehearsal and R3 browser evidence require a real test environment or team members; branch-protection settings need the repository owner.
+Done: R1, R2, R4 and R9 are merged. R8 labels are created; no project is available to link. R10 and R11 follow-up tests are merged via PR #83. R6, A7, R5 rehearsal and R3 browser evidence require a real test environment or team members; branch-protection settings need the repository owner.
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
