@@ -11,7 +11,7 @@ PRs #83 and #84 merged the earlier Task 3 tests and documentation. PR #85 was me
 
 - **R11: Done, 12 of 12 classes.** `IncidentStateTest` covers every status, its legal actions, invalid moves, successful lifecycle moves and alternate actions. `ExceptionMappingTest` checks all 22 `ItsmException` subclasses. `GlobalExceptionHandlerTest` checks the standard field-validation response. The PR CI run passes these checks.
 - **Backend count:** the PR CI run reports 62 tests: 60 passed and 2 demo-only `SeedCompatibilityTest` checks skipped in the normal backend job. Both dev and demo seed jobs run all 62.
-- **R10 review and inventory: Done on PR #83.** 45 frontend tests in 9 files pass; the production build and type check pass. Coverage includes audit verification errors, MFA enable/disable and field errors, password reset, problem tabs, report charts, priority/filter interactions, SLA violations and SLA colors. The handbook's login-form validation and rendered filter-bar component checks are still missing and belong to the Frontend Developer. The build warns that the main JS chunk is about 1.9 MB before gzip.
+- **R10 frontend tests: Done on PR #83.** 45 frontend tests in 9 files pass; the production build and type check pass. Coverage includes audit verification errors, MFA enable/disable and field errors, password reset, problem tabs, report charts, priority/filter interactions, SLA violations and SLA colors. Login-form validation (empty and malformed credentials are rejected before the API call) and the rendered incident-filter interaction (selecting priority updates the URL and server request) are also covered. The build warns that the main JS chunk is about 1.9 MB before gzip.
 
 ### What is left now (2026-11-21), in order
 
@@ -22,10 +22,9 @@ This list replaces the 2026-11-19 table below, which is kept as history.
 | 1 | R6 reset time, fresh clone | Time the demo reset on the recording laptop and record a fresh-clone setup on a second machine; then replace "unmeasured" in `deploy/README.md`. | Testing; second-machine owner |
 | 2 | A7 data growth | Stage-0 load results are recorded. Still measure at 10,000 and 100,000 incidents and compare the proposed indexes with `EXPLAIN (ANALYZE)` on a disposable database. | Testing with Backend Lead |
 | 3 | R5 demo rehearsal | The five-segment checklist and recording-day preflight are ready. Rehearse all five segments, fill the dated dry-run log, and record the final demo. | Testing, whole team |
-| 4 | R10 frontend component gaps | The current nine-file, 45-test inventory is in `TEST_REPORT.md`. The handbook's login-form validation and rendered filter-bar component checks are still absent; the Frontend Developer owns those tests. | Frontend Developer |
-| 5 | R8 repo settings | **Labels done:** all seven `severity:*` and `area:*` labels exist. The project board is not linked; the repository owner/team needs to create or link it if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
+| 4 | R8 repo settings | **Labels done:** all seven `severity:*` and `area:*` labels exist. The project board is not linked; the repository owner/team needs to create or link it if required. Branch protection settings return 404 for this collaborator account; the repository owner must verify or enable them. | Team; owner for protection |
 
-Done: R1–R4 and R9 are complete; R10 review/inventory and all R11 unit-test classes are in PR #83; R3 browser evidence and stage-0 A7 measurements are recorded. R5 rehearsal and R6 laptop measurements still need people and hardware. R10's remaining component tests belong to the Frontend Developer. A7's 10k/100k growth comparison and R8's board/branch-protection settings remain with the team or repository owner.
+Done: R1–R4 and R9 are complete; R10 frontend tests (45 across 9 files, including login validation and rendered priority-filter interaction) and all R11 unit-test classes are in PR #83. R3 browser evidence and stage-0 A7 measurements are recorded. Remaining work is R5 demo rehearsal/final recording, R6 laptop and second-machine measurements, A7 10k/100k growth testing with the Backend Lead, and R8 board/branch-protection settings with the team/repository owner.
 
 ## Status on 2026-11-18 (checked against `main` at `2bd1c61`)
 
