@@ -345,7 +345,8 @@ export default function AppShell() {
                   sx={{ width: 28, height: 28, objectFit: 'contain' }}
                 />
               </Box>
-              <Box>
+              {/* Brand text hides on phones so the top bar fits 375 px. */}
+              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                 <Typography
                   variant="h6" component="div"
                   sx={{
@@ -483,6 +484,7 @@ export default function AppShell() {
                 })()}
                 <Typography
                   sx={{
+                    display: { xs: 'none', sm: 'block' },
                     fontSize: 13,
                     fontWeight: 600,
                     color: tokens.white,
@@ -694,8 +696,11 @@ export default function AppShell() {
             variant="outlined"
             size="small"
             onClick={signOut}
+            aria-label="Logout"
             startIcon={<LogoutIcon sx={{ fontSize: 15 }} />}
             sx={{
+              minWidth: { xs: 34, sm: 64 },
+              '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
               borderColor: alpha(tokens.white, 0.1),
               color: tokens.onSurfaceVariant,
               textTransform: 'none',
@@ -712,7 +717,7 @@ export default function AppShell() {
               },
             }}
           >
-            Logout
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Logout</Box>
           </Button>
         </Toolbar>
 

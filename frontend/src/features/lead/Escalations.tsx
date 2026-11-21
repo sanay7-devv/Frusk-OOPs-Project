@@ -40,7 +40,7 @@ import {
   Upgrade as UpgradeIcon,
 } from '@mui/icons-material';
 
-import LinkIcon from '@mui/icons-material/Link';
+import { Link as LinkIcon } from '@mui/icons-material';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../auth/AuthContext';
 import { listIncidents, getIncident, getSlaViolations } from '../../api/incidents';

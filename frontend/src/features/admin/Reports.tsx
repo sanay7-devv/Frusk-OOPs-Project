@@ -124,8 +124,8 @@ export default function Reports() {
       <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 14, mb: 3 }}>Incident volume, SLA results and team workload for the chosen dates.</Typography>
 
       <Paper sx={{ p: 2, mb: 3, bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>
-        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems={{ lg: 'center' }} justifyContent="space-between">
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} useFlexGap flexWrap="wrap" alignItems={{ lg: 'center' }} justifyContent="space-between">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} useFlexGap flexWrap="wrap" alignItems={{ sm: 'center' }}>
             <ToggleButtonGroup size="small" exclusive value={preset} onChange={(_, v) => v !== null && (v === 'custom' ? setPreset('custom') : pickPreset(v))}>
               <ToggleButton value={7}>Last 7 days</ToggleButton>
               <ToggleButton value={30}>Last 30 days</ToggleButton>
@@ -138,7 +138,7 @@ export default function Reports() {
               onChange={(e) => { setTo(e.target.value); setPreset('custom'); }} error={rangeInvalid}
               helperText={rangeInvalid ? 'Pick a start date that is not after the end date' : undefined} />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap flexWrap="wrap" alignItems={{ sm: 'center' }}>
             <TextField select size="small" label="Report to download" value={exportType} sx={{ minWidth: 240 }}
               onChange={(e) => setExportType(e.target.value as ExportType)}>
               {EXPORT_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}

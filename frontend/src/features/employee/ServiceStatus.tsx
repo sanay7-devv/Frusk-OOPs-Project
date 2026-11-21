@@ -289,7 +289,8 @@ export default function ServiceStatus() {
                       </Typography>
                     )}
 
-                    {svc.slaCompliancePercent !== undefined && (
+                    {/* null when no incident has been judged yet: show nothing rather than 0%. */}
+                    {svc.slaCompliancePercent != null && (
                       <Box sx={{ mb: 2, mt: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                           <Typography sx={{ fontSize: '0.78rem', color: tokens.onSurfaceVariant }}>
