@@ -27,6 +27,11 @@ class GrowthFixtureTests(unittest.TestCase):
             sql = generate(target)
             self.assertEqual(sql.count("DO $$"), 3)
             self.assertIn("A7-growth-000010", sql)
+            self.assertIn("incident_code_number := nextval('incident_code_seq')", sql)
+            self.assertIn(
+                "lpad(incident_code_number::text, greatest(5, length(incident_code_number::text)), '0')",
+                sql,
+            )
 
 
 if __name__ == "__main__":
