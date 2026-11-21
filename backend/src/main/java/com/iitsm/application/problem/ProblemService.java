@@ -140,12 +140,20 @@ public class ProblemService {
      */
     @Transactional(readOnly = true)
     public List<KnownOutageView> knownOutages(AuthenticatedUser caller, Long serviceId) {
-        ItService service = services.findById(serviceId).orElseThrow(() -> new ServiceNotFoundException(serviceId));
-        ServiceGraph graph = ServiceGraph.fromServices(services.findByActiveTrueOrderByNameAsc());
+        List<ItService> active = services.findByActiveTrueOrderByNameAsc();
         Set<Long> watched = new LinkedHashSet<>();
-        watched.add(service.getId());
-        if (graph.contains(service.getId())) {
-            graph.upstreamOf(service.getId()).forEach(reach -> watched.add(reach.serviceId()));
+        if (serviceId == null) {
+            active.forEach(s -> watched.add(s.getId())); // no service given: outages on every service
+        } else {
+            ItService service = services.findById(serviceId).orElseThrow(() -> new ServiceNotFoundException(serviceId));
+            ServiceGraph graph = ServiceGraph.fromServices(active);
+            watched.add(service.getId());
+            if (graph.contains(service.getId())) {
+                graph.upstreamOf(service.getId()).forEach(reach -> watched.add(reach.serviceId()));
+            }
+        }
+        if (watched.isEmpty()) {
+            return List.of();
         }
         List<KnownOutageView> result = new ArrayList<>();
         for (ProblemRecord problem : problems.findOpenOnServices(watched)) {

@@ -1849,7 +1849,7 @@ The model call and the similarity read happen **before** the transaction, so no 
 | `POST /problems/{id}/resolve` `{rootCause, notes, steps, timeSpentMinutes}` | admin, team lead | "Resolve whole problem": one fix for every open incident, record RESOLVED |
 | `DELETE /problems/{id}/incidents/{incidentId}` | admin | ungroup, audited |
 | `GET /problems/{id}/root-cause` | admin, team lead | probable root cause and candidates from the service graph, with paths |
-| `GET /problems/known-outages?serviceId=` | any user | open outages on the service or on a service it depends on |
+| `GET /problems/known-outages?serviceId=` | any user | open outages on the service or on a service it depends on; `serviceId` is optional: without it, open outages on every service |
 | `POST /problems/{id}/join` | any user | one-click join (below) |
 | `GET /problems/recurring` | admin, team lead | E2 proposals |
 | `POST /intelligence/chat` | any user | A1 chatbot turn |

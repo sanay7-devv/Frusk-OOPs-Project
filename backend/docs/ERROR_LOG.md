@@ -481,3 +481,12 @@ Entry template:
 - Fix: averages only count rows with `resolved_at >= created_at`; new audit texts use `AuditText` ("3 d 2 h", "2026-11-15 16:29 UTC"); `atRisk` lists breached incidents first (DEC-122). Old audit rows are untouched (sealed, append-only).
 - Prevention: the frontend must label each count by what it counts.
 - Status: fixed
+
+### E-039: Known outages needed a serviceId; feedback on withdrawn incidents; vague capacity errors
+- Date: 2026-11-21
+- Area: problems, feedback, assignment
+- Symptom: employee Home and Service status called `GET /problems/known-outages` without `serviceId` and got 400 (no banner, no Join outage); `POST /incidents/{id}/feedback` returned 201 on a WITHDRAWN incident; auto-assign with everyone full said only "no technician is eligible"; a lead taking over at full load got "has reached the maximum workload".
+- Cause: `serviceId` was required; the feedback check only looked at the status (WITHDRAWN closes as CLOSED); messages did not say what was missing.
+- Fix: `serviceId` optional (all services when omitted; contract updated); feedback on a withdrawn incident is 409; auto-assign says "No technician has free capacity right now" when full technicians are the only reason (full technicians were already skipped by `EligibilityFilter`, the engine never picks one); overload errors say "You are at full capacity (10/10)" or "<name> is at full capacity (n/max)". The lead-over-capacity rule is unchanged (DEC-123 lists the options).
+- Prevention: the frontend 409 text for WORKLOAD_EXCEEDED ("That technician cannot take more work") should show the server message instead.
+- Status: fixed

@@ -11,6 +11,13 @@ public class TechnicianUnavailableException extends ItsmException {
         super("TECHNICIAN_UNAVAILABLE", 409, technicianName + " cannot take this incident: " + reason + ".");
     }
 
+    /** Automatic assignment was asked for and the only thing missing is free capacity. */
+    public static TechnicianUnavailableException noFreeCapacity() {
+        return new TechnicianUnavailableException(
+                "No technician has free capacity right now. Wait for someone to finish work, or raise a maximum load.",
+                true);
+    }
+
     private TechnicianUnavailableException(String message, boolean fullMessage) {
         super("TECHNICIAN_UNAVAILABLE", 409, message);
     }
