@@ -62,7 +62,7 @@ JWT access tokens are stateless and refresh tokens are in the database, so login
 
 Honest limit for the report: the system is built and demonstrated at stage 0, and this page is the written route to stage 2. Nothing here has been run on more than one instance.
 
-## 5. What the load test should measure (the Testing teammate's half of A7)
+## 5. Load-test measurements (the Testing teammate's half of A7)
 
 The reproducible CI harness is `deploy/task3_load_test.py`, run by `.github/workflows/task3-load-test.yml` against a disposable `demo` Compose stack. It uses synthetic demo accounts and records the UTC date, commit, concurrency, HTTP status counts, p50/p95 latency, throughput, incident counts and sampled backend CPU/memory in the `task3-load-test-evidence` artifact. Do not use this harness against a hosted or shared deployment. Copy successful run values into `docs/qa/TEST_REPORT.md` and this section.
 
@@ -78,7 +78,31 @@ The baseline run covers 10, 25 and 50 simultaneous create requests and reading/r
 
 The 300.8-second mixed profile completed 3,683 transactions: 2,607 reads/reports, 708 creates, and 368 create-and-withdraw lifecycles. All 4,051 HTTP requests succeeded. The configured mix was 70.78% reads/reports, 19.22% creates and 9.99% lifecycle transactions (rounding accounts for the 0.01% difference). The demo create limit was raised from 20 to 1,000 per minute only for this profile and restored to 20 afterward. Docker sampled the backend 43 times: CPU peaked at 316.54% (multi-core) and memory at 754.5 MiB, with no memory parse errors.
 
-These results measure only the seeded stage-0 dataset on a GitHub runner. They do not replace the separate 10,000/100,000-incident growth run or `EXPLAIN (ANALYZE)` index review below.
+The stage-0 results above use the seeded dataset. The separate A7 growth profile below measures the same read/report endpoints at 10,000 and 100,000 incidents and records five query plans before and after temporary indexes.
+
+### A7 data-growth evidence
+
+The dedicated disposable-stack profile [run 44932459781](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44932459781) passed on 2026-11-21 at commit `553306d`. It began with 212 seeded incidents, added 9,788 synthetic incidents to reach 10,000, then added 90,000 to reach exactly 100,000. Each endpoint was sampled 10 times at each stage; all 150 measured requests returned successfully. The experiment used a fresh GitHub Actions demo stack. Candidate indexes were applied only to that throwaway database; no migration was created.
+
+| Endpoint | 10k p50 / p95 (ms) | 100k before indexes p50 / p95 (ms) | 100k after indexes p50 / p95 (ms) |
+|---|---:|---:|---:|
+| Incident list | 31.59 / 49.35 | 60.68 / 89.47 | 67.34 / 71.98 |
+| Reports overview | 33.62 / 40.39 | 346.36 / 352.01 | 332.93 / 347.25 |
+| Report trends | 11.16 / 13.73 | 66.83 / 72.88 | 14.80 / 16.91 |
+| SLA compliance | 38.10 / 42.90 | 336.81 / 372.62 | 299.13 / 300.32 |
+| Audit search | 48.24 / 56.50 | 149.39 / 162.85 | 80.56 / 83.09 |
+
+The five `EXPLAIN (ANALYZE, BUFFERS)` probes changed as follows. Times are PostgreSQL execution time on the same disposable 100k dataset:
+
+| Query | Before index experiment | After temporary indexes |
+|---|---|---|
+| Audit action and date | Sequential scan; 57.316 ms | `idx_audit_records_created_at`; 10.266 ms |
+| Recent resolved incidents | Sequential scan; 37.258 ms | `idx_incidents_resolved_at`; 0.568 ms |
+| Open SLA candidates | `idx_incidents_status`; 0.126 ms | `idx_incidents_open`; 0.069 ms |
+| Escalation candidates | `idx_incidents_status`; 0.086 ms | `idx_incidents_escalation`; 0.017 ms |
+| Service open recent | `idx_incidents_status`; 0.139 ms | `idx_incidents_open`; 0.098 ms |
+
+These are directional CI measurements with 10 samples per endpoint. The trends and audit endpoints improved after the temporary indexes, while the report overview and SLA endpoints remained slower at 100k because the probes do not cover their full aggregate query paths. The Backend Lead should review the query plans before deciding whether any candidate index belongs in a permanent migration.
 
 | Scenario | Request mix | Record |
 |---|---|---|
@@ -86,8 +110,8 @@ These results measure only the seeded stage-0 dataset on a GitHub runner. They d
 | Reading | `GET /incidents` with filters and paging, `GET /incidents/{id}`, `GET /notifications/unread-count` | p95 latency at the same loads |
 | Reports | `GET /reports/overview`, `/trends`, `/sla-compliance` | p95 latency; whether it grows with data volume |
 | Mixed | 70% reads, 20% creates, 10% lifecycle actions for five minutes | Error rate, database connections in use, backend CPU and memory |
-| Data growth | The same reading scenario with the database filled to 10,000 and then 100,000 incidents (generate with `db/tools/generate_history_sql.py` or SQL) | How latency changes, and the `EXPLAIN (ANALYZE)` of the queries in section 2.2 before and after each index |
+| Data growth | 10 samples per read/report endpoint at 10,000 and 100,000 incidents on a fresh disposable stack | Recorded in the A7 evidence tables above, with five `EXPLAIN (ANALYZE, BUFFERS)` probes before and after temporary indexes |
 
 Rate limits (login 10 a minute per email, creation 20 a minute per user) will answer 429; use many users or raise `ratelimit.*` in `app_config` for the test and say so in the write-up.
 
-What the result should say in the report: the numbers for stage 0, which index changed which number, and which row of section 3 would be fixed first if a second instance were added.
+Interpretation: report trends and audit search improved in the 100k index experiment; report overview and SLA compliance remained slower and need query-path review. These are single-run disposable-CI measurements, not production capacity guarantees.
