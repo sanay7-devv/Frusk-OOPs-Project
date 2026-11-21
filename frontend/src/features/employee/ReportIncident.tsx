@@ -1409,7 +1409,7 @@ export default function ReportIncident() {
                   <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Target fix time:</Typography>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.success }}>
                     {createdIncident.resolutionDue
-                      ? new Date(createdIncident.resolutionDue).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      ? new Date(createdIncident.resolutionDue).toLocaleString([], { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
                       : 'Set by the service level'}
                   </Typography>
                 </Box>

@@ -788,7 +788,7 @@ export default function EmployeeIncidentDetail() {
                       People affected
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: COLORS.secondary, mt: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>
-                      {incident.affectedUsers ?? 0}
+                      {incident.affectedUsers ?? 0} {(incident.affectedUsers ?? 0) === 1 ? 'person' : 'people'}
                     </Typography>
                   </Box>
                 </Grid>

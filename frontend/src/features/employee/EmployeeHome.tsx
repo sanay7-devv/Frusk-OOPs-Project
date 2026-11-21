@@ -622,8 +622,11 @@ export default function EmployeeHome() {
                       <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.white }}>
                         {svc.name}
                       </Typography>
+                      {isHealthy ? (
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: tokens.success }} aria-label="Working" />
+                      ) : (
                       <Chip
-                        label={svc.status}
+                        label={isDegraded ? 'Slow or partly down' : 'Down'}
                         size="small"
                         sx={{
                           bgcolor: badgeBg,
@@ -635,9 +638,10 @@ export default function EmployeeHome() {
                           height: 19,
                         }}
                       />
+                      )}
                     </Box>
-                    {svc.reason && (
-                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, fontStyle: 'italic' }}>
+                    {!isHealthy && svc.reason && (
+                      <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>
                         {svc.reason}
                       </Typography>
                     )}
@@ -651,57 +655,8 @@ export default function EmployeeHome() {
 
       {/* 5. COMMAND BENTO GRID: Action Launchpad & Search */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        {/* Quick Search */}
-        <Grid item xs={12} lg={8}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              border: `1px solid ${tokens.outlineVariant}`,
-              bgcolor: tokens.paper,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              boxShadow: `0 8px 24px ${alpha(tokens.black, 0.35)}`,
-            }}
-          >
-            <Box>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight, textTransform: 'none', letterSpacing: 0, mb: 0.5 }}>
-                Search
-              </Typography>
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white, mb: 2 }}>
-                Search your reports
-              </Typography>
-
-              <TextField
-                fullWidth
-                size="small"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search by code, title or service"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tokens.textDisabled, fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
-                  borderRadius: '10px',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: alpha(tokens.white, 0.1) },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: alpha(tokens.white, 0.22) },
-                  mb: 0.5,
-                }}
-              />
-            </Box>
-          </Paper>
-        </Grid>
-
         {/* Incident Desk CTA Card */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12}>
           <Paper
             elevation={0}
             sx={{
