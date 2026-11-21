@@ -192,11 +192,6 @@ jobs:
           mkdir -p /tmp/iitsm-playwright
           npm install --prefix /tmp/iitsm-playwright --no-save --no-package-lock playwright@1.65.0
           /tmp/iitsm-playwright/node_modules/.bin/playwright install --with-deps chromium
-      - name: Verify incident text and comments render safely in Chromium
-        env:
-          NODE_PATH: /tmp/iitsm-playwright/node_modules
-          PLAYWRIGHT_BROWSERS_PATH: /tmp/iitsm-playwright/browsers
-        run: node deploy/browser_xss_check.cjs
       - name: Snapshot and restore round trip
         run: |
           bash db/tools/snapshot.sh
@@ -213,6 +208,11 @@ jobs:
         run: python3 deploy/security_checks.py
       - name: Verify demo audit tamper detection and restoration
         run: python3 deploy/check_audit_tamper.py
+      - name: Verify incident text and comments render safely in Chromium
+        env:
+          NODE_PATH: /tmp/iitsm-playwright/node_modules
+          PLAYWRIGHT_BROWSERS_PATH: /tmp/iitsm-playwright/browsers
+        run: node deploy/browser_xss_check.cjs
       - name: Save stack logs
         if: always()
         run: |
