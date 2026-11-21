@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from '@mui/material';
 import { assignIncident } from '../../../api/incidents';
-import { listTechnicians, reassignIncident } from '../../../api/technicians';
+import { reassignIncident } from '../../../api/technicians';
+import { CandidatePicker } from '../../lead/shared/TeamComponents';
 import type { IncidentSummary } from '../../../api/types';
 import { useToast } from '../../../components/Toast';
 import { tokens } from '../../../theme/theme';
-import { apiErrorMessage } from '../../../utils/errors';
 import { failureMessage, isConflict } from '../adminErrors';
 
 /** Assign (no assignee yet: POST /assign) or reassign (POST /reassign, reason of 10 to 1000 characters). */
@@ -16,7 +16,6 @@ export default function AssignDialog({ incident, onClose }: { incident: Incident
   const [techId, setTechId] = useState<number | ''>('');
   const [reason, setReason] = useState('');
   const reassigning = !!incident?.assignee;
-  const techs = useQuery({ queryKey: ['technicians-list'], queryFn: () => listTechnicians(), enabled: !!incident });
 
   useEffect(() => {
     setTechId('');
@@ -46,28 +45,19 @@ export default function AssignDialog({ incident, onClose }: { incident: Incident
   const valid = techId !== '' && reasonOk;
 
   return (
-    <Dialog open={!!incident} onClose={save.isPending ? undefined : onClose} fullWidth maxWidth="xs"
+    <Dialog open={!!incident} onClose={save.isPending ? undefined : onClose} fullWidth maxWidth="sm"
       PaperProps={{ sx: { bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' } }}>
       <DialogTitle>{reassigning ? 'Reassign' : 'Assign'} {incident?.code}</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
+        <Stack spacing={2} sx={{ pt: 1, maxHeight: 460, overflowY: 'auto', pr: 0.5 }}>
           {save.isError && <Alert severity="error">{failureMessage(save.error)}</Alert>}
-          {techs.isError && <Alert severity="error">{apiErrorMessage(techs.error)}</Alert>}
-          <TextField select size="small" fullWidth label="Technician" value={techId} disabled={save.isPending || techs.isLoading}
-            onChange={(e) => setTechId(Number(e.target.value))}>
-            {(techs.data ?? []).filter((t) => t.id !== incident?.assignee?.id).map((t) => (
-              <MenuItem key={t.id} value={t.id}>
-                <Box component="span">{t.name}</Box>
-                <Box component="span" sx={{ ml: 1, fontSize: 12, color: tokens.onSurfaceVariant }}>
-                  {t.currentLoad} of {t.maxLoad}, {t.availability.replace(/_/g, ' ').toLowerCase()}
-                </Box>
-              </MenuItem>
-            ))}
-          </TextField>
+          {incident && (
+            <CandidatePicker incidentId={incident.id} assigneeId={incident.assignee?.id} selectedId={techId === '' ? null : techId} onSelect={setTechId} />
+          )}
           {reassigning && (
             <TextField size="small" fullWidth multiline minRows={2} label="Reason" value={reason} disabled={save.isPending}
               onChange={(e) => setReason(e.target.value)} error={reason.length > 0 && !reasonOk}
-              helperText={`At least 10 characters (${reason.trim().length} so far). Currently with ${incident?.assignee?.name}.`} />
+              helperText={`At least 10 characters (${reason.trim().length} so far)`} />
           )}
         </Stack>
       </DialogContent>
