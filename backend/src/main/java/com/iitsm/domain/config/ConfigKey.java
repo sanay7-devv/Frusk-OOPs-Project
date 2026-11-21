@@ -174,7 +174,7 @@ public enum ConfigKey {
     AUTH_PASSWORD_RESET_MINUTES("auth.password.reset.minutes", "30",
             "How long a password reset link works, in minutes", Type.INTEGER, "5", "1440"),
 
-    AUTH_GOOGLE_AUTOREGISTER("auth.google.autoregister", "false",
+    AUTH_GOOGLE_AUTOREGISTER("auth.google.autoregister", "true",
             "Whether an unknown email signing in with Google gets a new EMPLOYEE account (false: only existing accounts link)",
             Type.CHOICE, "true", "false"),
 

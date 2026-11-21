@@ -2160,7 +2160,7 @@ Every failure writes a `LOGIN_FAILED` audit entry ("Failed Google login: ...") i
 | Item | Value |
 |---|---|
 | Endpoint | `POST /api/v1/auth/google` `{ "idToken": "..." }`, public, returns `AuthResponse`; errors `TOKEN_INVALID` 401, `INVALID_CREDENTIALS` 401, `ACCOUNT_LOCKED` 423, `SERVICE_UNAVAILABLE` 503 |
-| `app_config` key | `auth.google.autoregister` = `false` (default) or `true`: whether an unknown verified email gets a new EMPLOYEE account |
+| `app_config` key | `auth.google.autoregister` = `true` (default since DEC-124) or `false`: whether an unknown verified email gets a new EMPLOYEE account |
 | Environment | `GOOGLE_CLIENT_ID` (the OAuth client id, same one the frontend button uses), `GOOGLE_VERIFIER` (`google` default, `fake` for offline) |
 | Real key source | `https://www.googleapis.com/oauth2/v3/certs`, cached by `Cache-Control: max-age`, early refetch on an unknown `kid` (at most once a minute) |
 | Schema | none: `users.password_hash` is already nullable and `users.google_sub` already unique (D-001) |
@@ -2723,6 +2723,7 @@ Full reasoning, alternatives and likely cross-questions (for the PDF report and 
 | 2026-11-18 | CORS now exposes `Retry-After` beside `X-Request-Id` (section 5, DEC-119), so the frontend can show the wait time on 429 and 503. |
 | 2026-11-20 | DEC-121: `IncidentDetail` gains `reporterContact` (email, department, location; staff on the incident only, else null) and `slaCalendar` (ALWAYS or BUSINESS_HOURS with zone, open, close, days); `WorkloadView` gains `capacityWarnPercent` from the new `app_config` key `workload.capacity.warn.percent` (default 80). Contract updated first. |
 | 2026-11-20 | Sanay's `fronted-version-final` merged with lead fixes (DEC-120): `CORS_ORIGIN` takes a comma-separated list for REST and `/ws` (the WebSocket half was added in review: it still read the whole string as one origin); `StringToInstantConverter` lets `Instant` query parameters (`from`, `to`, `createdFrom`, ...) also take a plain date `YYYY-MM-DD` (start of that day, UTC). The dashboard and ticket export now send full ISO date-times, which removed the 400s on the admin dashboard. |
+| 2026-11-21 | DEC-124: `auth.google.autoregister` now defaults to `true` (an unknown verified Google email gets an EMPLOYEE account); an administrator can still switch it off in `/admin/config` |
 
 ---
 
