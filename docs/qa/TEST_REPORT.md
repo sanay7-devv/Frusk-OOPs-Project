@@ -1,21 +1,21 @@
 # Task 3 test report
 
-Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af9eb870809`, [successful CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624315622). The [Task 3 follow-up run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) on 2026-11-15 passed all six jobs, including the expanded Postman and security checks, at commit `3bc8ab6`. The [latest main run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44892607485) on 2026-11-21 passed all six jobs at commit `e7623495292e3dcb91858befe0e5862be57a35ce`; it reran the T01–T26 suite after the latest merges. The [original PR integration run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624733027) also passed before PR #12 was merged.
+Baseline T01–T26 evidence: 2026-11-14, commit `86096c49aea8ec71cebe4317bbb38af9eb870809`, [successful CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624315622). The [Task 3 follow-up run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43736234225) on 2026-11-15 passed all six jobs, including the expanded Postman and security checks, at commit `3bc8ab6`. The [latest main baseline run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44892607485) on 2026-11-21 passed all six jobs at commit `e7623495292e3dcb91858befe0e5862be57a35ce`. The newer [PR #83 candidate run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44915764035) also passed all six jobs at commit `2f7b4e9d62296109aad1f21a178a289f62db63d2` and reran T01–T26. This PR is still a draft awaiting team review; it has not been merged. The [original PR integration run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/43624733027) also passed before PR #12 was merged.
 
 ## Result
 
 | Measure | Recorded result |
 |---|---:|
-| Handbook cases T01–T26 | 26 passed, 0 failed in the latest main run |
-| Backend tests | 59 discovered; 57 passed, 0 failed; 2 demo-only checks skipped in the normal backend job |
-| Frontend tests | 37 passed across 9 files |
+| Handbook cases T01–T26 | 26 passed, 0 failed in the successful PR #83 CI run |
+| Backend tests | PR #83: 62 discovered; 60 passed, 0 failed; 2 demo-only checks skipped in the normal backend job; both seed jobs ran all 62 |
+| Frontend tests | PR #83: 45 passed across 9 files |
 | Seed generator tests | 7 passed |
 | API smoke requests | 40 passed |
-| Postman collection (follow-up) | 71 requests, 149 assertions passed |
-| Security dry run (follow-up) | 30 checks passed |
+| Postman collection | PR #83: 71 requests, 149 assertions passed |
+| Security dry run | PR #83: 30 checks passed |
 | Open blocker bugs at this snapshot | 0 recorded |
 
-The exact expected and observed result for each handbook case is in [test_cases.csv](test_cases.csv). Each row now points to the 2026-11-21 main run and commit. The backend test job and both seed jobs uploaded Surefire reports; the demo job uploaded API, Postman and security evidence. A bug about stale frontend login selectors, issue #11, was fixed by PR #16 and has since been closed.
+The exact expected and observed result for each handbook case is in [test_cases.csv](test_cases.csv). Each row points to the successful 2026-11-21 PR #83 run and tested commit. The backend test job and both seed jobs uploaded Surefire reports; the demo job uploaded API, Postman and security evidence. A bug about stale frontend login selectors, issue #11, was fixed by PR #16 and has since been closed.
 
 ## Coverage and limits
 
@@ -25,24 +25,24 @@ The handbook's T16 example gives duplicate/related similarity thresholds of 0.80
 
 ## Security checks for the report
 
-The automated requests below ran against the disposable demo stack on 2026-11-21 at commit `e762349`. The [latest main CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44892607485) contains `demo-stack-evidence/iitsm-security-checks.json`; T10 and T16 also have `iitsm-handbook-contracts.json`. These are API results. Browser rendering of script text is a separate recording-day check.
+The automated requests below ran against the disposable demo stack on 2026-11-21 at commit `2f7b4e9`. The [successful PR #83 CI run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44915764035) contains `demo-stack-evidence/iitsm-security-checks.json`; T10 and T16 also have `iitsm-handbook-contracts.json`. These are API results. Browser rendering of script text is a separate recording-day check.
 
 | Check | Request and input | Observed result | Date and evidence |
 |---|---|---|---|
-| Cross-user incident access | Employee2 `GET /incidents/{employee1IncidentId}`; employee2 `POST /incidents/{id}/acknowledge` | 404 `INCIDENT_NOT_FOUND`; 403 `UNAUTHORIZED_OPERATION` | 2026-11-21, security JSON; T18 |
-| Admin authorization and audit | Employee1 `GET /admin/users`; admin `GET /audit?actorId={employee1Id}&action=ACCESS_DENIED` | 403 and a recorded `ACCESS_DENIED` row | 2026-11-21, security JSON; T17 |
-| Invalid and expired tokens | `GET /auth/me` with garbage token; advance demo clock 16 minutes, then use old employee token | 401 `TOKEN_INVALID`; 401 `TOKEN_EXPIRED` | 2026-11-21, security JSON; T19 |
-| Script text as data | `POST /incidents` with `<script>alert(1)</script>` in title and description; `POST /incidents/{id}/comments` with the same text | Accepted and returned unchanged as JSON data. Browser display is **not yet verified**. | 2026-11-21, security JSON; browser check remains open |
-| Input limits and upload | Title 201 chars, description 5001, comment 4001, password over 72 UTF-8 bytes; 6 MB upload and executable | 400 `VALIDATION_FAILED` with matching field errors; invalid uploads rejected | 2026-11-21, security JSON; T10 contract JSON |
-| Lockout and rate limiting | Five wrong passwords, then correct password; repeated login for one address/email | 423 `ACCOUNT_LOCKED`; 429 `RATE_LIMITED` with `Retry-After` | 2026-11-21, security JSON; T20 |
+| Cross-user incident access | Employee2 `GET /incidents/{employee1IncidentId}`; employee2 `POST /incidents/{id}/acknowledge` | 404 `INCIDENT_NOT_FOUND`; 403 `UNAUTHORIZED_OPERATION` | 2026-11-21, run 44915764035 security JSON; T18 |
+| Admin authorization and audit | Employee1 `GET /admin/users`; admin `GET /audit?actorId={employee1Id}&action=ACCESS_DENIED` | 403 and a recorded `ACCESS_DENIED` row | 2026-11-21, run 44915764035 security JSON; T17 |
+| Invalid and expired tokens | `GET /auth/me` with garbage token; advance demo clock 16 minutes, then use old employee token | 401 `TOKEN_INVALID`; 401 `TOKEN_EXPIRED` | 2026-11-21, run 44915764035 security JSON; T19 |
+| Script text as data | `POST /incidents` with `<script>alert(1)</script>` in title and description; `POST /incidents/{id}/comments` with the same text | Accepted and returned unchanged as JSON data. Browser display is **not yet verified**. | 2026-11-21, run 44915764035 security JSON; browser check remains open |
+| Input limits and upload | Title 201 chars, description 5001, comment 4001, password over 72 UTF-8 bytes; 6 MB upload and executable | 400 `VALIDATION_FAILED` with matching field errors; invalid uploads rejected | 2026-11-21, run 44915764035 security JSON; T10 contract JSON |
+| Lockout and rate limiting | Five wrong passwords, then correct password; repeated login for one address/email | 423 `ACCOUNT_LOCKED`; 429 `RATE_LIMITED` with `Retry-After` | 2026-11-21, run 44915764035 security JSON; T20 |
 
 ## Case evidence index
 
-The 26 rows in [test_cases.csv](test_cases.csv) give the scenario, expected and actual result, date, commit and current CI run. For T01–T04, T08–T09, T11–T15 and T17–T26, inspect the `HandbookIntegrationTest` Surefire XML in the backend test artifact of the [2026-11-21 main run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44892607485). T05–T07 are covered by `PriorityEngineTest` and `EligibilityFilterTest` in that artifact. T10 and T16 are real-HTTP checks in `iitsm-handbook-contracts.json` in the demo-stack artifact. The report uses CI logs and downloadable test outputs as evidence; individual screenshots for each case have not been captured.
+The 26 rows in [test_cases.csv](test_cases.csv) give the scenario, expected and actual result, date, tested commit and CI run. For T01–T04, T08–T09, T11–T15 and T17–T26, inspect the `HandbookIntegrationTest` Surefire XML in the backend test artifact of the [2026-11-21 PR #83 run](https://github.com/sanay7-devv/Frusk-OOPs-Project/actions/runs/44915764035). T05–T07 are covered by `PriorityEngineTest` and `EligibilityFilterTest` in that artifact. T10 and T16 are real-HTTP checks in `iitsm-handbook-contracts.json` in the demo-stack artifact. The report uses CI logs and downloadable test outputs as evidence; individual screenshots for each case have not been captured.
 
 ## Additional regression coverage on this branch
 
-The Task 3 branch added backend coverage for tokenizer/TF-IDF similarity, keyword category and intake fallback, SLA risk factors, permission unions, escalation boundaries, incident state transitions and exception mappings. The frontend now has 37 tests across 9 files, including the remaining major screens and SLA color states. The latest main CI run recorded 59 backend tests (57 passed, 2 demo-only skips) and 37 frontend tests; the existing T01–T26 cases remain in the backend and demo-stack suites.
+The Task 3 branch added backend coverage for tokenizer/TF-IDF similarity, keyword category and intake fallback, SLA risk factors, permission unions, escalation boundaries, incident state transitions and exception mappings. PR #83 adds assertions for successful incident transitions and the validation error response, plus remaining-screen interactions including MFA errors, report drill-downs and filters. Its CI run recorded 62 backend tests (60 passed, 2 demo-only skips in the normal job) and 45 frontend tests; T01–T26 also passed in the backend and demo-stack suites.
 
 Further optional unit and screen-test depth remains listed in `TESTING_WORK_LEFT.md`. The recording-laptop reset, browser script-text display and final video remain unmeasured/manual.
 
