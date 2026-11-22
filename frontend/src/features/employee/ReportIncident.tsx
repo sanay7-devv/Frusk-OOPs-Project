@@ -75,6 +75,7 @@ import type { IncidentDetail, Priority } from '../../api/types';
 import PriorityBadge from '../../components/PriorityBadge';
 import { useToast } from '../../components/Toast';
 import { apiErrorMessage, errorMessage } from '../../utils/errors';
+import { formatDateTime, humanizeEnum } from '../../utils/format';
 
 import { tokens, priorityColor, priorityLabel } from '../../theme/theme';
 import { alpha } from '@mui/material/styles';
@@ -1233,7 +1234,7 @@ export default function ReportIncident() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                       <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Suggested by:</Typography>
                       <Chip
-                        label={(aiSuggestion as any).source || 'AI'}
+                        label={humanizeEnum(aiSuggestion.source || 'AI')}
                         size="small"
                         sx={{
                           fontFamily: 'JetBrains Mono, monospace',
@@ -1251,7 +1252,7 @@ export default function ReportIncident() {
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>Confidence</Typography>
                         <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.textDisabled }}>
-                          {(aiSuggestion.confidence || 0).toFixed(2)} / 1.00
+                          {Math.round((aiSuggestion.confidence || 0) * 100)}%
                         </Typography>
                       </Box>
                       <LinearProgress
@@ -1503,7 +1504,7 @@ export default function ReportIncident() {
                   <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>Target fix time:</Typography>
                   <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.success }}>
                     {createdIncident.resolutionDue
-                      ? new Date(createdIncident.resolutionDue).toLocaleString([], { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+                      ? formatDateTime(createdIncident.resolutionDue)
                       : 'Set by the service level'}
                   </Typography>
                 </Box>

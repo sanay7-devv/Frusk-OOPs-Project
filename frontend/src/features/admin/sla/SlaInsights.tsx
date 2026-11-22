@@ -10,14 +10,12 @@ import { ErrorState, LoadingState } from '../../../components/StateViews';
 import { tokens } from '../../../theme/theme';
 import { apiErrorMessage } from '../../../utils/errors';
 import { formatDateTime, humanizeEnum } from '../../../utils/format';
+import { formatDurationMinutes } from '../../../utils/format';
 import { cardSx, fieldSx, monoLabelSx } from '../adminForm';
 import { tone } from '../palette';
 
 export const formatMinutes = (m: number) => {
-  if (m < 60) return `${m} min`;
-  if (m < 1440) return `${+(m / 60).toFixed(1)} h`;
-  const d = +(m / 1440).toFixed(1);
-  return d === 1 ? '1 day' : `${d} days`;
+  return formatDurationMinutes(m);
 };
 
 /** Compliance by priority and the latest breaches, from the reports API (all history, all services). */

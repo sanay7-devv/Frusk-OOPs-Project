@@ -70,7 +70,7 @@ export default function SavedViewsDialog({ open, onClose, current, onApply }: Pr
             </Stack>
             {views.isLoading && <LoadingState />}
             {views.isError && <ErrorState onRetry={() => views.refetch()} message={apiErrorMessage(views.error)} />}
-            {views.data && views.data.length === 0 && <EmptyState message="No saved views yet." />}
+            {views.data && views.data.length === 0 && <EmptyState compact message="No saved views yet." />}
             {views.data && views.data.length > 0 && (
               <List disablePadding>
                 {views.data.map((v) => (

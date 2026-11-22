@@ -2200,3 +2200,13 @@ Sub-decisions: (1) **How the replay avoids changing real data.** The engine and 
 **Options.** (a) keep the rule: a lead at full load cannot take over ✔ (current); (b) let leads and administrators exceed their load when they take over on purpose, audited as such; (c) let them exceed it only above a setting (for example +2).
 
 **Trade-off.** (a) keeps one workload rule for everyone but blocks a lead in an emergency; (b) is flexible but makes load numbers less trustworthy; (c) needs a new setting. **Status.** Not implemented; waiting for the user to choose.
+
+### DEC-124: Google sign-in creates employee accounts by default
+
+**Date.** 2026-11-21. **Context.** With `auth.google.autoregister` off (DEC-100 to DEC-103), a Google user without an account got the same "Email or password is incorrect" as a wrong password, so the Google button looked broken in the demo.
+
+**Options.** Keep it off and ask the administrator to create or link each account first (safest, but breaks the live demo); **default on, new accounts are EMPLOYEE only, switchable in `/admin/config`** (chosen); turn it on only in the `demo` profile (needs profile-specific defaults for one key).
+
+**Decision.** The code default is `true`. A new Google user becomes an EMPLOYEE with no password; technician, lead and administrator roles still need an administrator. A stored value in `app_config` still wins, so existing databases keep their setting.
+
+**Trade-off.** Any person with a verified Google account can create an employee account. For a campus pilot this is acceptable and the audit trail records each creation; a production deployment should restrict it to the organisation's Google domain. **Cross-question.** *"Is open sign-up safe?"* New users are lowest-privilege employees, the setting is one switch, and every sign-up is audited.

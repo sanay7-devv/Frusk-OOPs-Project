@@ -123,7 +123,9 @@ check("unverified email -> 401 INVALID_CREDENTIALS", s == 401 and b["code"] == "
 check("unverified email: account NOT linked", sql(f"select coalesce(google_sub,'none') from users where id={uid2}") == "none")
 check("unverified email audited as LOGIN_FAILED", audit_count("Google email not verified " + e2) == 1)
 
-# --- 3 unknown email, auto-registration off (default)
+# --- 3 unknown email, auto-registration off (the default is on since DEC-124, so switch it off first)
+s, b = call("PUT", "/admin/config", [{"key": "auth.google.autoregister", "value": "false"}], token=A)
+check("admin switches auth.google.autoregister off -> 200", s == 200, (s, b))
 e3 = f"new.{RUN}@iitsm.demo"
 sub3 = "g-sub-" + secrets.token_hex(6)
 s, b = google(google_token(sub3, e3))

@@ -18,10 +18,38 @@ export function formatTime(v: string | number | Date | null | undefined, fallbac
   return d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : fallback;
 }
 
+export function formatTimeSeconds(v: string | number | Date | null | undefined, fallback = 'Not yet'): string {
+  const d = toDate(v);
+  return d ? `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` : fallback;
+}
+
 export function formatDateTime(v: string | number | Date | null | undefined, fallback = 'Not yet'): string {
   const d = toDate(v);
   return d ? `${formatDate(d)}, ${formatTime(d)}` : fallback;
 }
+
+export function formatDateHour(v: string | number | Date | null | undefined, fallback = 'Not yet'): string {
+  const d = toDate(v);
+  return d ? `${formatDate(d)}, ${pad(d.getHours())}:00` : fallback;
+}
+
+/** Compact elapsed time for user-facing durations. Long spans use days instead of three-digit hours. */
+export function formatDurationMinutes(value: number | null | undefined, fallback = 'No data'): string {
+  if (value == null || !Number.isFinite(value)) return fallback;
+  const minutes = Math.max(0, Math.round(value));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainingMinutes = minutes % 60;
+  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  if (hours > 0) return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  return `${minutes}m`;
+}
+
+export const formatDurationSeconds = (seconds: number | null | undefined, fallback = 'No data') =>
+  seconds == null ? fallback : formatDurationMinutes(seconds / 60, fallback);
+
+export const formatDurationMs = (milliseconds: number | null | undefined, fallback = 'No data') =>
+  milliseconds == null ? fallback : formatDurationMinutes(milliseconds / 60_000, fallback);
 
 const ACRONYMS = new Set(['SLA', 'AI', 'LLM', 'ID', 'IT', 'PDF', 'CSV', 'API', 'TOTP', 'VIP', 'P1', 'P2', 'P3', 'P4', 'TF', 'IDF']);
 

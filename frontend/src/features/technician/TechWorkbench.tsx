@@ -61,7 +61,7 @@ import { EditIncidentDialog } from '../lead/shared/IncidentActionDialogs';
 import ActionButtons from '../../components/ActionButtons';
 import { isStaleDataError, fieldErrorFor } from './apiErrors';
 import WhyAssignee from '../lead/shared/WhyAssignee';
-import { humanizeEnum } from '../../utils/format';
+import { formatDateTime, humanizeEnum } from '../../utils/format';
 import SlaClockPair from '../lead/shared/SlaClockPair';
 import SlaCountdown from '../../components/SlaCountdown';
 import PriorityExplainer from '../../components/PriorityExplainer';
@@ -533,13 +533,7 @@ export default function TechWorkbench() {
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const formatTimelineDate = (ts?: string) => {
-    if (!ts) return '';
-    const d = new Date(ts);
-    return (
-      d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-      ' ' +
-      d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-    );
+    return ts ? formatDateTime(ts, '') : '';
   };
 
   if (isLoading) {
@@ -565,7 +559,7 @@ export default function TechWorkbench() {
           {loadMessage}
         </Alert>
         <Button variant="outlined" onClick={() => navigate('/tech/queue')} sx={{ color: tokens.primary }}>
-          Back to Queue
+          Back to queue
         </Button>
       </Box>
     );
@@ -597,7 +591,7 @@ export default function TechWorkbench() {
                 '&:hover': { bgcolor: tokens.surfaceContainerLow },
               }}
             >
-              Back to Queue
+              Back to queue
             </Button>
             <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>/</Typography>
             <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', color: tokens.primary }}>
@@ -793,23 +787,23 @@ export default function TechWorkbench() {
                 <span>•</span>
                 <span>Impact: <strong>{incident.affectedUsers} {incident.affectedUsers === 1 ? 'user' : 'users'} affected</strong></span>
                 <span>•</span>
-                <span>Opened: <strong>{new Date(incident.createdAt).toLocaleString()}</strong></span>
+                <span>Opened: <strong>{formatDateTime(incident.createdAt)}</strong></span>
                 {incident.acknowledgedAt && (
                   <>
                     <span>•</span>
-                    <span>Acknowledged: <strong>{new Date(incident.acknowledgedAt).toLocaleString()}</strong></span>
+                    <span>Acknowledged: <strong>{formatDateTime(incident.acknowledgedAt)}</strong></span>
                   </>
                 )}
                 {incident.resolvedAt && (
                   <>
                     <span>•</span>
-                    <span>Resolved: <strong>{new Date(incident.resolvedAt).toLocaleString()}</strong></span>
+                    <span>Resolved: <strong>{formatDateTime(incident.resolvedAt)}</strong></span>
                   </>
                 )}
                 {incident.closedAt && (
                   <>
                     <span>•</span>
-                    <span>Closed: <strong>{new Date(incident.closedAt).toLocaleString()}</strong></span>
+                    <span>Closed: <strong>{formatDateTime(incident.closedAt)}</strong></span>
                   </>
                 )}
                 {incident.priorityBreakdown && (
@@ -887,7 +881,7 @@ export default function TechWorkbench() {
                   '&:hover': { bgcolor: alpha(tokens.secondary, 0.1) },
                 }}
               >
-                {isSummarizing ? 'Analyzing...' : 'Generate AI Handover'}
+                {isSummarizing ? 'Analyzing…' : 'Generate AI handover'}
               </Button>
             )}
           </Box>
@@ -900,7 +894,7 @@ export default function TechWorkbench() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <PsychologyIcon sx={{ color: tokens.secondary, fontSize: 20 }} />
             <Typography sx={{ fontWeight: 800, fontSize: 14, color: tokens.secondary }}>
-              AI Incident Summary &amp; Handover ({summaryData.source})
+              AI incident summary and handover ({humanizeEnum(summaryData.source)})
             </Typography>
           </Box>
           <Typography sx={{ fontSize: 13, color: tokens.onSurface, mb: 1.5, lineHeight: 1.5 }}>
@@ -1559,7 +1553,7 @@ export default function TechWorkbench() {
                   }}
                   sx={{ borderColor: tokens.secondary, color: tokens.secondary, textTransform: 'none', fontSize: 12, fontWeight: 700 }}
                 >
-                  Download Post-Incident PDF
+                  Download post-incident PDF
                 </Button>
               </Paper>
             )}

@@ -15,6 +15,7 @@ import { ErrorState, LoadingState } from '../../../components/StateViews';
 import { apiErrorMessage } from '../../../utils/errors';
 import { lastDays } from './dates';
 import { tone } from '../palette';
+import KpiCard from '../../../components/KpiCard';
 
 interface KpiProps {
   label: string;
@@ -165,6 +166,7 @@ export function KpiRow() {
   const period = lastDays(30);
   const live = useQuery({ queryKey: ['dashboard', 'live'], queryFn: getLiveDashboard, refetchInterval: 30_000 });
   const todayOverview = useQuery({ queryKey: ['dashboard', 'overview-today', today.from], queryFn: () => getOverview(today), refetchInterval: 30_000 });
+  const periodOverview = useQuery({ queryKey: ['dashboard', 'overview-period', period.from], queryFn: () => getOverview(period), refetchInterval: 30_000 });
   const compliance = useQuery({ queryKey: ['dashboard', 'sla-compliance', period.from], queryFn: () => getSlaCompliance(period, 'priority') });
 
   if (live.isLoading) return <LoadingState />;
@@ -262,7 +264,6 @@ export function KpiRow() {
           }
         />
       </Grid>
-
       {/* 4. Critical (P1) (now 1st from the right!) */}
       <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
         <Kpi

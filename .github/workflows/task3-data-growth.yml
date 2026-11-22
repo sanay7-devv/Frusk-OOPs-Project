@@ -1,0 +1,48 @@
+name: Task 3 A7 data-growth evidence
+
+on:
+  push:
+    branches:
+      - qa/task3-a7-growth-evidence
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-growth:
+    name: Disposable 10k and 100k database profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      APP_SCHEDULING_ENABLED: "false"
+      IITSM_GROWTH_SAMPLES: "10"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Build and reset disposable demo stack
+        run: bash db/tools/reset-demo.sh
+      - name: Check stack health
+        run: |
+          curl --fail --retry 8 --retry-delay 3 http://localhost:3000/
+          curl --fail --retry 8 --retry-delay 3 http://localhost:8080/actuator/health
+      - name: Check synthetic fixture generation
+        run: python3 db/tools/test_task3_data_growth.py
+      - name: Measure read/report and query plans at 10k and 100k incidents
+        run: python3 deploy/task3_data_growth.py
+      - name: Save disposable stack logs
+        if: always()
+        run: |
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color > /tmp/iitsm-data-growth-stack.log
+      - name: Upload data-growth evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task3-data-growth-evidence
+          path: |
+            /tmp/iitsm-data-growth.json
+            /tmp/iitsm-data-growth-stack.log
+          if-no-files-found: warn
+      - name: Shut down disposable stack
+        if: always()
+        run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo down --volumes

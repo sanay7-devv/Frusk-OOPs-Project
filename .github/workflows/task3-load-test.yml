@@ -1,0 +1,48 @@
+name: Task 3 A7 load evidence
+
+on:
+  push:
+    branches:
+      - qa/task3-ci-browser-load
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  load-test:
+    name: Disposable demo load profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      APP_SCHEDULING_ENABLED: "false"
+      IITSM_MIXED_SECONDS: "300"
+      IITSM_LOAD_WAVES: "3"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Build and reset the disposable demo stack
+        run: bash db/tools/reset-demo.sh
+      - name: Check stack health
+        run: |
+          curl --fail --retry 8 --retry-delay 3 http://localhost:3000/
+          curl --fail --retry 8 --retry-delay 3 http://localhost:8080/actuator/health
+      - name: Run reporting, reading and five-minute mixed workloads
+        run: python3 deploy/task3_load_test.py
+      - name: Save stack logs
+        if: always()
+        run: |
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color > /tmp/iitsm-load-stack.log
+          docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo logs --no-color --tail 150 backend
+      - name: Upload load-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task3-load-test-evidence
+          path: |
+            /tmp/iitsm-load-test.json
+            /tmp/iitsm-load-stack.log
+          if-no-files-found: warn
+      - name: Shut down disposable stack
+        if: always()
+        run: docker compose -p iitsm-demo -f deploy/docker-compose.yml -f deploy/docker-compose.demo.yml --profile demo down --volumes

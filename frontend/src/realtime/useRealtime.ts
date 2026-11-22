@@ -46,8 +46,8 @@ export function useRealtime() {
             try {
               const n: AppNotification = JSON.parse(m.body);
               if (n?.title) {
-                const message = n.incidentId ? `${n.title} (Incident #${n.incidentId})` : n.title;
-                toast(message, 'info');
+                // Notification titles already include the incident code when relevant. The numeric id is internal.
+                toast(n.title, 'info');
               }
             } catch {
               // ignore non-json payload

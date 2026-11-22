@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Box, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
 import { InfoOutlined as InfoIcon } from '@mui/icons-material';
 import { tokens } from '../theme/theme';
 
@@ -20,10 +20,13 @@ export default function InfoTip({ children, tip }: Props) {
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
       {children}
       <Tooltip title={tip} arrow placement="top">
-        <Box component="span" tabIndex={0} role="img" aria-label="More information"
-          sx={{ display: 'inline-flex', color: tokens.onSurfaceVariant, opacity: 0.7, cursor: 'help', '&:hover, &:focus-visible': { opacity: 1 } }}>
-          <InfoIcon sx={{ fontSize: 12 }} />
-        </Box>
+        <IconButton
+          aria-label={`More information about ${typeof children === 'string' ? children : 'this item'}`}
+          size="small"
+          sx={{ p: 0, width: 16, height: 16, color: tokens.onSurfaceVariant, opacity: 0.75, '&:hover, &:focus-visible': { opacity: 1, bgcolor: 'transparent' } }}
+        >
+          <InfoIcon sx={{ fontSize: 13 }} />
+        </IconButton>
       </Tooltip>
     </Box>
   );

@@ -75,7 +75,7 @@ export default function MajorIncidentPanel({ problemId, onPick, onPath, selected
           {open.length} open problem{open.length === 1 ? '' : 's'}
         </Typography>
         {open.map((p) => (
-          <Chip key={p.id} size="small" clickable label={`${p.title} (${p.joined} joined)`} onClick={() => onPick(p.id)}
+          <Chip key={p.id} size="small" clickable label={`${p.service?.name ?? `Problem #${p.id}`} · ${p.joined} joined`} onClick={() => onPick(p.id)}
             color={p.id === problemId ? 'error' : 'default'} variant={p.id === problemId ? 'filled' : 'outlined'} sx={{ fontSize: 12 }} />
         ))}
       </Stack>
@@ -95,7 +95,7 @@ export default function MajorIncidentPanel({ problemId, onPick, onPath, selected
                 {probable ? (
                   <Typography sx={{ fontSize: 14, mt: 0.5 }}>
                     Probable root cause: <strong>{probable.service.name}</strong>
-                    {probable.paths[0] ? `, path ${probable.paths[0].map((r) => r.name).join(' > ')}` : ''}. It is outlined on the graph.
+                    {probable.paths[0]?.length > 1 ? `, path ${probable.paths[0].map((r) => r.name).join(' > ')}` : ''}. It is outlined on the graph.
                   </Typography>
                 ) : (
                   <Typography sx={{ fontSize: 14, color: tokens.onSurfaceVariant, mt: 0.5 }}>No single probable cause could be named.</Typography>

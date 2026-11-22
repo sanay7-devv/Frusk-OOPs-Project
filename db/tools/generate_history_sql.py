@@ -36,6 +36,7 @@ def generate(source):
         output.append(f"""DO $$
 DECLARE
   incident_key BIGINT; reporter_key BIGINT; assignee_key BIGINT; service_key BIGINT; category_key BIGINT;
+  incident_code_number BIGINT;
   started TIMESTAMPTZ := transaction_timestamp() - make_interval(days => {days});
   finished TIMESTAMPTZ; ack_time TIMESTAMPTZ;
 BEGIN
@@ -45,12 +46,14 @@ BEGIN
   SELECT id INTO STRICT category_key FROM categories WHERE name={sql(r['category'])};
   finished := started + make_interval(mins => {duration});
   ack_time := started + make_interval(secs => {ack_seconds});
+  incident_code_number := nextval('incident_code_seq');
   INSERT INTO incidents(code,title,description,reporter_id,assignee_id,service_id,category_id,
     impact,urgency,affected_users,priority_score,priority,priority_breakdown,status,closure_reason,
     created_at,updated_at,acknowledged_at,resolved_at,closed_at,response_due,resolution_due,
     root_cause,resolution_notes,resolution_steps,time_spent_minutes,reusable_solution,
     res_warn75_sent,res_warn90_sent,res_violated)
-  VALUES ('INC-' || to_char(started AT TIME ZONE 'UTC','YYYY') || '-' || lpad(nextval('incident_code_seq')::text,5,'0'),
+  VALUES ('INC-' || to_char(started AT TIME ZONE 'UTC','YYYY') || '-' ||
+    lpad(incident_code_number::text, greatest(5, length(incident_code_number::text)), '0'),
     {sql(r['title'])},{sql(r['description'])},reporter_key,assignee_key,service_key,category_key,
     {impact},{urgency},{users},{p['score']},{sql(p['band'])},{sql(json.dumps(p))}::jsonb,'CLOSED','VERIFIED',
     started,finished+interval '2 minutes',ack_time,finished,finished+interval '2 minutes',

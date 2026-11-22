@@ -291,7 +291,7 @@ export default function Login() {
         {/* Credentials Form */}
         <form onSubmit={onSubmit}>
           <TextField
-            label="Email Address"
+            label="Email address"
             fullWidth
             margin="normal"
             placeholder="e.g. employee1@iitsm.demo"
@@ -396,7 +396,7 @@ export default function Login() {
             }}
             disabled={isSubmitting || (needCode && totp.length !== 6)}
           >
-            {isSubmitting ? 'Authenticating...' : needCode ? 'Verify and sign in' : 'Sign in'}
+            {isSubmitting ? 'Signing in…' : needCode ? 'Verify and sign in' : 'Sign in'}
           </Button>
         </form>
 
@@ -439,7 +439,7 @@ export default function Login() {
                 '&:hover': { color: tokens.secondaryLight },
               }}
             >
-              {showSeed ? '▲ Hide demo accounts' : '▼ Show demo accounts'}
+              {showSeed ? 'Hide demo accounts' : 'Show demo accounts'}
             </Link>
             <Collapse in={showSeed}>
               <Paper

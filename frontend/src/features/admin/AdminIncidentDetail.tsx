@@ -490,10 +490,10 @@ export default function AdminIncidentDetail() {
             <Field label="Escalation level">{incident.escalationLevel}</Field>
             <Field label="Times reopened">{incident.reopenCount}</Field>
             <Field label="Created">{formatDateTime(incident.createdAt)}</Field>
-            <Field label="Acknowledged">{formatDateTime(incident.acknowledgedAt)}</Field>
-            <Field label="Resolved">{formatDateTime(incident.resolvedAt)}</Field>
+            <Field label="Acknowledged">{formatDateTime(incident.acknowledgedAt, '—')}</Field>
+            <Field label="Resolved">{formatDateTime(incident.resolvedAt, '—')}</Field>
             <Field label="Closed">
-              {formatDateTime(incident.closedAt)}
+              {formatDateTime(incident.closedAt, '—')}
               {incident.closureReason ? ` (${humanizeEnum(incident.closureReason).toLowerCase()})` : ''}
             </Field>
             {incident.feedback && (

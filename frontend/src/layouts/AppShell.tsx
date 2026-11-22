@@ -210,6 +210,14 @@ export default function AppShell() {
   }, [activeWorkspace, user, workspaces]);
 
   const navItems = (NAV[activeWorkspace] || []).filter((i) => !i.permission || !!user?.permissions?.includes(i.permission));
+  const currentPage = navItems
+    .filter((item) => location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(`${item.to}/`)))
+    .sort((a, b) => b.to.length - a.to.length)[0];
+  const pageTitle = currentPage?.label ?? (location.pathname.includes('/incidents/') ? 'Incident details' : undefined);
+
+  useEffect(() => {
+    document.title = pageTitle ? `${pageTitle} · IITSM Enterprise` : 'IITSM Enterprise';
+  }, [pageTitle]);
 
   useEffect(() => {
     const currentNav = navItems.find((n) => n.to === location.pathname || (n.to !== '/' && location.pathname.startsWith(n.to)));
@@ -515,6 +523,7 @@ export default function AppShell() {
             <>
               <Button
                 onClick={handleWorkspaceClick}
+                aria-label={`Switch workspace. Current: ${WORKSPACE_META[activeWorkspace]?.label || WS_LABEL[activeWorkspace]}`}
                 aria-controls={isWorkspaceMenuOpen ? 'workspace-menu' : undefined}
                 aria-haspopup="true"
                 aria-expanded={isWorkspaceMenuOpen ? 'true' : undefined}
@@ -674,15 +683,16 @@ export default function AppShell() {
             <Badge
               badgeContent={unread}
               max={99}
+              showZero={false}
               sx={{
                 '& .MuiBadge-badge': {
                   bgcolor: tokens.danger,
                   color: tokens.white,
-                  fontSize: 10.5,
-                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 10,
+                  minWidth: 17,
+                  height: 17,
+                  px: 0.4,
                   fontWeight: 700,
-                  height: 18,
-                  minWidth: 18,
                   boxShadow: `0 0 6px ${alpha(tokens.danger, 0.6)}`,
                 },
               }}
@@ -1019,7 +1029,7 @@ export default function AppShell() {
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
               <Toolbar sx={{ minHeight: '64px !important' }} />
-              <Box sx={{ px: 1.5, py: 1.5 }}>
+              <Box sx={{ px: sidebarOpen ? 2 : 0.75, py: 1 }}>
                 <List disablePadding component="nav" aria-label={`${activeWorkspace} navigation`}>
                   {navItems.map((item, idx) => {
                     const RawIcon = NAV_ICONS[item.label] || DashboardIcon;
@@ -1036,8 +1046,8 @@ export default function AppShell() {
 
                     return (
                       <Fragment key={item.to}>
-                      {item.group && item.group !== navItems[idx - 1]?.group && (
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, color: tokens.textDisabled, textTransform: 'uppercase', letterSpacing: '0.08em', px: 1.2, mt: idx === 0 ? 0.5 : 1.2, mb: 0.4 }}>
+                      {sidebarOpen && item.group && item.group !== navItems[idx - 1]?.group && (
+                        <Typography sx={{ fontSize: 11, fontWeight: 600, color: tokens.textDisabled, px: 1.2, mt: idx === 0 ? 0 : 1, mb: 0.35 }}>
                           {item.group}
                         </Typography>
                       )}
@@ -1045,14 +1055,16 @@ export default function AppShell() {
                         key={item.to}
                         component={NavLink}
                         to={item.to}
+                        aria-label={item.label}
                         onClick={() => {
                           if (isMobile) setMobileOpen(false);
                         }}
                         sx={{
                           borderRadius: '8px',
-                          mb: 0.3,
-                          py: 0.6,
-                          px: 1.2,
+                          mb: 0.35,
+                          py: sidebarOpen ? 0.55 : 0.75,
+                          px: sidebarOpen ? 1.2 : 0.9,
+                          justifyContent: sidebarOpen ? 'flex-start' : 'center',
                           color: isActive ? tokens.white : tokens.onSurfaceVariant,
                           background: isActive
                             ? `linear-gradient(90deg, ${alpha(tokens.primary, 0.22)} 0%, ${alpha(tokens.secondary, 0.12)} 100%)`
@@ -1072,15 +1084,18 @@ export default function AppShell() {
                       >
                         <ListItemIcon
                           sx={{
-                            minWidth: 28,
+                            minWidth: sidebarOpen ? 30 : 0,
                             color: isActive ? tokens.secondaryLight : tokens.textDisabled,
                             transition: 'color 0.18s ease',
                           }}
                         >
-                          <IconComp sx={{ fontSize: 18 }} />
+                          <Tooltip title={sidebarOpen ? '' : item.label} placement="right">
+                            <IconComp sx={{ fontSize: 20 }} />
+                          </Tooltip>
                         </ListItemIcon>
                         <ListItemText
                           primary={item.label}
+                          sx={{ display: sidebarOpen ? 'block' : 'none' }}
                           primaryTypographyProps={{
                             fontSize: 12.5,
                             fontWeight: isActive ? 600 : 500,
@@ -1123,7 +1138,7 @@ export default function AppShell() {
               variant="permanent"
               sx={{
                 display: { xs: 'none', sm: 'block' },
-                width: sidebarOpen ? DRAWER_WIDTH : 0,
+                width: sidebarOpen ? DRAWER_WIDTH : 64,
                 flexShrink: 0,
                 transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 '& .MuiDrawer-paper': {
@@ -1137,9 +1152,8 @@ export default function AppShell() {
                   zIndex: 10,
                   overflowX: 'hidden',
                   overflowY: 'auto',
-                  transform: sidebarOpen ? 'translateX(0)' : `translateX(-${DRAWER_WIDTH}px)`,
-                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  willChange: 'transform',
+                  transform: sidebarOpen ? 'translateX(0)' : `translateX(-${DRAWER_WIDTH - 64}px)`,
+                  transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 },
               }}
             >
@@ -1158,8 +1172,8 @@ export default function AppShell() {
           outline: 'none',
           flexGrow: 1,
           p: { xs: 2, md: 3 },
-          width: { sm: sidebarOpen ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%' },
-          transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          width: { sm: `calc(100% - ${sidebarOpen ? DRAWER_WIDTH : 64}px)` },
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           minHeight: '100vh',
           bgcolor: tokens.background,
           position: 'relative',

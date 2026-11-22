@@ -32,12 +32,13 @@ export const AVAILABILITY_COLOR: Record<string, string> = {
   OFF_DUTY: COLORS.error,
 };
 
-function AvailabilityChip({ value }: { value: string }) {
-  const c = AVAILABILITY_COLOR[value] ?? COLORS.onSurfaceVariant;
+function AvailabilityChip({ value, full = false }: { value: string; full?: boolean }) {
+  const label = full ? 'Full' : humanizeEnum(value);
+  const c = full ? COLORS.error : AVAILABILITY_COLOR[value] ?? COLORS.onSurfaceVariant;
   return (
     <Chip
       size="small"
-      label={humanizeEnum(value)}
+      label={label}
       sx={{ height: 20, fontSize: 12, fontWeight: 700, color: c, bgcolor: alpha(tokens.onSurface, 0.05), border: `1px solid ${c}` }}
     />
   );
@@ -70,21 +71,18 @@ export function CandidatePicker({
 
   const score = new Map((recs.data?.recommendations ?? []).map((r) => [r.technicianId, r]));
   const excluded = new Map((recs.data?.excluded ?? []).map((x) => [x.technicianId, x.reason]));
-  const isBlocked = (t: TechnicianView) =>
-    !!(excluded.get(t.id) ?? (t.availability === 'OFF_DUTY' || t.availability === 'AWAY'));
-
+  const plain = (text: string) => text.replace(/\b(OFF_DUTY|AWAY|BUSY|AVAILABLE)\b/g, (m) => humanizeEnum(m).toLowerCase());
+  const blockedReason = (t: TechnicianView) =>
+    excluded.get(t.id)
+      ?? (t.maxLoad > 0 && t.currentLoad >= t.maxLoad ? 'Technician is at capacity' : null)
+      ?? (t.availability === 'OFF_DUTY' || t.availability === 'AWAY' ? `Technician is ${humanizeEnum(t.availability).toLowerCase()}` : null);
+  // People who can be picked come first, best fit on top; blocked people follow.
   const list = (techs.data ?? [])
     .filter((t) => t.id !== assigneeId)
-    .sort((a, b) => {
-      const aBlocked = isBlocked(a);
-      const bBlocked = isBlocked(b);
-      if (aBlocked !== bBlocked) return aBlocked ? 1 : -1;
-      return (score.get(b.id)?.score ?? -1) - (score.get(a.id)?.score ?? -1);
-    });
+    .sort((a, b) => Number(!!blockedReason(a)) - Number(!!blockedReason(b)) || (score.get(b.id)?.score ?? -1) - (score.get(a.id)?.score ?? -1));
 
   if (list.length === 0) return <EmptyState message="No other technicians are available to reassign to." />;
-
-  const allIneligible = list.every(isBlocked);
+  const nobodyFree = list.every((t) => !!blockedReason(t));
 
   return (
     <Stack spacing={1}>
@@ -93,20 +91,17 @@ export function CandidatePicker({
           Ranking unavailable ({apiErrorMessage(recs.error)}). You can still choose from the technician list.
         </Alert>
       )}
-      {allIneligible && (
+      {nobodyFree && (
         <Alert severity="warning" sx={{ fontSize: 12.5 }}>
-          All technicians are currently unavailable or ineligible for this incident (skills, capacity, or off duty).
+          Nobody can take this incident right now (everyone is full, away, off duty or missing the required skill). Free up capacity or add the skill, then try again.
         </Alert>
       )}
       {recs.data?.strategy && (
-        <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontFamily: MONO }}>
-          Ranked with {humanizeEnum(recs.data.strategy).toLowerCase()} strategy
-        </Typography>
+        <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant }}>Best fit first ({humanizeEnum(recs.data.strategy).toLowerCase()} ranking)</Typography>
       )}
       {list.map((t) => {
         const rec = score.get(t.id);
-        const blocked =
-          excluded.get(t.id) ?? (t.availability === 'OFF_DUTY' || t.availability === 'AWAY' ? `Technician is ${t.availability.replace('_', ' ').toLowerCase()}` : null);
+        const blocked = blockedReason(t);
         const selected = selectedId === t.id;
         const ratio = t.maxLoad > 0 ? Math.min(100, (t.currentLoad / t.maxLoad) * 100) : 0;
         return (
@@ -128,11 +123,11 @@ export function CandidatePicker({
                 {rec && (
                   <Typography sx={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 800, color: COLORS.secondary }}>{rec.score}% fit</Typography>
                 )}
-                <AvailabilityChip value={t.availability} />
+                <AvailabilityChip value={t.availability} full={t.maxLoad > 0 && t.currentLoad >= t.maxLoad} />
               </Stack>
             </Stack>
             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5 }}>
-              Weighted load {t.currentLoad} / {t.maxLoad} ({t.activeIncidents} active incidents)
+              Weighted load {t.currentLoad} / {t.maxLoad} · {t.activeIncidents} active
             </Typography>
             <LinearProgress
               variant="determinate"
@@ -142,14 +137,14 @@ export function CandidatePicker({
             {t.skills.length > 0 && (
               <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                 {t.skills.map((s) => (
-                  <Chip key={s.skillId} size="small" label={`${s.name} · Lvl ${s.proficiency}`} sx={{ height: 20, fontSize: 12 }} />
+                  <Chip key={s.skillId} size="small" label={`${s.name} ${s.proficiency}`} title={`${s.name}: proficiency ${s.proficiency} of 5`} sx={{ height: 20, fontSize: 12 }} />
                 ))}
               </Stack>
             )}
             {rec && rec.reasons.length > 0 && (
-              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5 }}>{rec.reasons.join(' | ')}</Typography>
+              <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5 }}>{rec.reasons.join('; ')}</Typography>
             )}
-            {blocked && <Typography sx={{ fontSize: 12, color: COLORS.error, mt: 0.5 }}>Cannot select: {blocked}</Typography>}
+            {blocked && <Typography sx={{ fontSize: 12, color: COLORS.error, mt: 0.5 }}>Cannot select: {plain(blocked)}</Typography>}
           </Box>
         );
       })}
@@ -217,10 +212,10 @@ export function TeamWorkloadDialog({
                       {t.name}
                       {t.id === highlightId ? ' (just assigned)' : ''}
                     </Typography>
-                    <AvailabilityChip value={t.availability} />
+                    <AvailabilityChip value={t.availability} full={t.maxLoad > 0 && t.currentLoad >= t.maxLoad} />
                   </Stack>
                   <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: MONO }}>
-                    {t.currentLoad >= t.maxLoad && t.maxLoad > 0 ? 'Full' : `Load ${t.currentLoad} of ${t.maxLoad}`} · {t.activeIncidents} active · {humanizeEnum(String(t.experienceLevel))}
+                    Weighted load {t.currentLoad} / {t.maxLoad} · {t.activeIncidents} active · {humanizeEnum(String(t.experienceLevel))} experience
                   </Typography>
                   <LinearProgress
                     variant="determinate"
@@ -229,7 +224,7 @@ export function TeamWorkloadDialog({
                   />
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                     {t.skills.map((s) => (
-                      <Chip key={s.skillId} size="small" label={`${s.name} · Lvl ${s.proficiency}`} sx={{ height: 20, fontSize: 12 }} />
+                      <Chip key={s.skillId} size="small" label={`${s.name} ${s.proficiency}`} title={`${s.name}: proficiency ${s.proficiency} of 5`} sx={{ height: 20, fontSize: 12 }} />
                     ))}
                   </Stack>
                 </Box>

@@ -15,11 +15,12 @@ import {
   DialogActions,
   Rating,
   Switch,
+  Checkbox,
+  Tooltip,
   FormControlLabel,
   Divider,
   CircularProgress,
   Stack,
-  Checkbox,
   Table,
   TableBody,
   TableCell,
@@ -63,7 +64,7 @@ import {
 import { provideInfo, verifyIncident, submitFeedback } from '../../api/incidents';
 import type { AppNotification } from '../../api/types';
 import { apiErrorMessage } from '../../utils/errors';
-import { humanizeEnum } from '../../utils/format';
+import { humanizeEnum, formatDate } from '../../utils/format';
 import PushDevicesDialog from './PushDevicesDialog';
 
 import { tokens } from '../../theme/theme';
@@ -80,7 +81,7 @@ function formatTimeAgo(isoString: string): string {
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString();
+    return formatDate(d);
   } catch {
     return isoString;
   }
@@ -382,7 +383,7 @@ export default function Notifications() {
           <IconButton aria-label="Notification preferences"
             size="small"
             onClick={() => setPrefsOpen(true)}
-            title="Notification Preferences"
+            title="Notification preferences"
             sx={{
               border: `1px solid ${alpha(tokens.white, 0.1)}`,
               borderRadius: '8px',
@@ -417,7 +418,7 @@ export default function Notifications() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, overflowX: 'auto', pb: { xs: 0.5, md: 0 } }}>
           {(
             [
-              { id: 'ALL', label: `All Notifications (${pageData?.totalItems ?? allItems.length})` },
+              { id: 'ALL', label: `All (${pageData?.totalItems ?? allItems.length})` },
               { id: 'UNREAD', label: `Unread (${unreadTotal})` },
               { id: 'ACTION', label: `Action Required (${actionCount})` },
               { id: 'SLA', label: `SLA Alerts (${slaCount})` },
@@ -815,73 +816,50 @@ export default function Notifications() {
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant, p: 0 }}>
-          <Box sx={{ p: 2, pb: 1 }}>
-            <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>
-              Manage notification preferences across communication channels. Critical alerts and in-app system channels are locked.
-            </Typography>
-          </Box>
+        <DialogContent dividers sx={{ borderColor: tokens.outlineVariant }}>
+          <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant, mb: 2 }}>
+            Choose how you are notified. Greyed-out boxes are set by your administrator.
+          </Typography>
           {(() => {
-            const matrixChannels = Array.from(new Set(localPrefs.map((p) => p.channel)));
-            const matrixEvents = Array.from(new Set(localPrefs.map((p) => p.eventType)));
+            const channels = [...new Set(localPrefs.map((p) => p.channel))];
+            const events = [...new Set(localPrefs.map((p) => p.eventType))];
+            const sentence = (v: string) => { const t = v.replace(/_/g, ' ').toLowerCase(); return t.charAt(0).toUpperCase() + t.slice(1); };
+            const channelName = (c: string) => ({ IN_APP: 'In app', EMAIL: 'Email', SMS_SIM: 'SMS', PUSH: 'Push', WEBSOCKET: 'Live' } as Record<string, string>)[c] ?? sentence(c);
             return (
-              <TableContainer sx={{ maxHeight: 420 }}>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ bgcolor: tokens.surfaceContainerLow, color: tokens.onSurfaceVariant, fontSize: 12, fontWeight: 700, borderColor: tokens.outlineVariant }}>
-                        Event
-                      </TableCell>
-                      {matrixChannels.map((ch) => (
-                        <TableCell key={ch} align="center" sx={{ bgcolor: tokens.surfaceContainerLow, color: tokens.onSurfaceVariant, fontSize: 12, fontWeight: 700, borderColor: tokens.outlineVariant }}>
-                          {ch === 'IN_APP' ? 'In-app' : ch === 'SMS_SIM' ? 'SMS' : ch === 'WEBSOCKET' ? 'Live feed' : humanizeEnum(ch)}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {matrixEvents.map((evt) => (
-                      <TableRow key={evt} hover>
-                        <TableCell sx={{ borderColor: tokens.outlineVariant, fontSize: 13, fontWeight: 600, color: tokens.onSurface }}>
-                          {humanizeEnum(evt)}
-                        </TableCell>
-                        {matrixChannels.map((ch) => {
-                          const prefIdx = localPrefs.findIndex((p) => p.eventType === evt && p.channel === ch);
-                          const pref = prefIdx >= 0 ? localPrefs[prefIdx] : null;
-                          if (!pref) {
-                            return (
-                              <TableCell key={ch} align="center" sx={{ borderColor: tokens.outlineVariant, color: tokens.textDisabled, fontSize: 12 }}>
-                                —
-                              </TableCell>
-                            );
-                          }
+              <Box sx={{ overflowX: 'auto' }}>
+                <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      <Box component="th" sx={{ textAlign: 'left', py: 1, color: tokens.onSurfaceVariant, fontWeight: 600 }}>Event</Box>
+                      {channels.map((c) => <Box component="th" key={c} sx={{ py: 1, px: 1, color: tokens.onSurfaceVariant, fontWeight: 600, textAlign: 'center' }}>{channelName(c)}</Box>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.map((ev) => (
+                      <Box component="tr" key={ev} sx={{ borderTop: `1px solid ${tokens.hover}` }}>
+                        <Box component="td" sx={{ py: 0.75, color: tokens.onSurface }}>{sentence(ev)}</Box>
+                        {channels.map((c) => {
+                          const idx = localPrefs.findIndex((p) => p.channel === c && p.eventType === ev);
+                          const pref = localPrefs[idx];
                           return (
-                            <TableCell key={ch} align="center" sx={{ borderColor: tokens.outlineVariant }}>
-                              <Checkbox
-                                size="small"
-                                checked={pref.enabled}
-                                disabled={pref.locked}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  setLocalPrefs((prev) =>
-                                    prev.map((p, i) => (i === prefIdx ? { ...p, enabled: checked } : p))
-                                  );
-                                }}
-                                sx={{
-                                  p: 0.5,
-                                  color: tokens.outlineVariant,
-                                  '&.Mui-checked': { color: tokens.secondaryLight },
-                                  '&.Mui-disabled': { opacity: 0.4 },
-                                }}
-                              />
-                            </TableCell>
+                            <Box component="td" key={c} sx={{ textAlign: 'center' }}>
+                              {pref ? (
+                                <Tooltip title={pref.locked ? 'Set by your administrator' : ''}>
+                                  <span>
+                                    <Checkbox size="small" checked={pref.enabled} disabled={pref.locked}
+                                      inputProps={{ 'aria-label': `${sentence(ev)} by ${channelName(c)}` }}
+                                      onChange={(e) => { const checked = e.target.checked; setLocalPrefs((prev) => prev.map((p, i) => (i === idx ? { ...p, enabled: checked } : p))); }} />
+                                  </span>
+                                </Tooltip>
+                              ) : null}
+                            </Box>
                           );
                         })}
-                      </TableRow>
+                      </Box>
                     ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  </tbody>
+                </Box>
+              </Box>
             );
           })()}
         </DialogContent>
@@ -1119,7 +1097,7 @@ function NotificationCard({
                     px: 1.2,
                   }}
                 >
-                  View {extractIncidentCode(notif) || 'Incident'}
+                  Open incident
                 </Button>
               )}
 

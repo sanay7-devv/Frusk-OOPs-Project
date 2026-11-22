@@ -30,8 +30,8 @@ export default function AccountSecurity() {
   };
 
   const start = useMutation({ mutationFn: setupMfa, onMutate: () => { reset(); setInfo(''); }, onSuccess: setSetup, onError: (e) => { setSetup(null); fail(e); } });
-  const enable = useMutation({ mutationFn: () => enableMfa(code), onMutate: reset, onSuccess: () => done('Two-step verification is on.'), onError: fail });
-  const disable = useMutation({ mutationFn: () => disableMfa(code), onMutate: reset, onSuccess: () => done('Two-step verification is off.'), onError: fail });
+  const enable = useMutation({ mutationFn: (submittedCode: string) => enableMfa(submittedCode), onMutate: reset, onSuccess: () => done('Two-step verification is on.'), onError: fail });
+  const disable = useMutation({ mutationFn: (submittedCode: string) => disableMfa(submittedCode), onMutate: reset, onSuccess: () => done('Two-step verification is off.'), onError: fail });
 
   const enabled = status.data?.enabled;
   const copy = async (text: string) => {
@@ -99,16 +99,10 @@ export default function AccountSecurity() {
                 <Button size="small" onClick={() => copy(setup.secret)}>{copied ? 'Copied' : 'Copy'}</Button>
               </Stack>
             </Box>
-            <Box>
-              <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12 }}>Setup link (otpauth)</Typography>
-              <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: tokens.slate300, wordBreak: 'break-all' }}>
-                {setup.otpauthUri}
-              </Typography>
-              <Button size="small" onClick={() => copy(setup.otpauthUri)}>Copy link</Button>
-            </Box>
+            <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => copy(setup.otpauthUri)}>Copy setup link</Button>
             <Stack direction="row" spacing={2} alignItems="flex-start">
               {codeInput}
-              <Button variant="contained" sx={{ mt: 1 }} onClick={() => enable.mutate()} disabled={code.length !== 6 || enable.isPending}>
+              <Button variant="contained" sx={{ mt: 1 }} onClick={() => enable.mutate(code)} disabled={code.length !== 6 || enable.isPending}>
                 Turn on
               </Button>
               <Button sx={{ mt: 1 }} onClick={() => { setSetup(null); reset(); }}>Cancel</Button>
@@ -123,7 +117,7 @@ export default function AccountSecurity() {
             </Typography>
             <Stack direction="row" spacing={2} alignItems="flex-start">
               {codeInput}
-              <Button variant="outlined" color="error" sx={{ mt: 1 }} onClick={() => disable.mutate()} disabled={code.length !== 6 || disable.isPending}>
+              <Button variant="outlined" color="error" sx={{ mt: 1 }} onClick={() => disable.mutate(code)} disabled={code.length !== 6 || disable.isPending}>
                 Turn off
               </Button>
             </Stack>

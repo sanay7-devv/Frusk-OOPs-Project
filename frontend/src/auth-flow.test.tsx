@@ -121,7 +121,7 @@ describe('Auth and Navigation Flow', () => {
     expect(await screen.findByText('Please enter a valid email address')).toBeTruthy();
     expect(screen.getByText('Password is required')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'bad-address' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'bad-address' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'example' } });
     fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
     expect(await screen.findByText('Please enter a valid email address')).toBeTruthy();

@@ -233,16 +233,17 @@ export const theme = createTheme({
     },
     caption: {
       fontSize: '0.75rem',
-      fontFamily: 'JetBrains Mono, monospace',
-      letterSpacing: '0.04em',
+      fontFamily: 'Geist, sans-serif',
+      letterSpacing: 'normal',
       color: '#94a3b8',
     },
     overline: {
       fontSize: '0.75rem',
-      fontFamily: 'JetBrains Mono, monospace',
-      letterSpacing: '0.08em',
+      fontFamily: 'Geist, sans-serif',
+      letterSpacing: '0.02em',
       fontWeight: 600,
       color: '#94a3b8',
+      textTransform: 'none',
     },
   },
   shape: {
@@ -268,33 +269,21 @@ export const theme = createTheme({
             color: '#001f26',
           },
           scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(192, 193, 255, 0.22) rgba(10, 14, 23, 0.55)',
+          scrollbarColor: 'rgba(148, 163, 184, 0.32) transparent',
           '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
-            width: 7,
-            height: 7,
+            width: 6,
+            height: 6,
           },
           '&::-webkit-scrollbar-track, & *::-webkit-scrollbar-track': {
-            background: 'rgba(10, 14, 23, 0.55)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
+            background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(192, 193, 255, 0.18)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(148, 163, 184, 0.3)',
             borderRadius: 9999,
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'background-color 0.15s ease',
           },
           '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.6) 0%, rgba(6, 182, 212, 0.6) 100%)',
-            borderColor: 'rgba(99, 102, 241, 0.75)',
-            boxShadow: '0 0 14px rgba(99, 102, 241, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.3)',
-          },
-          '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
-            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.8) 0%, rgba(99, 102, 241, 0.8) 100%)',
-            borderColor: 'rgba(6, 182, 212, 0.9)',
-            boxShadow: '0 0 18px rgba(6, 182, 212, 0.8)',
+            backgroundColor: 'rgba(148, 163, 184, 0.52)',
           },
           '&::-webkit-scrollbar-corner, & *::-webkit-scrollbar-corner': {
             background: 'transparent',
@@ -340,16 +329,16 @@ export const theme = createTheme({
           transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         },
         containedPrimary: {
-          background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+          backgroundColor: '#6366f1',
           color: '#ffffff',
-          boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)',
+          boxShadow: 'none',
           '&:hover': {
-            background: 'linear-gradient(135deg, #4f46e5 0%, #0891b2 100%)',
-            boxShadow: '0 0 24px rgba(6, 182, 212, 0.5)',
-            transform: 'translateY(-1px)',
+            backgroundColor: '#4f46e5',
           },
-          '&:active': {
-            transform: 'translateY(0)',
+          '&.Mui-disabled': {
+            backgroundColor: 'rgba(99, 102, 241, 0.18)',
+            color: 'rgba(223, 226, 239, 0.48)',
+            boxShadow: 'none',
           },
         },
         outlined: {
@@ -462,11 +451,10 @@ export const theme = createTheme({
         head: {
           backgroundColor: '#0e121d',
           color: '#94a3b8',
-          fontFamily: 'JetBrains Mono, monospace',
+          fontFamily: 'Geist, sans-serif',
           fontSize: '12px',
           fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          letterSpacing: '0.01em',
         },
       },
     },
@@ -499,15 +487,16 @@ export const theme = createTheme({
         root: {
           borderRadius: 6,
           fontWeight: 600,
-          fontFamily: 'JetBrains Mono, monospace',
+          fontFamily: 'Geist, sans-serif',
           fontSize: '12px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
+          textTransform: 'none',
         },
       },
     },
     MuiTooltip: {
       styleOverrides: {
-        tooltip: { fontSize: '12px' },
+        tooltip: { fontSize: '12px', maxWidth: 280, lineHeight: 1.45 },
       },
     },
     MuiDialogTitle: {
@@ -547,6 +536,7 @@ export const theme = createTheme({
           boxShadow: '0 16px 40px -4px rgba(0, 0, 0, 0.75), 0 0 16px rgba(99, 102, 241, 0.15) !important',
           padding: '4px !important',
           maxHeight: '320px !important',
+          maxWidth: 'min(320px, calc(100vw - 16px)) !important',
           '&::-webkit-scrollbar': {
             width: 6,
             height: 6,
@@ -581,7 +571,7 @@ export const theme = createTheme({
     },
     MuiAutocomplete: {
       styleOverrides: {
-        listbox: { maxHeight: 320 },
+        listbox: { maxHeight: 'min(320px, calc(100vh - 32px))', overflowY: 'auto' },
         paper: {
           backgroundColor: 'rgba(13, 17, 27, 0.96) !important',
           backdropFilter: 'blur(12px) !important',

@@ -17,6 +17,7 @@ import type { IncidentSummary } from '../../../api/types';
 import { ChartCard } from '../reports/common';
 import { EmptyState } from '../../../components/StateViews';
 import { tone } from '../palette';
+import { formatTime } from '../../../utils/format';
 
 const EVENT_TEXT: Record<DashboardEventType, string> = {
   INCIDENT_CREATED: 'Incident Reported',
@@ -334,7 +335,7 @@ export function AttentionCard() {
       action={
         <Typography
           component={RouterLink}
-          to="/admin/incidents"
+          to="/admin/tickets?tab=all&status=ACTIVE"
           sx={{
             fontSize: 12,
             fontWeight: 600,

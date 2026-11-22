@@ -2,11 +2,11 @@ import { Box, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { getLiveDashboard, type DashboardEvent } from '../api/dashboard';
 import { tokens } from '../theme/theme';
 import { useLiveEvents, useRealtimeStatus } from '../realtime/realtimeStore';
 import { apiErrorMessage } from '../utils/errors';
+import { formatTimeSeconds, humanizeEnum } from '../utils/format';
 import { ErrorState } from './StateViews';
 
 const priorityTint = (p: DashboardEvent['priority']) => (p ? tokens.priority[p] : tokens.onSurfaceVariant);
@@ -91,11 +91,11 @@ export default function LiveEventPulse({ max = 8, onSelect }: LiveEventPulseProp
             }}
           >
             <Typography sx={{ fontSize: 12, fontFamily: tokens.fontMono, color: tokens.onSurfaceVariant, minWidth: 64 }}>
-              {format(new Date(e.at), 'HH:mm:ss')}
+              {formatTimeSeconds(e.at)}
             </Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 700, fontFamily: tokens.fontMono }}>{e.code ?? '-'}</Typography>
             <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant, flexGrow: 1 }}>
-              {e.type.replace(/_/g, ' ').toLowerCase()}
+              {humanizeEnum(e.type)}
             </Typography>
           </Box>
         );
