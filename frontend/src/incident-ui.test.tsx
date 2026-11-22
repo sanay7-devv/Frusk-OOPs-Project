@@ -10,11 +10,11 @@ afterEach(cleanup);
 describe('Incident status and SLA displays', () => {
   it('uses the friendly status label and distinguishes withdrawn closure', () => {
     const { rerender } = render(<StatusChip status="PENDING_USER_INFO" friendly />);
-    expect(screen.getByText('Waiting for Details')).toBeTruthy();
+    expect(screen.getByText('Waiting for details')).toBeTruthy();
     rerender(<StatusChip status="CLOSED" closureReason="WITHDRAWN" friendly />);
     expect(screen.getByText('Withdrawn')).toBeTruthy();
     rerender(<StatusChip status="REOPENED" />);
-    expect(screen.getByText('REOPENED')).toBeTruthy();
+    expect(screen.getByText('Reopened')).toBeTruthy();
   });
 
   it('shows server-controlled paused and met SLA states', () => {
