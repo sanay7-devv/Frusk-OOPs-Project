@@ -388,21 +388,35 @@ export default function MyIncidents() {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 1.8,
           mb: 3,
           borderRadius: 3,
           bgcolor: COLORS.surfaceContainer,
           border: `1px solid ${COLORS.border}`,
           backdropFilter: 'blur(16px)',
           display: 'flex',
-          flexDirection: { xs: 'column', lg: 'row' },
-          alignItems: { xs: 'stretch', lg: 'center' },
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
           gap: 2,
         }}
       >
         {/* Status Tabs */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: COLORS.surfaceContainerLow, p: 0.5, borderRadius: 2, border: `1px solid ${COLORS.border}`, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.8,
+            bgcolor: COLORS.surfaceContainerLow,
+            p: 0.5,
+            borderRadius: 2,
+            border: `1px solid ${COLORS.border}`,
+            flexWrap: 'nowrap',
+            flexShrink: 0,
+            overflowX: 'auto',
+          }}
+        >
           {[
             { id: 'ALL', label: 'All', count: totalCount },
             { id: 'ACTIVE', label: 'Active', count: activeCount },
@@ -427,6 +441,8 @@ export default function MyIncidents() {
                   px: 1.5,
                   py: 0.6,
                   textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   '&:hover': { bgcolor: COLORS.surfaceContainerHigh },
                 }}
               >
@@ -434,7 +450,7 @@ export default function MyIncidents() {
                 <Box
                   component="span"
                   sx={{
-                    ml: 1,
+                    ml: 0.8,
                     px: 0.8,
                     py: 0.1,
                     borderRadius: 1,

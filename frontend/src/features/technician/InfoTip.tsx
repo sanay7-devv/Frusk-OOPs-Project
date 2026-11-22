@@ -1,5 +1,5 @@
 import { Box, Tooltip } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { InfoOutlined as InfoOutlinedIcon } from '@mui/icons-material';
 import type { ReactNode } from 'react';
 
 /** A label with a small muted info icon; the explanation shows on hover or keyboard focus. Same props as the shared InfoTip. */

@@ -16,7 +16,7 @@ Status: [ ] open, [x] fixed. Fix all at once, then re-check.
 - [ ] Escalation "Related settings": raw keys (`escalation.exhausted.minutes`) shown under fields; show plain text, key as small hint only
 - [ ] SLA page: raw enum "BUSINESS_HOURS" in calendar heading
 - [ ] SLA table: "1 days" (plural for 1)
-- [ ] Audit: action chip "Sla violated" should be "SLA violated" (acronyms in humanised enums: SLA, P1, AI, LLM...)
+- [x] Audit: action chip "Sla violated" should be "SLA violated" (acronyms in humanised enums: SLA, P1, AI, LLM...)
 - [x] Audit: description "missed by 267574 s" (raw seconds) and "response due 2026-11-20T19:54..." (raw ISO); backend text, make readable
 - [ ] Audit: "To is exclusive" helper text is unclear
 - [ ] Audit: header "Time (your local time)" wraps
@@ -28,44 +28,44 @@ Status: [ ] open, [x] fixed. Fix all at once, then re-check.
 - [x] Reports workload chart: "Capacity" legend label nearly invisible
 
 - [ ] Simulator: strategy shown as raw enum "COMPOSITE" (dropdown and weights hint)
-- [ ] Dates use 4 formats ("11/21/2026, 12:24:15 AM", "21 Nov 2026, 00:24", "11/15/26, 9:54 PM", "11-14"); use one shared formatter
+- [x] Dates use 4 formats ("11/21/2026, 12:24:15 AM", "21 Nov 2026, 00:24", "11/15/26, 9:54 PM", "11-14"); use one shared formatter
 - [ ] Admin incident detail: audit history shows raw enums (INCIDENT_CREATED, PRIORITY_CALCULATED, SLA_VIOLATED)
 - [ ] Admin incident detail: SLA risk factors in camelCase (elapsedTime, technicianLoad, similarHistory)
 - [ ] Admin incident detail: section titles mix Title Case and jargon ("SLA Timers & Target", "Admin Command Notes & Discussion", "Compliance PDF Dossier", "ITIL PRIORITY FORMULA BREAKDOWN", "Override Priority"); use sentence case, plain words
 - [ ] Admin incident detail: visibility chips "INTERNAL (Ops Only)" / "PUBLIC (Reporter Visible)"; empty lifecycle dates show "-"
-- [ ] Wallboard: "Nearest to missing SLA" empty while 40 open (ignores already-breached); big empty panel
+- [x] Wallboard: "Nearest to missing SLA" empty while 40 open (ignores already-breached); big empty panel
 
-- [ ] Lead team queue: heading "Team Triage & Explainable Allocation", breadcrumb Title Case, "Auto-Assign Ticket"; duplicate banner lists 5 codes with "(100%)"
-- [ ] Lead escalations: "SUPERVISORY CONSOLE // ESCALATIONS & BREACHES • TIER 1 & 2 SUPERVISION", "Escalation Command & SLA Violations", "Assigned: Unassigned (Triage)", "No subsequent escalation step scheduled. Ticket is at top supervisory tier."
-- [ ] Tech queue: "Technician Operational Work Queue", "Live backend · 10s sync", "Live SRE incident triage cockpit · Logged in as ...", "Quota: 10 Max", "(90% Capacity)", "Pending Info (Paused)"
-- [ ] Tech workload: "Technician Workload, Capacity & SLA Performance", "Real-time concurrency quotas, shift throughput velocity, and ITIL SLA delivery compliance.", "Live Queue Tickets", "Completed Resolutions", "Next Commitments"
-- [ ] Employee home: "Enterprise IT Service Portal", "Window: 30d basis", "SUMMARY 4 Active / 25 Resolved"
-- [ ] Employee my incidents: "My Reported Incidents", "29 TICKETS", "Save Current View", "Refresh Feed", headers "Incident code", "SLA clock & bar"
-- [ ] Employee report form: jargon for an employee ("Report an Operational Issue or Outage", "01. CORE INCIDENT PARAMETERS", "Mandatory for escalation routing", "SEVERITY METRICS & BLAST RADIUS", "SLA Matrix", "Scope of Operational Impairment", "LVL", "responder rota", "degraded customer-facing service"); level descriptions cut off with "…"
-- [ ] 404 page: "Return to Console", "decommissioned"
+- [x] Lead team queue: heading "Team Triage & Explainable Allocation", breadcrumb Title Case, "Auto-Assign Ticket"; duplicate banner lists 5 codes with "(100%)"
+- [x] Lead escalations: "SUPERVISORY CONSOLE // ESCALATIONS & BREACHES • TIER 1 & 2 SUPERVISION", "Escalation Command & SLA Violations", "Assigned: Unassigned (Triage)", "No subsequent escalation step scheduled. Ticket is at top supervisory tier."
+- [x] Tech queue: "Technician Operational Work Queue", "Live backend · 10s sync", "Live SRE incident triage cockpit · Logged in as ...", "Quota: 10 Max", "(90% Capacity)", "Pending Info (Paused)"
+- [x] Tech workload: "Technician Workload, Capacity & SLA Performance", "Real-time concurrency quotas, shift throughput velocity, and ITIL SLA delivery compliance.", "Live Queue Tickets", "Completed Resolutions", "Next Commitments"
+- [x] Employee home: "Enterprise IT Service Portal", "Window: 30d basis", "SUMMARY 4 Active / 25 Resolved"
+- [x] Employee my incidents: "My Reported Incidents", "29 TICKETS", "Save Current View", "Refresh Feed", headers "Incident code", "SLA clock & bar"
+- [x] Employee report form: jargon for an employee ("Report an Operational Issue or Outage", "01. CORE INCIDENT PARAMETERS", "Mandatory for escalation routing", "SEVERITY METRICS & BLAST RADIUS", "SLA Matrix", "Scope of Operational Impairment", "LVL", "responder rota", "degraded customer-facing service"); level descriptions cut off with "…"
+- [x] 404 page: "Return to Console", "decommissioned"
 - [ ] Title Case vs sentence case mixed across buttons and headings app-wide
 
-- [ ] Employee report: AI card "Model Alignment 0.95 / 1.00", "Source: LLM", badge "SLA Matrix: P2 HIGH"
-- [ ] Employee guided chat: service choice chips render empty (`{id,name}` read as `{label,value}`)
-- [ ] Guided chat: exact service name ("Network") ties with test services, so the chat loops
+- [x] Employee report: AI card "Model Alignment 0.95 / 1.00", "Source: LLM", badge "SLA Matrix: P2 HIGH"
+- [x] Employee guided chat: service choice chips render empty (`{id,name}` read as `{label,value}`)
+- [x] Guided chat: exact service name ("Network") ties with test services, so the chat loops
 
 ## Open: layout
 - [ ] ALL dropdowns (Select / Menu / Autocomplete) open as a full-height list over the page; make them small popups (max 320px, scroll inside, open below the field)
-- [ ] Incident codes wrap onto 3 lines (lead queue cards and detail header, employee my incidents); codes must never wrap
-- [ ] Employee my incidents table: cramped (title, date wrap per word), Actions column cut off
-- [ ] Tech queue: "Set Away" button wraps; header layout loose
-- [ ] Lead queue detail: action buttons stack and wrap ("Problem #2: resolve the whole problem")
+- [x] Incident codes wrap onto 3 lines (lead queue cards and detail header, employee my incidents); codes must never wrap
+- [x] Employee my incidents table: cramped (title, date wrap per word), Actions column cut off
+- [x] Tech queue: "Set Away" button wraps; header layout loose
+- [x] Lead queue detail: action buttons stack and wrap ("Problem #2: resolve the whole problem")
 - [ ] Incident quick-view drawer: top (code, close button) hidden under the app bar
-- [ ] Buttons wrap to 2 lines in page headers (Config Save/Discard, Services "Dependency graph"/"New service", Categories "Add skill"/"Add category", Escalation "Add level"); fix globally (nowrap)
+- [x] Buttons wrap to 2 lines in page headers (Config Save/Discard, Services "Dependency graph"/"New service", Categories "Add skill"/"Add category", Escalation "Add level"); fix globally (nowrap)
 - [ ] Categories table: row cells shifted one column (Status shows under "Eligible technicians", actions under Status, "Actions" header cut off)
 - [ ] Admin incidents table: last column (Created) cut off at laptop width
 - [x] SLA "Which policy applies?": Service select label overlaps its value
 - [ ] Page headers inconsistent (Users/Services/SLA use icon card header; others plain h1)
 
 ## Open: data correctness
-- [ ] Reports: "Average time to resolve -13 min" (negative)
+- [x] Reports: "Average time to resolve -13 min" (negative)
 - [ ] SLA violations count disagrees: dashboard 77 (30 days), reports card 48 (30 days), reports table 78, SLA page "77 breached" total
-- [ ] Dashboard "Needs attention: nothing" while 6 P1 open and many SLA breaches
+- [x] Dashboard "Needs attention: nothing" while 6 P1 open and many SLA breaches
 - [ ] Console: GET /api/v1/admin/demo/clock 404 on every page (demo endpoint called outside demo profile)
 
 ## Design tweaks (polish pass)
@@ -79,7 +79,7 @@ Global (theme / layout, admin worker):
 - [ ] Monospace uppercase used for ordinary labels, hints and helper text ("0 to 1", "Window: 30d basis", table headers, card labels); keep mono for codes, numbers and keys only
 - [ ] KPI cards differ per page (coloured top border on Dashboard, none on Reports, mono labels on Users/Services); one KpiCard style
 - [ ] Tables: rows ~60px tall; use a denser row height on laptop so more rows fit
-- [ ] Reserve the scrollbar gutter (`scrollbar-gutter: stable`) so the top bar doesn't jump between pages with and without a scrollbar
+- [x] Reserve the scrollbar gutter (`scrollbar-gutter: stable`) so the top bar doesn't jump between pages with and without a scrollbar
 - [x] Login: white Google button clashes with the dark card (use the dark outline style); "View Default Database Credentials (Demo)" becomes "Show demo accounts"; "Sign In" / "Email Address" in sentence case; "enterprise account" becomes "account"
 Dashboard / charts (admin worker):
 - [ ] Line chart curve overshoots (smoothed spline dips around flat days); use monotone interpolation
@@ -87,7 +87,7 @@ Dashboard / charts (admin worker):
 - [ ] "Needs attention" empty state is a huge empty box; make it compact
 - [ ] Team capacity and live feed have inner scrollbars inside cards; show the top N with a "view all" link
 Employee home (employee worker):
-- [ ] 18 service tiles each repeating italic "No open P1 or P2 incident here or upstream"; healthy services should be compact (name + green dot), with only degraded and outage tiles expanded; less italic
+- [x] 18 service tiles each repeating italic "No open P1 or P2 incident here or upstream"; healthy services should be compact (name + green dot), with only degraded and outage tiles expanded; less italic
 Lead / tech (staff worker):
 - [ ] Too many chips per card (priority, status, MAJOR, LEVEL); combine or reduce; consistent chip sizes
 
@@ -109,47 +109,47 @@ Lead / tech (staff worker):
 - [ ] Numbers: right-align numeric table columns; use tabular figures so timers don't jiggle
 - [ ] Tooltips on icon-only buttons everywhere (edit, delete, more)
 - [ ] Truncated text (ellipsis) must show the full text on hover
-- [ ] Page title in the browser tab is always "IITSM Enterprise"; set it per page ("Incidents · IITSM")
+- [x] Page title in the browser tab is always "IITSM Enterprise"; set it per page ("Incidents · IITSM")
 
 ## Full click-through, 2026-11-21 (every screen, every button, all 4 roles, 1366x768)
 Found by clicking every button and running the incident lifecycle end to end (report, acknowledge, start, note, resolve, reopen, verify, rate, withdraw, edit, comment, take over, auto-assign, summarize).
 
 ### Broken (feature does not work)
-- [ ] `GET /problems/known-outages` returns 400 for employees: the frontend (`api/incidents.ts` `getKnownOutages`) sends no `serviceId`, the backend (`ProblemController.knownOutages`) requires it. The outage banner and "Join outage" never show on Employee home or Service status (and the graph says "0 joined" on every problem). Fix one side: make `serviceId` optional in the backend (list all) or send it
-- [ ] Lead "Auto-Assign Ticket" fails with 409 "That technician cannot take more work. Pick another." It picks a full technician instead of skipping full ones; for an automatic action the message makes no sense
+- [x] `GET /problems/known-outages` returns 400 for employees: the frontend (`api/incidents.ts` `getKnownOutages`) sends no `serviceId`, the backend (`ProblemController.knownOutages`) requires it. The outage banner and "Join outage" never show on Employee home or Service status (and the graph says "0 joined" on every problem). Fix one side: make `serviceId` optional in the backend (list all) or send it
+- [x] Lead "Auto-Assign Ticket" fails with 409 "That technician cannot take more work. Pick another." It picks a full technician instead of skipping full ones; for an automatic action the message makes no sense
 - [ ] Lead "Take over" (escalations) fails with the same 409 when the lead is at capacity (Priya 10/10); a lead taking over should not be blocked by load, or the dialog must say so before submit. The Take over button stays disabled with no hint of the minimum reason length
-- [ ] Admin assign dialog (Printing/Hardware incident): all 21 technicians are ineligible, only a disabled "Assign now" and no message saying why or what to do
-- [ ] Employee opening someone else's incident (`/employee/incidents/224`): blank page, no "not found / no access" message; every request is sent twice (8x 404)
+- [x] Admin assign dialog (Printing/Hardware incident): all 21 technicians are ineligible, only a disabled "Assign now" and no message saying why or what to do
+- [x] Employee opening someone else's incident (`/employee/incidents/224`): blank page, no "not found / no access" message; every request is sent twice (8x 404)
 - [ ] Categories: "Edit Hardware" and "Edit VPN" opened no dialog (recheck)
-- [ ] Top-bar search box does nothing while typing; only Ctrl+K opens the palette, so there are two searches. Make the box open the palette
-- [ ] 404 page renders without the app shell (no sidebar, no top bar)
+- [x] Top-bar search box does nothing while typing; only Ctrl+K opens the palette, so there are two searches. Make the box open the palette
+- [x] 404 page renders without the app shell (no sidebar, no top bar)
 
 ### Wrong behaviour or wrong data
-- [ ] Withdrawn incident still offers "Rate Resolution" and "Post-Incident Report"; the backend accepts the rating (201 POST /feedback). Hide both on WITHDRAWN, and reject feedback for withdrawn incidents in the backend
-- [ ] Withdraw toast says "Incident withdrawn and marked as closed." but the status is WITHDRAWN
+- [x] Withdrawn incident still offers "Rate Resolution" and "Post-Incident Report"; the backend accepts the rating (201 POST /feedback). Hide both on WITHDRAWN, and reject feedback for withdrawn incidents in the backend
+- [x] Withdraw toast says "Incident withdrawn and marked as closed." but the status is WITHDRAWN
 - [ ] Post-Incident Report for a withdrawn incident is an almost empty dialog ("Duration: 820 minutes", raw minutes); Escape does not close it
-- [ ] Comment toast "Your update has been sent to the assigned technician." on an unassigned incident
+- [x] Comment toast "Your update has been sent to the assigned technician." on an unassigned incident
 - [ ] Edit Details saves (PUT) even when nothing changed; only the description is editable, title is not
-- [ ] Employee stepper: on RESOLVED the "Remediated" step is not ticked (shows numbers 4 and 5); on REOPENED no step is ticked at all (1 to 5 all plain numbers). Map RESOLVED and REOPENED in the stepper
+- [x] Employee stepper: on RESOLVED the "Remediated" step is not ticked (shows numbers 4 and 5); on REOPENED no step is ticked at all (1 to 5 all plain numbers). Map RESOLVED and REOPENED in the stepper
 - [ ] Verify dialog says "you will be invited to rate the resolution" but no rating prompt follows
-- [ ] Notifications page: tab "Unread (82)" while "All Notifications (30)"
-- [ ] "View Ticket #252" and the toast "received (Incident #253)" show internal ids; the code is INC-2026-00253. Show codes only, never internal ids
-- [ ] Tech queue "Pending Info (Paused) (0)" tab lists 1 incident
-- [ ] Tech workbench resolution clock: "Due 11/15/2026, 10:23 PM" (in the past) instead of "Overdue"
-- [ ] Tech workbench header "Priya Nair // Assigned SRE" while the Assignee field says Unassigned; still shown after resolve
-- [ ] Lead escalations: rows with "0m overdue"
-- [ ] Incidents Export covers the date range only and ignores the active filters
+- [x] Notifications page: tab "Unread (82)" while "All Notifications (30)"
+- [x] "View Ticket #252" and the toast "received (Incident #253)" show internal ids; the code is INC-2026-00253. Show codes only, never internal ids
+- [x] Tech queue "Pending Info (Paused) (0)" tab lists 1 incident
+- [x] Tech workbench resolution clock: "Due 11/15/2026, 10:23 PM" (in the past) instead of "Overdue"
+- [x] Tech workbench header "Priya Nair // Assigned SRE" while the Assignee field says Unassigned; still shown after resolve
+- [x] Lead escalations: rows with "0m overdue"
+- [x] Incidents Export covers the date range only and ignores the active filters
 - [ ] Two different assign dialogs: simple dropdown on the incidents list, ranked list on the detail page; use the ranked one in both
 - [ ] Three different mark-duplicate dialogs (admin, lead, tech); the tech one has no id input when nothing similar is found
-- [ ] Employee My incidents: "Resolved / Closed 25" badge but 20 rows (paging not shown); SLA column shows "Remediated" for closed rows
-- [ ] Toasts show raw statuses: "moved to IN_PROGRESS", "INC-2026-00224 is now RESOLVED."
+- [x] Employee My incidents: "Resolved / Closed 25" badge but 20 rows (paging not shown); SLA column shows "Remediated" for closed rows
+- [x] Toasts show raw statuses: "moved to IN_PROGRESS", "INC-2026-00224 is now RESOLVED."
 - [ ] A public note toast says "Investigation note appended to timeline." (fine), but the public-note confirm is the only confirm in the app; check other irreversible actions use the same style
-- [ ] Login page always shows the demo accounts block ("POSTGRESQL SEED ACCOUNTS … Full system clearance"); show only in the demo profile, behind "Show demo accounts"
-- [ ] Console: React duplicate key warning in the audit actor filter (two users named "Priya Lead")
-- [ ] Console: validateDOMNesting `<h2>` inside `<h6>` in dialogs (Notification preferences, employee Rate dialog): DialogTitle wraps a Typography h6; use `component="span"` or drop the inner Typography
+- [x] Login page always shows the demo accounts block ("POSTGRESQL SEED ACCOUNTS … Full system clearance"); show only in the demo profile, behind "Show demo accounts"
+- [x] Console: React duplicate key warning in the audit actor filter (two users named "Priya Lead")
+- [x] Console: validateDOMNesting `<h2>` inside `<h6>` in dialogs (Notification preferences, employee Rate dialog): DialogTitle wraps a Typography h6; use `component="span"` or drop the inner Typography
 
 ### Date and time inputs (user request)
-- [ ] Native `dd-mm-yyyy --:--` date inputs on Lead escalations (SLA violations From / To), Audit and Incidents filters: labels sit outside the field, format differs per browser locale. Use one shared date-range picker (MUI X DatePicker or one styled `DateRangeField`), label inside, same height as the other filters, a clear button, and display dates in the one app format
+- [x] Native `dd-mm-yyyy --:--` date inputs on Lead escalations (SLA violations From / To), Audit and Incidents filters: labels sit outside the field, format differs per browser locale. Use one shared date-range picker (MUI X DatePicker or one styled `DateRangeField`), label inside, same height as the other filters, a clear button, and display dates in the one app format
 - [ ] Every timestamp should use the one shared formatter (see naming list); durations as "5d 16h", never "135h 52m" or "820 minutes" or "54726 s"
 
 ### Naming, jargon and wording found in dialogs
@@ -161,15 +161,15 @@ Found by clicking every button and running the incident lifecycle end to end (re
 - [ ] Edit dialog: "Edit Incident Details", "Update the incident description and diagnostic details:"
 - [ ] Take over dialog: label "Reason for taking over" shown twice (label + placeholder)
 - [ ] Declare-incident dialog: Service / Category / Impact rows indented and wider than Title, big gap
-- [ ] Notification preferences: 40-row list with raw enums (IN_APP, SMS_SIM, WEBSOCKET, INCIDENT CREATED, "Locked by Policy"); make it a matrix (events x channels with checkboxes); "Save Preferences" / "Notification Preferences" Title Case
-- [ ] Push devices dialog: "Platform WEB"
-- [ ] Team workload dialog: raw AVAILABLE/BUSY, "Weighted load 10 / 10 | 4 active | experience 5" with pipes, skill numbers unexplained, every bar red, "AVAILABLE" at full load
+- [x] Notification preferences: 40-row list with raw enums (IN_APP, SMS_SIM, WEBSOCKET, INCIDENT CREATED, "Locked by Policy"); make it a matrix (events x channels with checkboxes); "Save Preferences" / "Notification Preferences" Title Case
+- [x] Push devices dialog: "Platform WEB"
+- [x] Team workload dialog: raw AVAILABLE/BUSY, "Weighted load 10 / 10 | 4 active | experience 5" with pipes, skill numbers unexplained, every bar red, "AVAILABLE" at full load
 - [ ] Override priority: "WHAT THE PRIORITY ENGINE SAYS", "1 users"
 - [ ] Append note dialog: "SRE INTERNAL WORKBENCH // … Append Investigation Note", "Save to Incident Timeline"
-- [ ] Assign dialog: "Ranked with strategy COMPOSITE", raw OFF_DUTY / AWAY, "is AWAY"; ineligible people listed first (list eligible first)
+- [x] Assign dialog: "Ranked with strategy COMPOSITE", raw OFF_DUTY / AWAY, "is AWAY"; ineligible people listed first (list eligible first)
 - [ ] Reassign dialog: "Currently with X" mixed into the reason helper text
 - [ ] Saved views: a big empty box when there are none
-- [ ] New SLA policy dialog: Service label overlaps its value
+- [x] New SLA policy dialog: Service label overlaps its value
 - [ ] Employee "Save Filter View" dialog Title Case
 - [ ] Report success dialog: "Target SLA Resolution: 01:54 PM" without a date
 - [ ] Simulator toast grammar is odd
@@ -177,7 +177,7 @@ Found by clicking every button and running the incident lifecycle end to end (re
 - [ ] Lead intelligence panel: camelCase risk factors (elapsedTime, technicianLoad, similarHistory), "source: LLM", "EMBEDDING" chip; plain words or move to hover
 - [ ] Ctrl+K palette rows show raw "Incident, CLASSIFIED"
 - [ ] TOTP: issuer "I-ITSM" vs app name "IITSM"; the raw otpauth link breaks mid-string (hide behind "Can't scan? Show key")
-- [ ] Register page: "Create Enterprise Account", "Enterprise Email", password hint in the label differs from the backend rules, "Forgot password?" link on the register page
+- [x] Register page: "Create Enterprise Account", "Enterprise Email", password hint in the label differs from the backend rules, "Forgot password?" link on the register page
 
 ### Tech workbench and employee detail layout
 - [ ] Workbench sidebar box ends at ~770px instead of full height (also on employee detail)
@@ -188,7 +188,7 @@ Found by clicking every button and running the incident lifecycle end to end (re
 - [ ] Employee home: duplicate search sections
 
 ### Service dependency graph (admin)
-- [ ] Two sidebar items highlighted at once (Services and Dependency graph)
+- [x] Two sidebar items highlighted at once (Services and Dependency graph)
 - [ ] Graph nodes load tiny and unreadable at the bottom of the canvas with empty space above; fit to view on load
 - [ ] Circular mini graph on the right has no labels or legend
 - [ ] Major incident strip: chips "Staged 0 (0 joined)", three identical "Something is broken" chips (add code or service); "Probable root cause: Payment, path Payment" reads oddly when the path is one node
