@@ -210,19 +210,10 @@ export default function AppShell() {
   }, [activeWorkspace, user, workspaces]);
 
   const navItems = (NAV[activeWorkspace] || []).filter((i) => !i.permission || !!user?.permissions?.includes(i.permission));
-  const currentPage = navItems
-    .filter((item) => location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(`${item.to}/`)))
-    .sort((a, b) => b.to.length - a.to.length)[0];
-  const pageTitle = currentPage?.label ?? (location.pathname.includes('/incidents/') ? 'Incident details' : undefined);
-
-  useEffect(() => {
-    document.title = pageTitle ? `${pageTitle} · IITSM Enterprise` : 'IITSM Enterprise';
-  }, [pageTitle]);
-
   useEffect(() => {
     const currentNav = navItems.find((n) => n.to === location.pathname || (n.to !== '/' && location.pathname.startsWith(n.to)));
     const pageTitle = currentNav?.label || (location.pathname.includes('/incidents/') ? 'Incident detail' : 'Command Centre');
-    document.title = `${pageTitle} · IITSM`;
+    document.title = `${pageTitle} · ReSolv`;
   }, [location.pathname, navItems]);
 
   return (
@@ -376,7 +367,7 @@ export default function AppShell() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: `0 0 16px ${alpha(tokens.primary, 0.25)}`,
+                  boxShadow: `0 4px 12px ${alpha(tokens.black, 0.18)}`,
                   overflow: 'hidden',
                   flexShrink: 0,
                 }}
@@ -384,7 +375,7 @@ export default function AppShell() {
                 <Box
                   component="img"
                   src={logoIcon}
-                  alt="IITSM Logo"
+                  alt="ReSolv brand mark"
                   sx={{ width: 28, height: 28, objectFit: 'contain' }}
                 />
               </Box>
@@ -401,7 +392,7 @@ export default function AppShell() {
                     lineHeight: 1.2,
                   }}
                 >
-                  IITSM Enterprise
+                  ReSolv
                 </Typography>
                 <Tooltip title={rtConfig.hint} arrow placement="bottom-start">
                   <Box
@@ -1016,7 +1007,7 @@ export default function AppShell() {
                 fontFamily: 'JetBrains Mono, monospace',
               }}
             >
-              IITSM Enterprise · Active Session
+              ReSolv · Active Session
             </Typography>
           </Menu>
         </Toolbar>

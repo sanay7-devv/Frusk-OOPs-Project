@@ -20,7 +20,13 @@ export default function AuthCard({ title, subtitle, children }: { title: string;
         }}
       >
         <Box textAlign="center" mb={3}>
-          <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 48, height: 48, objectFit: 'contain', mb: 1 }} />
+          <Box component="img" src={logoIcon} alt="ReSolv brand mark" sx={{ width: 48, height: 48, objectFit: 'contain', mb: 1 }} />
+          <Typography variant="subtitle1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white, lineHeight: 1.3 }}>
+            ReSolv
+          </Typography>
+          <Typography variant="body2" sx={{ color: tokens.onSurfaceVariant, fontSize: 12, mt: 0.25, mb: 1.5 }}>
+            Raise it. Track it. Resolve it.
+          </Typography>
           <Typography variant="h5" component="h1" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, color: tokens.white }}>
             {title}
           </Typography>

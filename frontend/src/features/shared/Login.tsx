@@ -84,7 +84,7 @@ export default function Login() {
   const hasGoogleAuth = Boolean(clientId && !clientId.includes('your-google-client-id'));
 
   useEffect(() => {
-    document.title = 'Sign In · IITSM';
+    document.title = 'Sign in · ReSolv';
   }, []);
 
   // Auto-redirect if already authenticated
@@ -171,32 +171,6 @@ export default function Login() {
       py={4}
       sx={{
         bgcolor: tokens.background,
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: '-15%',
-          left: '-10%',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          bgcolor: alpha(tokens.primary, 0.1),
-          filter: 'blur(130px)',
-          pointerEvents: 'none',
-        },
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          bottom: '-15%',
-          right: '-10%',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          bgcolor: alpha(tokens.secondary, 0.08),
-          filter: 'blur(130px)',
-          pointerEvents: 'none',
-        },
       }}
     >
       <Paper
@@ -206,10 +180,9 @@ export default function Login() {
           width: '100%',
           maxWidth: 480,
           borderRadius: '16px',
-          bgcolor: alpha(tokens.paper, 0.85),
-          backdropFilter: 'blur(24px)',
+          bgcolor: tokens.paper,
           border: `1px solid ${tokens.outlineVariant}`,
-          boxShadow: `0 24px 64px ${alpha(tokens.black, 0.7)}, 0 0 24px ${alpha(tokens.primary, 0.12)}`,
+          boxShadow: `0 20px 52px ${alpha(tokens.black, 0.42)}`,
           position: 'relative',
           zIndex: 1,
         }}
@@ -222,19 +195,19 @@ export default function Login() {
               height: 60,
               borderRadius: '14px',
               bgcolor: tokens.surfaceContainer,
-              border: `1px solid ${alpha(tokens.primary, 0.4)}`,
+              border: `1px solid ${alpha(tokens.primary, 0.24)}`,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               mb: 1.5,
-              boxShadow: `0 0 20px ${alpha(tokens.primary, 0.3)}`,
+              boxShadow: `0 5px 14px ${alpha(tokens.black, 0.2)}`,
               overflow: 'hidden',
             }}
           >
             <Box
               component="img"
               src={logoIcon}
-              alt="IITSM Logo"
+              alt="ReSolv brand mark"
               sx={{ width: 48, height: 48, objectFit: 'contain' }}
             />
           </Box>
@@ -248,7 +221,7 @@ export default function Login() {
               mb: 0.5,
             }}
           >
-            IITSM Enterprise
+            ReSolv
           </Typography>
           <Typography
             variant="body2"
@@ -258,7 +231,7 @@ export default function Login() {
               fontSize: 13,
             }}
           >
-            Incident &amp; Service Command Centre
+            Raise it. Track it. Resolve it.
           </Typography>
         </Box>
 
