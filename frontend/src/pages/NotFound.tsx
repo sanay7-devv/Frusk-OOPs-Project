@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, HOME } from '../auth/AuthContext';
+import { tokens } from '../theme/theme';
 
 export default function NotFound({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
@@ -24,8 +25,8 @@ export default function NotFound({ embedded = false }: { embedded?: boolean }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: embedded ? 'transparent' : '#090d16',
-        color: '#dfe2ef',
+        bgcolor: embedded ? 'transparent' : tokens.background,
+        color: tokens.onSurface,
         textAlign: 'center',
         px: 3,
       }}
@@ -34,11 +35,9 @@ export default function NotFound({ embedded = false }: { embedded?: boolean }) {
         variant="h1"
         sx={{
           fontSize: { xs: '5rem', sm: '7rem' },
-          fontWeight: 900,
+          fontWeight: 500,
           fontFamily: 'Sora, sans-serif',
-          background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
+          color: tokens.primaryLight,
           lineHeight: 1,
           mb: 2,
         }}
@@ -48,9 +47,9 @@ export default function NotFound({ embedded = false }: { embedded?: boolean }) {
       <Typography
         variant="h4"
         sx={{
-          fontWeight: 700,
+          fontWeight: 600,
           fontFamily: 'Sora, sans-serif',
-          color: '#ffffff',
+          color: tokens.white,
           mb: 1.5,
           fontSize: { xs: '1.5rem', sm: '2rem' },
         }}
@@ -59,7 +58,7 @@ export default function NotFound({ embedded = false }: { embedded?: boolean }) {
       </Typography>
       <Typography
         sx={{
-          color: '#94a3b8',
+          color: tokens.onSurfaceVariant,
           fontSize: { xs: '0.95rem', sm: '1.05rem' },
           maxWidth: 480,
           mb: 4,
@@ -72,18 +71,17 @@ export default function NotFound({ embedded = false }: { embedded?: boolean }) {
         variant="contained"
         onClick={handleReturn}
         sx={{
-          background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-          color: '#ffffff',
+          backgroundColor: tokens.primary,
+          color: tokens.white,
           fontWeight: 600,
           fontSize: '0.95rem',
           px: 3.5,
           py: 1.2,
           borderRadius: '10px',
           textTransform: 'none',
-          boxShadow: '0 4px 16px rgba(99, 102, 241, 0.35)',
+          boxShadow: 'none',
           '&:hover': {
-            background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
-            boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
+            backgroundColor: tokens.primaryStrong,
           },
         }}
       >

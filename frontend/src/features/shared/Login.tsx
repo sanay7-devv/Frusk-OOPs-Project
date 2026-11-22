@@ -176,52 +176,33 @@ export default function Login() {
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 3, sm: 4.5 },
+          p: { xs: 3, sm: 4 },
           width: '100%',
           maxWidth: 480,
-          borderRadius: '16px',
+          borderRadius: '12px',
           bgcolor: tokens.paper,
           border: `1px solid ${tokens.outlineVariant}`,
-          boxShadow: `0 20px 52px ${alpha(tokens.black, 0.42)}`,
-          position: 'relative',
-          zIndex: 1,
+          boxShadow: 'none',
         }}
       >
-        {/* Header with Logo */}
-        <Box textAlign="center" mb={3.5}>
-          <Box
-            sx={{
-              width: 60,
-              height: 60,
-              borderRadius: '14px',
-              bgcolor: tokens.surfaceContainer,
-              border: `1px solid ${alpha(tokens.primary, 0.24)}`,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 1.5,
-              boxShadow: `0 5px 14px ${alpha(tokens.black, 0.2)}`,
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              component="img"
-              src={logoIcon}
-              alt="ReSolv brand mark"
-              sx={{ width: 48, height: 48, objectFit: 'contain' }}
-            />
-          </Box>
+        <Box mb={3}>
+          <Stack direction="row" alignItems="center" spacing={1.25} mb={2.5}>
+            <Box component="img" src={logoIcon} alt="ReSolv brand mark" sx={{ width: 36, height: 36, objectFit: 'contain' }} />
+            <Typography component="div" sx={{ fontFamily: 'Sora, sans-serif', fontSize: 18, fontWeight: 600, color: tokens.white }}>
+              ReSolv
+            </Typography>
+          </Stack>
           <Typography
             variant="h5" component="h1"
             sx={{
               fontFamily: 'Sora, sans-serif',
-              fontWeight: 700,
+              fontWeight: 600,
               color: tokens.white,
-              letterSpacing: '-0.02em',
+              letterSpacing: 'normal',
               mb: 0.5,
             }}
           >
-            ReSolv
+            Sign in
           </Typography>
           <Typography
             variant="body2"
@@ -356,16 +337,9 @@ export default function Login() {
             size="large"
             sx={{
               mt: 3,
-              py: 1.3,
-              fontWeight: 700,
+              py: 1.5,
+              fontWeight: 600,
               fontSize: 14,
-              background: `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`,
-              color: tokens.white,
-              boxShadow: `0 0 20px ${alpha(tokens.primary, 0.4)}`,
-              '&:hover': {
-                background: `linear-gradient(135deg, ${tokens.primaryStrong} 0%, ${tokens.secondaryStrong} 100%)`,
-                boxShadow: `0 0 28px ${alpha(tokens.secondary, 0.55)}`,
-              },
             }}
             disabled={isSubmitting || (needCode && totp.length !== 6)}
           >
@@ -379,14 +353,12 @@ export default function Login() {
             <Divider sx={{ my: 2.5, borderColor: tokens.outlineVariant }}>
               <Typography
                 sx={{
-                  fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 12,
                   color: tokens.outline,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
+                  fontFamily: 'Geist, sans-serif',
                 }}
               >
-                OR SIGN IN WITH
+                or
               </Typography>
             </Divider>
 
@@ -452,7 +424,7 @@ export default function Login() {
                           cursor: 'pointer',
                           bgcolor: isSelected ? alpha(tokens.primary, 0.16) : alpha(tokens.white, 0.02),
                           border: `1px solid ${isSelected ? tokens.primary : tokens.hover}`,
-                          boxShadow: isSelected ? `0 0 10px ${alpha(tokens.primary, 0.25)}` : 'none',
+                          boxShadow: 'none',
                           transition: 'all 0.15s ease',
                           '&:hover': {
                             bgcolor: isSelected ? alpha(tokens.primary, 0.22) : alpha(tokens.primary, 0.1),
