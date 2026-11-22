@@ -58,6 +58,10 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
+    document.title = 'Register · IITSM';
+  }, []);
+
+  useEffect(() => {
     if (user && workspace) {
       navigate(HOME[workspace], { replace: true });
     }
@@ -184,9 +188,10 @@ export default function Register() {
         <form onSubmit={onSubmit}>
           <Stack spacing={2}>
             <TextField
-              label="Full Name"
+              label="Full name"
               fullWidth
               placeholder="e.g. Alice Smith"
+              InputLabelProps={{ shrink: true }}
               {...register('name')}
               error={!!errors.name}
               helperText={errors.name?.message}
@@ -197,6 +202,7 @@ export default function Register() {
               fullWidth
               type="email"
               placeholder="alice@company.com"
+              InputLabelProps={{ shrink: true }}
               {...register('email')}
               error={!!errors.email}
               helperText={errors.email?.message}
@@ -206,6 +212,7 @@ export default function Register() {
               label="Department"
               fullWidth
               placeholder="e.g. Human Resources"
+              InputLabelProps={{ shrink: true }}
               {...register('department')}
               error={!!errors.department}
               helperText={errors.department?.message}
@@ -215,6 +222,8 @@ export default function Register() {
               label="Password"
               type={showPassword ? 'text' : 'password'}
               fullWidth
+              placeholder="••••••••"
+              InputLabelProps={{ shrink: true }}
               {...register('password')}
               error={!!errors.password}
               helperText={errors.password?.message ?? '8 to 72 characters, with a letter and a number; not your name or email'}
@@ -235,9 +244,11 @@ export default function Register() {
             />
 
             <TextField
-              label="Confirm Password"
+              label="Confirm password"
               type={showPassword ? 'text' : 'password'}
               fullWidth
+              placeholder="••••••••"
+              InputLabelProps={{ shrink: true }}
               {...register('confirmPassword')}
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword?.message}
@@ -297,7 +308,7 @@ export default function Register() {
               }}
               onClick={() => navigate('/login')}
             >
-              Sign In
+              Sign in
             </Link>
           </Typography>
         </Box>

@@ -25,6 +25,12 @@ import { formatDateTime, humanizeEnum } from '../../utils/format';
 
 import { alpha } from '@mui/material/styles';
 const PLATFORMS = ['WEB', 'ANDROID', 'IOS'] as const;
+const PLATFORM_LABELS: Record<string, string> = {
+  WEB: 'Web browser',
+  ANDROID: 'Android',
+  IOS: 'iOS',
+};
+const humanizePlatform = (p: string) => PLATFORM_LABELS[p] ?? p;
 const MIN_TOKEN = 8; // RegisterDeviceRequest: @Size(min = 8, max = 255)
 const MAX_TOKEN = 255;
 
@@ -102,7 +108,7 @@ export default function PushDevicesDialog({ open, onClose }: { open: boolean; on
             >
               {PLATFORMS.map((p) => (
                 <MenuItem key={p} value={p}>
-                  {p}
+                  {humanizePlatform(p)}
                 </MenuItem>
               ))}
             </TextField>

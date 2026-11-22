@@ -1,5 +1,5 @@
 import type { ElementType } from 'react';
-import React, { Fragment, useState, useRef, useEffect } from 'react';
+import React, { Fragment, useState, useRef, useEffect, useMemo } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -22,6 +22,7 @@ import {
   InputBase,
   Tooltip,
   Divider,
+  Stack,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -59,6 +60,9 @@ import {
   CheckCircle as CheckCircleIcon,
   SupervisorAccount as SupervisorAccountIcon,
   Check as CheckIcon,
+  Close as CloseIcon,
+  Security as SecurityIcon,
+  NotificationsNone as NotificationsNoneIcon,
 } from '@mui/icons-material';
 
 import { useQuery } from '@tanstack/react-query';
@@ -68,16 +72,27 @@ import { unreadCount } from '../api/notifications';
 import ConnectionBanner from '../components/ConnectionBanner';
 import DirectorBar from '../features/admin/DirectorBar';
 import CommandPalette, { OPEN_PALETTE_EVENT } from '../components/CommandPalette';
-import RealtimeStatusPill from '../components/RealtimeStatusPill';
+import { useRealtimeStatus, type RealtimeStatus } from '../realtime/realtimeStore';
 import logoIcon from '../assets/logo.png';
 
 import { tokens } from '../theme/theme';
 import { alpha } from '@mui/material/styles';
 const WS_LABEL: Record<Workspace, string> = {
-  employee: 'Employee View',
-  tech: 'Technician View',
-  lead: 'Team Lead View',
   admin: 'Admin View',
+  lead: 'Team Lead View',
+  tech: 'Technician View',
+  employee: 'Employee View',
+};
+
+const REALTIME_STATUS_CONFIG: Record<RealtimeStatus, { label: string; color: string; hint: string }> = {
+  connected: { label: 'LIVE SYSTEM', color: tokens.success, hint: 'Real-time WebSocket connected: updates arrive instantly.' },
+  connecting: { label: 'CONNECTING...', color: tokens.amber, hint: 'Opening the live WebSocket connection.' },
+  reconnecting: {
+    label: 'RECONNECTING...',
+    color: tokens.danger,
+    hint: 'Live connection lost. Reconnecting; background polling is active.',
+  },
+  off: { label: 'OFFLINE', color: tokens.textDisabled, hint: 'Live connection inactive.' },
 };
 
 const WORKSPACE_META: Record<
@@ -91,13 +106,13 @@ const WORKSPACE_META: Record<
     label: 'Admin View',
     icon: AdminPanelSettingsIcon,
   },
-  tech: {
-    label: 'Technician View',
-    icon: EngineeringIcon,
-  },
   lead: {
     label: 'Team Lead View',
     icon: SupervisorAccountIcon,
+  },
+  tech: {
+    label: 'Technician View',
+    icon: EngineeringIcon,
   },
   employee: {
     label: 'Employee View',
@@ -139,6 +154,9 @@ const DRAWER_WIDTH = 260;
 export default function AppShell() {
   const { user, workspace, workspaces, setWorkspace, signOut, signIn } = useAuth();
   const { data: unread = 0 } = useQuery({ queryKey: ['unread'], queryFn: unreadCount });
+  const realtimeStatus = useRealtimeStatus();
+  const rtConfig = REALTIME_STATUS_CONFIG[realtimeStatus] || REALTIME_STATUS_CONFIG.off;
+  const isRtPulsing = realtimeStatus === 'connecting' || realtimeStatus === 'reconnecting';
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -175,13 +193,22 @@ export default function AppShell() {
   };
 
   const handleWorkspaceSelect = (w: Workspace) => {
-    setWorkspace(w);
     setWorkspaceAnchorEl(null);
+    if (w !== activeWorkspace) {
+      setWorkspace(w);
+    }
   };
 
   // Impersonation removed: no backend supports it
 
   const activeWorkspace: Workspace = (workspace && NAV[workspace] ? workspace : workspaces[0] || 'employee');
+  const availableWorkspaces: Workspace[] = useMemo(() => {
+    if (activeWorkspace === 'admin' || user?.roles?.includes('ADMINISTRATOR') || workspaces.includes('admin')) {
+      return ['admin', 'lead', 'tech', 'employee'];
+    }
+    return workspaces.length > 0 ? workspaces : ['employee'];
+  }, [activeWorkspace, user, workspaces]);
+
   const navItems = (NAV[activeWorkspace] || []).filter((i) => !i.permission || !!user?.permissions?.includes(i.permission));
   const currentPage = navItems
     .filter((item) => location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(`${item.to}/`)))
@@ -191,6 +218,12 @@ export default function AppShell() {
   useEffect(() => {
     document.title = pageTitle ? `${pageTitle} · IITSM Enterprise` : 'IITSM Enterprise';
   }, [pageTitle]);
+
+  useEffect(() => {
+    const currentNav = navItems.find((n) => n.to === location.pathname || (n.to !== '/' && location.pathname.startsWith(n.to)));
+    const pageTitle = currentNav?.label || (location.pathname.includes('/incidents/') ? 'Incident detail' : 'Command Centre');
+    document.title = `${pageTitle} · IITSM`;
+  }, [location.pathname, navItems]);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: tokens.background, color: tokens.onSurface, position: 'relative' }}>
@@ -223,7 +256,7 @@ export default function AppShell() {
       >
         Skip to main content
       </Box>
-      {/* Background Kinetic Ambient Glows */}
+      {/* Background Kinetic Ambient Glows (GPU-optimized via radial gradients) */}
       <Box
         sx={{
           position: 'fixed',
@@ -232,10 +265,10 @@ export default function AppShell() {
           width: 480,
           height: 480,
           borderRadius: '50%',
-          bgcolor: alpha(tokens.primary, 0.08),
-          filter: 'blur(120px)',
+          background: `radial-gradient(circle, ${alpha(tokens.primary, 0.12)} 0%, ${alpha(tokens.primary, 0)} 70%)`,
           pointerEvents: 'none',
           zIndex: 0,
+          transform: 'translateZ(0)',
         }}
       />
       <Box
@@ -246,10 +279,10 @@ export default function AppShell() {
           width: 520,
           height: 520,
           borderRadius: '50%',
-          bgcolor: alpha(tokens.secondary, 0.06),
-          filter: 'blur(140px)',
+          background: `radial-gradient(circle, ${alpha(tokens.secondary, 0.08)} 0%, ${alpha(tokens.secondary, 0)} 70%)`,
           pointerEvents: 'none',
           zIndex: 0,
+          transform: 'translateZ(0)',
         }}
       />
 
@@ -259,8 +292,10 @@ export default function AppShell() {
         elevation={0}
         sx={{
           zIndex: (t) => t.zIndex.drawer + 1,
-          bgcolor: alpha(tokens.surface, 0.82),
-          backdropFilter: 'blur(20px)',
+          bgcolor: alpha(tokens.surface, 0.88),
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          transform: 'translateZ(0)',
           borderBottom: `1px solid ${tokens.borderSubtle}`,
           color: tokens.onSurface,
           boxShadow: `0 4px 20px ${alpha(tokens.black, 0.35)}`,
@@ -368,19 +403,45 @@ export default function AppShell() {
                 >
                   IITSM Enterprise
                 </Typography>
-                <Typography
-                  sx={{
-                    fontFamily: 'JetBrains Mono, monospace',
-                    color: tokens.secondaryLight,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  SERVICE MANAGEMENT
-                </Typography>
+                <Tooltip title={rtConfig.hint} arrow placement="bottom-start">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.7,
+                      mt: 0.2,
+                      cursor: 'default',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 6.5,
+                        height: 6.5,
+                        borderRadius: '50%',
+                        bgcolor: rtConfig.color,
+                        boxShadow: realtimeStatus === 'connected' ? `0 0 8px ${rtConfig.color}` : 'none',
+                        '@keyframes liveDotPulse': {
+                          '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                          '50%': { opacity: 0.35, transform: 'scale(0.85)' },
+                        },
+                        animation: isRtPulsing ? 'liveDotPulse 1.2s ease-in-out infinite' : 'none',
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontFamily: 'JetBrains Mono, monospace',
+                        color: rtConfig.color,
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {rtConfig.label}
+                    </Typography>
+                  </Box>
+                </Tooltip>
               </Box>
             </Box>
           </Box>
@@ -394,6 +455,7 @@ export default function AppShell() {
           <Box
             component="form"
             onSubmit={handleSearchSubmit}
+            onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
             sx={{
               display: { xs: 'none', md: 'flex' },
               alignItems: 'center',
@@ -404,6 +466,7 @@ export default function AppShell() {
               px: 1.5,
               py: 0.4,
               width: { md: 240, lg: 320 },
+              cursor: 'pointer',
               transition: 'all 0.2s',
               '&:focus-within': {
                 borderColor: alpha(tokens.secondary, 0.5),
@@ -456,7 +519,7 @@ export default function AppShell() {
           <Box sx={{ flexGrow: 1 }} />
 
           {/* Elevated Glassmorphic Workspace Switcher */}
-          {workspaces.length > 1 && (
+          {availableWorkspaces.length > 1 && (
             <>
               <Button
                 onClick={handleWorkspaceClick}
@@ -521,15 +584,19 @@ export default function AppShell() {
                 onClose={handleWorkspaceClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                TransitionProps={{ timeout: 120 }}
                 PaperProps={{
                   sx: {
                     mt: 1,
                     minWidth: 200,
                     p: 0.75,
                     bgcolor: `${tokens.surfaceContainerLow} !important`,
+                    backdropFilter: 'blur(12px) !important',
+                    WebkitBackdropFilter: 'blur(12px) !important',
                     border: `1px solid ${alpha(tokens.white, 0.1)} !important`,
                     borderRadius: '8px !important',
                     boxShadow: `0 8px 24px ${alpha(tokens.black, 0.5)} !important`,
+                    transform: 'translateZ(0)',
                   },
                 }}
               >
@@ -548,7 +615,7 @@ export default function AppShell() {
                 </Typography>
                 <Divider sx={{ borderColor: tokens.borderSubtle, my: 0.5 }} />
 
-                {workspaces.map((w) => {
+                {availableWorkspaces.map((w) => {
                   const meta = WORKSPACE_META[w];
                   const isCurrent = w === activeWorkspace;
                   const WIcon = meta?.icon || AdminPanelSettingsIcon;
@@ -593,8 +660,6 @@ export default function AppShell() {
             </>
           )}
 
-          <RealtimeStatusPill />
-
           {/* Notifications Button */}
           <IconButton
             component={NavLink}
@@ -628,7 +693,7 @@ export default function AppShell() {
                   height: 17,
                   px: 0.4,
                   fontWeight: 700,
-                  boxShadow: `0 0 0 2px ${tokens.surface}`,
+                  boxShadow: `0 0 6px ${alpha(tokens.danger, 0.6)}`,
                 },
               }}
             >
@@ -636,100 +701,324 @@ export default function AppShell() {
             </Badge>
           </IconButton>
 
-          {/* User Profile Pill */}
+          {/* Humanized User Profile Trigger (Google / Linear style) */}
           <Box
             component="button"
             type="button"
-            aria-label="Account menu"
+            aria-label="Account profile and settings"
             aria-haspopup="true"
+            aria-expanded={Boolean(accountAnchorEl)}
             onClick={(e: React.MouseEvent<HTMLElement>) => setAccountAnchorEl(e.currentTarget)}
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 1.2,
-              px: 1.2,
-              py: 0.5,
+              p: '3px 10px 3px 4px',
               cursor: 'pointer',
               color: 'inherit',
               font: 'inherit',
-              bgcolor: alpha(tokens.surfaceContainerLow, 0.7),
-              border: `1px solid ${tokens.outlineVariant}`,
-              borderRadius: '8px',
-              '&:hover': { borderColor: alpha(tokens.white, 0.2) },
+              bgcolor: Boolean(accountAnchorEl) ? tokens.outlineVariant : alpha(tokens.surfaceContainerLow, 0.75),
+              border: '1px solid',
+              borderColor: Boolean(accountAnchorEl) ? alpha(tokens.secondary, 0.5) : tokens.outlineVariant,
+              borderRadius: '9999px',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: tokens.outlineVariant,
+                borderColor: alpha(tokens.white, 0.25),
+                boxShadow: `0 0 12px ${alpha(tokens.secondary, 0.15)}`,
+              },
             }}
           >
-            <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', textAlign: 'right' }}>
-              <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: tokens.onSurface, lineHeight: 1.2 }}>
-                {user?.name ?? 'User'}
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: tokens.onSurfaceVariant,
-                  lineHeight: 1.2,
-                }}
-              >
-                {user?.email ?? ''}
-              </Typography>
-            </Box>
-            <Avatar
+            <Box
               sx={{
-                width: 28,
-                height: 28,
-                fontSize: 12,
-                fontWeight: 700,
-                bgcolor: tokens.primary,
-                color: tokens.white,
-                boxShadow: `0 0 12px ${alpha(tokens.primary, 0.4)}`,
+                p: '2px',
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${tokens.primary}, ${tokens.secondary})`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {user?.name ? user.name[0].toUpperCase() : 'U'}
-            </Avatar>
+              <Avatar
+                sx={{
+                  width: 28,
+                  height: 28,
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  bgcolor: tokens.surfaceContainerLowest,
+                  color: tokens.white,
+                }}
+              >
+                {user?.name ? user.name[0].toUpperCase() : 'U'}
+              </Avatar>
+            </Box>
+            <Typography
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                fontSize: 13,
+                fontWeight: 600,
+                color: tokens.onSurface,
+                whiteSpace: 'nowrap',
+                maxWidth: 120,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {user?.name ?? 'Account'}
+            </Typography>
+            <KeyboardArrowDownIcon
+              sx={{
+                fontSize: 18,
+                color: tokens.onSurfaceVariant,
+                transform: Boolean(accountAnchorEl) ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+              }}
+            />
           </Box>
 
+          {/* Google / Gmail Style Account Popover Menu */}
           <Menu
             anchorEl={accountAnchorEl}
             open={Boolean(accountAnchorEl)}
             onClose={() => setAccountAnchorEl(null)}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem onClick={() => { setAccountAnchorEl(null); navigate('/account/security'); }}>Account security</MenuItem>
-            <MenuItem onClick={() => { setAccountAnchorEl(null); navigate('/notifications'); }}>Notification preferences</MenuItem>
-            <Divider />
-            <MenuItem onClick={() => { setAccountAnchorEl(null); signOut(); }}>Sign out</MenuItem>
-            <MenuItem onClick={() => { setAccountAnchorEl(null); signOut(); }}>Sign out everywhere</MenuItem>
-          </Menu>
-
-          {/* Logout Button */}
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={signOut}
-            aria-label="Logout"
-            startIcon={<LogoutIcon sx={{ fontSize: 15 }} />}
-            sx={{
-              minWidth: { xs: 34, sm: 64 },
-              '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
-              borderColor: alpha(tokens.white, 0.1),
-              color: tokens.onSurfaceVariant,
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: 12.5,
-              borderRadius: '8px',
-              height: 34,
-              px: 1.5,
-              bgcolor: alpha(tokens.surfaceContainerLow, 0.5),
-              '&:hover': {
-                borderColor: tokens.danger,
-                bgcolor: alpha(tokens.danger, 0.12),
-                color: tokens.errorLight,
+            TransitionProps={{ timeout: 120 }}
+            PaperProps={{
+              sx: {
+                mt: 1.5,
+                width: 340,
+                maxWidth: '92vw',
+                p: 2,
+                borderRadius: '20px !important',
+                bgcolor: `${tokens.surfaceContainerLow} !important`,
+                backdropFilter: 'blur(12px) !important',
+                WebkitBackdropFilter: 'blur(12px) !important',
+                border: `1px solid ${alpha(tokens.white, 0.12)} !important`,
+                boxShadow: `0 24px 64px -8px ${alpha(tokens.black, 0.85)}, 0 0 24px -2px ${alpha(tokens.primary, 0.2)} !important`,
+                transform: 'translateZ(0)',
               },
             }}
           >
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Logout</Box>
-          </Button>
+            {/* Top Close Row */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+              <IconButton
+                size="small"
+                onClick={() => setAccountAnchorEl(null)}
+                aria-label="Close account menu"
+                sx={{
+                  color: tokens.onSurfaceVariant,
+                  '&:hover': { color: tokens.white, bgcolor: tokens.borderSubtle },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+
+            {/* User Profile Card (Gmail style) */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                p: 1.8,
+                borderRadius: '16px',
+                bgcolor: alpha(tokens.surfaceContainerLowest, 0.7),
+                border: `1px solid ${tokens.outlineVariant}`,
+                mb: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  p: '3px',
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${tokens.primary}, ${tokens.secondary})`,
+                  flexShrink: 0,
+                  boxShadow: `0 0 16px ${alpha(tokens.primary, 0.3)}`,
+                }}
+              >
+                <Avatar
+                  sx={{
+                    width: 50,
+                    height: 50,
+                    fontSize: 20,
+                    fontWeight: 700,
+                    bgcolor: tokens.surfaceContainerLowest,
+                    color: tokens.white,
+                  }}
+                >
+                  {user?.name ? user.name[0].toUpperCase() : 'U'}
+                </Avatar>
+              </Box>
+
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography
+                  sx={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: tokens.white,
+                    fontFamily: 'Sora, sans-serif',
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {user?.name ?? 'User'}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    color: tokens.onSurfaceVariant,
+                    lineHeight: 1.3,
+                    mt: 0.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {user?.email || 'user@iitsm.local'}
+                </Typography>
+                <Box sx={{ mt: 0.8 }}>
+                  <Chip
+                    label={WORKSPACE_META[activeWorkspace]?.label || (user?.roles?.[0] ? user.roles[0].replace('_', ' ') : 'EMPLOYEE')}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      bgcolor: alpha(tokens.secondary, 0.15),
+                      color: tokens.secondaryLight,
+                      border: `1px solid ${alpha(tokens.secondary, 0.3)}`,
+                      px: 0.5,
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Account Action Buttons */}
+            <Stack spacing={1} sx={{ mb: 1.5 }}>
+              <Button
+                fullWidth
+                onClick={() => {
+                  setAccountAnchorEl(null);
+                  navigate('/account/security');
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: 1.5,
+                  p: '10px 14px',
+                  borderRadius: '12px',
+                  color: tokens.onSurface,
+                  bgcolor: alpha(tokens.surfaceContainerLowest, 0.5),
+                  border: `1px solid ${tokens.outlineVariant}`,
+                  textTransform: 'none',
+                  textAlign: 'left',
+                  transition: 'all 0.18s ease',
+                  '&:hover': {
+                    bgcolor: tokens.borderSubtle,
+                    borderColor: alpha(tokens.white, 0.2),
+                    transform: 'translateX(2px)',
+                  },
+                }}
+              >
+                <SecurityIcon sx={{ fontSize: 20, color: tokens.secondaryLight }} />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.white, lineHeight: 1.2 }}>
+                    Account security &amp; 2FA
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: tokens.textDisabled, lineHeight: 1.2, mt: 0.2 }}>
+                    Password, MFA tokens and sessions
+                  </Typography>
+                </Box>
+              </Button>
+
+              <Button
+                fullWidth
+                onClick={() => {
+                  setAccountAnchorEl(null);
+                  navigate('/notifications');
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: 1.5,
+                  p: '10px 14px',
+                  borderRadius: '12px',
+                  color: tokens.onSurface,
+                  bgcolor: alpha(tokens.surfaceContainerLowest, 0.5),
+                  border: `1px solid ${tokens.outlineVariant}`,
+                  textTransform: 'none',
+                  textAlign: 'left',
+                  transition: 'all 0.18s ease',
+                  '&:hover': {
+                    bgcolor: tokens.borderSubtle,
+                    borderColor: alpha(tokens.white, 0.2),
+                    transform: 'translateX(2px)',
+                  },
+                }}
+              >
+                <NotificationsNoneIcon sx={{ fontSize: 20, color: tokens.onSurfaceVariant }} />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.white, lineHeight: 1.2 }}>
+                    Notification preferences
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: tokens.textDisabled, lineHeight: 1.2, mt: 0.2 }}>
+                    Email, in-app and escalation alerts
+                  </Typography>
+                </Box>
+              </Button>
+            </Stack>
+
+            <Divider sx={{ borderColor: tokens.borderSubtle, my: 1 }} />
+
+            {/* Integrated Sign Out Button (Gmail style) */}
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setAccountAnchorEl(null);
+                signOut();
+              }}
+              startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                p: '10px 14px',
+                borderRadius: '12px',
+                color: tokens.onSurface,
+                borderColor: alpha(tokens.white, 0.15),
+                bgcolor: alpha(tokens.surfaceContainerLowest, 0.6),
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 13.5,
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: alpha(tokens.danger, 0.15),
+                  borderColor: alpha(tokens.danger, 0.5),
+                  color: tokens.errorLight,
+                  boxShadow: `0 0 14px ${alpha(tokens.danger, 0.2)}`,
+                },
+              }}
+            >
+              Sign out
+            </Button>
+
+            {/* Footer / Status */}
+            <Typography
+              sx={{
+                textAlign: 'center',
+                fontSize: 10.5,
+                color: tokens.textDisabled,
+                mt: 1.5,
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              IITSM Enterprise · Active Session
+            </Typography>
+          </Menu>
         </Toolbar>
 
       </AppBar>
@@ -808,7 +1097,7 @@ export default function AppShell() {
                           primary={item.label}
                           sx={{ display: sidebarOpen ? 'block' : 'none' }}
                           primaryTypographyProps={{
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: isActive ? 600 : 500,
                             fontFamily: 'Geist, sans-serif',
                           }}
@@ -851,7 +1140,7 @@ export default function AppShell() {
                 display: { xs: 'none', sm: 'block' },
                 width: sidebarOpen ? DRAWER_WIDTH : 64,
                 flexShrink: 0,
-                transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 '& .MuiDrawer-paper': {
                   width: DRAWER_WIDTH,
                   boxSizing: 'border-box',

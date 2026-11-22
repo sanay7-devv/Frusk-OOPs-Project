@@ -33,6 +33,7 @@ export default function LiveEventPulse({ max = 8, onSelect }: LiveEventPulseProp
 
   const seen = new Set<string>();
   const rows = [...live, ...(first.data?.recentEvents ?? [])]
+    .filter((e): e is DashboardEvent => Boolean(e && e.type))
     .filter((e) => {
       const k = `${e.type}|${e.incidentId}|${e.at}`;
       if (seen.has(k)) return false;
