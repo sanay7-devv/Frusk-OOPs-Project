@@ -14,6 +14,7 @@ import {
   Link,
   InputAdornment,
   IconButton,
+  Chip,
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
@@ -57,6 +58,7 @@ export default function Login() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(schema),
@@ -65,6 +67,8 @@ export default function Login() {
       password: '',
     },
   });
+
+  const currentEmail = watch('email');
 
   const { user, workspace, signIn } = useAuth();
   const navigate = useNavigate();
@@ -78,6 +82,10 @@ export default function Login() {
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const hasGoogleAuth = Boolean(clientId && !clientId.includes('your-google-client-id'));
+
+  useEffect(() => {
+    document.title = 'Sign In · IITSM';
+  }, []);
 
   // Auto-redirect if already authenticated
   useEffect(() => {
@@ -145,8 +153,8 @@ export default function Login() {
   });
 
   const handleQuickFill = (email: string, pass: string) => {
-    setValue('email', email, { shouldValidate: true });
-    setValue('password', pass, { shouldValidate: true });
+    setValue('email', email, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    setValue('password', pass, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
     setErr('');
     setNeedCode(false);
     setTotp('');
@@ -250,7 +258,7 @@ export default function Login() {
               fontSize: 13,
             }}
           >
-            Incident and service management
+            Incident &amp; Service Command Centre
           </Typography>
         </Box>
 
@@ -287,6 +295,7 @@ export default function Login() {
             fullWidth
             margin="normal"
             placeholder="e.g. employee1@iitsm.demo"
+            InputLabelProps={{ shrink: true }}
             {...register('email', {
               onChange: () => {
                 setNeedCode(false);
@@ -305,6 +314,7 @@ export default function Login() {
             fullWidth
             margin="normal"
             placeholder="••••••••"
+            InputLabelProps={{ shrink: true }}
             {...register('password')}
             error={!!errors.password}
             helperText={errors.password?.message}
@@ -331,6 +341,7 @@ export default function Login() {
               fullWidth
               margin="normal"
               autoFocus
+              InputLabelProps={{ shrink: true }}
               value={totp}
               onChange={(e) => setTotp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               error={!!codeErr}
@@ -415,6 +426,8 @@ export default function Login() {
           <Box mt={3} textAlign="center">
             <Link
               component="button"
+              type="button"
+              aria-label="View Default Database Credentials"
               variant="caption"
               onClick={() => setShowSeed(!showSeed)}
               sx={{
@@ -451,53 +464,73 @@ export default function Login() {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  PostgreSQL Seed Accounts (Demo Only - Click to auto-fill):
+                  Demo Accounts (Click to auto-fill):
                 </Typography>
                 <Stack spacing={0.8}>
-                  {SEED_CREDENTIALS.map((c) => (
-                    <Box
-                      key={c.email}
-                      onClick={() => handleQuickFill(c.email, c.pass)}
-                      sx={{
-                        p: 0.8,
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        bgcolor: alpha(tokens.white, 0.02),
-                        border: `1px solid ${tokens.hover}`,
-                        transition: 'all 0.15s',
-                        '&:hover': {
-                          bgcolor: alpha(tokens.primary, 0.12),
-                          borderColor: alpha(tokens.primary, 0.3),
-                        },
-                      }}
-                    >
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurface }}>
-                          {c.role}:
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontFamily: 'JetBrains Mono, monospace',
-                            fontSize: 12,
-                            color: tokens.primaryLight,
-                            fontWeight: 500,
-                          }}
-                        >
-                          {c.email}
-                        </Typography>
-                      </Stack>
-                      <Typography
+                  {SEED_CREDENTIALS.map((c) => {
+                    const isSelected = currentEmail === c.email;
+                    return (
+                      <Box
+                        key={c.email}
+                        onClick={() => handleQuickFill(c.email, c.pass)}
                         sx={{
-                          fontFamily: 'Geist, sans-serif',
-                          color: tokens.onSurfaceVariant,
-                          fontSize: 12,
-                          mt: 0.2,
+                          p: 1,
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          bgcolor: isSelected ? alpha(tokens.primary, 0.16) : alpha(tokens.white, 0.02),
+                          border: `1px solid ${isSelected ? tokens.primary : tokens.hover}`,
+                          boxShadow: isSelected ? `0 0 10px ${alpha(tokens.primary, 0.25)}` : 'none',
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            bgcolor: isSelected ? alpha(tokens.primary, 0.22) : alpha(tokens.primary, 0.1),
+                            borderColor: alpha(tokens.primary, 0.4),
+                          },
                         }}
                       >
-                        Password: <code style={{ color: tokens.secondaryLight }}>{c.pass}</code> • {c.desc}
-                      </Typography>
-                    </Box>
-                  ))}
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: isSelected ? tokens.primaryLight : tokens.onSurface }}>
+                              {c.role}:
+                            </Typography>
+                            {isSelected && (
+                              <Chip
+                                label="Active"
+                                size="small"
+                                sx={{
+                                  height: 18,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  bgcolor: alpha(tokens.primary, 0.2),
+                                  color: tokens.primaryLight,
+                                  border: `1px solid ${alpha(tokens.primary, 0.35)}`,
+                                }}
+                              />
+                            )}
+                          </Stack>
+                          <Typography
+                            sx={{
+                              fontFamily: 'JetBrains Mono, monospace',
+                              fontSize: 12,
+                              color: isSelected ? tokens.white : tokens.primaryLight,
+                              fontWeight: 500,
+                            }}
+                          >
+                            {c.email}
+                          </Typography>
+                        </Stack>
+                        <Typography
+                          sx={{
+                            fontFamily: 'Geist, sans-serif',
+                            color: tokens.onSurfaceVariant,
+                            fontSize: 12,
+                            mt: 0.2,
+                          }}
+                        >
+                          Password: <code style={{ color: tokens.secondaryLight }}>{c.pass}</code> • {c.desc}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
                 </Stack>
               </Paper>
             </Collapse>
@@ -520,7 +553,7 @@ export default function Login() {
               }}
               onClick={() => navigate('/register')}
             >
-              Register as Employee
+              Register as employee
             </Link>
           </Typography>
         </Box>

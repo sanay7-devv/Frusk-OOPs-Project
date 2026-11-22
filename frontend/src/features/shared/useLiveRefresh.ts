@@ -13,7 +13,8 @@ export function useLiveRefresh(reload: () => void, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
     return queryClient.getQueryCache().subscribe((event) => {
-      if (event.type === 'updated' && event.action.type === 'invalidate' && event.query.queryKey[0] === 'unread') {
+      const action = (event as any)?.action;
+      if (event?.type === 'updated' && action?.type === 'invalidate' && event.query?.queryKey?.[0] === 'unread') {
         reloadRef.current();
       }
     });

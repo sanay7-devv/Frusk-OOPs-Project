@@ -11,7 +11,10 @@ export type Workspace = 'employee' | 'tech' | 'lead' | 'admin';
 export function workspacesFor(u: CurrentUser): Workspace[] {
   const ws: Workspace[] = [];
   if (!u || !Array.isArray(u.roles)) return ws;
-  if (u.roles.includes('ADMINISTRATOR')) ws.push('admin');
+  if (u.roles.includes('ADMINISTRATOR')) {
+    // Administrators have full access across all workspaces: Admin, Team Lead, Technician, Employee
+    return ['admin', 'lead', 'tech', 'employee'];
+  }
   if (u.roles.includes('TECHNICIAN')) {
     if (u.technician?.escalationLevel === 1) ws.push('lead');
     ws.push('tech');

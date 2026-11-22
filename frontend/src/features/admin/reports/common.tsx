@@ -1,4 +1,5 @@
 import { Paper, Typography, Box, Stack } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { theme, tokens } from '../../../theme/theme';
@@ -20,9 +21,26 @@ export const TOOLTIP_STYLE = {
 export interface DateRange { from: string; to: string }
 
 /** Titled card; shows loading, error or empty state, otherwise the chart. */
-export function ChartCard<T>({ title, query, isEmpty, emptyMessage, action, children }: {
-  title: string; query: UseQueryResult<T>; isEmpty: (d: T) => boolean; emptyMessage: string;
-  action?: ReactNode; children: (d: T) => ReactNode;
+export function ChartCard<T>({
+  title,
+  query,
+  isEmpty,
+  emptyMessage,
+  action,
+  icon,
+  badge,
+  borderTopColor,
+  children,
+}: {
+  title: string;
+  query: UseQueryResult<T>;
+  isEmpty: (d: T) => boolean;
+  emptyMessage: string;
+  action?: ReactNode;
+  icon?: ReactNode;
+  badge?: ReactNode;
+  borderTopColor?: string;
+  children: (d: T) => ReactNode;
 }) {
   let body: ReactNode;
   if (query.isLoading) body = <LoadingState />;
@@ -30,12 +48,32 @@ export function ChartCard<T>({ title, query, isEmpty, emptyMessage, action, chil
   else if (query.data === undefined || isEmpty(query.data)) body = <EmptyState message={emptyMessage} />;
   else body = children(query.data);
   return (
-    <Paper sx={{ p: 2.5, height: '100%', bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: '12px' }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.5,
+        height: '100%',
+        bgcolor: tokens.surfaceContainerLow,
+        border: `1px solid ${tokens.outlineVariant}`,
+        borderTop: borderTopColor ? `3.5px solid ${borderTopColor}` : `1px solid ${tokens.outlineVariant}`,
+        borderRadius: '14px',
+        boxShadow: borderTopColor ? `0 4px 20px -4px ${alpha(borderTopColor, 0.12)}` : 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box',
+      }}
+    >
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} spacing={1} flexWrap="wrap">
-        <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 600, color: tokens.onSurface }}>{title}</Typography>
+        <Stack direction="row" alignItems="center" spacing={1.2}>
+          {icon}
+          <Typography variant="h6" sx={{ fontSize: 15, fontWeight: 700, color: tokens.white, fontFamily: 'Sora, sans-serif' }}>
+            {title}
+          </Typography>
+          {badge}
+        </Stack>
         {action}
       </Stack>
-      <Box>{body}</Box>
+      <Box sx={{ flex: 1, minHeight: 0 }}>{body}</Box>
     </Paper>
   );
 }

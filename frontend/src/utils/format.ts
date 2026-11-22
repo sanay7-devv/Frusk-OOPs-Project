@@ -75,3 +75,19 @@ export function humanizeCamel(value: string): string {
 
 /** "day" / "days" with the right number. */
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** Formats audit log descriptions: humanizes raw seconds ("missed by 267574 s" -> "missed by 3d 2h") and ISO dates. */
+export function formatAuditDescription(desc: string | null | undefined): string {
+  if (!desc) return '';
+  return desc
+    .replace(/missed by (\d+)\s*s/g, (_, s) => {
+      const sec = Number(s);
+      const days = Math.floor(sec / 86400);
+      const hours = Math.floor((sec % 86400) / 3600);
+      const mins = Math.floor((sec % 3600) / 60);
+      if (days > 0) return `missed by ${days}d ${hours}h`;
+      if (hours > 0) return `missed by ${hours}h ${mins}m`;
+      return `missed by ${mins}m`;
+    })
+    .replace(/\b(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?\b/g, '$1 $2 UTC');
+}

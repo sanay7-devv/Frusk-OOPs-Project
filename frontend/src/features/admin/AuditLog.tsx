@@ -13,7 +13,7 @@ import { listDirectoryUsers, type DirectoryUser } from '../../api/adminDirectory
 import { listIncidents } from '../../api/incidents';
 import { searchAuditActions, type AuditQuery } from './auditSearch';
 import DateRangeField from '../../components/DateRangeField';
-import { formatDateTime, humanizeEnum } from '../../utils/format';
+import { formatDateTime, humanizeEnum, formatAuditDescription } from '../../utils/format';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import AuditSealPanel from './AuditSealPanel';
@@ -153,7 +153,7 @@ export default function AuditLog() {
           </TextField>
           <Autocomplete size="small" sx={{ width: 240 }} options={users.data ?? []} loading={users.isLoading}
             value={draft.actor} onChange={(_, v) => setDraft({ ...draft, actor: v })}
-            getOptionLabel={(u) => u.name} renderOption={(props, u) => <li {...props} key={u.id}>{u.name}</li>} isOptionEqualToValue={(a, b) => a.id === b.id}
+            getOptionLabel={(u) => u.name} renderOption={(props, u) => { const { key, ...rest } = props; return <li key={key} {...rest}>{u.name}</li>; }} isOptionEqualToValue={(a, b) => a.id === b.id}
             renderInput={(params) => (
               <TextField {...params} label="Actor" error={users.isError}
                 helperText={users.isError ? apiErrorMessage(users.error) : undefined} />
@@ -210,14 +210,14 @@ export default function AuditLog() {
                         ) : <Typography component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>—</Typography>}
                       </TableCell>
                       <TableCell sx={{ fontSize: 13, color: 'text.primary', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {e.description}
+                        {formatAuditDescription(e.description)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell colSpan={6} sx={{ py: 0, borderBottom: expanded ? undefined : 0 }}>
                         <Collapse in={expanded} unmountOnExit>
                           <Box sx={{ py: 1.5, pl: 6 }}>
-                            <Typography sx={{ fontSize: 13, color: 'text.primary' }}>{e.description}</Typography>
+                            <Typography sx={{ fontSize: 13, color: 'text.primary' }}>{formatAuditDescription(e.description)}</Typography>
                             {(e.previousState || e.newState) && (
                               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
                                 <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Status:</Typography>

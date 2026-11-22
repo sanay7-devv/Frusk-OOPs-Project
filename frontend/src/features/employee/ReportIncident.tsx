@@ -38,6 +38,7 @@ import {
   Send as SendIcon,
   Info as InfoIcon,
   CheckCircle as CheckCircleIcon,
+  Check as CheckIcon,
   SmartToy as SmartToyIcon,
   Psychology as PsychologyIcon,
   Warning as WarningIcon,
@@ -76,7 +77,7 @@ import { useToast } from '../../components/Toast';
 import { apiErrorMessage, errorMessage } from '../../utils/errors';
 import { formatDateTime, humanizeEnum } from '../../utils/format';
 
-import { tokens } from '../../theme/theme';
+import { tokens, priorityColor, priorityLabel } from '../../theme/theme';
 import { alpha } from '@mui/material/styles';
 // Form validation schema adhering to handbook rules
 const reportSchema = z.object({
@@ -106,19 +107,19 @@ interface AttachedFile {
 }
 
 const IMPACT_LEVELS = [
-  { level: 1, title: 'Minor', desc: 'Only affects me.' },
-  { level: 2, title: 'Moderate', desc: 'A few people, and there is a workaround.' },
-  { level: 3, title: 'Significant', desc: 'A whole team or department.' },
-  { level: 4, title: 'Major', desc: 'Many people, or work that brings in money.' },
-  { level: 5, title: 'Catastrophic', desc: 'Everyone, or work has stopped.' },
+  { level: 1, title: 'Minor', priority: 'P4' as Priority, priorityLabel: 'P4 Low', desc: 'Only affects me.' },
+  { level: 2, title: 'Moderate', priority: 'P3' as Priority, priorityLabel: 'P3 Medium', desc: 'A few people, and there is a workaround.' },
+  { level: 3, title: 'Significant', priority: 'P2' as Priority, priorityLabel: 'P2 High', desc: 'A whole team or department.' },
+  { level: 4, title: 'Major', priority: 'P1' as Priority, priorityLabel: 'P1 Critical', desc: 'Many people, or work that brings in money.' },
+  { level: 5, title: 'Catastrophic', priority: 'P1' as Priority, priorityLabel: 'P1 Critical', desc: 'Everyone, or work has stopped.' },
 ];
 
 const URGENCY_LEVELS = [
-  { level: 1, label: 'Low' },
-  { level: 2, label: 'Medium' },
-  { level: 3, label: 'High' },
-  { level: 4, label: 'Critical' },
-  { level: 5, label: 'Immediate' },
+  { level: 1, label: 'Low', priority: 'P4' as Priority },
+  { level: 2, label: 'Medium', priority: 'P3' as Priority },
+  { level: 3, label: 'High', priority: 'P2' as Priority },
+  { level: 4, label: 'Critical', priority: 'P1' as Priority },
+  { level: 5, label: 'Immediate', priority: 'P1' as Priority },
 ];
 
 export default function ReportIncident() {
@@ -183,18 +184,24 @@ export default function ReportIncident() {
 
   // Real-time matrix calculation of fallback priority
   const calculatePriority = (imp: number, urg: number): Priority => {
-    const score = imp * urg;
-    if (score >= 16) return 'P1';
-    if (score >= 9) return 'P2';
-    if (score >= 4) return 'P3';
+    // If Catastrophic (5) or (Major 4 and urgency >= 3) or (urgency 5 and impact >= 3) -> P1
+    if (imp === 5 && urg >= 2) return 'P1';
+    if (imp >= 4 && urg >= 3) return 'P1';
+    if (imp === 3 && urg === 5) return 'P1';
+    if (imp === 5 && urg === 1) return 'P2';
+    if (imp >= 3 && urg >= 2) return 'P2';
+    if (imp >= 2 && urg >= 4) return 'P2';
+    if (imp >= 2 && urg >= 2) return 'P3';
+    if (imp >= 3 && urg === 1) return 'P3';
+    if (imp === 1 && urg >= 4) return 'P3';
     return 'P4';
   };
 
   const priorityColorMap: Record<Priority, string> = {
-    P1: tokens.danger,
-    P2: tokens.warning,
-    P3: tokens.info,
-    P4: tokens.priority.P4,
+    P1: priorityColor.P1,
+    P2: priorityColor.P2,
+    P3: priorityColor.P3,
+    P4: priorityColor.P4,
   };
 
   const priorityLabelMap: Record<Priority, string> = {
@@ -673,7 +680,8 @@ export default function ReportIncident() {
                     fontWeight: 700,
                     bgcolor: `${priorityColorMap[calculatedPriority]}18`,
                     color: priorityColorMap[calculatedPriority],
-                    border: `1px solid ${priorityColorMap[calculatedPriority]}45`,
+                    border: `1px solid ${priorityColorMap[calculatedPriority]}50`,
+                    boxShadow: `0 0 12px ${priorityColorMap[calculatedPriority]}25`,
                   }}
                 />
               </Box>
@@ -684,68 +692,148 @@ export default function ReportIncident() {
                   <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                     How much is affected?
                   </Typography>
-                  <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.secondaryLight }}>
-                    Selected: {IMPACT_LEVELS.find((i) => i.level === watchImpact)?.title}
-                  </Typography>
+                  {(() => {
+                    const selImpact = IMPACT_LEVELS.find((i) => i.level === watchImpact);
+                    const selColor = selImpact ? priorityColor[selImpact.priority] : tokens.secondaryLight;
+                    return (
+                      <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: selColor }}>
+                        Selected: {selImpact ? `${selImpact.title} (${selImpact.priorityLabel})` : ''}
+                      </Typography>
+                    );
+                  })()}
                 </Box>
 
-                <Grid container spacing={1}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(5, 1fr)' },
+                    gap: { xs: 1, sm: 1.2 },
+                  }}
+                >
                   {IMPACT_LEVELS.map((item) => {
                     const isSelected = watchImpact === item.level;
-                    const isCatastrophic = item.level === 5;
+                    const pColor = priorityColor[item.priority];
                     return (
-                      <Grid item xs={6} sm={2.4} key={item.level}>
-                        <Paper
-                          onClick={() => setValue('impact', item.level, { shouldValidate: true })}
-                          elevation={0}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            transition: 'all 0.18s ease',
-                            bgcolor: isSelected
-                              ? isCatastrophic
-                                ? alpha(tokens.danger, 0.25)
-                                : `linear-gradient(135deg, ${alpha(tokens.primary, 0.3)} 0%, ${alpha(tokens.secondary, 0.2)} 100%)`
-                              : alpha(tokens.surfaceContainerLow, 0.6),
-                            color: isSelected ? tokens.white : tokens.onSurfaceVariant,
-                            border: isSelected
-                              ? `1px solid ${isCatastrophic ? '${tokens.danger}' : '${tokens.secondary}'}`
-                              : `1px solid ${tokens.outlineVariant}`,
-                            boxShadow: isSelected
-                              ? `0 0 16px ${isCatastrophic ? '${alpha(tokens.danger, 0.35)}' : '${alpha(tokens.secondary, 0.3)}'}`
-                              : 'none',
-                            '&:hover': {
-                              borderColor: isSelected ? undefined : alpha(tokens.primary, 0.4),
-                              bgcolor: isSelected ? undefined : alpha(tokens.primary, 0.08),
-                            },
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                            <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: isSelected ? tokens.secondaryLight : tokens.textDisabled }}>
+                      <Paper
+                        key={item.level}
+                        component="button"
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => setValue('impact', item.level, { shouldValidate: true })}
+                        elevation={0}
+                        sx={{
+                          p: '12px 10px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          minHeight: 124,
+                          font: 'inherit',
+                          color: 'inherit',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          bgcolor: isSelected
+                            ? alpha(pColor, 0.12)
+                            : alpha(tokens.surfaceContainerLowest, 0.5),
+                          border: isSelected
+                            ? `1.5px solid ${pColor}`
+                            : `1px solid ${tokens.outlineVariant}`,
+                          boxShadow: isSelected
+                            ? `0 0 20px ${alpha(pColor, 0.3)}, 0 4px 12px rgba(0, 0, 0, 0.35)`
+                            : 'none',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            borderColor: isSelected ? pColor : alpha(tokens.white, 0.25),
+                            bgcolor: isSelected ? alpha(pColor, 0.16) : alpha(tokens.surfaceContainerLow, 0.7),
+                          },
+                          '&::before': isSelected
+                            ? {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '3px',
+                                bgcolor: pColor,
+                                boxShadow: `0 0 8px ${pColor}`,
+                              }
+                            : {},
+                        }}
+                      >
+                        <Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8, gap: 0.5 }}>
+                            <Typography
+                              sx={{
+                                fontFamily: 'JetBrains Mono, monospace',
+                                fontSize: 10.5,
+                                fontWeight: 700,
+                                color: isSelected ? pColor : tokens.textDisabled,
+                                letterSpacing: '0.04em',
+                                textTransform: 'uppercase',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
                               Level {item.level}
                             </Typography>
-                            {isSelected && <CheckCircleIcon sx={{ fontSize: 16, color: tokens.secondaryLight }} />}
+                            <Box
+                              component="span"
+                              sx={{
+                                px: 0.6,
+                                py: 0.2,
+                                borderRadius: '4px',
+                                fontSize: 10,
+                                fontFamily: 'JetBrains Mono, monospace',
+                                fontWeight: 700,
+                                bgcolor: isSelected ? `${pColor}30` : alpha(tokens.white, 0.05),
+                                color: isSelected ? pColor : tokens.onSurfaceVariant,
+                                border: `1px solid ${isSelected ? `${pColor}70` : tokens.outlineVariant}`,
+                                lineHeight: 1,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.3,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isSelected && <CheckIcon sx={{ fontSize: 11, strokeWidth: 2 }} />}
+                              {item.priority}
+                            </Box>
                           </Box>
-                          <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.5, color: isSelected ? tokens.white : tokens.onSurface, fontFamily: 'Sora, sans-serif' }}>
-                            {item.title}
-                          </Typography>
                           <Typography
                             sx={{
-                              fontSize: 12,
-                              lineHeight: 1.3,
-                              color: isSelected ? tokens.onSurface : tokens.textDisabled,
-                              fontFamily: 'Geist, sans-serif',
+                              fontSize: { xs: 12.5, sm: 13 },
+                              fontWeight: 700,
+                              mb: 0.5,
+                              color: isSelected ? tokens.white : tokens.onSurface,
+                              fontFamily: 'Sora, sans-serif',
+                              lineHeight: 1.25,
+                              letterSpacing: '-0.02em',
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            {item.desc}
+                            {item.title}
                           </Typography>
-                        </Paper>
-                      </Grid>
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontSize: 11,
+                            lineHeight: 1.35,
+                            color: isSelected ? tokens.onSurface : tokens.textDisabled,
+                            fontFamily: 'Geist, sans-serif',
+                            mt: 0.5,
+                          }}
+                        >
+                          {item.desc}
+                        </Typography>
+                      </Paper>
                     );
                   })}
-                </Grid>
+                </Box>
               </Box>
 
               {/* Urgency & Affected Users Row */}
@@ -756,9 +844,15 @@ export default function ReportIncident() {
                     <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tokens.onSurface }}>
                       How urgent is it?
                     </Typography>
-                    <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: tokens.secondaryLight }}>
-                      Selected: {URGENCY_LEVELS.find((u) => u.level === watchUrgency)?.label}
-                    </Typography>
+                    {(() => {
+                      const selUrg = URGENCY_LEVELS.find((u) => u.level === watchUrgency);
+                      const uCol = selUrg ? priorityColor[selUrg.priority] : tokens.secondaryLight;
+                      return (
+                        <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: uCol }}>
+                          Selected: {selUrg?.label}
+                        </Typography>
+                      );
+                    })()}
                   </Box>
                   <Box
                     sx={{
@@ -772,7 +866,7 @@ export default function ReportIncident() {
                   >
                     {URGENCY_LEVELS.map((u) => {
                       const isSelected = watchUrgency === u.level;
-                      const isImmed = u.level === 5;
+                      const uColor = priorityColor[u.priority];
                       return (
                         <Button
                           key={u.level}
@@ -786,14 +880,14 @@ export default function ReportIncident() {
                             fontSize: 12.5,
                             fontWeight: isSelected ? 700 : 500,
                             bgcolor: isSelected
-                              ? isImmed
-                                ? alpha(tokens.danger, 0.3)
-                                : `linear-gradient(135deg, ${tokens.primary} 0%, ${tokens.secondary} 100%)`
+                              ? alpha(uColor, 0.25)
                               : 'transparent',
-                            color: isSelected ? tokens.white : isImmed ? tokens.danger : tokens.onSurfaceVariant,
-                            boxShadow: isSelected ? `0 0 12px ${alpha(tokens.primary, 0.35)}` : 'none',
+                            color: isSelected ? tokens.white : alpha(uColor, 0.9),
+                            border: isSelected ? `1px solid ${uColor}` : '1px solid transparent',
+                            boxShadow: isSelected ? `0 0 12px ${alpha(uColor, 0.35)}` : 'none',
                             '&:hover': {
-                              bgcolor: isSelected ? undefined : tokens.hover,
+                              bgcolor: isSelected ? alpha(uColor, 0.3) : tokens.hover,
+                              borderColor: isSelected ? uColor : alpha(uColor, 0.3),
                             },
                           }}
                         >

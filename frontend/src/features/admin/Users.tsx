@@ -61,9 +61,12 @@ function RoleChips({ u }: { u: DirectoryUser }) {
 function LoadCell({ u }: { u: DirectoryUser }) {
   const t = u.technician;
   if (!t) return <Typography sx={{ fontSize: 13, color: tokens.onSurfaceVariant }}>Not a technician</Typography>;
+  const statusText = t.currentLoad >= t.maxLoad && t.availability === 'AVAILABLE'
+    ? 'full'
+    : t.availability.replace('_', ' ').toLowerCase();
   return (
     <Box sx={{ minWidth: 120 }}>
-      <Typography sx={{ fontSize: 13 }}>{t.currentLoad} / {t.maxLoad} · {t.availability.replace('_', ' ').toLowerCase()}</Typography>
+      <Typography sx={{ fontSize: 13 }}>{t.currentLoad} / {t.maxLoad} · {statusText}</Typography>
       <LinearProgress variant="determinate" value={t.maxLoad > 0 ? Math.min(100, (t.currentLoad / t.maxLoad) * 100) : 0} sx={{ mt: 0.5, height: 5, borderRadius: 3 }} />
     </Box>
   );

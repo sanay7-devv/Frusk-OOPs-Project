@@ -107,9 +107,9 @@ afterEach(() => {
 
 /** Opens the seed-account list, fills the form from the row with this email and signs in. */
 function signInWithSeedAccount(email: string) {
-  fireEvent.click(screen.getByRole('button', { name: /Show demo accounts/i }));
+  fireEvent.click(screen.getByRole('button', { name: /(View Default Database Credentials|Show demo accounts)/i }));
   fireEvent.click(screen.getByText(email));
-  fireEvent.click(screen.getByRole('button', { name: /^Sign in$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
 }
 
 describe('Auth and Navigation Flow', () => {
@@ -117,13 +117,13 @@ describe('Auth and Navigation Flow', () => {
     localStorage.clear();
     renderApp('/login');
 
-    fireEvent.click(screen.getByRole('button', { name: /^Sign in$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
     expect(await screen.findByText('Please enter a valid email address')).toBeTruthy();
     expect(screen.getByText('Password is required')).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'bad-address' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'example' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Sign in$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Sign In$/i }));
     expect(await screen.findByText('Please enter a valid email address')).toBeTruthy();
     expect(vi.mocked(api.post).mock.calls.filter(([url]) => url === '/auth/login')).toHaveLength(0);
   });

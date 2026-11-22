@@ -54,9 +54,9 @@ Status 2026-11-22 (reconciled against current main and this cleanup branch): [x]
 ## Open: layout
 - [x] ALL dropdowns (Select / Menu / Autocomplete) open as a full-height list over the page; make them small popups (max 320px, scroll inside, open below the field)
 - [x] Incident codes wrap onto 3 lines (lead queue cards and detail header, employee my incidents); codes must never wrap
-- [ ] Employee my incidents table: confirm title/date wrapping and Actions fit at laptop width
-- [ ] Tech queue: "Set Away" button wraps; header layout loose
-- [ ] Lead queue detail: action buttons stack and wrap ("Problem #2: resolve the whole problem")
+- [x] Employee my incidents table: confirm title/date wrapping and Actions fit at laptop width
+- [x] Tech queue: "Set Away" button wraps; header layout loose
+- [x] Lead queue detail: action buttons stack and wrap ("Problem #2: resolve the whole problem")
 - [x] Incident quick-view drawer: starts below the app bar; code and close button remain visible
 - [x] Buttons wrap to 2 lines in page headers (Config Save/Discard, Services "Dependency graph"/"New service", Categories "Add skill"/"Add category", Escalation "Add level"); fix globally (nowrap)
 - [x] Categories table: row cells shifted one column (Status shows under "Eligible technicians", actions under Status, "Actions" header cut off)

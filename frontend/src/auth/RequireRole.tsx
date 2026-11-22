@@ -20,7 +20,8 @@ export default function RequireWorkspace({ workspace }: { workspace?: Workspace 
   if (!user) return <Navigate to="/login" replace />;
 
   const allowed = Array.isArray(workspaces) ? workspaces : [];
-  if (workspace && !allowed.includes(workspace)) {
+  const isAdmin = user.roles?.includes('ADMINISTRATOR') || allowed.includes('admin');
+  if (workspace && !allowed.includes(workspace) && !isAdmin) {
     const homeTarget = (allowed[0] && HOME[allowed[0]]) ? HOME[allowed[0]] : '/';
     return (
       <Box

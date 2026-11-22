@@ -21,6 +21,12 @@ import {
   Divider,
   CircularProgress,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   DoneAll as DoneAllIcon,
@@ -58,7 +64,7 @@ import {
 import { provideInfo, verifyIncident, submitFeedback } from '../../api/incidents';
 import type { AppNotification } from '../../api/types';
 import { apiErrorMessage } from '../../utils/errors';
-import { formatDate } from '../../utils/format';
+import { humanizeEnum, formatDate } from '../../utils/format';
 import PushDevicesDialog from './PushDevicesDialog';
 
 import { tokens } from '../../theme/theme';
@@ -94,6 +100,12 @@ function isToday(isoString: string): boolean {
   } catch {
     return false;
   }
+}
+
+function extractIncidentCode(n?: AppNotification | null): string {
+  if (!n) return '';
+  const match = (n.title + ' ' + n.message).match(/INC-\d{4}-\d{5}/i);
+  return match ? match[0].toUpperCase() : (n.incidentId ? `INC-${n.incidentId}` : '');
 }
 
 export default function Notifications() {
@@ -649,9 +661,9 @@ export default function Notifications() {
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
               <Box>
                 <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 700, color: tokens.secondaryLight }}>
-                  REPLY TO INCIDENT #{replyItem.incidentId}
+                  REPLY TO {extractIncidentCode(replyItem) || 'INCIDENT'}
                 </Typography>
-                <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
+                <Typography variant="h6" component="span" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                   {replyItem.title}
                 </Typography>
               </Box>
@@ -722,7 +734,7 @@ export default function Notifications() {
         {verifyItem && (
           <>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-              <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
+              <Typography variant="h6" component="span" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
                 Verify Resolution
               </Typography>
               <IconButton aria-label="Close verify dialog" onClick={() => setVerifyItem(null)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
@@ -731,7 +743,7 @@ export default function Notifications() {
             </DialogTitle>
             <DialogContent dividers sx={{ py: 2, borderColor: tokens.outlineVariant }}>
               <Typography sx={{ fontSize: 13, color: tokens.onSurface, mb: 2 }}>
-                Please confirm that incident #{verifyItem.incidentId} has been resolved to your satisfaction:
+                Please confirm that {extractIncidentCode(verifyItem) || 'the incident'} has been resolved to your satisfaction:
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.onSurfaceVariant, mb: 1, textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
@@ -797,7 +809,7 @@ export default function Notifications() {
         }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white }}>
+          <Typography variant="h6" component="span" sx={{ fontFamily: 'Sora, sans-serif', fontWeight: 800, color: tokens.white, fontSize: 16 }}>
             Notification preferences
           </Typography>
           <IconButton aria-label="Close preferences dialog" onClick={() => setPrefsOpen(false)} size="small" sx={{ color: tokens.onSurfaceVariant }}>
