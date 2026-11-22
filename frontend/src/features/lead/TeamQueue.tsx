@@ -586,7 +586,15 @@ export default function TeamQueue() {
                   <Paper
                     key={inc.id}
                     elevation={0}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Select ${inc.code}: ${inc.title}`}
                     onClick={() => setSelectedIncidentId(inc.id)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+                      e.preventDefault();
+                      setSelectedIncidentId(inc.id);
+                    }}
                     sx={{
                       p: 2,
                       borderRadius: 2.5,
@@ -598,6 +606,7 @@ export default function TeamQueue() {
                         borderColor: COLORS.primary,
                         bgcolor: alpha(tokens.primary, 0.08),
                       },
+                      '&:focus-visible': { outline: `2px solid ${COLORS.secondary}`, outlineOffset: 2 },
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>

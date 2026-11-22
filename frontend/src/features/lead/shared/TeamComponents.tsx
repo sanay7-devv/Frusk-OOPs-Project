@@ -32,12 +32,13 @@ export const AVAILABILITY_COLOR: Record<string, string> = {
   OFF_DUTY: COLORS.error,
 };
 
-function AvailabilityChip({ value }: { value: string }) {
-  const c = AVAILABILITY_COLOR[value] ?? COLORS.onSurfaceVariant;
+function AvailabilityChip({ value, full = false }: { value: string; full?: boolean }) {
+  const label = full ? 'Full' : humanizeEnum(value);
+  const c = full ? COLORS.error : AVAILABILITY_COLOR[value] ?? COLORS.onSurfaceVariant;
   return (
     <Chip
       size="small"
-      label={humanizeEnum(value)}
+      label={label}
       sx={{ height: 20, fontSize: 12, fontWeight: 700, color: c, bgcolor: alpha(tokens.onSurface, 0.05), border: `1px solid ${c}` }}
     />
   );
@@ -72,7 +73,9 @@ export function CandidatePicker({
   const excluded = new Map((recs.data?.excluded ?? []).map((x) => [x.technicianId, x.reason]));
   const plain = (text: string) => text.replace(/\b(OFF_DUTY|AWAY|BUSY|AVAILABLE)\b/g, (m) => humanizeEnum(m).toLowerCase());
   const blockedReason = (t: TechnicianView) =>
-    excluded.get(t.id) ?? (t.availability === 'OFF_DUTY' || t.availability === 'AWAY' ? `Technician is ${humanizeEnum(t.availability).toLowerCase()}` : null);
+    excluded.get(t.id)
+      ?? (t.maxLoad > 0 && t.currentLoad >= t.maxLoad ? 'Technician is at capacity' : null)
+      ?? (t.availability === 'OFF_DUTY' || t.availability === 'AWAY' ? `Technician is ${humanizeEnum(t.availability).toLowerCase()}` : null);
   // People who can be picked come first, best fit on top; blocked people follow.
   const list = (techs.data ?? [])
     .filter((t) => t.id !== assigneeId)
@@ -120,11 +123,11 @@ export function CandidatePicker({
                 {rec && (
                   <Typography sx={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 800, color: COLORS.secondary }}>{rec.score}% fit</Typography>
                 )}
-                <AvailabilityChip value={t.availability} />
+                <AvailabilityChip value={t.availability} full={t.maxLoad > 0 && t.currentLoad >= t.maxLoad} />
               </Stack>
             </Stack>
             <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5 }}>
-              Load {t.currentLoad} of {t.maxLoad}, {t.activeIncidents} active
+              Weighted load {t.currentLoad} / {t.maxLoad} · {t.activeIncidents} active
             </Typography>
             <LinearProgress
               variant="determinate"
@@ -209,10 +212,10 @@ export function TeamWorkloadDialog({
                       {t.name}
                       {t.id === highlightId ? ' (just assigned)' : ''}
                     </Typography>
-                    <AvailabilityChip value={t.availability} />
+                    <AvailabilityChip value={t.availability} full={t.maxLoad > 0 && t.currentLoad >= t.maxLoad} />
                   </Stack>
                   <Typography sx={{ fontSize: 12, color: COLORS.onSurfaceVariant, mt: 0.5, fontFamily: MONO }}>
-                    {t.currentLoad >= t.maxLoad && t.maxLoad > 0 ? 'Full' : `Load ${t.currentLoad} of ${t.maxLoad}`} · {t.activeIncidents} active · {humanizeEnum(String(t.experienceLevel))}
+                    Weighted load {t.currentLoad} / {t.maxLoad} · {t.activeIncidents} active · {humanizeEnum(String(t.experienceLevel))} experience
                   </Typography>
                   <LinearProgress
                     variant="determinate"

@@ -5,15 +5,13 @@ import {
 import { tokens } from '../../../theme/theme';
 import type { LabelCount, ServiceReportRow, SlaComplianceRow, TrendPoint, WorkloadReportRow } from '../../../api/reports';
 import { AXIS, CHART_COLORS, PRIORITY_COLORS, TOOLTIP_STYLE } from './common';
+import { formatDurationMinutes } from '../../../utils/format';
 
 const GRID = tokens.outlineVariant;
 const LABEL_FILL = tokens.onSurfaceVariant;
 
 export function formatMinutes(m: number): string {
-  const total = Math.round(m);
-  const h = Math.floor(total / 60);
-  const mins = total % 60;
-  return h > 0 ? `${h} h ${mins} min` : `${mins} min`;
+  return formatDurationMinutes(m);
 }
 
 export const TrendChart = ({ data }: { data: TrendPoint[] }) => (
@@ -40,7 +38,7 @@ export const SlaChart = ({ data, onBarClick }: { data: SlaComplianceRow[]; onBar
         <XAxis dataKey="label" {...AXIS} />
         <YAxis allowDecimals={false} {...AXIS} />
         <Tooltip contentStyle={TOOLTIP_STYLE} />
-        <Legend wrapperStyle={{ fontSize: 12, color: LABEL_FILL }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: LABEL_FILL, paddingTop: 4 }} />
         <Bar dataKey="met" name="Met" fill={CHART_COLORS.met} isAnimationActive={false} cursor={cursor} onClick={click}>
           <LabelList dataKey="met" position="top" fill={LABEL_FILL} fontSize={12} />
         </Bar>
@@ -57,26 +55,38 @@ const priorityName = (l: string) => (/^\d$/.test(l) ? `P${l}` : l);
 export const PriorityDonut = ({ data, onSliceClick, center }: {
   data: LabelCount[]; onSliceClick?: (label: string) => void; center?: { caption: string; value: string };
 }) => (
-  <Box sx={{ position: 'relative' }}>
-    <ResponsiveContainer width="100%" height={280}>
-      <PieChart>
-        <Pie data={data.map((d) => ({ ...d, name: priorityName(d.label) }))} dataKey="count" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}
-          isAnimationActive={false} cy="45%" label={false}
-          cursor={onSliceClick ? 'pointer' : undefined}
-          onClick={(d) => onSliceClick?.((d as unknown as LabelCount).label)}>
-          {data.map((d) => <Cell key={d.label} fill={PRIORITY_COLORS[priorityName(d.label)] ?? PRIORITY_COLORS[d.label] ?? tokens.outline} stroke="none" />)}
-        </Pie>
-        <Tooltip contentStyle={TOOLTIP_STYLE} />
-        <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 12, color: LABEL_FILL }}
-          formatter={(value, entry) => `${value}: ${(entry.payload as unknown as { count?: number })?.count ?? ''}`} />
-      </PieChart>
-    </ResponsiveContainer>
-    {center && (
-      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', pb: '36px' }}>
-        <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{center.caption}</Typography>
-        <Typography sx={{ fontSize: 20, fontWeight: 700, color: tokens.onSurface }}>{center.value}</Typography>
-      </Box>
-    )}
+  <Box>
+    <Box sx={{ position: 'relative' }}>
+      <ResponsiveContainer width="100%" height={248}>
+        <PieChart margin={{ left: 12, right: 12 }}>
+          <Pie data={data.map((d) => ({ ...d, name: priorityName(d.label) }))} dataKey="count" nameKey="name" innerRadius={60} outerRadius={92} paddingAngle={2}
+            isAnimationActive={false} cy="46%" label={false}
+            cursor={onSliceClick ? 'pointer' : undefined}
+            onClick={(d) => onSliceClick?.((d as unknown as LabelCount).label)}>
+            {data.map((d) => <Cell key={d.label} fill={PRIORITY_COLORS[priorityName(d.label)] ?? PRIORITY_COLORS[d.label] ?? tokens.outline} stroke="none" />)}
+          </Pie>
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+        </PieChart>
+      </ResponsiveContainer>
+      {center && (
+        <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', pb: '20px' }}>
+          <Typography sx={{ fontSize: 12, color: tokens.onSurfaceVariant }}>{center.caption}</Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, color: tokens.onSurface }}>{center.value}</Typography>
+        </Box>
+      )}
+    </Box>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px 16px', px: 1, pb: 0.5 }}>
+      {data.map((d) => {
+        const name = priorityName(d.label);
+        const color = PRIORITY_COLORS[name] ?? PRIORITY_COLORS[d.label] ?? tokens.outline;
+        return (
+          <Box key={d.label} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, whiteSpace: 'nowrap' }}>
+            <Box aria-hidden sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+            <Typography sx={{ fontSize: 12, color: LABEL_FILL }}>{name}: {d.count}</Typography>
+          </Box>
+        );
+      })}
+    </Box>
   </Box>
 );
 
@@ -114,12 +124,15 @@ export const WorkloadChart = ({ data, onBarClick }: { data: WorkloadReportRow[];
         <XAxis type="number" allowDecimals={false} {...AXIS} />
         <YAxis type="category" dataKey="name" width={130} {...AXIS} />
         <Tooltip contentStyle={TOOLTIP_STYLE} />
-        <Legend wrapperStyle={{ fontSize: 12, color: LABEL_FILL }} />
+        <Legend
+          wrapperStyle={{ fontSize: 12, color: LABEL_FILL, paddingTop: 4 }}
+          formatter={(value) => <span style={{ color: value === 'Capacity' ? tokens.slate300 : LABEL_FILL }}>{value}</span>}
+        />
         <Bar dataKey="load" name="Current load" fill={CHART_COLORS.bar} isAnimationActive={false}
           cursor={onBarClick ? 'pointer' : undefined} onClick={(d) => onBarClick?.(d as unknown as WorkloadReportRow)}>
           <LabelList dataKey="load" position="right" fill={LABEL_FILL} fontSize={12} />
         </Bar>
-        <Bar dataKey="maxLoad" name="Capacity" fill={tokens.outline} fillOpacity={0.55} isAnimationActive={false}>
+        <Bar dataKey="maxLoad" name="Capacity" fill={tokens.onSurfaceVariant} fillOpacity={0.9} isAnimationActive={false}>
           <LabelList dataKey="maxLoad" position="right" fill={LABEL_FILL} fontSize={12} />
         </Bar>
       </BarChart>
@@ -127,9 +140,9 @@ export const WorkloadChart = ({ data, onBarClick }: { data: WorkloadReportRow[];
     <Typography sx={{ color: tokens.onSurface, fontSize: 13, fontWeight: 600, mt: 1.5, mb: 0.5 }}>Average time to resolve, per technician</Typography>
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0.5 }}>
       {data.map((d) => (
-        <Box component="li" key={d.name} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, fontSize: 12, color: tokens.onSurfaceVariant }}>
-          <span>{d.name}</span>
-          <span>{d.avgResolutionMinutes <= 0 ? 'No data' : formatMinutes(d.avgResolutionMinutes)}</span>
+        <Box component="li" key={d.name} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, minWidth: 0, fontSize: 12, color: tokens.onSurfaceVariant }}>
+          <span title={d.name} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+          <span style={{ flexShrink: 0, color: tokens.onSurface }}>{d.avgResolutionMinutes <= 0 ? 'No data' : formatMinutes(d.avgResolutionMinutes)}</span>
         </Box>
       ))}
     </Box>

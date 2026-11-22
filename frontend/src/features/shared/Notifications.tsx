@@ -58,6 +58,7 @@ import {
 import { provideInfo, verifyIncident, submitFeedback } from '../../api/incidents';
 import type { AppNotification } from '../../api/types';
 import { apiErrorMessage } from '../../utils/errors';
+import { formatDate } from '../../utils/format';
 import PushDevicesDialog from './PushDevicesDialog';
 
 import { tokens } from '../../theme/theme';
@@ -74,7 +75,7 @@ function formatTimeAgo(isoString: string): string {
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString();
+    return formatDate(d);
   } catch {
     return isoString;
   }
@@ -1084,7 +1085,7 @@ function NotificationCard({
                     px: 1.2,
                   }}
                 >
-                  View Ticket #{notif.incidentId}
+                  Open incident
                 </Button>
               )}
 

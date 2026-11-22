@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getServiceGraph } from '../api/services';
@@ -82,6 +82,18 @@ export default function ServiceGraphMinimap({ size = 260, onSelect, selectedId }
           );
         })}
       </svg>
+      <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap justifyContent="center" sx={{ mt: 0.5 }} aria-label="Service health legend">
+        {[
+          { label: 'Open P1', color: tokens.danger },
+          { label: 'Other open', color: tokens.amber },
+          { label: 'No open', color: tokens.success },
+        ].map((item) => (
+          <Box key={item.label} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+            <Box aria-hidden sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: item.color }} />
+            <Typography sx={{ fontSize: 10, color: tokens.onSurfaceVariant }}>{item.label}</Typography>
+          </Box>
+        ))}
+      </Stack>
     </Box>
   );
 }

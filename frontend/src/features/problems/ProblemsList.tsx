@@ -18,12 +18,12 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { format } from 'date-fns';
 import { listProblems, getRecurringProblems, createProblem, type ProblemStatus, type RecurringView } from '../../api/problems';
 import { apiErrorMessage } from '../../utils/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { useToast } from '../../components/Toast';
 import { tokens } from '../../theme/theme';
+import { formatDateTime } from '../../utils/format';
 import { useProblemAccess } from './problemAccess';
 
 type TabKey = ProblemStatus | 'RECURRING';
@@ -32,7 +32,7 @@ const cellSx = { color: tokens.onSurface, fontSize: 13, borderColor: tokens.outl
 const headSx = { color: tokens.onSurfaceVariant, fontSize: 12, fontWeight: 700, borderColor: tokens.outlineVariant };
 const paperSx = { bgcolor: tokens.surfaceContainerLow, border: `1px solid ${tokens.outlineVariant}`, borderRadius: 2 };
 
-export const fmtDate = (iso?: string | null) => (iso ? format(new Date(iso), 'dd MMM yyyy, HH:mm') : '-');
+export const fmtDate = (iso?: string | null) => formatDateTime(iso, '-');
 
 export function ProblemStatusChip({ status }: { status: ProblemStatus }) {
   const open = status === 'OPEN';

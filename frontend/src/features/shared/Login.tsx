@@ -101,7 +101,7 @@ export default function Login() {
         const container = document.getElementById('google-btn-container');
         if (container) {
           window.google.accounts.id.renderButton(container, {
-            theme: 'outline',
+            theme: 'filled_black',
             size: 'large',
             width: 380,
             text: 'signin_with',
@@ -240,7 +240,7 @@ export default function Login() {
               mb: 0.5,
             }}
           >
-            IITSM Platform
+            IITSM Enterprise
           </Typography>
           <Typography
             variant="body2"
@@ -250,7 +250,7 @@ export default function Login() {
               fontSize: 13,
             }}
           >
-            Enterprise Incident &amp; Service Command System
+            Incident and service management
           </Typography>
         </Box>
 
@@ -283,7 +283,7 @@ export default function Login() {
         {/* Credentials Form */}
         <form onSubmit={onSubmit}>
           <TextField
-            label="Email Address"
+            label="Email address"
             fullWidth
             margin="normal"
             placeholder="e.g. employee1@iitsm.demo"
@@ -385,7 +385,7 @@ export default function Login() {
             }}
             disabled={isSubmitting || (needCode && totp.length !== 6)}
           >
-            {isSubmitting ? 'Authenticating...' : needCode ? 'Verify and sign in' : 'Sign In'}
+            {isSubmitting ? 'Signing in…' : needCode ? 'Verify and sign in' : 'Sign in'}
           </Button>
         </form>
 
@@ -426,7 +426,7 @@ export default function Login() {
                 '&:hover': { color: tokens.secondaryLight },
               }}
             >
-              {showSeed ? '▲ Hide Database Credentials' : '▼ View Default Database Credentials (Demo)'}
+              {showSeed ? 'Hide demo accounts' : 'Show demo accounts'}
             </Link>
             <Collapse in={showSeed}>
               <Paper
@@ -507,7 +507,7 @@ export default function Login() {
         {/* Register Link */}
         <Box mt={2.5} textAlign="center">
           <Typography sx={{ color: tokens.onSurfaceVariant, fontSize: 12.5, fontFamily: 'Geist, sans-serif' }}>
-            Don't have an enterprise account?{' '}
+            Don't have an account?{' '}
             <Link
               component="button"
               sx={{
