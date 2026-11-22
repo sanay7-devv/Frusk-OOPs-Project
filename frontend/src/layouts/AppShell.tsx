@@ -247,49 +247,16 @@ export default function AppShell() {
       >
         Skip to main content
       </Box>
-      {/* Background Kinetic Ambient Glows (GPU-optimized via radial gradients) */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: -120,
-          left: -120,
-          width: 480,
-          height: 480,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha(tokens.primary, 0.12)} 0%, ${alpha(tokens.primary, 0)} 70%)`,
-          pointerEvents: 'none',
-          zIndex: 0,
-          transform: 'translateZ(0)',
-        }}
-      />
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: -120,
-          right: '15%',
-          width: 520,
-          height: 520,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha(tokens.secondary, 0.08)} 0%, ${alpha(tokens.secondary, 0)} 70%)`,
-          pointerEvents: 'none',
-          zIndex: 0,
-          transform: 'translateZ(0)',
-        }}
-      />
-
       {/* Top Application Bar */}
       <AppBar
         position="fixed"
         elevation={0}
         sx={{
           zIndex: (t) => t.zIndex.drawer + 1,
-          bgcolor: alpha(tokens.surface, 0.88),
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          transform: 'translateZ(0)',
+          bgcolor: tokens.surface,
           borderBottom: `1px solid ${tokens.borderSubtle}`,
           color: tokens.onSurface,
-          boxShadow: `0 4px 20px ${alpha(tokens.black, 0.35)}`,
+          boxShadow: 'none',
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important', px: { xs: 2, sm: 3 }, gap: 2 }}>
@@ -318,7 +285,6 @@ export default function AppShell() {
                     bgcolor: alpha(tokens.primary, 0.15),
                     borderColor: alpha(tokens.primary, 0.4),
                     color: tokens.white,
-                    boxShadow: `0 0 12px ${alpha(tokens.primary, 0.25)}`,
                   },
                 }}
               >
@@ -362,12 +328,12 @@ export default function AppShell() {
                   width: 38,
                   height: 38,
                   borderRadius: '10px',
-                  bgcolor: tokens.paper,
-                  border: `1px solid ${alpha(tokens.primary, 0.35)}`,
+                  bgcolor: 'transparent',
+                  border: '1px solid transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: `0 4px 12px ${alpha(tokens.black, 0.18)}`,
+                  boxShadow: 'none',
                   overflow: 'hidden',
                   flexShrink: 0,
                 }}
@@ -410,7 +376,6 @@ export default function AppShell() {
                         height: 6.5,
                         borderRadius: '50%',
                         bgcolor: rtConfig.color,
-                        boxShadow: realtimeStatus === 'connected' ? `0 0 8px ${rtConfig.color}` : 'none',
                         '@keyframes liveDotPulse': {
                           '0%, 100%': { opacity: 1, transform: 'scale(1)' },
                           '50%': { opacity: 0.35, transform: 'scale(0.85)' },
@@ -461,7 +426,6 @@ export default function AppShell() {
               transition: 'all 0.2s',
               '&:focus-within': {
                 borderColor: alpha(tokens.secondary, 0.5),
-                boxShadow: `0 0 12px ${alpha(tokens.secondary, 0.2)}`,
               },
             }}
           >
@@ -582,8 +546,6 @@ export default function AppShell() {
                     minWidth: 200,
                     p: 0.75,
                     bgcolor: `${tokens.surfaceContainerLow} !important`,
-                    backdropFilter: 'blur(12px) !important',
-                    WebkitBackdropFilter: 'blur(12px) !important',
                     border: `1px solid ${alpha(tokens.white, 0.1)} !important`,
                     borderRadius: '8px !important',
                     boxShadow: `0 8px 24px ${alpha(tokens.black, 0.5)} !important`,
@@ -684,7 +646,7 @@ export default function AppShell() {
                   height: 17,
                   px: 0.4,
                   fontWeight: 700,
-                  boxShadow: `0 0 6px ${alpha(tokens.danger, 0.6)}`,
+                  boxShadow: 'none',
                 },
               }}
             >
@@ -711,20 +673,17 @@ export default function AppShell() {
               bgcolor: Boolean(accountAnchorEl) ? tokens.outlineVariant : alpha(tokens.surfaceContainerLow, 0.75),
               border: '1px solid',
               borderColor: Boolean(accountAnchorEl) ? alpha(tokens.secondary, 0.5) : tokens.outlineVariant,
-              borderRadius: '9999px',
+              borderRadius: '10px',
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
                 bgcolor: tokens.outlineVariant,
                 borderColor: alpha(tokens.white, 0.25),
-                boxShadow: `0 0 12px ${alpha(tokens.secondary, 0.15)}`,
               },
             }}
           >
             <Box
               sx={{
-                p: '2px',
                 borderRadius: '50%',
-                background: `linear-gradient(135deg, ${tokens.primary}, ${tokens.secondary})`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -783,10 +742,8 @@ export default function AppShell() {
                 p: 2,
                 borderRadius: '20px !important',
                 bgcolor: `${tokens.surfaceContainerLow} !important`,
-                backdropFilter: 'blur(12px) !important',
-                WebkitBackdropFilter: 'blur(12px) !important',
                 border: `1px solid ${alpha(tokens.white, 0.12)} !important`,
-                boxShadow: `0 24px 64px -8px ${alpha(tokens.black, 0.85)}, 0 0 24px -2px ${alpha(tokens.primary, 0.2)} !important`,
+                boxShadow: `0 12px 32px ${alpha(tokens.black, 0.42)} !important`,
                 transform: 'translateZ(0)',
               },
             }}
@@ -821,11 +778,8 @@ export default function AppShell() {
             >
               <Box
                 sx={{
-                  p: '3px',
                   borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${tokens.primary}, ${tokens.secondary})`,
                   flexShrink: 0,
-                  boxShadow: `0 0 16px ${alpha(tokens.primary, 0.3)}`,
                 }}
               >
                 <Avatar
@@ -990,7 +944,6 @@ export default function AppShell() {
                   bgcolor: alpha(tokens.danger, 0.15),
                   borderColor: alpha(tokens.danger, 0.5),
                   color: tokens.errorLight,
-                  boxShadow: `0 0 14px ${alpha(tokens.danger, 0.2)}`,
                 },
               }}
             >
@@ -1057,15 +1010,12 @@ export default function AppShell() {
                           px: sidebarOpen ? 1.2 : 0.9,
                           justifyContent: sidebarOpen ? 'flex-start' : 'center',
                           color: isActive ? tokens.white : tokens.onSurfaceVariant,
-                          background: isActive
-                            ? `linear-gradient(90deg, ${alpha(tokens.primary, 0.22)} 0%, ${alpha(tokens.secondary, 0.12)} 100%)`
-                            : 'transparent',
+                          bgcolor: isActive ? alpha(tokens.primary, 0.16) : 'transparent',
                           border: isActive
                             ? `1px solid ${alpha(tokens.primary, 0.35)}`
                             : '1px solid transparent',
                           fontWeight: isActive ? 600 : 500,
                           transition: 'all 0.18s ease-in-out',
-                          boxShadow: isActive ? `0 0 16px ${alpha(tokens.primary, 0.15)}` : 'none',
                           '&:hover': {
                             bgcolor: isActive ? undefined : tokens.hover,
                             color: tokens.onSurface,

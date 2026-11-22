@@ -153,7 +153,7 @@ function RecurringList() {
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1.5}>
             <Box>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                <Chip size="small" label={KIND_LABEL[r.kind]} sx={{ fontSize: 12, color: tokens.primaryLight, bgcolor: 'rgba(99, 102, 241, 0.15)' }} />
+                <Chip size="small" label={KIND_LABEL[r.kind]} sx={{ fontSize: 12, color: tokens.primaryLight, bgcolor: 'rgba(77, 118, 139, 0.15)' }} />
                 <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.onSurface }}>
                   {r.service?.name ?? 'Unknown service'}
                   {r.category ? ` / ${r.category.name}` : ''}
