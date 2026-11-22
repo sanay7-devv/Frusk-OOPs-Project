@@ -1,6 +1,6 @@
-# I-ITSM Frontend (Intelligent IT Service Management)
+# ReSolv Frontend — Raise it. Track it. Resolve it.
 
-A modern, role-based single-page application (SPA) built for an **Intelligent IT Service Management (I-ITSM)** system. Designed following enterprise ITIL principles, this frontend provides separate workspaces for employees, technicians, team leads, and administrators.
+A modern, role-based single-page application (SPA) for the ReSolv campus service desk. Designed following enterprise ITIL principles, this frontend provides separate workspaces for employees, technicians, team leads, and administrators.
 
 ---
 

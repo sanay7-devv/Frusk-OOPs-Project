@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="icons/logo.png" alt="IITSM Logo" width="120" height="120" />
+<img src="icons/logo.png" alt="ReSolv brand mark" width="120" height="120" />
 
-# IITSM Enterprise — Intelligent IT Service Management
+# ReSolv — Raise it. Track it. Resolve it.
 
-**Next-Generation, Role-Driven Enterprise ITIL v4 Incident Management & Operations Cockpit**
+**Campus service desk and ITIL v4 incident management portal**
 
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -20,7 +20,7 @@
 
 ## 📋 Overview
 
-**IITSM Enterprise** is a high-performance single-page application (SPA) engineered for mission-critical IT service operations. Built with **React 18**, **TypeScript**, and **Material UI (MUI v5)**, it implements **ITIL v4** incident workflows and offers dedicated, context-aware workspaces for **Employees**, **Technicians**, **Team Leads**, and **Administrators**.
+**ReSolv** is a high-performance single-page application (SPA) for campus IT service operations. Built with **React 18**, **TypeScript**, and **Material UI (MUI v5)**, it implements **ITIL v4** incident workflows and offers dedicated, context-aware workspaces for **Employees**, **Technicians**, **Team Leads**, and **Administrators**.
 
 The frontend features the **Reliant Slate** corporate design system, providing high-density data visualizations, live SLA countdown meters, AI-powered dispatch recommendations, and simulated real-time telemetry.
 

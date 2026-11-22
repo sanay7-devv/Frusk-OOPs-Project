@@ -58,7 +58,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    document.title = 'Register · IITSM';
+    document.title = 'Create account · ReSolv';
   }, []);
 
   useEffect(() => {
@@ -100,32 +100,6 @@ export default function Register() {
       py={4}
       sx={{
         bgcolor: tokens.background,
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: '-15%',
-          left: '-10%',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          bgcolor: alpha(tokens.primary, 0.1),
-          filter: 'blur(130px)',
-          pointerEvents: 'none',
-        },
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          bottom: '-15%',
-          right: '-10%',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          bgcolor: alpha(tokens.secondary, 0.08),
-          filter: 'blur(130px)',
-          pointerEvents: 'none',
-        },
       }}
     >
       <Paper
@@ -135,10 +109,9 @@ export default function Register() {
           width: '100%',
           maxWidth: 480,
           borderRadius: '16px',
-          bgcolor: alpha(tokens.paper, 0.85),
-          backdropFilter: 'blur(24px)',
+          bgcolor: tokens.paper,
           border: `1px solid ${tokens.outlineVariant}`,
-          boxShadow: `0 24px 64px ${alpha(tokens.black, 0.7)}, 0 0 24px ${alpha(tokens.primary, 0.12)}`,
+          boxShadow: `0 20px 52px ${alpha(tokens.black, 0.42)}`,
           position: 'relative',
           zIndex: 1,
         }}
@@ -150,17 +123,30 @@ export default function Register() {
               height: 58,
               borderRadius: '14px',
               bgcolor: tokens.paper,
-              border: `1px solid ${alpha(tokens.primary, 0.4)}`,
+              border: `1px solid ${alpha(tokens.primary, 0.24)}`,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               mb: 1.5,
-              boxShadow: `0 0 20px ${alpha(tokens.primary, 0.3)}`,
+              boxShadow: `0 5px 14px ${alpha(tokens.black, 0.2)}`,
               overflow: 'hidden',
             }}
           >
-            <Box component="img" src={logoIcon} alt="IITSM Logo" sx={{ width: 46, height: 46, objectFit: 'contain' }} />
+            <Box component="img" src={logoIcon} alt="ReSolv brand mark" sx={{ width: 46, height: 46, objectFit: 'contain' }} />
           </Box>
+          <Typography
+            variant="subtitle1"
+            component="div"
+            sx={{
+              fontFamily: 'Sora, sans-serif',
+              fontWeight: 700,
+              color: tokens.white,
+              letterSpacing: '-0.02em',
+              mb: 0.75,
+            }}
+          >
+            ReSolv
+          </Typography>
           <Typography
             variant="h5" component="h1"
             sx={{
@@ -181,7 +167,7 @@ export default function Register() {
               fontSize: 13,
             }}
           >
-            Self-register for employee incident reporting &amp; IT catalog services
+            Raise it. Track it. Resolve it.
           </Typography>
         </Box>
 
